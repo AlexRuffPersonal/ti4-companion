@@ -1,0 +1,156 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+
+  html, body, #root {
+    height: 100%;
+    background-color: #050810;
+    color: #e2e8f0;
+    font-family: 'Rajdhani', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior: none;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: #0d1117; }
+  ::-webkit-scrollbar-thumb { background: #374151; border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+
+  /* Remove iOS tap highlight */
+  * { -webkit-tap-highlight-color: transparent; }
+}
+
+@layer components {
+  .panel {
+    @apply bg-panel border border-border rounded-lg;
+  }
+
+  .panel-inset {
+    @apply bg-hull border border-border rounded-lg;
+  }
+
+  .btn-primary {
+    @apply bg-gold text-void font-display font-bold text-sm px-4 py-2 rounded
+           hover:bg-amber-400 active:scale-95 transition-all duration-150
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply border border-border text-text font-body text-sm px-4 py-2 rounded
+           hover:border-dim hover:bg-muted/30 active:scale-95 transition-all duration-150
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .btn-danger {
+    @apply bg-danger/20 border border-danger/50 text-danger font-body text-sm px-4 py-2 rounded
+           hover:bg-danger/30 active:scale-95 transition-all duration-150;
+  }
+
+  .input {
+    @apply bg-hull border border-border rounded px-3 py-2 text-text font-body text-sm
+           focus:outline-none focus:border-plasma/60 focus:ring-1 focus:ring-plasma/30
+           placeholder:text-dim transition-colors duration-150 w-full;
+  }
+
+  .label {
+    @apply text-dim font-body text-xs uppercase tracking-widest;
+  }
+
+  .hud-value {
+    @apply font-display text-gold font-bold;
+  }
+
+  .faction-badge {
+    @apply text-xs font-body font-semibold px-2 py-0.5 rounded-full border;
+  }
+
+  .phase-dot {
+    @apply w-2 h-2 rounded-full;
+  }
+
+  .counter-btn {
+    @apply w-7 h-7 flex items-center justify-center rounded border border-border
+           hover:border-dim hover:bg-muted/30 active:scale-90 transition-all duration-100
+           text-dim hover:text-text font-mono text-sm select-none;
+  }
+}
+
+/* Star field background */
+.starfield {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(6, 182, 212, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(245, 158, 11, 0.03) 0%, transparent 50%),
+    #050810;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.starfield::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 30% 45%, rgba(255,255,255,0.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 50% 25%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 65%, rgba(255,255,255,0.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 85% 35%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 15% 75%, rgba(255,255,255,0.15) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 85%, rgba(255,255,255,0.25) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 40% 60%, rgba(255,255,255,0.1) 0%, transparent 100%),
+    radial-gradient(1px 1px at 65% 10%, rgba(255,255,255,0.35) 0%, transparent 100%);
+}
+
+/* Scan line overlay for HUD feel */
+.scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* VP bar animation */
+.vp-bar-fill {
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Glow effects */
+.glow-gold { box-shadow: 0 0 12px rgba(245, 158, 11, 0.3); }
+.glow-plasma { box-shadow: 0 0 12px rgba(6, 182, 212, 0.3); }
+.glow-danger { box-shadow: 0 0 12px rgba(239, 68, 68, 0.3); }
+
+/* Slide-up animation for panels */
+.animate-slide-up {
+  animation: slideUp 0.25s ease-out forwards;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Faction colour accent utilities */
+.accent-yellow { --faction-color: #f59e0b; }
+.accent-blue   { --faction-color: #3b82f6; }
+.accent-red    { --faction-color: #ef4444; }
+.accent-green  { --faction-color: #10b981; }
+.accent-purple { --faction-color: #8b5cf6; }
+.accent-orange { --faction-color: #f97316; }
+.accent-pink   { --faction-color: #ec4899; }
+.accent-cyan   { --faction-color: #06b6d4; }
