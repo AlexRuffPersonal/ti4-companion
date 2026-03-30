@@ -57,14 +57,46 @@ export const PLAYER_COLOURS = [
 // ─── Strategy Cards ───────────────────────────────────────────────────────────
 
 export const STRATEGY_CARDS = [
-  { id: 1, name: 'Leadership',  short: 'LEAD' },
-  { id: 2, name: 'Diplomacy',   short: 'DIPL' },
-  { id: 3, name: 'Politics',    short: 'POLI' },
-  { id: 4, name: 'Construction',short: 'CONS' },
-  { id: 5, name: 'Trade',       short: 'TRAD' },
-  { id: 6, name: 'Warfare',     short: 'WAR'  },
-  { id: 7, name: 'Technology',  short: 'TECH' },
-  { id: 8, name: 'Imperial',    short: 'IMP'  },
+  {
+    id: 1, name: 'Leadership', short: 'LEAD',
+    primary:   'Gain 3 command tokens. Place them in any combination of your command token pools.',
+    secondary: 'Spend 1 token from your strategy pool. Gain 2 command tokens. Place them in any combination of your command token pools.',
+  },
+  {
+    id: 2, name: 'Diplomacy', short: 'DIPL',
+    primary:   'Choose 1 system other than Mecatol Rex that contains a planet you own. Each other player places a command token from their reinforcements in that system. Gain trade goods equal to the number of players who cannot. Then redistribute your command tokens.',
+    secondary: 'Spend 1 token from your strategy pool. Retreat all of your ships from 1 system that contains another player\'s ships to an adjacent system that contains one of your ships or planets you control.',
+  },
+  {
+    id: 3, name: 'Politics', short: 'POLI',
+    primary:   'Choose a player. That player gains the Speaker token. Draw 2 action cards. Draw the top 3 agendas from the deck, look at them, and place them on the bottom in any order.',
+    secondary: 'Spend 1 token from your strategy pool. Draw 2 action cards.',
+  },
+  {
+    id: 4, name: 'Construction', short: 'CONS',
+    primary:   'Place 1 Space Dock in a system that contains a planet you control. Then place 1 PDS in a system that contains a planet you control.',
+    secondary: 'Spend 1 token from your strategy pool. Place 1 Space Dock or 1 PDS in a system that contains a planet you control.',
+  },
+  {
+    id: 5, name: 'Trade', short: 'TRAD',
+    primary:   'Gain 5 trade goods. Replenish your commodities. Each other player may replenish their commodities by spending 1 trade good.',
+    secondary: 'Spend 1 token from your strategy pool. Replenish your commodities.',
+  },
+  {
+    id: 6, name: 'Warfare', short: 'WAR',
+    primary:   'Remove 1 of your command tokens from the game board and return it to your reinforcements. Redistribute your command tokens.',
+    secondary: 'Spend 1 token from your strategy pool. Remove 1 of your command tokens from the game board and return it to your reinforcements.',
+  },
+  {
+    id: 7, name: 'Technology', short: 'TECH',
+    primary:   'Research 1 technology. You may spend 6 resources to research 1 additional technology.',
+    secondary: 'Spend 1 token from your strategy pool and 4 resources. Research 1 technology.',
+  },
+  {
+    id: 8, name: 'Imperial', short: 'IMP',
+    primary:   'Immediately score 1 public or secret objective if you qualify. Draw 1 secret objective and gain 1 trade good.',
+    secondary: 'Spend 1 token from your strategy pool. Cast votes on an agenda equal to your influence.',
+  },
 ]
 
 // ─── Game Phases ──────────────────────────────────────────────────────────────

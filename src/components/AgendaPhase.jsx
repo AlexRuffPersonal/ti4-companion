@@ -35,41 +35,43 @@ export default function AgendaPhase({
     <Modal onClose={onClose} title="Agenda Phase">
       <div className="flex flex-col gap-4">
 
-        {/* Deck status */}
         <div className="panel-inset px-3 py-2 flex items-center justify-between">
           <span className="label">Deck remaining</span>
           <span className="font-display text-sm text-gold">{agendaDeck?.length || 0} cards</span>
         </div>
 
-        {/* Draw button */}
         {agendaCount < 2 && isHost && (
           <button className="btn-primary py-3" onClick={onDrawAgenda}>
             Reveal Next Agenda ({agendaCount}/2 this round)
           </button>
         )}
 
-        {/* Current agendas */}
-        {(currentAgendas || []).map((agendaIndex, i) => {
-          const agenda = AGENDAS[agendaIndex]
+        {/* BUG #7 FIX: pass the stable deck index (agendaDeckIndex) as the
+            vote key rather than the position index in currentAgendas. This
+            means vote keys never shift when other agendas are resolved. */}
+        {(currentAgendas || []).map((agendaDeckIndex) => {
+          const agenda = AGENDAS[agendaDeckIndex]
           if (!agenda) return null
           return (
             <AgendaCard
-              key={i}
-              index={i}
+              key={agendaDeckIndex}
+              agendaDeckIndex={agendaDeckIndex}
               agenda={agenda}
               players={players}
               agendaVotes={agendaVotes}
               myPlayerId={myPlayerId}
               isHost={isHost}
               canEdit={canEdit}
-              laws={laws}
-              onCastVote={(playerId, choice, votes) => onCastVote(playerId, i, choice, votes)}
-              onResolve={(outcome) => onResolveAgenda(i, outcome, agenda.type === 'law')}
+              onCastVote={(playerId, choice, votes) =>
+                onCastVote(playerId, agendaDeckIndex, choice, votes)
+              }
+              onResolve={(outcome) =>
+                onResolveAgenda(agendaDeckIndex, outcome, agenda.type === 'law')
+              }
             />
           )
         })}
 
-        {/* Laws in play */}
         <button
           className="w-full panel-inset px-3 py-2 flex items-center justify-between"
           onClick={() => setShowLaws(v => !v)}
@@ -86,8 +88,11 @@ export default function AgendaPhase({
             {(!laws || laws.length === 0) && (
               <span className="text-dim text-xs">No laws currently in play.</span>
             )}
-            {(laws || []).map((law, i) => {
-              const name = typeof law === 'string' ? law : law?.name
+            {/* BUG #6 FIX: laws are stored as deck indices — look up name from AGENDAS */}
+            {(laws || []).map((lawEntry, i) => {
+              const name = typeof lawEntry === 'number'
+                ? AGENDAS[lawEntry]?.name || `Law #${lawEntry}`
+                : (typeof lawEntry === 'string' ? lawEntry : lawEntry?.name || '—')
               return (
                 <div key={i} className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
@@ -97,7 +102,7 @@ export default function AgendaPhase({
                   {isHost && (
                     <button
                       className="text-danger text-xs hover:underline"
-                      onClick={() => onRepealLaw(law)}
+                      onClick={() => onRepealLaw(lawEntry)}
                     >
                       Repeal
                     </button>
@@ -108,7 +113,6 @@ export default function AgendaPhase({
           </div>
         )}
 
-        {/* TE timing gap warning */}
         <div className="flex items-start gap-2 panel-inset p-3">
           <AlertTriangle size={12} className="text-warning flex-shrink-0 mt-0.5" />
           <p className="text-dim text-xs font-body">
@@ -120,31 +124,53 @@ export default function AgendaPhase({
   )
 }
 
-function AgendaCard({ index, agenda, players, agendaVotes, myPlayerId, isHost, canEdit, laws, onCastVote, onResolve }) {
-  const [myVotes, setMyVotes] = useState(0)
+function AgendaCard({
+  agendaDeckIndex,
+  agenda,
+  players,
+  agendaVotes,
+  myPlayerId,
+  isHost,
+  canEdit,
+  onCastVote,
+  onResolve,
+}) {
+  const [myVotes, setMyVotes]   = useState(0)
   const [myChoice, setMyChoice] = useState(null)
 
-  const isLaw = agenda.type === 'law'
-  const choices = agenda.outcome.includes('/') ? agenda.outcome.split(' / ') : [agenda.outcome]
-  const isForAgainst = choices.length === 2 && choices[0] === 'For'
+  const isLaw   = agenda.type === 'law'
+  const choices = agenda.outcome.includes('/')
+    ? agenda.outcome.split(' / ')
+    : [agenda.outcome]
 
-  // Tally votes
+  // BUG #7 FIX: vote keys are now `${agendaDeckIndex}-${playerId}` — stable
+  // regardless of resolve order. Tally all votes for this agenda deck index.
   const tally = {}
   Object.entries(agendaVotes || {}).forEach(([key, v]) => {
-    if (!key.startsWith(`${index}-`)) return
+    if (!key.startsWith(`${agendaDeckIndex}-`)) return
     tally[v.choice] = (tally[v.choice] || 0) + (v.votes || 0)
   })
 
-  const myVoteKey = `${index}-${myPlayerId}`
+  const myVoteKey     = `${agendaDeckIndex}-${myPlayerId}`
   const myCurrentVote = agendaVotes?.[myVoteKey]
+
+  // Build a map of playerId → vote for per-player display
+  const playerVoteMap = {}
+  Object.entries(agendaVotes || {}).forEach(([key, v]) => {
+    if (!key.startsWith(`${agendaDeckIndex}-`)) return
+    // BUG #7 FIX: vote object now stores playerId explicitly
+    const pid = v.playerId || key.replace(`${agendaDeckIndex}-`, '')
+    playerVoteMap[pid] = v
+  })
 
   return (
     <div className={`panel p-4 flex flex-col gap-3 ${isLaw ? 'border-gold/30' : 'border-border'}`}>
-      {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <div>
           <div className="flex items-center gap-2">
-            <span className={`text-xs font-display px-1.5 py-0.5 rounded ${isLaw ? 'bg-gold/20 text-gold' : 'bg-plasma/20 text-plasma'}`}>
+            <span className={`text-xs font-display px-1.5 py-0.5 rounded ${
+              isLaw ? 'bg-gold/20 text-gold' : 'bg-plasma/20 text-plasma'
+            }`}>
               {isLaw ? 'LAW' : 'DIRECTIVE'}
             </span>
             {isLaw && <span className="text-gold text-xs">Permanent if enacted</span>}
@@ -168,26 +194,27 @@ function AgendaCard({ index, agenda, players, agendaVotes, myPlayerId, isHost, c
           <div className="flex items-center gap-2 panel-inset px-2 py-1 rounded">
             <span className="font-body text-xs text-dim">Abstain:</span>
             <span className="font-display text-sm font-bold text-dim">
-              {players.filter(p => {
-                const v = agendaVotes?.[`${index}-${p.id}`]
-                return v && v.choice === 'abstain'
-              }).length}
+              {players.filter(p => playerVoteMap[p.id]?.choice === 'abstain').length}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Per-player votes */}
+      {/* BUG #7 FIX: per-player vote display now correctly uses playerVoteMap */}
       <div className="flex flex-col gap-1">
         <span className="label">Players</span>
         {players.map(p => {
-          const voteKey = `${index}-${p.id}`
-          const pVote = agendaVotes?.[voteKey]
+          const pVote = playerVoteMap[p.id]
           return (
             <div key={p.id} className="flex items-center justify-between text-xs font-body">
-              <span className={`text-text ${p.id === myPlayerId ? 'font-semibold' : ''}`}>{p.name}</span>
+              <span className={`text-text ${p.id === myPlayerId ? 'font-semibold' : ''}`}>
+                {p.name}
+              </span>
               {pVote
-                ? <span className="text-gold">{pVote.choice} ({pVote.votes} votes)</span>
+                ? <span className="text-gold">
+                    {pVote.choice}
+                    {pVote.votes > 0 ? ` (${pVote.votes})` : ''}
+                  </span>
                 : <span className="text-dim italic">not yet voted</span>
               }
             </div>
@@ -195,7 +222,7 @@ function AgendaCard({ index, agenda, players, agendaVotes, myPlayerId, isHost, c
         })}
       </div>
 
-      {/* My vote input */}
+      {/* My vote input — only show if I haven't voted yet */}
       {canEdit(myPlayerId) && !myCurrentVote && (
         <div className="border-t border-border pt-3 flex flex-col gap-2">
           <span className="label">Cast Your Vote</span>
@@ -204,7 +231,9 @@ function AgendaCard({ index, agenda, players, agendaVotes, myPlayerId, isHost, c
               <button
                 key={choice}
                 className={`text-xs px-3 py-1.5 rounded border font-body transition-colors ${
-                  myChoice === choice ? 'border-gold text-gold bg-gold/10' : 'border-muted text-dim hover:border-dim'
+                  myChoice === choice
+                    ? 'border-gold text-gold bg-gold/10'
+                    : 'border-muted text-dim hover:border-dim'
                 }`}
                 onClick={() => setMyChoice(choice)}
               >
@@ -213,7 +242,9 @@ function AgendaCard({ index, agenda, players, agendaVotes, myPlayerId, isHost, c
             ))}
             <button
               className={`text-xs px-3 py-1.5 rounded border font-body transition-colors ${
-                myChoice === 'abstain' ? 'border-dim text-dim bg-muted/20' : 'border-muted text-dim hover:border-dim'
+                myChoice === 'abstain'
+                  ? 'border-dim text-dim bg-muted/20'
+                  : 'border-muted text-dim hover:border-dim'
               }`}
               onClick={() => setMyChoice('abstain')}
             >
@@ -236,7 +267,9 @@ function AgendaCard({ index, agenda, players, agendaVotes, myPlayerId, isHost, c
           {myChoice && (
             <button
               className="btn-primary py-2 text-xs"
-              onClick={() => onCastVote(myPlayerId, myChoice, myChoice === 'abstain' ? 0 : myVotes)}
+              onClick={() =>
+                onCastVote(myPlayerId, myChoice, myChoice === 'abstain' ? 0 : myVotes)
+              }
             >
               Confirm Vote
             </button>

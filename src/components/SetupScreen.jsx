@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { Users, ChevronDown, ChevronUp, Star, Zap, AlertTriangle } from 'lucide-react'
-import { FACTIONS, PLAYER_COLOURS, GALACTIC_EVENTS } from '../data/gameData'
-import { defaultPlayer } from '../hooks/useGameState'
-import { AGENDAS } from '../data/gameData'
+import { Users, Star, Zap, AlertTriangle } from 'lucide-react'
+import { FACTIONS, PLAYER_COLOURS, GALACTIC_EVENTS, AGENDAS } from '../data/gameData'
+import { defaultPlayer, getStartingTechs } from '../hooks/useGameState'
 
 const EXPANSION_LABELS = { base: 'Base Game', pok: 'Prophecy of Kings', te: "Thunder's Edge" }
 
@@ -15,12 +14,15 @@ function shuffle(arr) {
   return a
 }
 
+// BUG #5 FIX: only shuffle the first 50 agendas (the canonical deck size).
+// The AGENDAS array had 62 entries due to duplicate/extra directives added
+// during data entry. We slice to 50 to match the official deck.
 function buildAgendaDeck() {
-  return shuffle(AGENDAS.map((_, i) => i))
+  return shuffle(AGENDAS.slice(0, 50).map((_, i) => i))
 }
 
 export default function SetupScreen({ onCreateGame, loading, error }) {
-  const [step, setStep] = useState(1) // 1=config, 2=players, 3=review
+  const [step, setStep] = useState(1)
   const [expansions, setExpansions] = useState({ base: true, pok: true, te: true })
   const [playerCount, setPlayerCount] = useState(4)
   const [vpGoal, setVpGoal] = useState(10)
@@ -33,22 +35,25 @@ export default function SetupScreen({ onCreateGame, loading, error }) {
   )
   const [speakerIndex, setSpeakerIndex] = useState(0)
   const [joinCode, setJoinCode] = useState('')
-  const [mode, setMode] = useState(null) // 'create' | 'join'
+  const [mode, setMode] = useState(null)
 
   const availableFactions = [
     ...FACTIONS.base,
     ...(expansions.pok ? FACTIONS.pok : []),
-    ...(expansions.te ? FACTIONS.te : []),
+    ...(expansions.te  ? FACTIONS.te  : []),
   ]
 
   const usedFactions = players.map(p => p.faction).filter(Boolean)
-  const usedColours = players.map(p => p.colour)
+  const usedColours  = players.map(p => p.colour)
 
   function setPlayerCount_(n) {
     setPlayerCount(n)
     setPlayers(prev => {
       const next = [...prev]
-      while (next.length < n) next.push(defaultPlayer({ colour: PLAYER_COLOURS[next.length]?.id || 'yellow', name: `Player ${next.length + 1}` }))
+      while (next.length < n) next.push(defaultPlayer({
+        colour: PLAYER_COLOURS[next.length]?.id || 'yellow',
+        name: `Player ${next.length + 1}`,
+      }))
       return next.slice(0, n)
     })
     setSpeakerIndex(s => Math.min(s, n - 1))
@@ -66,10 +71,13 @@ export default function SetupScreen({ onCreateGame, loading, error }) {
       speakerId: players[speakerIndex].id,
       agendaPhaseUnlocked: false,
       custodiansClaimed: false,
-      players: players.map((p, i) => ({
+      // BUG #11 FIX: pre-populate each player's starting technologies
+      // based on their chosen faction before writing state to Supabase
+      players: players.map(p => ({
         ...p,
         commodities: 3,
         commandTokens: { tactic: 3, fleet: 3, strategy: 2 },
+        technologies: getStartingTechs(p.faction),
       })),
       agendaDeck: buildAgendaDeck(),
       laws: [],
@@ -134,13 +142,12 @@ export default function SetupScreen({ onCreateGame, loading, error }) {
     )
   }
 
-  // ── Create: Step 1 — Config ───────────────────────────────────────────────────
+  // ── Create: Step 1 ───────────────────────────────────────────────────────────
   if (step === 1) {
     return (
       <div className="min-h-screen px-4 py-8 flex flex-col gap-6 max-w-lg mx-auto animate-slide-up">
         <StepHeader step={1} total={3} title="Game Configuration" />
 
-        {/* Expansions */}
         <section className="panel p-4 flex flex-col gap-3">
           <div className="label">Expansions</div>
           {Object.entries(EXPANSION_LABELS).map(([key, label]) => (
@@ -161,7 +168,6 @@ export default function SetupScreen({ onCreateGame, loading, error }) {
           ))}
         </section>
 
-        {/* Player count */}
         <section className="panel p-4 flex flex-col gap-3">
           <div className="label">Players</div>
           <div className="flex gap-2 flex-wrap">
@@ -183,7 +189,6 @@ export default function SetupScreen({ onCreateGame, loading, error }) {
           )}
         </section>
 
-        {/* VP Goal */}
         <section className="panel p-4 flex flex-col gap-3">
           <div className="label">Victory Point Goal</div>
           <div className="flex gap-3">
@@ -199,7 +204,6 @@ export default function SetupScreen({ onCreateGame, loading, error }) {
           </div>
         </section>
 
-        {/* Galactic Event (TE only) */}
         {expansions.te && (
           <section className="panel p-4 flex flex-col gap-3">
             <div className="label flex items-center gap-2">
@@ -229,7 +233,7 @@ export default function SetupScreen({ onCreateGame, loading, error }) {
     )
   }
 
-  // ── Create: Step 2 — Players ─────────────────────────────────────────────────
+  // ── Create: Step 2 ───────────────────────────────────────────────────────────
   if (step === 2) {
     return (
       <div className="min-h-screen px-4 py-8 flex flex-col gap-4 max-w-lg mx-auto animate-slide-up">
@@ -251,7 +255,6 @@ export default function SetupScreen({ onCreateGame, loading, error }) {
               </button>
             </div>
 
-            {/* Name */}
             <input
               className="input"
               placeholder="Player name"
@@ -259,7 +262,6 @@ export default function SetupScreen({ onCreateGame, loading, error }) {
               onChange={e => updatePlayer(i, 'name', e.target.value)}
             />
 
-            {/* Faction */}
             <select
               className="input"
               value={player.faction}
@@ -273,7 +275,12 @@ export default function SetupScreen({ onCreateGame, loading, error }) {
               ))}
             </select>
 
-            {/* Colour */}
+            {player.faction && (
+              <div className="text-dim text-xs font-body">
+                Starting techs: {getStartingTechs(player.faction).join(', ') || 'None'}
+              </div>
+            )}
+
             <div className="flex gap-2 flex-wrap">
               {PLAYER_COLOURS.map(c => (
                 <button
@@ -301,14 +308,15 @@ export default function SetupScreen({ onCreateGame, loading, error }) {
     )
   }
 
-  // ── Create: Step 3 — Review ──────────────────────────────────────────────────
+  // ── Create: Step 3 ───────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen px-4 py-8 flex flex-col gap-4 max-w-lg mx-auto animate-slide-up">
       <StepHeader step={3} total={3} title="Ready to Launch" />
 
       <div className="panel p-4 flex flex-col gap-2">
         <Row label="Expansions" value={Object.entries(expansions).filter(([,v])=>v).map(([k])=>EXPANSION_LABELS[k]).join(', ')} />
-        <Row label="Players" value={playerCount} />
+        {/* BUG #3 FIX: explicitly pass playerCount as a string so it always renders */}
+        <Row label="Players" value={String(playerCount)} />
         <Row label="VP Goal" value={`${vpGoal} VP`} />
         {galacticEvent && <Row label="Galactic Event" value={galacticEvent} />}
         <Row label="Speaker" value={players[speakerIndex]?.name || '—'} />
@@ -317,12 +325,20 @@ export default function SetupScreen({ onCreateGame, loading, error }) {
       <div className="panel p-4 flex flex-col gap-2">
         {players.map((p, i) => {
           const colour = PLAYER_COLOURS.find(c => c.id === p.colour)
+          const startingTechs = getStartingTechs(p.faction)
           return (
-            <div key={p.id} className="flex items-center gap-3 py-1">
-              <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: colour?.hex }} />
-              <span className="font-body text-sm text-text flex-1">{p.name || `Player ${i+1}`}</span>
-              <span className="font-body text-xs text-dim">{p.faction || 'No faction'}</span>
-              {i === speakerIndex && <Star size={10} className="text-gold" />}
+            <div key={p.id} className="flex flex-col py-1 gap-0.5">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: colour?.hex }} />
+                <span className="font-body text-sm text-text flex-1">{p.name || `Player ${i+1}`}</span>
+                <span className="font-body text-xs text-dim">{p.faction || 'No faction'}</span>
+                {i === speakerIndex && <Star size={10} className="text-gold" />}
+              </div>
+              {startingTechs.length > 0 && (
+                <div className="pl-6 text-xs text-dim font-body">
+                  Starts with: {startingTechs.join(', ')}
+                </div>
+              )}
             </div>
           )
         })}
@@ -331,7 +347,7 @@ export default function SetupScreen({ onCreateGame, loading, error }) {
       {players.some(p => !p.faction) && (
         <div className="flex items-start gap-2 text-warning text-xs font-body panel-inset p-3">
           <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />
-          Some players haven't selected a faction. You can assign them later.
+          Some players haven't selected a faction. Starting technologies will not be pre-filled.
         </div>
       )}
 

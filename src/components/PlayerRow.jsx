@@ -2,7 +2,17 @@ import { useState } from 'react'
 import { ChevronDown, ChevronUp, Minus, Plus } from 'lucide-react'
 import { PLAYER_COLOURS, STRATEGY_CARDS, TECHNOLOGIES } from '../data/gameData'
 
-const LEADER_STATUSES = ['locked', 'unlocked', 'exhausted', 'purged']
+// BUG #2 FIX: removed invalid 'ready' status. Agent is always 'unlocked' at
+// start (per TI4 rules — agents are always available). Valid cycle is:
+// unlocked → exhausted → unlocked (agents ready each round)
+// commander: locked → unlocked (one-way, condition based)
+// hero: locked → unlocked → purged (one-way)
+const LEADER_STATUSES = {
+  agent:     ['unlocked', 'exhausted'],
+  commander: ['locked', 'unlocked'],
+  hero:      ['locked', 'unlocked', 'purged'],
+}
+
 const LEADER_COLOURS = {
   locked:    'text-dim border-muted',
   unlocked:  'text-success border-success/50',
@@ -35,12 +45,19 @@ export default function PlayerRow({
     .filter(p => p.id !== player.id)
     .flatMap(p => [p.strategyCard, p.strategyCard2].filter(Boolean))
 
+  function cycleLeader(leader) {
+    const statuses = LEADER_STATUSES[leader] || ['locked', 'unlocked']
+    const current = player.leaders?.[leader] || statuses[0]
+    const idx = statuses.indexOf(current)
+    const next = statuses[(idx + 1) % statuses.length]
+    onSetLeaderStatus(leader, next)
+  }
+
   return (
     <div
       className={`panel overflow-hidden transition-all duration-200 ${isMe ? 'border-l-2' : ''}`}
       style={isMe ? { borderLeftColor: hex } : {}}
     >
-      {/* Row header — always visible */}
       <button
         className="w-full flex items-center gap-3 px-3 py-3 text-left"
         onClick={onToggleExpand}
@@ -65,11 +82,9 @@ export default function PlayerRow({
         </div>
       </button>
 
-      {/* Expanded content */}
       {isExpanded && (
         <div className="border-t border-border px-3 pb-3 flex flex-col gap-4 animate-slide-up">
 
-          {/* VP adjustment */}
           {canEdit && (
             <div className="flex items-center justify-between pt-3">
               <span className="label">Victory Points</span>
@@ -81,7 +96,6 @@ export default function PlayerRow({
             </div>
           )}
 
-          {/* Strategy card assignment */}
           {canEdit && (
             <div className="flex flex-col gap-2">
               <span className="label">Strategy Card{playerCount <= 4 ? 's' : ''}</span>
@@ -102,7 +116,6 @@ export default function PlayerRow({
                       }`}
                       onClick={() => {
                         if (isSelected) {
-                          // Deselect
                           if (player.strategyCard === card.id) onAssignStrategyCard(null, 1)
                           else onAssignStrategyCard(null, 2)
                         } else if (!player.strategyCard) {
@@ -119,25 +132,22 @@ export default function PlayerRow({
                   )
                 })}
               </div>
-              {canEdit && (
-                <button
-                  className={`self-start text-xs px-3 py-1 rounded border transition-all ${
-                    player.passed ? 'border-dim text-dim bg-muted/30' : 'border-muted text-dim hover:border-dim'
-                  }`}
-                  onClick={onTogglePassed}
-                >
-                  {player.passed ? '✓ Passed' : 'Mark Passed'}
-                </button>
-              )}
+              <button
+                className={`self-start text-xs px-3 py-1 rounded border transition-all ${
+                  player.passed ? 'border-dim text-dim bg-muted/30' : 'border-muted text-dim hover:border-dim'
+                }`}
+                onClick={onTogglePassed}
+              >
+                {player.passed ? '✓ Passed' : 'Mark Passed'}
+              </button>
             </div>
           )}
 
-          {/* Resources row */}
           <div className="grid grid-cols-3 gap-2">
             {[
-              { field: 'commodities', label: 'Commodities' },
-              { field: 'tradeGoods',  label: 'Trade Goods' },
-              { field: 'secretObjectivesHeld', label: 'Secrets' },
+              { field: 'commodities',          label: 'Commodities' },
+              { field: 'tradeGoods',            label: 'Trade Goods' },
+              { field: 'secretObjectivesHeld',  label: 'Secrets' },
             ].map(({ field, label }) => (
               <ResourceCounter
                 key={field}
@@ -149,7 +159,6 @@ export default function PlayerRow({
             ))}
           </div>
 
-          {/* Command tokens */}
           <div className="flex flex-col gap-2">
             <span className="label">Command Tokens</span>
             <div className="grid grid-cols-3 gap-2">
@@ -165,19 +174,19 @@ export default function PlayerRow({
             </div>
           </div>
 
-          {/* Leaders */}
           <div className="flex flex-col gap-2">
             <span className="label">Leaders</span>
             <div className="grid grid-cols-3 gap-2">
               {['agent', 'commander', 'hero'].map(leader => {
-                const status = player.leaders?.[leader] || 'locked'
-                const nextStatus = LEADER_STATUSES[(LEADER_STATUSES.indexOf(status) + 1) % LEADER_STATUSES.length]
+                const statuses = LEADER_STATUSES[leader] || ['locked', 'unlocked']
+                const status = player.leaders?.[leader] || statuses[0]
+                const nextStatus = statuses[(statuses.indexOf(status) + 1) % statuses.length]
                 return (
                   <button
                     key={leader}
                     disabled={!canEdit}
                     className={`flex flex-col items-center gap-1 p-2 rounded border text-xs font-body transition-colors ${LEADER_COLOURS[status]}`}
-                    onClick={() => canEdit && onSetLeaderStatus(leader, nextStatus)}
+                    onClick={() => canEdit && cycleLeader(leader)}
                     title={canEdit ? `Click to set: ${nextStatus}` : status}
                   >
                     <span className="capitalize font-semibold">{leader}</span>
@@ -186,9 +195,11 @@ export default function PlayerRow({
                 )
               })}
             </div>
+            <p className="text-dim text-xs font-body">
+              Tap to cycle. Agent: unlocked/exhausted · Commander: locked/unlocked · Hero: locked/unlocked/purged
+            </p>
           </div>
 
-          {/* Breakthrough (TE) */}
           {gameState.expansions?.te && (
             <div className="flex items-center justify-between">
               <span className="label">Breakthrough</span>
@@ -200,21 +211,20 @@ export default function PlayerRow({
             </div>
           )}
 
-          {/* Technologies */}
           {canEdit && (
             <div className="flex flex-col gap-2">
               <span className="label">Technologies</span>
               <div className="flex gap-1 border-b border-border pb-2">
-                {['green', 'blue', 'red', 'yellow'].map(colour => (
+                {['green', 'blue', 'red', 'yellow'].map(col => (
                   <button
-                    key={colour}
+                    key={col}
                     className={`flex-1 py-1 text-xs font-body rounded capitalize transition-colors ${
-                      techTab === colour ? 'font-bold' : 'opacity-50 hover:opacity-75'
+                      techTab === col ? 'font-bold' : 'opacity-50 hover:opacity-75'
                     }`}
-                    style={{ color: techTab === colour ? techColour(colour) : undefined }}
-                    onClick={() => setTechTab(colour)}
+                    style={{ color: techTab === col ? techColour(col) : undefined }}
+                    onClick={() => setTechTab(col)}
                   >
-                    {colour}
+                    {col}
                   </button>
                 ))}
               </div>
@@ -225,9 +235,7 @@ export default function PlayerRow({
                     <button
                       key={tech}
                       className={`text-left text-xs font-body px-2 py-1.5 rounded border transition-colors ${
-                        owned
-                          ? 'border-opacity-50 bg-opacity-10'
-                          : 'border-muted text-dim hover:border-dim hover:text-text'
+                        owned ? 'border-opacity-50 bg-opacity-10' : 'border-muted text-dim hover:border-dim hover:text-text'
                       }`}
                       style={owned ? {
                         borderColor: techColour(techTab) + '80',
@@ -247,9 +255,7 @@ export default function PlayerRow({
             </div>
           )}
 
-          {/* Promissory notes */}
-          <PromissoryNotes player={player} canEdit={canEdit} />
-
+          <PromissoryNotes player={player} />
         </div>
       )}
     </div>
@@ -277,10 +283,8 @@ function ResourceCounter({ label, value, canEdit, onDelta }) {
   )
 }
 
-function PromissoryNotes({ player, canEdit }) {
-  const [note, setNote] = useState('')
+function PromissoryNotes({ player }) {
   const notes = player.promissoryNotes || []
-
   return (
     <div className="flex flex-col gap-2">
       <span className="label">Promissory Notes</span>
@@ -295,7 +299,7 @@ function PromissoryNotes({ player, canEdit }) {
   )
 }
 
-function techColour(colour) {
+function techColour(col) {
   const map = { green: '#10b981', blue: '#3b82f6', red: '#ef4444', yellow: '#f59e0b' }
-  return map[colour] || '#6b7280'
+  return map[col] || '#6b7280'
 }

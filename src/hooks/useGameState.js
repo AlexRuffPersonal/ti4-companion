@@ -11,20 +11,62 @@ export function defaultPlayer(overrides = {}) {
     colour: 'yellow',
     vp: 0,
     strategyCard: null,
-    strategyCard2: null, // for 3-4 player games
+    strategyCard2: null,
     passed: false,
     commandTokens: { tactic: 3, fleet: 3, strategy: 2 },
     commodities: 3,
     tradeGoods: 0,
     technologies: [],
-    leaders: { agent: 'ready', commander: 'locked', hero: 'locked' },
+    // BUG #2 FIX: agent starts 'unlocked' (always available per rules),
+    // commander and hero start 'locked'. Removed invalid 'ready' status.
+    leaders: { agent: 'unlocked', commander: 'locked', hero: 'locked' },
     breakthrough: false,
     secretObjectivesHeld: 1,
     secretObjectivesScored: 0,
     promissoryNotes: [],
-    canEditAll: false, // host-granted permission
+    canEditAll: false,
     ...overrides,
   }
+}
+
+// ─── Starting technologies per faction ───────────────────────────────────────
+// BUG #11 FIX: pre-populate faction starting techs at setup
+
+const FACTION_STARTING_TECHS = {
+  'The Arborec':                   ['Magen Defense Grid'],
+  'The Barony of Letnev':          ['Non-Euclidean Shielding', 'Antimass Deflectors'],
+  'The Clan of Saar':              ['Chaos Mapping', 'Antimass Deflectors'],
+  'The Embers of Muaat':           ['Magmus Reactor'],
+  'The Emirates of Hacan':         ['Sarween Tools', 'Quantum Datahub Node'],
+  'The Federation of Sol':         ['Neural Motivator', 'Antimass Deflectors'],
+  'The Ghosts of Creuss':          ['Quantum Entanglement', 'Sling Relay'],
+  'The L1Z1X Mindnet':             ['Neural Motivator', 'Spacial Conduit Cylinder'],
+  'The Mentak Coalition':          ['Sarween Tools', 'Mirror Computing'],
+  'The Naalu Collective':          ['Neural Motivator', 'Neuroglaive'],
+  'The Nekro Virus':               ['Dacxive Animators', 'Valefar Assimilator X'],
+  "Sardakk N'orr":                 [],
+  'The Universities of Jol-Nar':   ['Neural Motivator', 'Antimass Deflectors', 'Sarween Tools'],
+  'The Winnu':                     [],
+  'The Xxcha Kingdom':             ['Instinct Training', 'Scanlink Drone Network'],
+  'The Yin Brotherhood':           ['Sarween Tools', 'Predictive Intelligence'],
+  'The Yssaril Tribes':            ['Neural Motivator', 'Mageon Implants'],
+  'The Argent Flight':             ['Instinct Training', 'Aetherpassage'],
+  'The Empyrean':                  ['Vortex', 'Bio-Stims'],
+  'The Mahact Gene-Sorcerers':     ['Bio-Stims', 'Predictive Intelligence'],
+  'The Naaz-Rokha Alliance':       ['Scanlink Drone Network', 'Supercharge'],
+  'The Nomad':                     ['Sling Relay'],
+  'The Titans of Ul':              ['Scanlink Drone Network', 'Spacial Conduit Cylinder'],
+  "The Vuil'raith Cabal":          ['Chaos Mapping', 'Vortex Canon'],
+  'The Council Keleres':           ['Scanlink Drone Network'],
+  'Last Bastion':                  ['Duranium Armor'],
+  'The Ral Nel Consortium':        ['Antimass Deflectors'],
+  'The Crimson Rebellion':         ['Sarween Tools'],
+  'The Deepwrought Scholarate':    ['Neural Motivator', 'Sarween Tools'],
+  'The Firmament / The Obsidian':  ['Aetherpassage'],
+}
+
+export function getStartingTechs(faction) {
+  return FACTION_STARTING_TECHS[faction] || []
 }
 
 // ─── Default game state ───────────────────────────────────────────────────────
@@ -41,15 +83,15 @@ export function defaultGameState() {
     galacticEvent: null,
     players: [],
     laws: [],
-    agendaDeck: [], // remaining agenda indices
+    agendaDeck: [],
     agendaDiscard: [],
-    currentAgendas: [], // the 1-2 being voted on this phase
-    agendaVotes: {}, // { playerId: { choice, votes } }
+    currentAgendas: [],
+    agendaVotes: {},
     transactions: [],
     theFractureInPlay: false,
     thundersEdgeInPlay: false,
-    thundersEdgeSlices: {}, // { playerId: sliceIndex[] }
-    permissions: {}, // { playerId: 'own' | 'all' }
+    thundersEdgeSlices: {},
+    permissions: {},
     hostId: null,
     createdAt: null,
   }
@@ -66,30 +108,33 @@ export function useGameState() {
   const [syncing, setSyncing]     = useState(false)
   const channelRef = useRef(null)
 
-  // ── Persist player ID across sessions ──
-  useEffect(() => {
+  // BUG #9 FIX: initialise playerId synchronously so it's available immediately
+  // when createGame is called, avoiding the race condition where hostId was
+  // written before myPlayerId state had resolved.
+  const playerIdRef = useRef(null)
+  if (!playerIdRef.current) {
     let id = localStorage.getItem('ti4:playerId')
     if (!id) {
       id = crypto.randomUUID()
       localStorage.setItem('ti4:playerId', id)
     }
-    setMyPlayerId(id)
+    playerIdRef.current = id
+  }
 
-    // Rejoin last room if any
+  useEffect(() => {
+    setMyPlayerId(playerIdRef.current)
     const lastRoom = localStorage.getItem('ti4:lastRoom')
     if (lastRoom) {
-      joinGame(lastRoom, id).catch(() => {
+      joinGame(lastRoom, playerIdRef.current).catch(() => {
         localStorage.removeItem('ti4:lastRoom')
       })
     }
   }, [])
 
-  // ── Subscribe to realtime changes ──
   const subscribeToRoom = useCallback((code) => {
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current)
     }
-
     const channel = supabase
       .channel(`room:${code}`)
       .on(
@@ -101,7 +146,6 @@ export function useGameState() {
         }
       )
       .subscribe()
-
     channelRef.current = channel
   }, [])
 
@@ -111,10 +155,12 @@ export function useGameState() {
     setError(null)
     try {
       const code = generateRoomCode()
+      // BUG #9 FIX: use ref directly — guaranteed to be set, no async race
+      const hostId = playerIdRef.current
       const state = {
         ...defaultGameState(),
         ...initialState,
-        hostId: myPlayerId,
+        hostId,
         createdAt: new Date().toISOString(),
       }
 
@@ -126,6 +172,7 @@ export function useGameState() {
 
       setRoomCode(code)
       setGameState(state)
+      setMyPlayerId(hostId)
       localStorage.setItem('ti4:lastRoom', code)
       subscribeToRoom(code)
       return code
@@ -135,11 +182,11 @@ export function useGameState() {
     } finally {
       setLoading(false)
     }
-  }, [myPlayerId, subscribeToRoom])
+  }, [subscribeToRoom])
 
   // ── Join game ──
   const joinGame = useCallback(async (code, playerIdOverride) => {
-    const pid = playerIdOverride || myPlayerId
+    const pid = playerIdOverride || playerIdRef.current
     setLoading(true)
     setError(null)
     try {
@@ -153,6 +200,7 @@ export function useGameState() {
 
       setRoomCode(code.toUpperCase())
       setGameState(data.state)
+      setMyPlayerId(pid)
       localStorage.setItem('ti4:lastRoom', code.toUpperCase())
       subscribeToRoom(code.toUpperCase())
     } catch (e) {
@@ -161,9 +209,9 @@ export function useGameState() {
     } finally {
       setLoading(false)
     }
-  }, [myPlayerId, subscribeToRoom])
+  }, [subscribeToRoom])
 
-  // ── Core update function — all mutations go through here ──
+  // ── Core update ──
   const updateGame = useCallback(async (updater) => {
     if (!roomCode || !gameState) return
     setSyncing(true)
@@ -172,7 +220,6 @@ export function useGameState() {
       ? updater(gameState)
       : { ...gameState, ...updater }
 
-    // Optimistic local update
     setGameState(newState)
 
     try {
@@ -183,7 +230,6 @@ export function useGameState() {
 
       if (err) throw err
     } catch (e) {
-      // Revert on failure
       setGameState(gameState)
       setError(e.message)
       setSyncing(false)
@@ -247,7 +293,7 @@ export function useGameState() {
   const assignStrategyCard = useCallback((playerId, cardId, slot = 1) => {
     updatePlayer(playerId, p => ({
       ...p,
-      strategyCard: slot === 1 ? cardId : p.strategyCard,
+      strategyCard:  slot === 1 ? cardId : p.strategyCard,
       strategyCard2: slot === 2 ? cardId : p.strategyCard2,
     }))
   }, [updatePlayer])
@@ -268,7 +314,6 @@ export function useGameState() {
       const nextPhase = phases[nextIndex]
       const newRound = nextIndex === 0 ? state.round + 1 : state.round
 
-      // Reset passed status on new strategy phase
       const players = nextPhase === 'strategy'
         ? state.players.map(p => ({ ...p, passed: false, strategyCard: null, strategyCard2: null }))
         : state.players
@@ -277,13 +322,15 @@ export function useGameState() {
     })
   }, [updateGame])
 
+  // BUG #1 FIX: custodians claim now correctly awards +1 VP to the claimant
+  // and also unlocks the agenda phase.
   const claimCustodians = useCallback((playerId) => {
     updateGame(state => ({
       ...state,
       custodiansClaimed: true,
       agendaPhaseUnlocked: true,
       players: state.players.map(p =>
-        p.id === playerId ? { ...p, vp: p.vp + 1 } : p
+        p.id === playerId ? { ...p, vp: (p.vp || 0) + 1 } : p
       )
     }))
   }, [updateGame])
@@ -292,38 +339,51 @@ export function useGameState() {
 
   const drawAgenda = useCallback(() => {
     updateGame(state => {
-      if (state.agendaDeck.length === 0) return state
+      if (!state.agendaDeck || state.agendaDeck.length === 0) return state
       const [drawn, ...remaining] = state.agendaDeck
       return {
         ...state,
         agendaDeck: remaining,
         currentAgendas: [...(state.currentAgendas || []), drawn],
+        agendaVotes: state.agendaVotes || {},
       }
     })
   }, [updateGame])
 
-  const castVote = useCallback((playerId, agendaIndex, choice, votes) => {
+  // BUG #7 FIX: vote key was using agendaIndex (position in currentAgendas array)
+  // which changes after each resolve. Now keyed on the stable agenda deck index value.
+  const castVote = useCallback((playerId, agendaDeckIndex, choice, votes) => {
     updateGame(state => ({
       ...state,
       agendaVotes: {
         ...state.agendaVotes,
-        [`${agendaIndex}-${playerId}`]: { choice, votes }
+        [`${agendaDeckIndex}-${playerId}`]: { choice, votes, playerId }
       }
     }))
   }, [updateGame])
 
-  const resolveAgenda = useCallback((agendaIndex, outcome, isLaw) => {
+  // BUG #6 FIX: laws were never persisting because the check was
+  // `outcome === 'for'` but outcome is the display label e.g. 'Elect player'.
+  // Fix: laws always persist when resolved (they are only drawn when in the
+  // laws section of the deck). Directives are discarded. The isLaw flag
+  // from the agenda type is the correct gate.
+  const resolveAgenda = useCallback((agendaDeckIndex, outcome, isLaw) => {
     updateGame(state => {
-      const agenda = state.currentAgendas[agendaIndex]
-      const newLaws = isLaw && outcome === 'for'
-        ? [...state.laws, agenda]
-        : state.laws
-      const newCurrentAgendas = state.currentAgendas.filter((_, i) => i !== agendaIndex)
-      const newDiscard = [...state.agendaDiscard, agenda]
+      const agendaIdx = (state.currentAgendas || []).indexOf(agendaDeckIndex)
+      if (agendaIdx === -1) return state
+
+      const newCurrentAgendas = state.currentAgendas.filter(a => a !== agendaDeckIndex)
+      const newDiscard = [...(state.agendaDiscard || []), agendaDeckIndex]
+
+      // BUG #6 FIX: persist law if it IS a law type — outcome string is irrelevant
+      const newLaws = isLaw
+        ? [...(state.laws || []), agendaDeckIndex]
+        : (state.laws || [])
 
       // Clear votes for this agenda
       const newVotes = Object.fromEntries(
-        Object.entries(state.agendaVotes).filter(([k]) => !k.startsWith(`${agendaIndex}-`))
+        Object.entries(state.agendaVotes || {})
+          .filter(([k]) => !k.startsWith(`${agendaDeckIndex}-`))
       )
 
       return {
@@ -336,10 +396,10 @@ export function useGameState() {
     })
   }, [updateGame])
 
-  const repealLaw = useCallback((lawName) => {
+  const repealLaw = useCallback((agendaDeckIndex) => {
     updateGame(state => ({
       ...state,
-      laws: state.laws.filter(l => l !== lawName)
+      laws: (state.laws || []).filter(l => l !== agendaDeckIndex)
     }))
   }, [updateGame])
 
@@ -361,7 +421,7 @@ export function useGameState() {
     updateGame(state => ({
       ...state,
       transactions: [
-        ...state.transactions,
+        ...(state.transactions || []),
         {
           id: crypto.randomUUID(),
           fromId,
@@ -379,11 +439,9 @@ export function useGameState() {
 
   const claimExpeditionSlice = useCallback((playerId, sliceIndex) => {
     updateGame(state => {
-      const existing = state.thundersEdgeSlices[playerId] || []
+      const existing = state.thundersEdgeSlices?.[playerId] || []
       const newSlices = { ...state.thundersEdgeSlices, [playerId]: [...existing, sliceIndex] }
       const allClaimed = Object.values(newSlices).flat().length >= 6
-
-      // First slice = breakthrough
       const isFirst = existing.length === 0
       const players = isFirst
         ? state.players.map(p => p.id === playerId ? { ...p, breakthrough: true } : p)
@@ -404,14 +462,17 @@ export function useGameState() {
 
   // ── Helpers ──
 
-  const isHost = myPlayerId && gameState?.hostId === myPlayerId
+  // BUG #9 FIX: use ref for synchronous host check — state may lag behind ref
+  const isHost = playerIdRef.current && gameState?.hostId === playerIdRef.current
 
   const canEdit = useCallback((targetPlayerId) => {
-    if (!gameState || !myPlayerId) return false
-    if (gameState.hostId === myPlayerId) return true
-    if (myPlayerId === targetPlayerId) return true
-    return gameState.permissions?.[myPlayerId] === 'all'
-  }, [gameState, myPlayerId])
+    if (!gameState) return false
+    const pid = playerIdRef.current
+    if (!pid) return false
+    if (gameState.hostId === pid) return true
+    if (pid === targetPlayerId) return true
+    return gameState.permissions?.[pid] === 'all'
+  }, [gameState])
 
   const leaveGame = useCallback(() => {
     if (channelRef.current) supabase.removeChannel(channelRef.current)
@@ -421,22 +482,19 @@ export function useGameState() {
   }, [])
 
   return {
-    // State
     gameState,
     roomCode,
-    myPlayerId,
+    myPlayerId: myPlayerId || playerIdRef.current,
     loading,
     error,
     syncing,
     isHost,
 
-    // Room
     createGame,
     joinGame,
     leaveGame,
     setError,
 
-    // Game mutations
     updateGame,
     updatePlayer,
     adjustPlayerVP,
@@ -447,24 +505,18 @@ export function useGameState() {
     assignStrategyCard,
     togglePassed,
 
-    // Phase control
     advancePhase,
     claimCustodians,
 
-    // Agenda
     drawAgenda,
     castVote,
     resolveAgenda,
     repealLaw,
 
-    // Permissions
     setPlayerPermission,
     canEdit,
 
-    // Transactions
     logTransaction,
-
-    // Thunder's Edge
     claimExpeditionSlice,
     triggerFracture,
   }

@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { ChevronRight, Wifi, WifiOff, Menu, X, Shield, Zap } from 'lucide-react'
-import { PHASE_LABELS, PHASE_DESCRIPTIONS, STRATEGY_CARDS, PLAYER_COLOURS } from '../data/gameData'
+import { ChevronRight, Wifi, X, Shield, Zap } from 'lucide-react'
+import { PHASE_LABELS, PHASE_DESCRIPTIONS, STRATEGY_CARDS, PLAYER_COLOURS, AGENDAS } from '../data/gameData'
 import { getInitiativeOrder } from '../hooks/useGameState'
 import PlayerRow from './PlayerRow'
 
-const NAV_TABS = ['dashboard', 'agenda', 'rules', 'trade']
+const NAV_TABS   = ['dashboard', 'agenda', 'rules', 'trade']
 const NAV_LABELS = { dashboard: 'Board', agenda: 'Agenda', rules: 'Rules', trade: 'Trade' }
 
 export default function Dashboard({
@@ -29,24 +29,31 @@ export default function Dashboard({
   onOpenTrade,
   onLeave,
 }) {
-  const [activeTab, setActiveTab] = useState('dashboard')
+  const [activeTab, setActiveTab]       = useState('dashboard')
   const [expandedPlayer, setExpandedPlayer] = useState(null)
   const [showRoomCode, setShowRoomCode] = useState(false)
   const [showPermissions, setShowPermissions] = useState(false)
 
   const { players, round, phase, vpGoal, custodiansClaimed, laws, galacticEvent, theFractureInPlay } = gameState
-  const speaker = players.find(p => p.id === gameState.speakerId)
+  const speaker        = players.find(p => p.id === gameState.speakerId)
   const initiativeOrder = getInitiativeOrder(players)
 
   function getColour(colourId) {
     return PLAYER_COLOURS.find(c => c.id === colourId)?.hex || '#6b7280'
   }
 
+  // BUG #6 fix companion: laws are stored as agenda deck indices now,
+  // so we look up the name from AGENDAS for display
+  function getLawName(lawEntry) {
+    if (typeof lawEntry === 'string') return lawEntry
+    if (typeof lawEntry === 'number') return AGENDAS[lawEntry]?.name || `Law #${lawEntry}`
+    return lawEntry?.name || '—'
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-void">
       <div className="starfield" />
 
-      {/* Top bar */}
       <header className="relative z-10 flex items-center justify-between px-4 py-3 border-b border-border bg-hull/80 backdrop-blur-sm">
         <div className="flex items-center gap-3">
           <div className="font-display text-xs text-gold tracking-widest">TI4</div>
@@ -73,7 +80,6 @@ export default function Dashboard({
         </div>
       </header>
 
-      {/* Scrollable content */}
       <main className="relative z-10 flex-1 overflow-y-auto pb-20">
 
         {/* VP Scoreboard */}
@@ -97,15 +103,16 @@ export default function Dashboard({
                 <div className="font-display text-xs text-plasma tracking-wider">{PHASE_LABELS[phase]}</div>
                 <p className="text-dim text-xs font-body mt-0.5 leading-snug">{PHASE_DESCRIPTIONS[phase]}</p>
               </div>
-              {(isHost) && (
+              {isHost && (
                 <button className="btn-primary text-xs py-1.5 px-3 whitespace-nowrap" onClick={onAdvancePhase}>
                   Next Phase →
                 </button>
               )}
             </div>
 
-            {/* Custodians */}
-            {!custodiansClaimed && (
+            {/* BUG #4 FIX: Custodians claim is only shown to the host.
+                Any player could previously click it. Now gated behind isHost. */}
+            {!custodiansClaimed && isHost && (
               <div className="flex items-center justify-between pt-1 border-t border-border">
                 <span className="text-dim text-xs font-body">Custodians Token on Mecatol Rex</span>
                 <button
@@ -116,8 +123,14 @@ export default function Dashboard({
                 </button>
               </div>
             )}
+            {/* Non-host players see the unclaimed status but can't click */}
+            {!custodiansClaimed && !isHost && (
+              <div className="flex items-center gap-2 pt-1 border-t border-border">
+                <div className="w-1.5 h-1.5 rounded-full bg-dim" />
+                <span className="text-dim text-xs font-body">Custodians Token on Mecatol Rex — not yet claimed</span>
+              </div>
+            )}
 
-            {/* The Fracture indicator */}
             {theFractureInPlay && (
               <div className="flex items-center gap-2 pt-1 border-t border-border">
                 <div className="w-2 h-2 rounded-full bg-plasma animate-pulse-slow" />
@@ -125,7 +138,6 @@ export default function Dashboard({
               </div>
             )}
 
-            {/* Galactic Event */}
             {galacticEvent && (
               <div className="flex items-center gap-2 pt-1 border-t border-border">
                 <Zap size={10} className="text-gold" />
@@ -159,7 +171,7 @@ export default function Dashboard({
         )}
 
         {/* Laws in play */}
-        {laws.length > 0 && (
+        {laws && laws.length > 0 && (
           <section className="px-4 py-2">
             <div className="panel p-3">
               <div className="label mb-2">Laws in Play ({laws.length})</div>
@@ -167,7 +179,7 @@ export default function Dashboard({
                 {laws.map((law, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-gold flex-shrink-0" />
-                    <span className="font-body text-xs text-text">{typeof law === 'string' ? law : law.name}</span>
+                    <span className="font-body text-xs text-text">{getLawName(law)}</span>
                   </div>
                 ))}
               </div>
@@ -186,7 +198,7 @@ export default function Dashboard({
           </section>
         )}
 
-        {/* Host permissions panel */}
+        {/* Permissions — host only */}
         {isHost && (
           <section className="px-4 py-2">
             <button
@@ -201,32 +213,38 @@ export default function Dashboard({
             </button>
             {showPermissions && (
               <div className="panel mt-1 p-3 flex flex-col gap-2 animate-slide-up">
-                {players.map(p => (
-                  <div key={p.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getColour(p.colour) }} />
-                      <span className="font-body text-sm text-text">{p.name}</span>
-                      {p.id === gameState.hostId && <span className="text-gold text-xs">(host)</span>}
-                    </div>
-                    {p.id !== gameState.hostId && (
-                      <div className="flex gap-1">
-                        {['own', 'all'].map(level => (
-                          <button
-                            key={level}
-                            className={`text-xs px-2 py-0.5 rounded border transition-colors ${
-                              (gameState.permissions?.[p.id] || 'own') === level
-                                ? 'border-plasma text-plasma bg-plasma/10'
-                                : 'border-muted text-dim hover:border-dim'
-                            }`}
-                            onClick={() => onSetPermission(p.id, level)}
-                          >
-                            {level === 'own' ? 'Own only' : 'Edit all'}
-                          </button>
-                        ))}
+                {players.map(p => {
+                  // BUG #9 FIX: correctly identify host using gameState.hostId
+                  const isThisPlayerHost = p.id === gameState.hostId
+                  return (
+                    <div key={p.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getColour(p.colour) }} />
+                        <span className="font-body text-sm text-text">{p.name}</span>
+                        {/* BUG #9 FIX: show host label correctly */}
+                        {isThisPlayerHost && <span className="text-gold text-xs">(host)</span>}
                       </div>
-                    )}
-                  </div>
-                ))}
+                      {/* BUG #9 FIX: no toggles for the host — they always have full access */}
+                      {!isThisPlayerHost && (
+                        <div className="flex gap-1">
+                          {['own', 'all'].map(level => (
+                            <button
+                              key={level}
+                              className={`text-xs px-2 py-0.5 rounded border transition-colors ${
+                                (gameState.permissions?.[p.id] || 'own') === level
+                                  ? 'border-plasma text-plasma bg-plasma/10'
+                                  : 'border-muted text-dim hover:border-dim'
+                              }`}
+                              onClick={() => onSetPermission(p.id, level)}
+                            >
+                              {level === 'own' ? 'Own only' : 'Edit all'}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
           </section>
@@ -259,7 +277,6 @@ export default function Dashboard({
         </section>
       </main>
 
-      {/* Bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-20 bg-hull/95 backdrop-blur-sm border-t border-border">
         <div className="flex">
           {NAV_TABS.map(tab => (
@@ -271,8 +288,8 @@ export default function Dashboard({
               onClick={() => {
                 setActiveTab(tab)
                 if (tab === 'agenda') onOpenAgenda()
-                if (tab === 'rules') onOpenRules()
-                if (tab === 'trade') onOpenTrade()
+                if (tab === 'rules')  onOpenRules()
+                if (tab === 'trade')  onOpenTrade()
               }}
             >
               {NAV_LABELS[tab]}
