@@ -29,21 +29,19 @@ export default function Dashboard({
   onOpenTrade,
   onLeave,
 }) {
-  const [activeTab, setActiveTab]       = useState('dashboard')
+  const [activeTab, setActiveTab]           = useState('dashboard')
   const [expandedPlayer, setExpandedPlayer] = useState(null)
-  const [showRoomCode, setShowRoomCode] = useState(false)
+  const [showRoomCode, setShowRoomCode]     = useState(false)
   const [showPermissions, setShowPermissions] = useState(false)
 
   const { players, round, phase, vpGoal, custodiansClaimed, laws, galacticEvent, theFractureInPlay } = gameState
-  const speaker        = players.find(p => p.id === gameState.speakerId)
+  const speaker         = players.find(p => p.id === gameState.speakerId)
   const initiativeOrder = getInitiativeOrder(players)
 
   function getColour(colourId) {
     return PLAYER_COLOURS.find(c => c.id === colourId)?.hex || '#6b7280'
   }
 
-  // BUG #6 fix companion: laws are stored as agenda deck indices now,
-  // so we look up the name from AGENDAS for display
   function getLawName(lawEntry) {
     if (typeof lawEntry === 'string') return lawEntry
     if (typeof lawEntry === 'number') return AGENDAS[lawEntry]?.name || `Law #${lawEntry}`
@@ -110,20 +108,23 @@ export default function Dashboard({
               )}
             </div>
 
-            {/* BUG #4 FIX: Custodians claim is only shown to the host.
-                Any player could previously click it. Now gated behind isHost. */}
+            {/* BUG #1 FIX: host picks which player claimed custodians so VP goes to correct row */}
             {!custodiansClaimed && isHost && (
-              <div className="flex items-center justify-between pt-1 border-t border-border">
-                <span className="text-dim text-xs font-body">Custodians Token on Mecatol Rex</span>
-                <button
-                  className="text-xs border border-gold/50 text-gold px-2 py-0.5 rounded hover:bg-gold/10 transition-colors"
-                  onClick={() => onClaimCustodians(myPlayerId)}
-                >
-                  Claim (+1 VP)
-                </button>
+              <div className="flex flex-col gap-1.5 pt-1 border-t border-border">
+                <span className="text-dim text-xs font-body">Custodians Token — who claimed it?</span>
+                <div className="flex gap-1 flex-wrap">
+                  {players.map(p => (
+                    <button
+                      key={p.id}
+                      className="text-xs border border-gold/50 text-gold px-2 py-0.5 rounded hover:bg-gold/10 transition-colors"
+                      onClick={() => onClaimCustodians(p.id)}
+                    >
+                      {p.name} +1 VP
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
-            {/* Non-host players see the unclaimed status but can't click */}
             {!custodiansClaimed && !isHost && (
               <div className="flex items-center gap-2 pt-1 border-t border-border">
                 <div className="w-1.5 h-1.5 rounded-full bg-dim" />
@@ -198,7 +199,7 @@ export default function Dashboard({
           </section>
         )}
 
-        {/* Permissions — host only */}
+        {/* Permissions — host only. BUG #9 FIX: keyed by browserId slot, not player row id */}
         {isHost && (
           <section className="px-4 py-2">
             <button
@@ -213,35 +214,40 @@ export default function Dashboard({
             </button>
             {showPermissions && (
               <div className="panel mt-1 p-3 flex flex-col gap-2 animate-slide-up">
-                {players.map(p => {
-                  // BUG #9 FIX: correctly identify host using gameState.hostId
-                  const isThisPlayerHost = p.id === gameState.hostId
+                <div className="flex items-center justify-between panel-inset px-2 py-1.5 rounded">
+                  <div className="flex items-center gap-2">
+                    <Shield size={10} className="text-gold" />
+                    <span className="font-body text-sm text-text">You (host)</span>
+                  </div>
+                  <span className="text-gold text-xs">Full access</span>
+                </div>
+                <p className="text-dim text-xs font-body">
+                  Share the room code. Grant "Edit all" to players who need scorekeeper access.
+                </p>
+                {players.map((p, pi) => {
+                  const slotKey      = `slot-${pi}`
+                  const currentLevel = gameState.permissions?.[slotKey] || 'own'
                   return (
                     <div key={p.id} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getColour(p.colour) }} />
-                        <span className="font-body text-sm text-text">{p.name}</span>
-                        {/* BUG #9 FIX: show host label correctly */}
-                        {isThisPlayerHost && <span className="text-gold text-xs">(host)</span>}
+                        <span className="font-body text-sm text-text">{p.name || `Player ${pi + 1}`}</span>
                       </div>
-                      {/* BUG #9 FIX: no toggles for the host — they always have full access */}
-                      {!isThisPlayerHost && (
-                        <div className="flex gap-1">
-                          {['own', 'all'].map(level => (
-                            <button
-                              key={level}
-                              className={`text-xs px-2 py-0.5 rounded border transition-colors ${
-                                (gameState.permissions?.[p.id] || 'own') === level
-                                  ? 'border-plasma text-plasma bg-plasma/10'
-                                  : 'border-muted text-dim hover:border-dim'
-                              }`}
-                              onClick={() => onSetPermission(p.id, level)}
-                            >
-                              {level === 'own' ? 'Own only' : 'Edit all'}
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                      <div className="flex gap-1">
+                        {['own', 'all'].map(level => (
+                          <button
+                            key={level}
+                            className={`text-xs px-2 py-0.5 rounded border transition-colors ${
+                              currentLevel === level
+                                ? 'border-plasma text-plasma bg-plasma/10'
+                                : 'border-muted text-dim hover:border-dim'
+                            }`}
+                            onClick={() => onSetPermission(slotKey, level)}
+                          >
+                            {level === 'own' ? 'Own only' : 'Edit all'}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )
                 })}
