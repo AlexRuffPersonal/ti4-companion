@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { supabase } from './supabaseClient'
 import { useGameState } from './hooks/useGameState'
+import LoginScreen from './components/LoginScreen'
 import SetupScreen from './components/SetupScreen'
 import Dashboard from './components/Dashboard'
 import AgendaPhase from './components/AgendaPhase'
@@ -7,6 +9,20 @@ import RulesLookup from './components/RulesLookup'
 import TradeLog from './components/TradeLog'
 
 export default function App() {
+  const [user, setUser]             = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+      setAuthLoading(false)
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
   const {
     gameState, roomCode, myPlayerId, loading, error, syncing, isHost,
     createGame, joinGame, leaveGame, setError,
@@ -19,9 +35,14 @@ export default function App() {
     setPlayerPermission, canEdit,
     logTransaction,
     claimExpeditionSlice, triggerFracture,
-  } = useGameState()
+  } = useGameState(user?.id)
 
   const [overlay, setOverlay] = useState(null) // 'agenda' | 'rules' | 'trade'
+
+  async function handleLogout() {
+    if (gameState) leaveGame()
+    await supabase.auth.signOut()
+  }
 
   // ── Handle create or join from SetupScreen ──
   async function handleSetupAction(initialState, joinCode) {
@@ -34,6 +55,23 @@ export default function App() {
     } catch (e) {
       // error is already set in the hook
     }
+  }
+
+  // ── Auth loading ──
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-void">
+        <div className="starfield" />
+        <div className="relative z-10 font-display text-xs text-dim tracking-widest animate-pulse">
+          INITIALIZING...
+        </div>
+      </div>
+    )
+  }
+
+  // ── Not logged in ──
+  if (!user) {
+    return <LoginScreen onLogin={setUser} />
   }
 
   // ── No game yet — show setup ──
@@ -89,6 +127,7 @@ export default function App() {
       canEdit={canEdit}
       syncing={syncing}
       roomCode={roomCode}
+      userEmail={user.email}
 
       onAdvancePhase={advancePhase}
       onClaimCustodians={claimCustodians}
@@ -111,6 +150,7 @@ export default function App() {
           leaveGame()
         }
       }}
+      onLogout={handleLogout}
     />
   )
 }
