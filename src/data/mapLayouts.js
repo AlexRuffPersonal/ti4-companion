@@ -204,78 +204,100 @@ function buildStandard5() {
   return positions
 }
 
-// ── Standard 7-Player Layout (Official FFG) ──────────────────────────────────
-// Extends the 6-player map with one extra column.
-// Home seats: 6 of ring-3 + 1 at ring-4 corner (top extension)
-// Simplified: use all ring-3 as 6p, plus an extra column on one side.
+// ── Standard 7-Player Layout (Official FFG / PoK) ────────────────────────────
+// The 7p map is the full 6p hex (ring 0–3, 37 tiles) plus a single arm
+// wedged between the (3,-3) and (3,0) ring-3 homes on the right side.
+//
+// Arm positions (all ring-4, not present in the 6p map):
+//   (4,-3) — system tile, adjacent to home (3,-3) and ring-3 tile (3,-2)
+//   (4,-2) — 7th HOME, adjacent to (4,-3) and (4,-1)
+//   (4,-1) — system tile, adjacent to home (3,0) and ring-3 tile (3,-1)
+//
+// This gives 37 + 3 = 40 positions total.
+// The 7th home at (4,-2) is exactly 2 cube-steps from both (3,-3) and (3,0).
 
 const STD7_HOME_COORDS = [
-  [4, -4], [3, -3], [3, 0], [0, 3], [-3, 3], [-3, 0], [0, -3],
+  [3, -3], [3, 0], [0, 3], [-3, 3], [-3, 0], [0, -3],  // seats 0–5 (ring-3 corners)
+  [4, -2],                                                // seat 6 (ring-4 arm home)
 ]
 
 function buildStandard7() {
   const homeSet = new Set(STD7_HOME_COORDS.map(([q, r]) => `${q},${r}`))
-  // Build ring 0–3 as in 6-player
+
+  // Start with the full 6p grid (ring 0–3)
   const positions = [pos(0, 0, { ring: 0 })]
   for (let ring = 1; ring <= 3; ring++) {
     for (const p of ringPositions(ring)) {
       const key = `${p.q},${p.r}`
-      const homeIdx = STD7_HOME_COORDS.findIndex(([q, r]) => q === p.q && r === p.r)
       if (homeSet.has(key)) {
-        positions.push({ ...p, isHome: true, seatIndex: homeIdx })
+        const idx = STD7_HOME_COORDS.findIndex(([q, r]) => q === p.q && r === p.r)
+        positions.push({ ...p, isHome: true, seatIndex: idx })
       } else {
         positions.push(p)
       }
     }
   }
-  // Add extra column: ring-4 extension at top-right
-  // Extra positions: (4,-4),(4,-3),(4,-2),(4,-1),(3,1),(2,2),(1,3)
-  const extraPositions = [
-    [4,-4,true, 0], [4,-3,false,null],[4,-2,false,null],[4,-1,false,null],
-    [3,1, false,null],[2,2, false,null],[1,3, false,null],
+
+  // Right-side arm: two ring-4 system tiles flanking the 7th home
+  const arm = [
+    { q: 4, r: -3, isHome: false, seatIndex: null },  // system — adj to (3,-3) home
+    { q: 4, r: -2, isHome: true,  seatIndex: 6      },  // 7th home
+    { q: 4, r: -1, isHome: false, seatIndex: null },  // system — adj to (3,0) home
   ]
-  for (const [q, r, isHome, seatIndex] of extraPositions) {
-    const ring = cubeRing(q, r)
-    if (!positions.find(p => p.q === q && p.r === r)) {
-      positions.push({ q, r, ring, isHome, seatIndex })
-    }
+  for (const { q, r, isHome, seatIndex } of arm) {
+    positions.push({ q, r, ring: cubeRing(q, r), isHome, seatIndex })
   }
   return positions
 }
 
-// ── Standard 8-Player Layout (Official FFG) ──────────────────────────────────
-// Extends the 6-player map on two opposite sides.
-// 8 home seats: 6 of ring-3 + 2 additional in extended columns.
+// ── Standard 8-Player Layout (Official FFG / PoK) ────────────────────────────
+// The 8p map is the full 6p hex plus two opposite arms.
+//
+// Right arm (between (3,-3) and (3,0)):
+//   (4,-3) system, (4,-2) HOME seat 6, (4,-1) system
+//
+// Left arm (between (-3,3) and (-3,0), opposite the right arm):
+//   (-4,3) system, (-4,2) HOME seat 7, (-4,1) system
+//
+// This gives 37 + 6 = 43 positions total.
+// The two new homes are symmetric about the Mecatol Rex centre.
 
 const STD8_HOME_COORDS = [
-  [4, -4], [3, -3], [3, 0], [0, 3], [-3, 3], [-3, 0], [0, -3], [-4, 4],
+  [3, -3], [3, 0], [0, 3], [-3, 3], [-3, 0], [0, -3],  // seats 0–5
+  [4, -2],                                                // seat 6 — right arm
+  [-4, 2],                                               // seat 7 — left arm
 ]
 
 function buildStandard8() {
   const homeSet = new Set(STD8_HOME_COORDS.map(([q, r]) => `${q},${r}`))
+
   const positions = [pos(0, 0, { ring: 0 })]
   for (let ring = 1; ring <= 3; ring++) {
     for (const p of ringPositions(ring)) {
       const key = `${p.q},${p.r}`
-      const homeIdx = STD8_HOME_COORDS.findIndex(([q, r]) => q === p.q && r === p.r)
       if (homeSet.has(key)) {
-        positions.push({ ...p, isHome: true, seatIndex: homeIdx })
+        const idx = STD8_HOME_COORDS.findIndex(([q, r]) => q === p.q && r === p.r)
+        positions.push({ ...p, isHome: true, seatIndex: idx })
       } else {
         positions.push(p)
       }
     }
   }
-  // Extensions on both sides
-  const extensions = [
-    [4,-4,true,0],[4,-3,false,null],[4,-2,false,null],[4,-1,false,null],
-    [3,1,false,null],[2,2,false,null],[1,3,false,null],
-    [-4,4,true,7],[-4,3,false,null],[-4,2,false,null],[-4,1,false,null],
-    [-3,-1,false,null],[-2,-2,false,null],[-1,-3,false,null],
+
+  // Right arm
+  const rightArm = [
+    { q:  4, r: -3, isHome: false, seatIndex: null },
+    { q:  4, r: -2, isHome: true,  seatIndex: 6    },
+    { q:  4, r: -1, isHome: false, seatIndex: null },
   ]
-  for (const [q, r, isHome, seatIndex] of extensions) {
-    if (!positions.find(p => p.q === q && p.r === r)) {
-      positions.push({ q, r, ring: cubeRing(q, r), isHome, seatIndex })
-    }
+  // Left arm (mirror of right arm through centre)
+  const leftArm = [
+    { q: -4, r:  3, isHome: false, seatIndex: null },
+    { q: -4, r:  2, isHome: true,  seatIndex: 7    },
+    { q: -4, r:  1, isHome: false, seatIndex: null },
+  ]
+  for (const { q, r, isHome, seatIndex } of [...rightArm, ...leftArm]) {
+    positions.push({ q, r, ring: cubeRing(q, r), isHome, seatIndex })
   }
   return positions
 }
