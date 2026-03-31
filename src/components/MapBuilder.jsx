@@ -3,6 +3,38 @@ import { ChevronLeft, ChevronDown, Trash2, X } from 'lucide-react'
 import { TILES, getTileById, getTilesByExpansion, getTileResources, getTileInfluence, ANOMALY_LABELS, WORMHOLE_LABELS } from '../data/tiles'
 import { MAP_LAYOUTS, getLayoutById } from '../data/mapLayouts'
 
+// ── Auto-fill ─────────────────────────────────────────────────────────────────
+// Returns a base tile map derived purely from the current game state:
+//   • Mecatol Rex (tile 18) at position (0,0)
+//   • Each player's home system tile at their seat's home position
+// These auto-tiles are used as a background layer; manually placed tiles in
+// mapTiles always take precedence (and can override auto-fills if desired).
+
+function computeAutoTiles(gameState, layout) {
+  const auto = {}
+
+  // Mecatol Rex at centre
+  if (layout.positions.some(p => p.q === 0 && p.r === 0)) {
+    auto['0,0'] = 18
+  }
+
+  // Home systems keyed by faction name → tile id
+  const homeTileByFaction = {}
+  for (const tile of TILES) {
+    if (tile.type === 'home' && tile.homeFor) homeTileByFaction[tile.homeFor] = tile.id
+  }
+
+  for (const { q, r, isHome, seatIndex } of layout.positions) {
+    if (!isHome || seatIndex == null) continue
+    const player = (gameState.players ?? [])[seatIndex]
+    if (!player?.faction) continue
+    const tileId = homeTileByFaction[player.faction]
+    if (tileId) auto[`${q},${r}`] = tileId
+  }
+
+  return auto
+}
+
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const HEX_SIZE = 38 // px, pointy-top radius
@@ -371,7 +403,12 @@ export default function MapBuilder({ gameState, isHost, onClose, onUpdateMap }) 
   const mapLayout = gameState.mapLayout ?? 'standard-6'
   const layout    = getLayoutById(mapLayout)
 
-  // Set of already-placed tile IDs
+  // Auto-tiles (Mecatol Rex + faction home systems) merged under manual tiles
+  const autoTiles = useMemo(() => computeAutoTiles(gameState, layout), [gameState, layout])
+  const effectiveTiles = useMemo(() => ({ ...autoTiles, ...mapTiles }), [autoTiles, mapTiles])
+
+  // Set of already-placed tile IDs (from manual placements only, so auto-tiles
+  // don't grey out tiles that could still be manually placed elsewhere)
   const placedTileIds = useMemo(() => new Set(Object.values(mapTiles).map(Number)), [mapTiles])
 
   // Available tiles for the picker
@@ -428,7 +465,7 @@ export default function MapBuilder({ gameState, isHost, onClose, onUpdateMap }) 
   }
 
   const selectedKey = selectedPos ? `${selectedPos.q},${selectedPos.r}` : null
-  const selectedTileId = selectedKey ? mapTiles[selectedKey] : null
+  const selectedTileId = selectedKey ? effectiveTiles[selectedKey] : null
   const selectedTile   = selectedTileId ? getTileById(selectedTileId) : null
 
   const vb = useMemo(() => computeViewBox(layout.positions, HEX_SIZE), [layout])
@@ -480,7 +517,7 @@ export default function MapBuilder({ gameState, isHost, onClose, onUpdateMap }) 
         >
           {layout.positions.map(({ q, r, isHome, seatIndex }) => {
             const key = `${q},${r}`
-            const tileId = mapTiles[key]
+            const tileId = effectiveTiles[key]  // auto-fill + manual overrides
             const tile = tileId ? getTileById(tileId) : null
             return (
               <HexCell
@@ -498,8 +535,8 @@ export default function MapBuilder({ gameState, isHost, onClose, onUpdateMap }) 
         </svg>
       </div>
 
-      {/* Stats bar */}
-      <MapStats mapTiles={mapTiles} layout={layout} />
+      {/* Stats bar — counts auto-fills too */}
+      <MapStats mapTiles={effectiveTiles} layout={layout} />
 
       {/* Tile Picker — shown when a hex is selected */}
       {selectedPos && (
@@ -573,7 +610,7 @@ export default function MapBuilder({ gameState, isHost, onClose, onUpdateMap }) 
                   <TileMini
                     key={tile.id}
                     tile={tile}
-                    isPlaced={placedTileIds.has(tile.id) && mapTiles[selectedKey] !== tile.id}
+                    isPlaced={placedTileIds.has(tile.id) && effectiveTiles[selectedKey] !== tile.id}
                     onClick={() => placeTile(tile.id)}
                   />
                 ))
