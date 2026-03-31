@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronRight, Wifi, X, Shield, Zap } from 'lucide-react'
+import { ChevronRight, Wifi, X, Shield, Zap, LogOut } from 'lucide-react'
 import { PHASE_LABELS, PHASE_DESCRIPTIONS, STRATEGY_CARDS, PLAYER_COLOURS, AGENDAS } from '../data/gameData'
 import { getInitiativeOrder } from '../hooks/useGameState'
 import PlayerRow from './PlayerRow'
@@ -28,6 +28,8 @@ export default function Dashboard({
   onOpenRules,
   onOpenTrade,
   onLeave,
+  userEmail,
+  onLogout,
 }) {
   const [activeTab, setActiveTab]           = useState('dashboard')
   const [expandedPlayer, setExpandedPlayer] = useState(null)
@@ -72,6 +74,20 @@ export default function Dashboard({
           >
             {showRoomCode ? roomCode : '••••••'}
           </button>
+          {userEmail && (
+            <span className="hidden sm:block font-mono text-xs text-dim truncate max-w-[120px]" title={userEmail}>
+              {userEmail}
+            </span>
+          )}
+          {onLogout && (
+            <button
+              className="text-dim hover:text-danger transition-colors"
+              onClick={onLogout}
+              title="Sign out"
+            >
+              <LogOut size={16} />
+            </button>
+          )}
           <button className="text-dim hover:text-text transition-colors" onClick={onLeave}>
             <X size={16} />
           </button>

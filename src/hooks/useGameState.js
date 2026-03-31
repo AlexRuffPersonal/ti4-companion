@@ -61,11 +61,6 @@ export function getStartingTechs(faction) {
   return FACTION_STARTING_TECHS[faction] || []
 }
 
-function getBrowserId() {
-  let id = localStorage.getItem('ti4:browserId')
-  if (!id) { id = crypto.randomUUID(); localStorage.setItem('ti4:browserId', id) }
-  return id
-}
 
 export function defaultGameState() {
   return {
@@ -79,14 +74,16 @@ export function defaultGameState() {
   }
 }
 
-export function useGameState() {
+export function useGameState(userId) {
   const [gameState, setGameState] = useState(null)
   const [roomCode, setRoomCode]   = useState(null)
   const [loading, setLoading]     = useState(false)
   const [error, setError]         = useState(null)
   const [syncing, setSyncing]     = useState(false)
   const channelRef                = useRef(null)
-  const myBrowserId               = useRef(getBrowserId())
+  const myBrowserId               = useRef(userId)
+
+  useEffect(() => { myBrowserId.current = userId }, [userId])
 
   useEffect(() => {
     const lastRoom = localStorage.getItem('ti4:lastRoom')
