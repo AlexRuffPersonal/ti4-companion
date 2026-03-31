@@ -4,8 +4,8 @@ import { PHASE_LABELS, PHASE_DESCRIPTIONS, STRATEGY_CARDS, PLAYER_COLOURS, AGEND
 import { getInitiativeOrder } from '../hooks/useGameState'
 import PlayerRow from './PlayerRow'
 
-const NAV_TABS   = ['dashboard', 'agenda', 'rules', 'trade']
-const NAV_LABELS = { dashboard: 'Board', agenda: 'Agenda', rules: 'Rules', trade: 'Trade' }
+const NAV_TABS   = ['dashboard', 'agenda', 'rules', 'trade', 'map']
+const NAV_LABELS = { dashboard: 'Board', agenda: 'Agenda', rules: 'Rules', trade: 'Trade', map: 'Map' }
 
 export default function Dashboard({
   gameState,
@@ -27,6 +27,7 @@ export default function Dashboard({
   onOpenAgenda,
   onOpenRules,
   onOpenTrade,
+  onOpenMap,
   onLeave,
   userEmail,
   onLogout,
@@ -312,6 +313,7 @@ export default function Dashboard({
                 if (tab === 'agenda') onOpenAgenda()
                 if (tab === 'rules')  onOpenRules()
                 if (tab === 'trade')  onOpenTrade()
+                if (tab === 'map')    onOpenMap()
               }}
             >
               {NAV_LABELS[tab]}

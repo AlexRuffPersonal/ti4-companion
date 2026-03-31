@@ -71,6 +71,7 @@ export function defaultGameState() {
     currentAgendas: [], agendaVotes: {}, transactions: [],
     theFractureInPlay: false, thundersEdgeInPlay: false, thundersEdgeSlices: {},
     permissions: {}, hostBrowserId: null, createdAt: null,
+    mapLayout: 'standard-6', mapTiles: {},
   }
 }
 
