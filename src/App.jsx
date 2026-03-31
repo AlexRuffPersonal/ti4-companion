@@ -7,6 +7,7 @@ import Dashboard from './components/Dashboard'
 import AgendaPhase from './components/AgendaPhase'
 import RulesLookup from './components/RulesLookup'
 import TradeLog from './components/TradeLog'
+import MapBuilder from './components/MapBuilder'
 
 export default function App() {
   const [user, setUser]             = useState(null)
@@ -106,6 +107,17 @@ export default function App() {
     return <RulesLookup onClose={() => setOverlay(null)} />
   }
 
+  if (overlay === 'map') {
+    return (
+      <MapBuilder
+        gameState={gameState}
+        isHost={isHost}
+        onClose={() => setOverlay(null)}
+        onUpdateMap={patch => updateGame(s => ({ ...s, ...patch }))}
+      />
+    )
+  }
+
   if (overlay === 'trade') {
     return (
       <TradeLog
@@ -144,6 +156,7 @@ export default function App() {
       onOpenAgenda={() => setOverlay('agenda')}
       onOpenRules={() => setOverlay('rules')}
       onOpenTrade={() => setOverlay('trade')}
+      onOpenMap={() => setOverlay('map')}
 
       onLeave={() => {
         if (confirm('Leave this game? You can rejoin with the room code.')) {
