@@ -1,14 +1,6 @@
-# CLAUDE.md — TI4 Companion App
+# CLAUDE.md — TI4 Companion
 
-This file gives Claude Code full codebase context. Read this instead of exploring files at session start.
-
----
-
-## Project Overview
-
-A real-time multiplayer companion app for **Twilight Imperium 4th Edition** (base + Prophecy of Kings + Thunder's Edge expansions). Players join a shared room via a 6-character code and see live game state. Hosted on Vercel + Supabase (free tier).
-
-**Current capability:** Scorekeeper + reference tool. See `GAMEPLAY_ROADMAP.md` for the plan to add full gameplay (planets, objectives, combat, etc.). See `FRONTEND_ROADMAP.md` for the Flutter/Dart mobile app plan.
+AI assistant reference guide for the **Twilight Imperium 4 Companion** app — a real-time browser-based companion for TI4 board game sessions.
 
 ---
 
@@ -16,469 +8,281 @@ A real-time multiplayer companion app for **Twilight Imperium 4th Edition** (bas
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React 18 + Vite |
-| Styling | Tailwind CSS (dark custom theme) |
-| Backend | Supabase (PostgreSQL + Realtime + Auth) |
-| State | React hooks (`useGameState` custom hook) |
-| Icons | `lucide-react` (14–16px, `className="w-4 h-4"`) |
-| Deploy | Vercel + Supabase free tier |
-
-**Node.js 20.19+ required.** Dev: `npm run dev`. Build: `npm run build`.
+| Framework | React 18 (function components + hooks) |
+| Build tool | Vite 7 (ESM modules) |
+| Styling | Tailwind CSS 3 with custom sci-fi theme |
+| Backend | Supabase (PostgreSQL + Realtime) |
+| Icons | Lucide React |
+| Node | >= 20.19.0 (see `.nvmrc`) |
 
 ---
 
-## Directory Structure
+## Project Structure
 
 ```
-/
-  src/
-    App.jsx                  # Entry — auth gate, game gate, overlay switcher
-    main.jsx                 # React root mount
-    supabaseClient.js        # Supabase client init (reads VITE_ env vars)
-
-    data/
-      gameData.js            # 314 lines — factions, agendas, techs, rules, phases
-      tiles.js               # 833 lines — 115 system tiles with planets/anomalies
-      mapLayouts.js          # 437 lines — 11 hex map layouts (axial coordinates)
-
-    hooks/
-      useGameState.js        # 239 lines — ALL game state + Supabase sync
-
-    components/
-      Dashboard.jsx          # Main board: scoreboard, phase, player rows
-      PlayerRow.jsx          # Expandable per-player: resources, techs, leaders
-      SetupScreen.jsx        # 3-step game creation wizard + join flow
-      LoginScreen.jsx        # Supabase email/password auth
-      AgendaPhase.jsx        # Agenda voting overlay
-      MapBuilder.jsx         # Hex map editor overlay
-      TradeLog.jsx           # Trade history overlay
-      RulesLookup.jsx        # Searchable rules + agendas reference overlay
-
-  supabase-schema.sql        # DB schema (games table, RLS, realtime)
-  GAMEPLAY_ROADMAP.md        # 12-phase plan: planets → combat → full gameplay
-  FRONTEND_ROADMAP.md        # 9-phase Flutter/Dart mobile app plan
-  POTENTIAL_FEATURES.md      # 80-feature backlog (original TODO)
-  TODO.md                    # Pointer to roadmap files
-  DEPLOYMENT.md              # Vercel + Supabase setup guide
+ti4-companion/
+├── index.html              # App entry point (fonts, viewport meta)
+├── vite.config.js          # Minimal — just the React plugin
+├── tailwind.config.js      # Custom color palette + fonts
+├── postcss.config.js       # Tailwind + Autoprefixer
+├── supabase-schema.sql     # Database schema to run in Supabase dashboard
+├── .env.example            # Required environment variables
+├── DEPLOYMENT.md           # Full deployment walkthrough (Supabase + Vercel)
+├── TODO.md                 # Prioritized feature backlog (80+ items)
+└── src/
+    ├── main.jsx            # React root render
+    ├── App.jsx             # Top-level routing: login → setup → dashboard
+    ├── index.css           # Tailwind base/components/utilities layers
+    ├── supabaseClient.js   # Supabase client singleton
+    ├── components/
+    │   ├── Dashboard.jsx   # Main game UI (scoreboard, tabs, phase control)
+    │   ├── SetupScreen.jsx # Game creation/join flow
+    │   ├── LoginScreen.jsx # Supabase email/password auth
+    │   ├── PlayerRow.jsx   # Per-player expandable card
+    │   ├── MapBuilder.jsx  # Interactive hex map editor
+    │   ├── AgendaPhase.jsx # Agenda voting interface
+    │   ├── TradeLog.jsx    # Transaction history
+    │   └── RulesLookup.jsx # Searchable rules reference
+    ├── hooks/
+    │   └── useGameState.js # ALL game business logic lives here
+    └── data/
+        ├── gameData.js     # Factions, strategy cards, agendas, techs, rules
+        ├── tiles.js        # All hex tiles with planet stats
+        └── mapLayouts.js   # Hex grid coordinate systems
 ```
 
 ---
 
-## Navigation Model
+## Development Commands
 
-No router. `App.jsx` uses a single `overlay` state variable:
-
-```javascript
-const [overlay, setOverlay] = useState(null) // null | 'agenda' | 'rules' | 'trade' | 'map'
+```bash
+npm install       # Install dependencies
+npm run dev       # Dev server at http://localhost:5173 (HMR enabled)
+npm run build     # Production bundle → dist/
+npm run preview   # Preview production build locally
 ```
 
-Render logic (in order):
-1. `authLoading` → loading spinner
-2. `!user` → `<LoginScreen />`
-3. `!gameState` → `<SetupScreen />`
-4. `overlay === 'agenda'` → `<AgendaPhase />`
-5. `overlay === 'rules'` → `<RulesLookup />`
-6. `overlay === 'map'` → `<MapBuilder />`
-7. `overlay === 'trade'` → `<TradeLog />`
-8. default → `<Dashboard />`
-
-Overlays receive `onClose={() => setOverlay(null)}`.
+There are **no tests**. No test framework is installed.
 
 ---
 
-## Database Schema
+## Environment Variables
 
-**Single table: `public.games`**
+Copy `.env.example` to `.env` before running locally:
+
+```
+VITE_SUPABASE_URL=https://<project>.supabase.co
+VITE_SUPABASE_ANON_KEY=<anon-key>
+```
+
+Both variables are required — `supabaseClient.js` throws an explicit error if either is missing.
+
+---
+
+## Architecture
+
+### State Management
+
+All game state flows through the `useGameState` custom hook (`src/hooks/useGameState.js`). There is no Redux, Zustand, or React Context for game data — the hook is instantiated at the top level and props are passed down.
+
+**Pattern:**
+1. User action fires a handler in `useGameState`
+2. State is updated locally (optimistic)
+3. Full state blob is written to Supabase (`games.state` JSONB column)
+4. Realtime subscription on the `games` table broadcasts the update to all connected clients
+5. On DB failure, state rolls back and an error is shown
+
+### Database Schema
+
+Single `games` table:
 
 ```sql
-id          UUID PRIMARY KEY
-code        TEXT UNIQUE NOT NULL   -- 6-char room code, e.g. "TI4KX7"
-state       JSONB NOT NULL         -- entire game state blob
-created_at  TIMESTAMPTZ
-updated_at  TIMESTAMPTZ            -- auto-updated on change
+CREATE TABLE public.games (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code       TEXT UNIQUE NOT NULL,   -- 6-char room code e.g. "TI4KX7"
+  state      JSONB NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
 ```
 
-- Index on `code` for fast lookup
-- RLS: anyone can SELECT / INSERT / UPDATE (trust enforced app-side)
-- Realtime: `supabase_realtime` publication on `games` table
+Row-level security is enabled but **permissive** — the anon key can read/insert/update any row. Access control is application-layer only (room code + host browser ID).
 
-**Environment variables (`.env`):**
-```
-VITE_SUPABASE_URL=https://xxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGc...
-```
+### Game State Shape
 
----
-
-## Complete Game State Shape
+The entire game lives in one JSON blob. Top-level keys:
 
 ```javascript
 {
-  // Core
-  round: 1,
-  phase: 'strategy' | 'action' | 'status' | 'agenda',
-  vpGoal: 10 | 14,
-  speakerId: '<uuid>',
-
-  // Expansions
-  expansions: { base: true, pok: true, te: true },
-  galacticEvent: null | '<event name>',
-
-  // Custodians / Agenda gate
-  custodiansClaimed: false,
-  agendaPhaseUnlocked: false,
-
-  // Agenda system
-  agendaDeck: [/* shuffled indices into AGENDAS array */],
-  agendaDiscard: [],
-  currentAgendas: [],       // up to 2 deck indices being voted on
-  agendaVotes: {
-    '${agendaIndex}-${playerId}': { choice: string, votes: number, playerId: string }
-  },
-  laws: [],                 // indices of enacted law agendas
-
-  // Trade log
-  transactions: [{
-    id: '<uuid>', fromId: '<uuid>', toId: '<uuid>',
-    items: string, round: number, phase: string, timestamp: ISO8601
-  }],
-
-  // Map
-  mapLayout: 'standard-6',      // layout ID from mapLayouts.js
-  mapTiles: {
-    '0,0': { q: 0, r: 0, tileId: 18, owner: null },
-    // key = "q,r", tileId = tile.id from tiles.js
-  },
-
-  // Thunder's Edge
-  theFractureInPlay: false,
-  thundersEdgeInPlay: false,
-  thundersEdgeSlices: { '<playerId>': [/* sliceIndices */] },
-
-  // Permissions
-  permissions: {
-    'slot-0': 'own' | 'all',   // keyed by SLOT INDEX, not player ID
-    'slot-1': 'own',
-    // ...
-  },
-  hostBrowserId: '<uuid>',      // set to crypto.randomUUID() on game create
-
-  // Players array (see shape below)
-  players: [],
-
-  createdAt: ISO8601,
+  round,                  // 1–8
+  phase,                  // "Strategy" | "Action" | "Status" | "Agenda"
+  vpGoal,                 // typically 10 or 14
+  speakerId,              // player id
+  custodiansClaimed,
+  agendaPhaseUnlocked,
+  expansions: { base, pok, te },   // which expansions are active
+  galacticEvent,
+  players: [ /* see Player shape below */ ],
+  laws,                   // active law cards
+  agendaDeck,
+  agendaDiscard,
+  currentAgendas,
+  agendaVotes,
+  transactions,           // trade log entries
+  permissions,            // "host" | "all"
+  hostBrowserId,
+  mapLayout,
+  mapTiles,
+  theFractureInPlay,
+  thundersEdgeInPlay,
+  thundersEdgeSlices
 }
 ```
 
-**Per-player shape:**
+**Player shape:**
+
 ```javascript
 {
-  id: '<uuid>',
-  name: string,
-  faction: string,            // e.g. 'The Federation of Sol'
-  colour: 'yellow' | 'blue' | 'red' | 'green' | 'purple' | 'orange' | 'pink' | 'cyan',
-
-  vp: 0,
-  secretObjectivesHeld: 1,
-  secretObjectivesScored: 0,
-
-  commodities: 3,             // starting value, faction-dependent
-  tradeGoods: 0,
-
-  commandTokens: { tactic: 3, fleet: 3, strategy: 2 },
-
-  technologies: [],           // pre-populated with FACTION_STARTING_TECHS[faction]
-  strategyCard: null,         // card ID 1–8
-  strategyCard2: null,        // second slot (3–4 player games)
-  passed: false,
-
-  leaders: {
-    agent: 'unlocked',        // 'locked' | 'unlocked' | 'exhausted'
-    commander: 'locked',      // 'locked' | 'unlocked'
-    hero: 'locked',           // 'locked' | 'unlocked' | 'purged'
-  },
-
-  breakthrough: false,        // Thunder's Edge only
-  promissoryNotes: [],        // display only (not yet interactive)
+  id, name, faction, colour, vp,
+  strategyCard, strategyCard2, passed,
+  commandTokens: { tactic, fleet, strategy },
+  commodities, tradeGoods,
+  technologies: [],
+  leaders: { agent, commander, hero },
+  breakthrough,
+  secretObjectivesHeld, secretObjectivesScored,
+  promissoryNotes: []
 }
 ```
 
----
+### Hex Map System
 
-## `useGameState` Hook API
+`MapBuilder.jsx` uses a **pointy-top axial coordinate** grid (`q`, `r`). Key functions are in `src/data/mapLayouts.js`:
 
-**Imported in `App.jsx`** and passed as props through component tree.
+- `getRingHexes(center, radius)` — cube ring distance formula
+- `axialToPixel(q, r, size)` — coordinate → screen position
+- Home system positions are pre-defined per seat index
+- Mecatol Rex auto-fills the center hex
 
-```javascript
-// State
-gameState        // full state object or null
-roomCode         // 6-char string
-myPlayerId       // UUID of current user's player slot
-loading          // boolean
-error            // string | null
-syncing          // boolean (true during Supabase write)
-isHost           // boolean (myBrowserId === gameState.hostBrowserId)
+### Component Conventions
 
-// Game lifecycle
-createGame(initialState)         // generates code, writes to DB, subscribes
-joinGame(code)                   // looks up by code, subscribes
-leaveGame()                      // unsubscribes, clears localStorage
-setError(msg)
+- **PascalCase** filenames and exports matching component name
+- **camelCase** for functions; handlers prefixed `handle*`, toggles `toggle*`, adjustments `adjust*`
+- **UPPER_SNAKE_CASE** for constants in data files
+- No utility/helper file — logic stays inline or in `useGameState`
+- No CSS modules — all styling via Tailwind utility classes
 
-// Low-level updaters
-updateGame(updater)              // updater: state => newState
-updatePlayer(playerId, updater)  // updater: player => newPlayer
+### Tailwind Theme
 
-// Player mutations
-adjustPlayerVP(id, delta)
-adjustCounter(id, field, delta, min?, max?)
-adjustCommandToken(id, pool, delta)  // pool: 'tactic'|'fleet'|'strategy'
-toggleTechnology(id, techName)
-setLeaderStatus(id, leader, status)  // leader: 'agent'|'commander'|'hero'
-assignStrategyCard(id, cardId, slot?) // slot defaults to 1
-togglePassed(id)
+Custom colors defined in `tailwind.config.js`:
 
-// Game phase
-advancePhase()
-claimCustodians(playerId)
+| Token | Usage |
+|-------|-------|
+| `void` | Background (near black) |
+| `hull` | Slightly lighter dark surface |
+| `panel` | Card/panel backgrounds |
+| `gold` | Accent, highlights |
+| `plasma` | Primary action color |
+| `danger` | Errors, warnings |
+| `success` | Positive states |
+| `muted` / `dim` | Subdued text |
 
-// Agenda
-drawAgenda()
-castVote(playerId, agendaIndex, choice, votes)
-resolveAgenda(agendaIndex, outcome, isLaw)
-repealLaw(agendaIndex)
-
-// Trade
-logTransaction(fromId, toId, items)
-
-// Thunder's Edge
-claimExpeditionSlice(playerId, sliceIndex)
-triggerFracture()
-
-// Permissions
-setPlayerPermission(slotKey, level)  // slotKey = 'slot-0', level = 'own'|'all'
-canEdit(playerId)                    // returns boolean
-```
-
-**Immutable update pattern — always use:**
-```javascript
-// Top-level
-updateGame(s => ({ ...s, round: s.round + 1 }))
-
-// Player field
-updatePlayer(id, p => ({ ...p, tradeGoods: p.tradeGoods + 1 }))
-
-// Nested object
-updatePlayer(id, p => ({
-  ...p,
-  commandTokens: { ...p.commandTokens, tactic: p.commandTokens.tactic + 1 }
-}))
-
-// Array toggle
-updatePlayer(id, p => ({
-  ...p,
-  technologies: p.technologies.includes(tech)
-    ? p.technologies.filter(t => t !== tech)
-    : [...p.technologies, tech]
-}))
-```
+Fonts: **Orbitron** (headings/display), **Rajdhani** (body), **Space Mono** (monospace). Loaded from Google Fonts in `index.html`.
 
 ---
 
-## Data Files Quick Reference
+## Data Files
 
-### `gameData.js` exports
-| Export | Type | Content |
-|--------|------|---------|
-| `FACTIONS` | `{ base[], pok[], te[] }` | 17 + 7 + 6 faction names |
-| `ALL_FACTIONS` | `string[]` | All 30 faction names |
-| `FACTION_STARTING_TECHS` | `{ [faction]: string[] }` | Starting tech per faction |
-| `PLAYER_COLOURS` | `{ id, label, hex, tw }[]` | 8 colours |
-| `STRATEGY_CARDS` | `{ id, name, code, primary, secondary }[]` | 8 cards |
-| `PHASES` | `string[]` | `['strategy','action','status','agenda']` |
-| `PHASE_LABELS` | `{ [phase]: string }` | Human-readable labels |
-| `PHASE_DESCRIPTIONS` | `{ [phase]: string }` | Rule descriptions |
-| `GALACTIC_EVENTS` | `{ name, complexity }[]` | 20 TE events |
-| `AGENDAS` | `{ name, type, outcome, notes }[]` | 50 entries (indices used as IDs) |
-| `TECHNOLOGIES` | `{ red[], blue[], green[], yellow[] }` | 24 tech cards |
-| `RULES` | `{ topic, content }[]` | 16 rule topics |
+### `src/data/gameData.js`
 
-### `tiles.js` exports
-| Export | Notes |
-|--------|-------|
-| `TILES` | All 115 system tiles |
-| `getTileById(id)` | Returns tile or null |
-| `getTilesByExpansion({ base, pok, te })` | Filtered tile array |
-| `getTileResources(tile)` | Sum of all planet resources |
-| `getTileInfluence(tile)` | Sum of all planet influence |
-| `ANOMALY_LABELS` | `{ asteroid_field: 'AST', nebula: 'NB', ... }` |
-| `WORMHOLE_LABELS` | `{ alpha: 'α', beta: 'β', ... }` |
+Source of truth for all rules data. Key exports:
 
-**Tile shape:**
+- `FACTIONS` — 17 base + 7 PoK + 6 Thunder's Edge factions with starting techs
+- `STRATEGY_CARDS` — 8 cards with primary/secondary ability descriptions
+- `AGENDAS` — 50 cards (30 laws + 20 directives) with vote outcomes
+- `TECHNOLOGIES` — 48 techs grouped by color
+- `PHASES` — 4 game phases with step descriptions
+- `GALACTIC_EVENTS` — 20 events with complexity ratings
+- `PLAYER_COLORS` — 8 colors with hex codes
+- `RULES_TOPICS` — 15 reference entries for RulesLookup
+
+### `src/data/tiles.js`
+
+All hex tiles. Each tile:
+
 ```javascript
 {
-  id: number,          // 1–115
-  expansion: 'base' | 'pok' | 'te',
-  type: 'home' | 'blue' | 'red' | 'mecatol' | 'hyperlane' | 'frontier',
-  homeFor: string | null,
-  planets: [{ name, resources, influence, trait, legendary }],
-  anomaly: null | 'asteroid_field' | 'nebula' | 'supernova' | 'gravity_rift' | 'entropic_scar',
-  wormhole: null | 'alpha' | 'beta' | 'delta' | 'gamma',
+  id: "001",
+  name: "Mecatol Rex",
+  type: "blue" | "red" | "home" | "hyperlane" | "frontier",
+  expansion: "base" | "pok" | "te",
+  planets: [{ name, resources, influence }],
+  anomaly: "asteroid_field" | "gravity_rift" | "supernova" | "nebula" | null,
+  wormhole: "alpha" | "beta" | "delta" | null
 }
 ```
 
-### `mapLayouts.js` exports
-| Export | Notes |
-|--------|-------|
-| `MAP_LAYOUTS` | 11 layout objects |
-| `getLayoutById(id)` | Returns layout or defaults to `standard-6` |
-| `getLayoutsForPlayerCount(n)` | Returns matching layouts |
+### `src/data/mapLayouts.js`
 
-**Layout position shape:**
-```javascript
-{ q: number, r: number, ring: number, isHome: boolean, seatIndex: number | null }
-```
-
-Map coordinate key format: `"${q},${r}"` (e.g. `"0,0"` for center).
+Pre-computed hex layouts for 6, 7, and 8 player games, plus utility functions for the hex grid math.
 
 ---
 
-## Component Props Patterns
+## Expansions
 
-Components receive everything as props from `App.jsx`. No Context API used.
+The app supports three expansions toggled at game creation:
 
-**Dashboard.jsx key props:**
-```javascript
-{ gameState, myPlayerId, isHost, canEdit, syncing, roomCode, userEmail,
-  onAdvancePhase, onClaimCustodians, onAdjustVP, onAdjustCounter,
-  onAdjustCommandToken, onAssignStrategyCard, onTogglePassed,
-  onToggleTechnology, onSetLeaderStatus, onSetPermission,
-  onOpenAgenda, onOpenRules, onOpenTrade, onOpenMap,
-  onLeave, onLogout }
-```
+| Key | Name |
+|-----|------|
+| `base` | Base game |
+| `pok` | Prophecy of Kings |
+| `te` | Thunder's Edge (fan expansion) |
 
-**Overlay components key props:**
-```javascript
-// All overlays receive:
-{ gameState, myPlayerId, isHost, canEdit, onClose }
-
-// AgendaPhase also:
-{ onDrawAgenda, onCastVote, onResolveAgenda, onRepealLaw }
-
-// MapBuilder also:
-{ onUpdateMap: patch => updateGame(s => ({ ...s, ...patch })) }
-
-// TradeLog also:
-{ onLogTransaction }
-```
+Thunder's Edge adds: expedition slices, breakthrough tokens, fracture mechanic, and 6 additional factions.
 
 ---
 
-## Coding Conventions
+## Permission Model
 
-**Tailwind classes — established patterns:**
-- Background: `bg-void` (custom `#0a0a1a`), `bg-surface` (cards/panels)
-- Accent: `text-plasma` (purple), `text-gold` (yellow/gold highlights)
-- Dim text: `text-dim` (secondary labels)
-- Buttons: `btn-primary`, `btn-secondary`, `btn-ghost` (custom utilities)
-- Icons: always `w-4 h-4` (16px) from `lucide-react`
-- Spacing: `gap-2`, `gap-3` between elements; `p-3`, `p-4` for panels
-- Borders: `border border-white/10` (subtle dividers)
-- Animations: `animate-pulse` (syncing), `transition-all duration-200`
-
-**Permission gating pattern:**
-```javascript
-// In any component that mutates state:
-if (!canEdit(player.id)) return  // bail early
-// OR
-<button onClick={...} disabled={!canEdit(player.id)} className="...">
-```
-
-**Host-only actions:**
-```javascript
-{isHost && <button onClick={onAdvancePhase}>Next Phase</button>}
-```
-
-**Player iteration:**
-```javascript
-// Initiative order (sorted by strategy card number)
-const ordered = [...gameState.players].sort((a, b) =>
-  (a.strategyCard ?? 99) - (b.strategyCard ?? 99)
-)
-```
-
-**Agenda vote key format:** `'${agendaDeckIndex}-${playerId}'` — use deck index, not agenda name/id, to remain stable across resolutions.
+- `hostBrowserId` is set at game creation to the creator's browser fingerprint
+- `permissions: "host"` — only the host can change most game state
+- `permissions: "all"` — any player can update any state
+- This is enforced in the UI only; Supabase RLS does not restrict writes by player
 
 ---
 
-## Supabase Patterns
+## Bug Tracking Convention
+
+Inline comments reference known bugs with a numbered format:
 
 ```javascript
-// Create game
-const { error } = await supabase.from('games').insert({ code, state })
-
-// Join / fetch game
-const { data } = await supabase.from('games').select('state').eq('code', code.toUpperCase()).single()
-
-// Update game
-await supabase.from('games').update({ state: newState }).eq('code', roomCode)
-
-// Realtime subscription
-const channel = supabase
-  .channel(`room:${roomCode}`)
-  .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'games', filter: `code=eq.${roomCode}` },
-    () => { /* refetch state */ })
-  .subscribe()
-
-// Auth
-supabase.auth.signInWithPassword({ email, password })
-supabase.auth.signUp({ email, password })
-supabase.auth.signOut()
-supabase.auth.getSession()
-supabase.auth.onAuthStateChange(callback)
+// BUG #5 FIX: Agenda deck limited to 50 (was 62 due to duplicates)
+// BUG #2 FIX: Leader status cycle corrected
+// BUG #11 FIX: Pre-populate faction starting techs
 ```
 
-**LocalStorage:** Only `'ti4:lastRoom'` is persisted — the 6-char room code for auto-rejoin on refresh.
+When fixing bugs, add a similar comment to document the change.
 
 ---
 
-## Phase Advancement Logic
+## Deployment
 
-`advancePhase()` in `useGameState.js`:
-- Cycles: `strategy → action → status → agenda → strategy` (agenda skipped if `!agendaPhaseUnlocked`)
-- On entering `strategy` (new round): increments `round`, clears `strategyCard/strategyCard2/passed` on all players
-- On entering `status`: (future) should ready all planets, deal action cards
-- Agenda phase locked until `custodiansClaimed === true`
+The app deploys to **Vercel** (frontend) + **Supabase** (backend). See `DEPLOYMENT.md` for the complete walkthrough. Key points:
 
----
-
-## Known Data Constraints
-
-- **Agenda deck** is initialized to first 50 entries of `AGENDAS` (not all 62 — fixed bug)
-- **Strategy cards:** players 3–4 get 2 cards each; players 5–8 get 1 card each
-- **Command tokens:** clamped 0–16 per pool
-- **Commodities/trade goods:** no hard max enforced in state (UI uses reasonable bounds)
-- **Faction starting techs:** populated at game creation from `FACTION_STARTING_TECHS` map
+- No backend server — entirely client-side SPA
+- Vercel auto-deploys on push to `main`
+- Environment variables must be set in Vercel dashboard
+- Supabase free tier is sufficient for friend-group usage
+- Realtime is configured for 10 events/second
 
 ---
 
-## Active Development Branch
+## Common Patterns to Follow
 
-```
-claude/twilight-imperium-app-plan-ro90W
-```
-
-All feature work should be committed to this branch with descriptive messages.
-
----
-
-## What's Already Built vs Planned
-
-**Built (functional today):**
-VP tracking, phase cycling, strategy cards, agenda voting (62 cards), trade log, hex map builder (115 tiles, 11 layouts), leader status, technology browser, command tokens, commodities, Supabase real-time sync, Supabase auth, host/guest permissions.
-
-**Planned — see `GAMEPLAY_ROADMAP.md`:**
-Planet control/exhaustion, objectives (public + secret), action cards, unit/fleet roster, production calculator, combat tracker, relics, draft system, enhanced agenda, Thunder's Edge deep features, promissory notes, stats.
-
-**Planned — see `FRONTEND_ROADMAP.md`:**
-Flutter/Dart app (iOS + Android), sharing the same Supabase backend. Key packages: `supabase_flutter`, `flutter_riverpod`, `freezed`, `go_router`.
+1. **Add new game data** in `src/data/gameData.js` — keep it as a plain constant export
+2. **Add new game actions** in `useGameState.js` — update state locally first, then persist to Supabase
+3. **Add new UI features** in a component — receive state/handlers via props, no new state management patterns
+4. **Add new tile data** in `src/data/tiles.js` following the existing tile object shape
+5. **Do not introduce** new state management libraries, CSS frameworks, or backend dependencies without discussion
+6. **Do not add tests** unless explicitly requested (no test infrastructure exists)
+7. **Preserve the sci-fi aesthetic** — use existing Tailwind color tokens, not arbitrary color values
