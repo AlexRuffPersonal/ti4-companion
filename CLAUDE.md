@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `ti4-companion/` (future) — Flutter/Dart + Riverpod + Freezed (iOS/Android)
 - `supabase/` (future) — shared backend: PostgreSQL + Realtime + Edge Functions
 
-None of the platforms have been scaffolded yet. The React web app is being built first (Phase 0). See `ti4-companion-web/docs/superpowers/plans/2026-04-08-phase-0-infrastructure.md` for the implementation plan.
+Phase 0 (infrastructure) is complete. Phase 1 (Admin UI) is in progress. See `ti4-companion-web/docs/superpowers/plans/` for implementation plans.
 
 ---
 
@@ -56,7 +56,7 @@ Normalized PostgreSQL (31 tables total: 19 game state + 12 admin reference). RLS
 
 ### Tech Stack
 
-React 18, Vite, Tailwind CSS 3, Supabase JS v2, react-router-dom v6, Vitest, @testing-library/react
+React 19, Vite, Tailwind CSS 3, Supabase JS v2, react-router-dom v7, Vitest 4, @testing-library/react
 
 ### Design Tokens (Tailwind)
 
@@ -65,7 +65,7 @@ Custom sci-fi color palette and font families defined in `tailwind.config.js`:
 - Fonts: `font-display` (Orbitron), `font-body` (Rajdhani), `font-mono` (Space Mono) — loaded from Google Fonts in `index.html`
 - Utility classes: `.panel`, `.panel-inset`, `.label`, `.btn-primary`, `.btn-ghost`, `.input`, `.counter-btn`
 
-### Planned Key Files (not yet created)
+### Key Files
 
 - `src/lib/supabase.js` — Supabase client singleton; throws if env vars are missing
 - `src/lib/edgeFunctions.js` — typed wrappers for Edge Function calls via `callFunction(name, body)`
