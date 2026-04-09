@@ -40,7 +40,10 @@ export async function requireAdmin(req: Request): Promise<string> {
     .select('is_admin')
     .eq('user_id', userId)
     .single()
-  if (error || !data?.is_admin) {
+  if (error) {
+    throw new Error(`Admin check failed: ${error.message}`)
+  }
+  if (!data?.is_admin) {
     throw new AuthError('Forbidden: admin access required')
   }
   return userId
