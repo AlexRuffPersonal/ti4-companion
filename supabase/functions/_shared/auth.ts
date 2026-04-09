@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { db } from './db.ts'
 
 export class AuthError extends Error {
   constructor(message: string) {
@@ -26,4 +27,21 @@ export async function requireAuth(req: Request): Promise<string> {
   const { data: { user }, error } = await _authClient.auth.getUser(token)
   if (error || !user) throw new AuthError('Invalid or expired token')
   return user.id
+}
+
+/**
+ * Like requireAuth, but also verifies profiles.is_admin === true.
+ * Throws AuthError with "Forbidden:" prefix for 403 vs 401.
+ */
+export async function requireAdmin(req: Request): Promise<string> {
+  const userId = await requireAuth(req)
+  const { data, error } = await db
+    .from('profiles')
+    .select('is_admin')
+    .eq('user_id', userId)
+    .single()
+  if (error || !data?.is_admin) {
+    throw new AuthError('Forbidden: admin access required')
+  }
+  return userId
 }
