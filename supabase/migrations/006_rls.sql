@@ -32,7 +32,7 @@ ALTER TABLE public.promissory_notes             ENABLE ROW LEVEL SECURITY;
 
 -- ── Profiles ─────────────────────────────────────────────────────────────────
 CREATE POLICY "profiles_select" ON public.profiles FOR SELECT USING (true);
-CREATE POLICY "profiles_update" ON public.profiles FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "profiles_update" ON public.profiles FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- ── Reference data (read-only for all authenticated users) ────────────────────
 CREATE POLICY "tiles_select"               ON public.tiles               FOR SELECT USING (auth.role() = 'authenticated');
@@ -49,18 +49,18 @@ CREATE POLICY "attachments_select"         ON public.attachments         FOR SEL
 CREATE POLICY "promissory_notes_select"    ON public.promissory_notes    FOR SELECT USING (auth.role() = 'authenticated');
 
 -- Reference data writes: admin only
-CREATE POLICY "tiles_admin_write"             ON public.tiles             FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
-CREATE POLICY "factions_admin_write"          ON public.factions          FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
-CREATE POLICY "agendas_admin_write"           ON public.agendas           FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
-CREATE POLICY "technologies_admin_write"      ON public.technologies      FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
-CREATE POLICY "units_admin_write"             ON public.units             FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
-CREATE POLICY "public_objectives_admin_write" ON public.public_objectives FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
-CREATE POLICY "secret_objectives_admin_write" ON public.secret_objectives FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
-CREATE POLICY "action_cards_admin_write"      ON public.action_cards      FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
-CREATE POLICY "relics_admin_write"            ON public.relics            FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
-CREATE POLICY "exploration_cards_admin_write" ON public.exploration_cards FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
-CREATE POLICY "attachments_admin_write"       ON public.attachments       FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
-CREATE POLICY "promissory_notes_admin_write"  ON public.promissory_notes  FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
+CREATE POLICY "tiles_admin_write"             ON public.tiles             FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid())) WITH CHECK ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
+CREATE POLICY "factions_admin_write"          ON public.factions          FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid())) WITH CHECK ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
+CREATE POLICY "agendas_admin_write"           ON public.agendas           FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid())) WITH CHECK ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
+CREATE POLICY "technologies_admin_write"      ON public.technologies      FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid())) WITH CHECK ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
+CREATE POLICY "units_admin_write"             ON public.units             FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid())) WITH CHECK ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
+CREATE POLICY "public_objectives_admin_write" ON public.public_objectives FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid())) WITH CHECK ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
+CREATE POLICY "secret_objectives_admin_write" ON public.secret_objectives FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid())) WITH CHECK ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
+CREATE POLICY "action_cards_admin_write"      ON public.action_cards      FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid())) WITH CHECK ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
+CREATE POLICY "relics_admin_write"            ON public.relics            FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid())) WITH CHECK ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
+CREATE POLICY "exploration_cards_admin_write" ON public.exploration_cards FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid())) WITH CHECK ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
+CREATE POLICY "attachments_admin_write"       ON public.attachments       FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid())) WITH CHECK ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
+CREATE POLICY "promissory_notes_admin_write"  ON public.promissory_notes  FOR ALL USING ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid())) WITH CHECK ((SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
 
 -- ── Games ─────────────────────────────────────────────────────────────────────
 CREATE POLICY "games_select" ON public.games FOR SELECT USING (auth.role() = 'authenticated');
