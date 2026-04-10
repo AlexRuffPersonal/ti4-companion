@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **TI4 Companion** is a digital companion app for Twilight Imperium 4th Edition. It tracks game state in real time across a shared session for up to 8 players.
 
 **Platforms:**
-- `ti4-companion-web/` — React 18 + Vite + Tailwind CSS (web, desktop/laptop browsers)
+- `ti4-companion-web/` — React 19 + Vite + Tailwind CSS (web, desktop/laptop browsers)
 - `ti4-companion/` (future) — Flutter/Dart + Riverpod + Freezed (iOS/Android)
 - `supabase/` (future) — shared backend: PostgreSQL + Realtime + Edge Functions
 

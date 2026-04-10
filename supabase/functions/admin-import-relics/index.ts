@@ -29,6 +29,7 @@ Deno.serve(async (req: Request) => {
     if (err) return errorResponse(err)
   }
 
+  // Note: delete and insert are not atomic — if insert fails, the table will be empty until re-imported.
   const { error: deleteError } = await db.from('relics').delete().neq('id', '00000000-0000-0000-0000-000000000000')
   if (deleteError) return errorResponse(`Delete failed: ${deleteError.message}`, 500)
 
