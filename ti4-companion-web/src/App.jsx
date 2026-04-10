@@ -4,6 +4,9 @@ import { useAuth } from './hooks/useAuth.js'
 import LoginScreen from './components/auth/LoginScreen.jsx'
 import VerifyScreen from './components/auth/VerifyScreen.jsx'
 import ProtectedRoute from './components/shared/ProtectedRoute.jsx'
+import AdminRoute from './components/admin/AdminRoute.jsx'
+import AdminDashboard from './components/admin/AdminDashboard.jsx'
+import AdminImportPage from './components/admin/AdminImportPage.jsx'
 
 // Placeholder screens — replaced in later phases
 function SetupPlaceholder() {
@@ -11,9 +14,6 @@ function SetupPlaceholder() {
 }
 function DashboardPlaceholder() {
   return <div className="min-h-screen bg-void flex items-center justify-center"><span className="text-dim font-display text-xs">DASHBOARD — Phase 2</span></div>
-}
-function AdminPlaceholder() {
-  return <div className="min-h-screen bg-void flex items-center justify-center"><span className="text-dim font-display text-xs">ADMIN — Phase 1</span></div>
 }
 
 export default function App() {
@@ -54,8 +54,12 @@ export default function App() {
         element={<ProtectedRoute user={user} loading={loading}><DashboardPlaceholder /></ProtectedRoute>}
       />
       <Route
-        path="/admin/*"
-        element={<ProtectedRoute user={user} loading={loading}><AdminPlaceholder /></ProtectedRoute>}
+        path="/admin"
+        element={<AdminRoute><AdminDashboard /></AdminRoute>}
+      />
+      <Route
+        path="/admin/import/:table"
+        element={<AdminRoute><AdminImportPage /></AdminRoute>}
       />
       <Route path="*" element={<Navigate to={user ? '/setup' : '/login'} replace />} />
     </Routes>
