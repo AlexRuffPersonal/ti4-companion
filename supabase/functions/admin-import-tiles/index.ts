@@ -1,6 +1,6 @@
 import { requireAdmin, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
-import { okResponse, errorResponse } from '../_shared/errors.ts'
+import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 
 const VALID_TYPES = new Set(['blue', 'red', 'home', 'hyperlane', 'frontier'])
 
@@ -16,6 +16,7 @@ function validate(record: unknown, index: number): string | null {
 }
 
 Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') return corsPreflightResponse()
   try {
     await requireAdmin(req)
   } catch (e) {
