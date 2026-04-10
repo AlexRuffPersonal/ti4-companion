@@ -19,7 +19,7 @@ function DashboardPlaceholder() {
 export default function App() {
   const { user, loading, sendMagicLink, signOut } = useAuth()
   const [linkSentTo, setLinkSentTo] = useState(null)
-  const [authError, setAuthError]   = useState(null)
+  const [authError, setAuthError] = useState(null)
   const [authLoading, setAuthLoading] = useState(false)
 
   async function handleSendLink(email) {
@@ -40,9 +40,11 @@ export default function App() {
       <Route
         path="/login"
         element={
-          user ? <Navigate to="/setup" replace /> :
-          linkSentTo ? <VerifyScreen email={linkSentTo} /> :
-          <LoginScreen onSendLink={handleSendLink} loading={authLoading} error={authError} />
+          user
+            ? <Navigate to="/setup" replace />
+            : linkSentTo
+              ? <VerifyScreen email={linkSentTo} />
+              : <LoginScreen onSendLink={handleSendLink} loading={authLoading} error={authError} />
         }
       />
       <Route
@@ -53,15 +55,24 @@ export default function App() {
         path="/dashboard"
         element={<ProtectedRoute user={user} loading={loading}><DashboardPlaceholder /></ProtectedRoute>}
       />
+      <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+      <Route path="/admin/import/:table" element={<AdminRoute><AdminImportPage /></AdminRoute>} />
+
+      {/*
+        Guard on `loading` — do NOT redirect while auth is still resolving.
+        The magic link lands here as /#access_token=... and the Supabase SDK
+        needs one render cycle to parse the hash and fire onAuthStateChange.
+        Redirecting immediately (loading=true, user=null) strips the hash and
+        breaks implicit-flow magic link auth entirely.
+      */}
       <Route
-        path="/admin"
-        element={<AdminRoute><AdminDashboard /></AdminRoute>}
+        path="*"
+        element={
+          loading
+            ? null
+            : <Navigate to={user ? '/setup' : '/login'} replace />
+        }
       />
-      <Route
-        path="/admin/import/:table"
-        element={<AdminRoute><AdminImportPage /></AdminRoute>}
-      />
-      <Route path="*" element={<Navigate to={user ? '/setup' : '/login'} replace />} />
     </Routes>
   )
 }
