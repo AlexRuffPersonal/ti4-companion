@@ -8,5 +8,5 @@ if (!url || !key) {
 }
 
 export const supabase = createClient(url, key, {
-  auth: { flowType: 'implicit' },
-})
+  auth: { flowType: 'pkce' },  // was: 'implicit'
+});
