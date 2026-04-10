@@ -22,6 +22,7 @@ Deno.serve(async (req: Request) => {
   let body: { records?: unknown }
   try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
   if (!Array.isArray(body.records)) return errorResponse("'records' must be an array")
+  if (body.records.length === 0) return errorResponse("'records' must not be empty")
 
   for (let i = 0; i < body.records.length; i++) {
     const err = validate(body.records[i], i + 1)
