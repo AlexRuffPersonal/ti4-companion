@@ -1,4 +1,4 @@
-import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { db } from './db.ts'
 
 export class AuthError extends Error {
@@ -8,14 +8,11 @@ export class AuthError extends Error {
   }
 }
 
-// Module-level singleton — one client per cold start, not per request.
-const _authClient: SupabaseClient = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_ANON_KEY')!,
-)
-
 /**
  * Extract and verify the JWT from the Authorization header.
+ * Creates a per-request Supabase client with the user's JWT so that
+ * auth.getUser() verifies against the correct token without conflicting
+ * with a module-level singleton's own auth state.
  * Returns the authenticated user_id or throws AuthError if invalid.
  */
 export async function requireAuth(req: Request): Promise<string> {
@@ -23,8 +20,13 @@ export async function requireAuth(req: Request): Promise<string> {
   if (!authHeader?.startsWith('Bearer ')) {
     throw new AuthError('Missing or invalid Authorization header')
   }
-  const token = authHeader.slice(7)
-  const { data: { user }, error } = await _authClient.auth.getUser(token)
+
+  const client = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: authHeader } } },
+  )
+  const { data: { user }, error } = await client.auth.getUser()
   if (error || !user) throw new AuthError('Invalid or expired token')
   return user.id
 }
