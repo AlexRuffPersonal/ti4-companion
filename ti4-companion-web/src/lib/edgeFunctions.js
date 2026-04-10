@@ -12,7 +12,7 @@ async function callFunction(name, body = {}) {
   return data
 }
 
-// Functions will be added here as phases are implemented.
-// Example: export const advancePhase = (gameId) => callFunction('advance-phase', { gameId })
+export const importTable = (table, records) =>
+  callFunction(`admin-import-${table}`, { records })
 
 export { callFunction }
