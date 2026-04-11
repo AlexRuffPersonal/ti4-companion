@@ -37,6 +37,9 @@ export default function LobbyScreen({ userId }) {
     setPickError(null)
     try {
       await pickFaction(faction, colour)
+      // Clear optimistic state so Realtime-pushed updates from currentPlayer are visible
+      setPendingFaction(null)
+      setPendingColour(null)
     } catch (e) {
       setPickError(e.message)
       setPendingFaction(null)
@@ -174,7 +177,7 @@ export default function LobbyScreen({ userId }) {
                 <input
                   type="checkbox"
                   checked={game?.expansions?.[exp] ?? false}
-                  onChange={(e) => updateSettings({ expansions: { ...game.expansions, [exp]: e.target.checked } })}
+                  onChange={(e) => updateSettings({ expansions: { ...(game?.expansions ?? {}), [exp]: e.target.checked } })}
                 />
                 {exp === 'pok' ? 'Prophecy of Kings' : 'Codex: Vigil & Thunder\'s Edge'}
               </label>
