@@ -15,4 +15,22 @@ async function callFunction(name, body = {}) {
 export const importTable = (table, records) =>
   callFunction(`admin-import-${table}`, { records })
 
+export const createGame = () =>
+  callFunction('game-create', {})
+
+export const joinGame = (code) =>
+  callFunction('game-join', { code })
+
+export const updateGameSettings = (gameId, settings) =>
+  callFunction('game-update-settings', { game_id: gameId, ...settings })
+
+export const pickFactionColor = (gameId, faction, colour) =>
+  callFunction('game-pick-faction-color', { game_id: gameId, faction, colour })
+
+export const setSpeaker = (gameId, playerId) =>
+  callFunction('game-set-speaker', { game_id: gameId, player_id: playerId })
+
+export const startGame = (gameId) =>
+  callFunction('game-start', { game_id: gameId })
+
 export { callFunction }
