@@ -5,10 +5,7 @@ import { useAuth } from '../../src/hooks/useAuth.js'
 vi.mock('../../src/lib/supabase.js', () => ({
   supabase: {
     auth: {
-      getSession: vi.fn(),
-      onAuthStateChange: vi.fn(() => ({
-        data: { subscription: { unsubscribe: vi.fn() } },
-      })),
+      onAuthStateChange: vi.fn(),
       signInWithOtp: vi.fn(),
       signOut: vi.fn(),
     },
@@ -18,16 +15,23 @@ vi.mock('../../src/lib/supabase.js', () => ({
 
 import { supabase } from '../../src/lib/supabase.js'
 
+// Helper: mock onAuthStateChange to immediately fire callback with the given session.
+// The hook makes onAuthStateChange the sole owner of setLoading(false) — getSession
+// was removed to fix a race condition with magic link auth (see useAuth.js comments).
+function mockAuthChange(session) {
+  supabase.auth.onAuthStateChange.mockImplementation((callback) => {
+    callback('INITIAL_SESSION', session)
+    return { data: { subscription: { unsubscribe: vi.fn() } } }
+  })
+}
+
 describe('useAuth — isAdmin', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    supabase.auth.onAuthStateChange.mockReturnValue({
-      data: { subscription: { unsubscribe: vi.fn() } },
-    })
   })
 
   it('returns isAdmin: false when there is no session', async () => {
-    supabase.auth.getSession.mockResolvedValue({ data: { session: null } })
+    mockAuthChange(null)
 
     const { result } = renderHook(() => useAuth())
     await waitFor(() => expect(result.current.loading).toBe(false))
@@ -38,9 +42,8 @@ describe('useAuth — isAdmin', () => {
 
   it('returns isAdmin: true when profiles.is_admin is true', async () => {
     const mockUser = { id: 'user-admin' }
-    supabase.auth.getSession.mockResolvedValue({
-      data: { session: { user: mockUser } },
-    })
+    mockAuthChange({ user: mockUser })
+
     const mockChain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
@@ -58,9 +61,8 @@ describe('useAuth — isAdmin', () => {
 
   it('returns isAdmin: false when profiles.is_admin is false', async () => {
     const mockUser = { id: 'user-regular' }
-    supabase.auth.getSession.mockResolvedValue({
-      data: { session: { user: mockUser } },
-    })
+    mockAuthChange({ user: mockUser })
+
     const mockChain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
@@ -76,9 +78,8 @@ describe('useAuth — isAdmin', () => {
 
   it('returns isAdmin: false when profiles fetch fails', async () => {
     const mockUser = { id: 'user-broken' }
-    supabase.auth.getSession.mockResolvedValue({
-      data: { session: { user: mockUser } },
-    })
+    mockAuthChange({ user: mockUser })
+
     const mockChain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
