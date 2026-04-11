@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth.js'
 import LoginScreen from './components/auth/LoginScreen.jsx'
 import VerifyScreen from './components/auth/VerifyScreen.jsx'
@@ -7,13 +7,29 @@ import ProtectedRoute from './components/shared/ProtectedRoute.jsx'
 import AdminRoute from './components/admin/AdminRoute.jsx'
 import AdminDashboard from './components/admin/AdminDashboard.jsx'
 import AdminImportPage from './components/admin/AdminImportPage.jsx'
+import SetupScreen from './components/game/SetupScreen.jsx'
+import LobbyScreen from './components/game/LobbyScreen.jsx'
+import GamePlaceholder from './components/game/GamePlaceholder.jsx'
+import { joinGame } from './lib/edgeFunctions.js'
 
-// Placeholder screens — replaced in later phases
-function SetupPlaceholder() {
-  return <div className="min-h-screen bg-void flex items-center justify-center"><span className="text-dim font-display text-xs">SETUP — Phase 2</span></div>
-}
-function DashboardPlaceholder() {
-  return <div className="min-h-screen bg-void flex items-center justify-center"><span className="text-dim font-display text-xs">DASHBOARD — Phase 2</span></div>
+// Handles /join/:code — auto-joins then redirects to lobby or setup on failure
+function JoinRedirect({ user }) {
+  const { code } = useParams()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!user) return
+    joinGame(code)
+      .then(() => navigate(`/lobby/${code.toUpperCase()}`, { replace: true }))
+      .catch(e => navigate('/setup', { replace: true, state: { error: e.message } }))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code, user]) // navigate is stable; intentionally excluded
+
+  return (
+    <div className="min-h-screen bg-void flex items-center justify-center">
+      <span className="text-dim font-display text-xs tracking-widest">JOINING…</span>
+    </div>
+  )
 }
 
 export default function App() {
@@ -47,14 +63,43 @@ export default function App() {
               : <LoginScreen onSendLink={handleSendLink} loading={authLoading} error={authError} />
         }
       />
+
       <Route
         path="/setup"
-        element={<ProtectedRoute user={user} loading={loading}><SetupPlaceholder /></ProtectedRoute>}
+        element={
+          <ProtectedRoute user={user} loading={loading}>
+            <SetupScreen />
+          </ProtectedRoute>
+        }
       />
+
       <Route
-        path="/dashboard"
-        element={<ProtectedRoute user={user} loading={loading}><DashboardPlaceholder /></ProtectedRoute>}
+        path="/join/:code"
+        element={
+          <ProtectedRoute user={user} loading={loading}>
+            <JoinRedirect user={user} />
+          </ProtectedRoute>
+        }
       />
+
+      <Route
+        path="/lobby/:code"
+        element={
+          <ProtectedRoute user={user} loading={loading}>
+            <LobbyScreen userId={user?.id} />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/game/:code"
+        element={
+          <ProtectedRoute user={user} loading={loading}>
+            <GamePlaceholder />
+          </ProtectedRoute>
+        }
+      />
+
       <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/admin/import/:table" element={<AdminRoute><AdminImportPage /></AdminRoute>} />
 
