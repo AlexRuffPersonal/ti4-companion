@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { FunctionsHttpError } from '@supabase/supabase-js'
 
 vi.mock('../../src/lib/supabase.js', () => ({
   supabase: { functions: { invoke: vi.fn() } },
@@ -60,8 +61,25 @@ describe('game edge function wrappers', () => {
     expect(supabase.functions.invoke).toHaveBeenCalledWith('game-start', { body: { game_id: 'g1' } })
   })
 
-  it('throws when any wrapper receives an error response', async () => {
-    supabase.functions.invoke.mockResolvedValue({ data: null, error: { message: 'Unauthorized' } })
-    await expect(createGame()).rejects.toThrow('Unauthorized')
+  it('throws with generic message for non-HTTP errors', async () => {
+    supabase.functions.invoke.mockResolvedValue({ data: null, error: { message: 'Network error' } })
+    await expect(createGame()).rejects.toThrow('Network error')
+  })
+
+  it('throws with domain message from FunctionsHttpError response body', async () => {
+    const mockResponse = { json: vi.fn().mockResolvedValue({ error: 'Game not found' }) }
+    const httpError = new FunctionsHttpError({ status: 404 })
+    httpError.context = mockResponse
+    supabase.functions.invoke.mockResolvedValue({ data: null, error: httpError })
+    await expect(createGame()).rejects.toThrow('Game not found')
+  })
+
+  it('falls back to SDK message when FunctionsHttpError body cannot be parsed', async () => {
+    const mockResponse = { json: vi.fn().mockRejectedValue(new Error('not json')) }
+    const httpError = new FunctionsHttpError({ status: 500 })
+    httpError.context = mockResponse
+    httpError.message = 'Edge Function returned a non-2xx status code'
+    supabase.functions.invoke.mockResolvedValue({ data: null, error: httpError })
+    await expect(createGame()).rejects.toThrow('Edge Function returned a non-2xx status code')
   })
 })
