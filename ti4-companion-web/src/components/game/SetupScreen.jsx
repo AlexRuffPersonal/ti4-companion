@@ -6,18 +6,19 @@ export default function SetupScreen() {
   const navigate = useNavigate()
   const [joinCode, setJoinCode] = useState('')
   const [error, setError] = useState(null)
-  const [loading, setLoading] = useState(false)
+  const [createLoading, setCreateLoading] = useState(false)
+  const [joinLoading, setJoinLoading] = useState(false)
 
   async function handleCreate() {
     setError(null)
-    setLoading(true)
+    setCreateLoading(true)
     try {
       const { code } = await createGame()
       navigate(`/lobby/${code}`)
     } catch (e) {
       setError(e.message)
     } finally {
-      setLoading(false)
+      setCreateLoading(false)
     }
   }
 
@@ -26,14 +27,14 @@ export default function SetupScreen() {
     const code = joinCode.trim().toUpperCase()
     if (!code) return
     setError(null)
-    setLoading(true)
+    setJoinLoading(true)
     try {
       await joinGame(code)
       navigate(`/lobby/${code}`)
     } catch (e) {
       setError(e.message)
     } finally {
-      setLoading(false)
+      setJoinLoading(false)
     }
   }
 
@@ -45,9 +46,9 @@ export default function SetupScreen() {
         <button
           className="btn-primary"
           onClick={handleCreate}
-          disabled={loading}
+          disabled={createLoading}
         >
-          {loading ? 'Creating…' : 'Create Game'}
+          {createLoading ? 'Creating…' : 'Create Game'}
         </button>
       </div>
 
@@ -63,7 +64,7 @@ export default function SetupScreen() {
           <button
             type="submit"
             className="btn-ghost"
-            disabled={loading || !joinCode.trim()}
+            disabled={joinLoading || !joinCode.trim()}
           >
             Join Game
           </button>
