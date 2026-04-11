@@ -115,4 +115,13 @@ describe('game-create', () => {
     const body = await res.json()
     expect(body.error).toMatch(/failed to add host player/i)
   })
+
+  it('returns 500 when profile fetch fails', async () => {
+    requireAuth.mockResolvedValue('user-uuid')
+    mockDb({ profileError: { message: 'relation does not exist' } })
+    const res = await handler(makeRequest())
+    expect(res.status).toBe(500)
+    const body = await res.json()
+    expect(body.error).toMatch(/could not fetch profile/i)
+  })
 })

@@ -26,16 +26,21 @@ Deno.serve(async (req: Request) => {
   if (profileError) return errorResponse('Could not fetch profile', 500)
 
   // Generate a unique 6-char room code
-  let code = generateCode()
-  for (let attempt = 0; attempt < 5; attempt++) {
+  let code = ''
+  let codeFound = false
+  for (let attempt = 0; attempt < 6; attempt++) {
+    code = generateCode()
     const { data: existing } = await db
       .from('games')
       .select('id')
       .eq('code', code)
       .maybeSingle()
-    if (!existing) break
-    code = generateCode()
+    if (!existing) {
+      codeFound = true
+      break
+    }
   }
+  if (!codeFound) return errorResponse('Could not generate a unique room code', 500)
 
   // Insert the game
   const { data: game, error: gameError } = await db
