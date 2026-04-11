@@ -69,7 +69,7 @@ function mockDb({
       return {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: profileData }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: profileData }),
           }),
         }),
       }

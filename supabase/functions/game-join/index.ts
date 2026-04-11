@@ -51,7 +51,7 @@ Deno.serve(async (req: Request) => {
     .from('profiles')
     .select('display_name')
     .eq('user_id', userId)
-    .single()
+    .maybeSingle()
 
   const { error: insertError } = await db
     .from('game_players')
