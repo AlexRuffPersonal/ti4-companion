@@ -6,19 +6,19 @@ vi.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
 }))
 
-vi.mock('../../src/lib/supabase.js', () => {
-  const mockChannel = {
-    on: vi.fn().mockReturnThis(),
-    subscribe: vi.fn().mockReturnThis(),
-  }
-  return {
-    supabase: {
-      from: vi.fn(),
-      channel: vi.fn(() => mockChannel),
-      removeChannel: vi.fn(),
-    },
-  }
+// vi.hoisted makes mockChannel accessible inside vi.mock factories AND in test code
+const { mockChannel } = vi.hoisted(() => {
+  const mockChannel = { on: vi.fn(), subscribe: vi.fn() }
+  return { mockChannel }
 })
+
+vi.mock('../../src/lib/supabase.js', () => ({
+  supabase: {
+    from: vi.fn(),
+    channel: vi.fn(() => mockChannel),
+    removeChannel: vi.fn(),
+  },
+}))
 
 vi.mock('../../src/lib/edgeFunctions.js', () => ({
   updateGameSettings: vi.fn(),
@@ -69,6 +69,9 @@ function mockSupabaseLoad({ game = GAME, players = PLAYERS, gameError = null, pl
 describe('useGame', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Restore channel chain behavior after clearAllMocks resets implementations
+    mockChannel.on.mockImplementation(() => mockChannel)
+    mockChannel.subscribe.mockReturnValue(mockChannel)
     mockSupabaseLoad()
   })
 
@@ -107,6 +110,24 @@ describe('useGame', () => {
     mockSupabaseLoad({ game: { ...GAME, status: 'active' } })
     renderHook(() => useGame('ABC123', 'host-uuid'))
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/game/ABC123', { replace: true }))
+  })
+
+  it('navigates to /game/:code when Realtime fires status=active', async () => {
+    const { result } = renderHook(() => useGame('ABC123', 'host-uuid'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    // Find the callback registered for the games table
+    const gamesCall = mockChannel.on.mock.calls.find(([, filter]) => filter?.table === 'games')
+    const gamesCallback = gamesCall?.[2]
+    expect(gamesCallback).toBeDefined()
+
+    act(() => {
+      gamesCallback({ new: { ...GAME, status: 'active' } })
+    })
+
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith('/game/ABC123', { replace: true })
+    )
   })
 
   it('sets an error when game is not found', async () => {

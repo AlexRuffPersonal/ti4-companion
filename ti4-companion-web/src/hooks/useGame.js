@@ -74,6 +74,7 @@ export function useGame(code, userId) {
             setPlayers(prev => {
               if (payload.eventType === 'INSERT') return [...prev, payload.new]
               if (payload.eventType === 'UPDATE') return prev.map(p => p.id === payload.new.id ? payload.new : p)
+              // DELETE not handled: players don't leave during the lobby in Phase 2
               return prev
             })
           }
@@ -87,7 +88,8 @@ export function useGame(code, userId) {
       mounted = false
       if (channel) supabase.removeChannel(channel)
     }
-  }, [code, userId]) // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code, userId]) // navigate is stable across renders; intentionally excluded to avoid re-subscribing
 
   const currentPlayer = players.find(p => p.user_id === userId) ?? null
   const isHost = game?.host_user_id === userId
@@ -99,9 +101,10 @@ export function useGame(code, userId) {
     isHost,
     loading,
     error,
-    updateSettings: (settings) => updateGameSettings(game.id, settings),
-    pickFaction: (faction, colour) => pickFactionColor(game.id, faction, colour),
-    setGameSpeaker: (playerId) => setSpeaker(game.id, playerId),
-    startTheGame: () => startGame(game.id),
+    // Callers must check `loading` before calling these — game.id is null while loading
+    updateSettings: (settings) => game ? updateGameSettings(game.id, settings) : Promise.reject(new Error('Game not loaded')),
+    pickFaction: (faction, colour) => game ? pickFactionColor(game.id, faction, colour) : Promise.reject(new Error('Game not loaded')),
+    setGameSpeaker: (playerId) => game ? setSpeaker(game.id, playerId) : Promise.reject(new Error('Game not loaded')),
+    startTheGame: () => game ? startGame(game.id) : Promise.reject(new Error('Game not loaded')),
   }
 }
