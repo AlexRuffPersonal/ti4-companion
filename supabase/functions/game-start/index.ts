@@ -37,7 +37,7 @@ Deno.serve(async (req: Request) => {
 
   for (const player of players) {
     if (!player.faction || !player.colour) {
-      return errorResponse(`Player "${player.display_name}" has not picked a faction and color`, 409)
+      return errorResponse(`Player "${player.display_name}" has not picked a faction or colour`, 409)
     }
   }
 

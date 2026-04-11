@@ -110,6 +110,14 @@ describe('game-start', () => {
     expect(body.error).toMatch(/Bob/i)
   })
 
+  it('returns 409 when there are no players in the game', async () => {
+    mockDb({ players: [] })
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body.error).toMatch(/no players/i)
+  })
+
   it('returns 200 and sets status to active when all conditions are met', async () => {
     const res = await handler(makeRequest({ game_id: GAME_ID }))
     expect(res.status).toBe(200)

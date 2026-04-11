@@ -30,6 +30,7 @@ function mockDb({
   gameData = { host_user_id: HOST_ID, status: 'lobby' },
   gameError = null,
   targetPlayer = { id: PLAYER_ID },
+  playerError = null,
   updateError = null,
 } = {}) {
   db.from.mockImplementation((table) => {
@@ -50,7 +51,7 @@ function mockDb({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: targetPlayer }),
+              maybeSingle: vi.fn().mockResolvedValue({ data: targetPlayer, error: playerError }),
             }),
           }),
         }),
@@ -93,12 +94,30 @@ describe('game-set-speaker', () => {
     expect(res.status).toBe(409)
   })
 
+  it('returns 404 when game does not exist', async () => {
+    mockDb({ gameData: null })
+    const res = await handler(makeRequest({ game_id: GAME_ID, player_id: PLAYER_ID }))
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 500 when game fetch fails', async () => {
+    mockDb({ gameError: { message: 'connection error' } })
+    const res = await handler(makeRequest({ game_id: GAME_ID, player_id: PLAYER_ID }))
+    expect(res.status).toBe(500)
+  })
+
   it('returns 404 when target player is not in the game', async () => {
     mockDb({ targetPlayer: null })
     const res = await handler(makeRequest({ game_id: GAME_ID, player_id: PLAYER_ID }))
     expect(res.status).toBe(404)
     const body = await res.json()
     expect(body.error).toMatch(/player not found/i)
+  })
+
+  it('returns 500 when player lookup fails', async () => {
+    mockDb({ playerError: { message: 'timeout' } })
+    const res = await handler(makeRequest({ game_id: GAME_ID, player_id: PLAYER_ID }))
+    expect(res.status).toBe(500)
   })
 
   it('returns 200 on valid speaker assignment', async () => {

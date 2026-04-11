@@ -28,12 +28,13 @@ Deno.serve(async (req: Request) => {
   if (game.host_user_id !== userId) return errorResponse('Only the host can set the speaker', 403)
   if (game.status !== 'lobby') return errorResponse('Game has already started', 409)
 
-  const { data: targetPlayer } = await db
+  const { data: targetPlayer, error: playerError } = await db
     .from('game_players')
     .select('id')
     .eq('game_id', body.game_id)
     .eq('id', body.player_id)
     .maybeSingle()
+  if (playerError) return errorResponse('Database error', 500)
   if (!targetPlayer) return errorResponse('Player not found in this game', 404)
 
   const { error: updateError } = await db
