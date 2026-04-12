@@ -10,3 +10,8 @@ ALTER TABLE public.games
 ALTER TABLE public.game_public_objectives
   ADD COLUMN deck_position INTEGER,
   ADD COLUMN state TEXT NOT NULL DEFAULT 'deck';
+
+-- game_relic_deck was missing deck_position; add it to match the pattern
+-- used by game_action_card_deck, game_agenda_deck, and game_exploration_decks.
+ALTER TABLE public.game_relic_deck
+  ADD COLUMN deck_position INTEGER;
