@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { importTable } from '../../lib/edgeFunctions.js'
+import importSchemas from '../../lib/importSchemas.js'
+import ImportSchemaPanel from './ImportSchemaPanel.jsx'
 
 const TABLE_LABELS = {
   'tiles':             'Tiles',
@@ -64,6 +66,8 @@ export default function AdminImportPage() {
       <p className="text-dim text-sm mb-6">
         Replaces all existing {label} records.
       </p>
+
+      <ImportSchemaPanel schema={importSchemas[table]} />
 
       {status && (
         <div
