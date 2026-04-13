@@ -9,7 +9,7 @@ import AdminDashboard from './components/admin/AdminDashboard.jsx'
 import AdminImportPage from './components/admin/AdminImportPage.jsx'
 import SetupScreen from './components/game/SetupScreen.jsx'
 import LobbyScreen from './components/game/LobbyScreen.jsx'
-import GamePlaceholder from './components/game/GamePlaceholder.jsx'
+import GameScreen from './components/game/GameScreen.jsx'
 import { joinGame } from './lib/edgeFunctions.js'
 
 // Handles /join/:code — auto-joins then redirects to lobby or setup on failure
@@ -95,7 +95,7 @@ export default function App() {
         path="/game/:code"
         element={
           <ProtectedRoute user={user} loading={loading}>
-            <GamePlaceholder />
+            <GameScreen userId={user?.id} />
           </ProtectedRoute>
         }
       />

@@ -4,6 +4,7 @@ import { renderHook, waitFor, act } from '@testing-library/react'
 const mockNavigate = vi.fn()
 vi.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
+  useLocation: () => ({ pathname: '/lobby/ABC123' }),
 }))
 
 // vi.hoisted makes mockChannel accessible inside vi.mock factories AND in test code
@@ -25,6 +26,13 @@ vi.mock('../../src/lib/edgeFunctions.js', () => ({
   pickFactionColor: vi.fn(),
   setSpeaker: vi.fn(),
   startGame: vi.fn(),
+  endTurn: vi.fn(),
+  passAction: vi.fn(),
+  advancePhase: vi.fn(),
+  scoreObjective: vi.fn(),
+  revealObjective: vi.fn(),
+  shuffleDeck: vi.fn(),
+  updateCommandTokens: vi.fn(),
 }))
 
 import { supabase } from '../../src/lib/supabase.js'

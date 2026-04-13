@@ -67,7 +67,7 @@ describe('game edge function wrappers', () => {
   })
 
   it('throws with domain message from FunctionsHttpError response body', async () => {
-    const mockResponse = { json: vi.fn().mockResolvedValue({ error: 'Game not found' }) }
+    const mockResponse = { text: vi.fn().mockResolvedValue(JSON.stringify({ error: 'Game not found' })) }
     const httpError = new FunctionsHttpError({ status: 404 })
     httpError.context = mockResponse
     supabase.functions.invoke.mockResolvedValue({ data: null, error: httpError })
@@ -75,7 +75,7 @@ describe('game edge function wrappers', () => {
   })
 
   it('falls back to SDK message when FunctionsHttpError body cannot be parsed', async () => {
-    const mockResponse = { json: vi.fn().mockRejectedValue(new Error('not json')) }
+    const mockResponse = { text: vi.fn().mockRejectedValue(new Error('unreadable')) }
     const httpError = new FunctionsHttpError({ status: 500 })
     httpError.context = mockResponse
     httpError.message = 'Edge Function returned a non-2xx status code'
