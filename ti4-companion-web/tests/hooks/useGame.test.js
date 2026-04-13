@@ -26,6 +26,13 @@ vi.mock('../../src/lib/edgeFunctions.js', () => ({
   pickFactionColor: vi.fn(),
   setSpeaker: vi.fn(),
   startGame: vi.fn(),
+  endTurn: vi.fn(),
+  passAction: vi.fn(),
+  advancePhase: vi.fn(),
+  scoreObjective: vi.fn(),
+  revealObjective: vi.fn(),
+  shuffleDeck: vi.fn(),
+  updateCommandTokens: vi.fn(),
 }))
 
 import { supabase } from '../../src/lib/supabase.js'

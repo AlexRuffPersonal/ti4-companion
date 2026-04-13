@@ -150,6 +150,7 @@ export function useGame(code, userId) {
       if (channel) supabase.removeChannel(channel)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // navigate is stable across renders; isGameScreen only changes on route transition which remounts this component
   }, [code, userId])
 
   const currentPlayer = players.find(p => p.user_id === userId) ?? null
