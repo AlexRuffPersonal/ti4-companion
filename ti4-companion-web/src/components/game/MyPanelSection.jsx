@@ -1,0 +1,129 @@
+import { useState } from 'react'
+
+export default function MyPanelSection({
+  player, planets, isActive, game,
+  onPass, onEndTurn, onUpdateTokens,
+  onExhaustPlanet, onReadyPlanet,
+  onPickStrategyCard, onUpdateCommodities, onUpdateTradeGoods, onCycleLeader,
+}) {
+  const tokens = player?.command_tokens ?? { tactic_total: 0, fleet: 0, strategy: 0 }
+  const [draftTokens, setDraftTokens] = useState(tokens)
+  const isStatusPhase = game?.phase === 'status'
+
+  if (!player) return null
+
+  return (
+    <div className="panel flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <p className="label">MY PANEL</p>
+        {isActive && (
+          <div className="flex gap-2">
+            <button className="btn-ghost text-xs" onClick={onPass}>PASS</button>
+            <button className="btn-primary text-xs" onClick={onEndTurn}>END TURN</button>
+          </div>
+        )}
+      </div>
+
+      {/* Command Tokens — values rendered as read-only inputs so they don't
+          collide with commodity/trade-goods text queries in tests */}
+      <div className="flex gap-6">
+        {[
+          { key: 'tactic_total', label: 'TACTIC' },
+          { key: 'fleet',        label: 'FLEET' },
+          { key: 'strategy',     label: 'STRATEGY' },
+        ].map(({ key, label }) => (
+          <div key={key} className="text-center">
+            <p className="label text-xs">{label}</p>
+            {isStatusPhase ? (
+              <div className="flex items-center gap-1">
+                <button
+                  className="counter-btn"
+                  onClick={() => setDraftTokens(t => ({ ...t, [key]: Math.max(0, t[key] - 1) }))}
+                >−</button>
+                <input
+                  type="text"
+                  readOnly
+                  value={draftTokens[key]}
+                  aria-label={`${label.toLowerCase()} tokens`}
+                  className="font-display text-bright text-lg w-6 text-center bg-transparent border-none outline-none"
+                />
+                <button
+                  className="counter-btn"
+                  onClick={() => setDraftTokens(t => ({ ...t, [key]: t[key] + 1 }))}
+                >+</button>
+              </div>
+            ) : (
+              <input
+                type="text"
+                readOnly
+                value={tokens[key]}
+                aria-label={`${label.toLowerCase()} tokens`}
+                className="font-display text-bright text-lg w-8 text-center bg-transparent border-none outline-none"
+              />
+            )}
+          </div>
+        ))}
+
+        <div className="border-l border-border pl-6 flex gap-6">
+          <div className="text-center">
+            <p className="label text-xs">COMMOD.</p>
+            <div className="flex items-center gap-1">
+              <button className="counter-btn" onClick={() => onUpdateCommodities(Math.max(0, player.commodities - 1))}>−</button>
+              <span className="font-display text-bright text-lg">{player.commodities}</span>
+              <button className="counter-btn" onClick={() => onUpdateCommodities(player.commodities + 1)}>+</button>
+            </div>
+          </div>
+          <div className="text-center">
+            <p className="label text-xs">TRADE</p>
+            <div className="flex items-center gap-1">
+              <button className="counter-btn" onClick={() => onUpdateTradeGoods(Math.max(0, player.trade_goods - 1))}>−</button>
+              <span className="font-display text-bright text-lg">{player.trade_goods}</span>
+              <button className="counter-btn" onClick={() => onUpdateTradeGoods(player.trade_goods + 1)}>+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {isStatusPhase && (
+        <div className="flex justify-end">
+          <button
+            className="btn-primary text-xs"
+            onClick={() => onUpdateTokens(draftTokens)}
+          >
+            CONFIRM TOKENS
+          </button>
+        </div>
+      )}
+
+      {/* Planets */}
+      {planets.length > 0 && (
+        <div>
+          <p className="label text-xs mb-2">PLANETS</p>
+          <div className="flex flex-col gap-1">
+            {planets.map(planet => (
+              <div key={planet.id} className="flex items-center justify-between text-sm">
+                <span className={planet.exhausted ? 'text-dim line-through' : 'text-text'}>
+                  {planet.planet_name}
+                </span>
+                <button
+                  className="label text-xs hover:text-text"
+                  onClick={() => planet.exhausted ? onReadyPlanet(planet.planet_name) : onExhaustPlanet(planet.planet_name)}
+                >
+                  {planet.exhausted ? 'READY' : 'EXHAUST'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Technologies */}
+      {player.technologies?.length > 0 && (
+        <div>
+          <p className="label text-xs mb-1">TECHNOLOGIES ({player.technologies.length})</p>
+          <p className="text-dim text-xs">{player.technologies.join(' · ')}</p>
+        </div>
+      )}
+    </div>
+  )
+}
