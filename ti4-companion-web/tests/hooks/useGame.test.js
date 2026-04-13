@@ -4,6 +4,7 @@ import { renderHook, waitFor, act } from '@testing-library/react'
 const mockNavigate = vi.fn()
 vi.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
+  useLocation: () => ({ pathname: '/lobby/ABC123' }),
 }))
 
 // vi.hoisted makes mockChannel accessible inside vi.mock factories AND in test code

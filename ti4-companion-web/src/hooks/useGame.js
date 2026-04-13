@@ -1,14 +1,23 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
-import { updateGameSettings, pickFactionColor, setSpeaker, startGame } from '../lib/edgeFunctions.js'
+import {
+  updateGameSettings, pickFactionColor, setSpeaker, startGame,
+  endTurn, passAction, advancePhase, scoreObjective,
+  revealObjective, shuffleDeck, updateCommandTokens,
+} from '../lib/edgeFunctions.js'
 
 export function useGame(code, userId) {
   const navigate = useNavigate()
+  const location = useLocation()
   const [game, setGame] = useState(null)
   const [players, setPlayers] = useState([])
+  const [objectives, setObjectives] = useState([])
+  const [planets, setPlanets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  const isGameScreen = location.pathname.startsWith('/game/')
 
   useEffect(() => {
     if (!code || !userId) return
@@ -44,24 +53,47 @@ export function useGame(code, userId) {
         return
       }
 
-      setGame(gameData)
-      setPlayers(playersData ?? [])
-      setLoading(false)
-
-      if (gameData.status === 'active') {
+      // Redirect lobby → game when game becomes active
+      if (gameData.status === 'active' && !isGameScreen) {
         navigate(`/game/${code}`, { replace: true })
         return
       }
 
+      // Load objectives + planets only on the game screen
+      let objectivesData = []
+      let planetsData = []
+      if (isGameScreen) {
+        const { data: objs } = await supabase
+          .from('game_public_objectives')
+          .select('*, public_objectives(name, stage, points, condition)')
+          .eq('game_id', gameData.id)
+        if (!mounted) return
+        objectivesData = objs ?? []
+
+        const { data: pls } = await supabase
+          .from('game_player_planets')
+          .select('*')
+          .eq('game_id', gameData.id)
+        if (!mounted) return
+        planetsData = pls ?? []
+      }
+
+      setGame(gameData)
+      setPlayers(playersData ?? [])
+      setObjectives(objectivesData)
+      setPlanets(planetsData)
+      setLoading(false)
+
+      // Realtime subscriptions
       channel = supabase
-        .channel(`lobby:${gameData.id}`)
+        .channel(`session:${gameData.id}`)
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'games', filter: `id=eq.${gameData.id}` },
           (payload) => {
             if (!mounted) return
             setGame(prev => ({ ...prev, ...payload.new }))
-            if (payload.new.status === 'active') {
+            if (payload.new.status === 'active' && !isGameScreen) {
               navigate(`/game/${code}`, { replace: true })
             }
           }
@@ -74,12 +106,41 @@ export function useGame(code, userId) {
             setPlayers(prev => {
               if (payload.eventType === 'INSERT') return [...prev, payload.new]
               if (payload.eventType === 'UPDATE') return prev.map(p => p.id === payload.new.id ? payload.new : p)
-              // DELETE not handled: players don't leave during the lobby in Phase 2
               return prev
             })
           }
         )
-        .subscribe()
+
+      if (isGameScreen) {
+        channel
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'game_public_objectives', filter: `game_id=eq.${gameData.id}` },
+            async () => {
+              if (!mounted) return
+              const { data } = await supabase
+                .from('game_public_objectives')
+                .select('*, public_objectives(name, stage, points, condition)')
+                .eq('game_id', gameData.id)
+              if (mounted && data) setObjectives(data)
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'game_player_planets', filter: `game_id=eq.${gameData.id}` },
+            (payload) => {
+              if (!mounted) return
+              setPlanets(prev => {
+                if (payload.eventType === 'INSERT') return [...prev, payload.new]
+                if (payload.eventType === 'UPDATE') return prev.map(p => p.id === payload.new.id ? payload.new : p)
+                if (payload.eventType === 'DELETE') return prev.filter(p => p.id !== payload.old.id)
+                return prev
+              })
+            }
+          )
+      }
+
+      channel.subscribe()
     }
 
     load()
@@ -89,22 +150,91 @@ export function useGame(code, userId) {
       if (channel) supabase.removeChannel(channel)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, userId]) // navigate is stable across renders; intentionally excluded to avoid re-subscribing
+  }, [code, userId])
 
   const currentPlayer = players.find(p => p.user_id === userId) ?? null
   const isHost = game?.host_user_id === userId
 
+  // Direct Supabase writes (client-side per architecture)
+  async function exhaustPlanet(planetName) {
+    if (!currentPlayer) return
+    await supabase
+      .from('game_player_planets')
+      .update({ exhausted: true })
+      .eq('game_id', game.id)
+      .eq('player_id', currentPlayer.id)
+      .eq('planet_name', planetName)
+  }
+
+  async function readyPlanet(planetName) {
+    if (!currentPlayer) return
+    await supabase
+      .from('game_player_planets')
+      .update({ exhausted: false })
+      .eq('game_id', game.id)
+      .eq('player_id', currentPlayer.id)
+      .eq('planet_name', planetName)
+  }
+
+  async function pickStrategyCard(card) {
+    if (!currentPlayer) return
+    await supabase
+      .from('game_players')
+      .update({ strategy_card: card })
+      .eq('id', currentPlayer.id)
+  }
+
+  async function updateCommodities(n) {
+    if (!currentPlayer) return
+    await supabase
+      .from('game_players')
+      .update({ commodities: n })
+      .eq('id', currentPlayer.id)
+  }
+
+  async function updateTradeGoods(n) {
+    if (!currentPlayer) return
+    await supabase
+      .from('game_players')
+      .update({ trade_goods: n })
+      .eq('id', currentPlayer.id)
+  }
+
+  async function cycleLeader(leaderType, newStatus) {
+    if (!currentPlayer) return
+    await supabase
+      .from('game_players')
+      .update({ leaders: { ...currentPlayer.leaders, [leaderType]: newStatus } })
+      .eq('id', currentPlayer.id)
+  }
+
   return {
     game,
     players,
+    objectives,
+    planets,
     currentPlayer,
     isHost,
     loading,
     error,
-    // Callers must check `loading` before calling these — game.id is null while loading
+    // Phase 2 wrappers (lobby)
     updateSettings: (settings) => game ? updateGameSettings(game.id, settings) : Promise.reject(new Error('Game not loaded')),
     pickFaction: (faction, colour) => game ? pickFactionColor(game.id, faction, colour) : Promise.reject(new Error('Game not loaded')),
     setGameSpeaker: (playerId) => game ? setSpeaker(game.id, playerId) : Promise.reject(new Error('Game not loaded')),
     startTheGame: () => game ? startGame(game.id) : Promise.reject(new Error('Game not loaded')),
+    // Phase 3 wrappers (in-game)
+    endTheTurn: () => game ? endTurn(game.id) : Promise.reject(new Error('Game not loaded')),
+    passTheAction: () => game ? passAction(game.id) : Promise.reject(new Error('Game not loaded')),
+    advanceThePhase: () => game ? advancePhase(game.id) : Promise.reject(new Error('Game not loaded')),
+    scoreAnObjective: (objectiveId, playerId) => game ? scoreObjective(game.id, objectiveId, playerId) : Promise.reject(new Error('Game not loaded')),
+    revealAnObjective: (stage) => game ? revealObjective(game.id, stage) : Promise.reject(new Error('Game not loaded')),
+    shuffleTheDeck: (deckType) => game ? shuffleDeck(game.id, deckType) : Promise.reject(new Error('Game not loaded')),
+    updateTokens: (tokens) => game ? updateCommandTokens(game.id, tokens) : Promise.reject(new Error('Game not loaded')),
+    exhaustPlanet,
+    readyPlanet,
+    pickStrategyCard,
+    updateCommodities,
+    updateTradeGoods,
+    cycleLeader,
   }
 }
