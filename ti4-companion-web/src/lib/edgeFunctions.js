@@ -13,8 +13,15 @@ async function callFunction(name, body = {}) {
   const { data, error } = await supabase.functions.invoke(name, { body })
   if (error) {
     if (error instanceof FunctionsHttpError) {
-      const responseBody = await error.context.json().catch(() => ({}))
-      throw new Error(responseBody.error ?? error.message)
+      const raw = await error.context.text().catch(() => '')
+      let message = error.message
+      try {
+        const body = JSON.parse(raw)
+        message = (body.error ?? body.message ?? raw) || error.message
+      } catch {
+        message = raw || error.message
+      }
+      throw new Error(message)
     }
     throw new Error(error.message)
   }

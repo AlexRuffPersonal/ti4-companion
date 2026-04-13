@@ -45,7 +45,10 @@ export function useAuth() {
   async function sendMagicLink(email) {
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: true },
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: window.location.origin,
+      },
     })
     if (error) throw error
   }
