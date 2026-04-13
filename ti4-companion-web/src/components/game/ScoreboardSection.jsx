@@ -1,0 +1,56 @@
+import { deriveActivePlayer } from '../../lib/gameUtils.js'
+
+const COLOUR_HEX = {
+  blue: '#58a6ff', red: '#f85149', green: '#3fb950', yellow: '#e3b341',
+  orange: '#f0883e', pink: '#ff7bda', purple: '#bc8cff', white: '#f0f6fc',
+}
+
+export default function ScoreboardSection({ players, game, currentPlayerId }) {
+  const activePlayer = deriveActivePlayer(players, game)
+  const sorted = [...players].sort((a, b) => b.vp - a.vp)
+
+  return (
+    <div>
+      <p className="label mb-2">SCOREBOARD</p>
+      <div className="flex flex-col gap-2">
+        {sorted.map(player => {
+          const isActive = activePlayer?.id === player.id
+          const isPassed = player.passed
+          const isMe = player.id === currentPlayerId
+
+          return (
+            <div
+              key={player.id}
+              className={`flex items-center gap-3 px-3 py-2 rounded border transition-opacity ${
+                isActive ? 'border-plasma bg-panel' : 'border-border bg-hull'
+              } ${isPassed ? 'opacity-60' : ''}`}
+            >
+              <div
+                className="w-2 h-2 rounded-full flex-shrink-0"
+                style={{ backgroundColor: COLOUR_HEX[player.colour] ?? '#6e7681' }}
+              />
+              <span className={`flex-1 font-body text-sm ${isMe ? 'text-bright' : 'text-text'}`}>
+                {player.display_name}
+                {player.faction && (
+                  <span className="text-dim text-xs ml-2">({player.faction})</span>
+                )}
+              </span>
+              {player.strategy_card != null && (
+                <span className="label text-xs bg-hull px-1 rounded border border-border">
+                  {player.strategy_card}
+                </span>
+              )}
+              {game?.phase === 'action' && isActive && (
+                <span className="label text-plasma text-xs">ACTIVE</span>
+              )}
+              {game?.phase === 'action' && isPassed && !isActive && (
+                <span className="label text-success text-xs">PASSED</span>
+              )}
+              <span className="font-display text-gold text-sm font-bold">{player.vp} VP</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
