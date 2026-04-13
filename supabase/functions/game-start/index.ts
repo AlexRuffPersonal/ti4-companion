@@ -19,7 +19,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: game, error: gameError } = await db
     .from('games')
-    .select('host_user_id, status, speaker_player_id')
+    .select('host_user_id, status, speaker_player_id, expansions')
     .eq('id', body.game_id)
     .maybeSingle()
   if (gameError) return errorResponse('Database error', 500)
@@ -39,6 +39,42 @@ Deno.serve(async (req: Request) => {
     if (!player.faction || !player.colour) {
       return errorResponse(`Player "${player.display_name}" has not picked a faction or colour`, 409)
     }
+  }
+
+  // Initialise public objective decks (filtered by active expansions)
+  const activeExpansions = Object.entries(game.expansions ?? {})
+    .filter(([, active]) => active)
+    .map(([exp]) => exp)
+
+  const { data: allObjs, error: objsError } = await db
+    .from('public_objectives')
+    .select('id, expansion')
+  if (objsError) return errorResponse('Database error', 500)
+
+  const eligibleObjs = (allObjs ?? []).filter(
+    (o: { id: string; expansion: string | null }) =>
+      activeExpansions.includes(o.expansion ?? 'base')
+  )
+
+  if (eligibleObjs.length > 0) {
+    // Fisher-Yates shuffle deck positions
+    const positions = eligibleObjs.map((_: unknown, i: number) => i)
+    for (let i = positions.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[positions[i], positions[j]] = [positions[j], positions[i]]
+    }
+
+    const { error: insertError } = await db
+      .from('game_public_objectives')
+      .insert(
+        eligibleObjs.map((obj: { id: string }, i: number) => ({
+          game_id: body.game_id,
+          objective_id: obj.id,
+          deck_position: positions[i],
+          state: 'deck',
+        }))
+      )
+    if (insertError) return errorResponse(`Failed to initialise objectives: ${insertError.message}`, 500)
   }
 
   const { error: updateError } = await db
