@@ -42,4 +42,25 @@ export const setSpeaker = (gameId, playerId) =>
 export const startGame = (gameId) =>
   callFunction('game-start', { game_id: gameId })
 
+export const endTurn = (gameId) =>
+  callFunction('game-end-turn', { game_id: gameId })
+
+export const passAction = (gameId) =>
+  callFunction('game-player-pass', { game_id: gameId })
+
+export const advancePhase = (gameId) =>
+  callFunction('game-advance-phase', { game_id: gameId })
+
+export const scoreObjective = (gameId, objectiveId, playerId) =>
+  callFunction('game-score-objective', { game_id: gameId, objective_id: objectiveId, player_id: playerId })
+
+export const revealObjective = (gameId, stage) =>
+  callFunction('game-reveal-objective', { game_id: gameId, stage })
+
+export const shuffleDeck = (gameId, deckType) =>
+  callFunction('game-shuffle-deck', { game_id: gameId, deck_type: deckType })
+
+export const updateCommandTokens = (gameId, tokens) =>
+  callFunction('game-update-command-tokens', { game_id: gameId, ...tokens })
+
 export { callFunction }
