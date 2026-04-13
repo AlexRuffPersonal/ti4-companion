@@ -32,11 +32,13 @@ const READY_PLAYERS = [
 ]
 
 function mockDb({
-  gameData = { host_user_id: HOST_ID, status: 'lobby', speaker_player_id: SPEAKER_ID },
+  gameData = { host_user_id: HOST_ID, status: 'lobby', speaker_player_id: SPEAKER_ID, expansions: { base: true } },
   gameError = null,
   players = READY_PLAYERS,
   playersError = null,
   updateError = null,
+  objectives = [{ id: 'obj-1', expansion: 'base' }, { id: 'obj-2', expansion: 'base' }],
+  insertError = null,
 } = {}) {
   db.from.mockImplementation((table) => {
     if (table === 'games') {
@@ -56,6 +58,16 @@ function mockDb({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockResolvedValue({ data: players, error: playersError }),
         }),
+      }
+    }
+    if (table === 'public_objectives') {
+      return {
+        select: vi.fn().mockResolvedValue({ data: objectives, error: null }),
+      }
+    }
+    if (table === 'game_public_objectives') {
+      return {
+        insert: vi.fn().mockResolvedValue({ error: insertError }),
       }
     }
   })
