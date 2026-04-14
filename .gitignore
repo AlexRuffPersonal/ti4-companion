@@ -1,2 +1,5 @@
 .superpowers/
 .worktrees/
+.claude/
+supabase/.temp/
+Mistakes within Supabase.txt
