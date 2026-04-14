@@ -34,6 +34,8 @@ vi.mock('../../src/lib/edgeFunctions.js', () => ({
   revealObjective: vi.fn(),
   shuffleDeck: vi.fn(),
   updateCommandTokens: vi.fn(),
+  drawActionCard: vi.fn(),
+  discardActionCard: vi.fn(),
 }))
 
 import { supabase } from '../../src/lib/supabase.js'
@@ -84,10 +86,17 @@ function mockGameScreenLoad() {
         eq: vi.fn().mockResolvedValue({ data: OBJECTIVES, error: null }),
       }),
     }
-    // game_player_planets
-    return {
+    if (callCount === 4) return {
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockResolvedValue({ data: PLANETS, error: null }),
+      }),
+    }
+    // game_action_card_deck
+    return {
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+        }),
       }),
     }
   })

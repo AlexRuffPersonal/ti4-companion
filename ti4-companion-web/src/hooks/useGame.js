@@ -5,6 +5,7 @@ import {
   updateGameSettings, pickFactionColor, setSpeaker, startGame,
   endTurn, passAction, advancePhase, scoreObjective,
   revealObjective, shuffleDeck, updateCommandTokens,
+  drawActionCard, discardActionCard,
 } from '../lib/edgeFunctions.js'
 
 export function useGame(code, userId) {
@@ -14,6 +15,7 @@ export function useGame(code, userId) {
   const [players, setPlayers] = useState([])
   const [objectives, setObjectives] = useState([])
   const [planets, setPlanets] = useState([])
+  const [myCards, setMyCards] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -53,15 +55,16 @@ export function useGame(code, userId) {
         return
       }
 
-      // Redirect lobby → game when game becomes active
       if (gameData.status === 'active' && !isGameScreen) {
         navigate(`/game/${code}`, { replace: true })
         return
       }
 
-      // Load objectives + planets only on the game screen
       let objectivesData = []
       let planetsData = []
+      let myCardsData = []
+      let myPlayer = null
+
       if (isGameScreen) {
         const { data: objs } = await supabase
           .from('game_public_objectives')
@@ -76,15 +79,26 @@ export function useGame(code, userId) {
           .eq('game_id', gameData.id)
         if (!mounted) return
         planetsData = pls ?? []
+
+        myPlayer = (playersData ?? []).find(p => p.user_id === userId) ?? null
+        if (myPlayer) {
+          const { data: cards } = await supabase
+            .from('game_action_card_deck')
+            .select('*, action_cards(name, timing, text)')
+            .eq('game_id', gameData.id)
+            .eq('held_by_player_id', myPlayer.id)
+          if (!mounted) return
+          myCardsData = cards ?? []
+        }
       }
 
       setGame(gameData)
       setPlayers(playersData ?? [])
       setObjectives(objectivesData)
       setPlanets(planetsData)
+      setMyCards(myCardsData)
       setLoading(false)
 
-      // Realtime subscriptions
       channel = supabase
         .channel(`session:${gameData.id}`)
         .on(
@@ -138,6 +152,19 @@ export function useGame(code, userId) {
               })
             }
           )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'game_action_card_deck', filter: `game_id=eq.${gameData.id}` },
+            async () => {
+              if (!mounted || !myPlayer) return
+              const { data } = await supabase
+                .from('game_action_card_deck')
+                .select('*, action_cards(name, timing, text)')
+                .eq('game_id', gameData.id)
+                .eq('held_by_player_id', myPlayer.id)
+              if (mounted && data) setMyCards(data)
+            }
+          )
       }
 
       channel.subscribe()
@@ -150,13 +177,11 @@ export function useGame(code, userId) {
       if (channel) supabase.removeChannel(channel)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // navigate is stable across renders; isGameScreen only changes on route transition which remounts this component
   }, [code, userId])
 
   const currentPlayer = players.find(p => p.user_id === userId) ?? null
   const isHost = game?.host_user_id === userId
 
-  // Direct Supabase writes (client-side per architecture)
   async function exhaustPlanet(planetName) {
     if (!currentPlayer) return
     await supabase
@@ -214,6 +239,7 @@ export function useGame(code, userId) {
     players,
     objectives,
     planets,
+    myCards,
     currentPlayer,
     isHost,
     loading,
@@ -237,5 +263,8 @@ export function useGame(code, userId) {
     updateCommodities,
     updateTradeGoods,
     cycleLeader,
+    // Phase 4b wrappers (action cards)
+    drawTheActionCard: () => game ? drawActionCard(game.id) : Promise.reject(new Error('Game not loaded')),
+    discardTheActionCard: (cardId) => game ? discardActionCard(game.id, cardId) : Promise.reject(new Error('Game not loaded')),
   }
 }
