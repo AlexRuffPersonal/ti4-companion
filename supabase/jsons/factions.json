@@ -1,0 +1,15 @@
+[
+    {
+        "name" : , // text, REQUIRED
+        "expansion" : , // text
+        "starting_techs" : , // text array
+        "home_tile_number" : , // text
+        "abilities" : {
+            "name" : , //text
+            "text" : , //text
+        },
+        "flagship" : ,
+        "mech" : , //text
+        "promissory_notes" ,
+    }
+]

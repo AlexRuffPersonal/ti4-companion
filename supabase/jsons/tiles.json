@@ -1,0 +1,1199 @@
+[
+    {
+        "tile_number": "01",
+        "type": "faction",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Jord",
+                "resources": 4,
+                "influence": 2,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "02",
+        "type": "faction",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Moll Primus",
+                "resources": 4,
+                "influence": 1,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "03",
+        "type": "faction",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Darien",
+                "resources": 4,
+                "influence": 4,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "04",
+        "type": "faction",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Muatt",
+                "resources": 4,
+                "influence": 1,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "05",
+        "type": "faction",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Nestphar",
+                "resources": 3,
+                "influence": 2,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "06",
+        "type": "faction",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "[0,0,0]",
+                "resources": 5,
+                "influence": 0,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "07",
+        "type": "faction",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Winnu",
+                "resources": 3,
+                "influence": 4,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "08",
+        "type": "faction",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Mordai II",
+                "resources": 4,
+                "influence": 0,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "09",
+        "type": "faction",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Maaluuk",
+                "resources": 0,
+                "influence": 2,
+                "type": "home"
+            },
+            {
+                "name": "Druaa",
+                "resources": 3,
+                "influence": 1,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "10",
+        "type": "faction",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Arc Prime",
+                "resources": 4,
+                "influence": 0,
+                "type": "home"
+            },
+            {
+                "name": "Wren Terra",
+                "resources": 2,
+                "influence": 1,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "11",
+        "type": "faction",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Lisis II",
+                "resources": 1,
+                "influence": 0,
+                "type": "home"
+            },
+            {
+                "name": "Ragh",
+                "resources": 2,
+                "influence": 1,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "12",
+        "type": "faction",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Nar",
+                "resources": 2,
+                "influence": 3,
+                "type": "home"
+            },
+            {
+                "name": "Jol",
+                "resources": 1,
+                "influence": 2,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "13",
+        "type": "faction",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Tren'lak",
+                "resources": 1,
+                "influence": 0,
+                "type": "home"
+            },
+            {
+                "name": "Quinarra",
+                "resources": 3,
+                "influence": 1,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "14",
+        "type": "faction",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Archon Ren",
+                "resources": 2,
+                "influence": 3,
+                "type": "home"
+            },
+            {
+                "name": "Archon Tau",
+                "resources": 1,
+                "influence": 1,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "15",
+        "type": "faction",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Retillion",
+                "resources": 2,
+                "influence": 3,
+                "type": "home"
+            },
+            {
+                "name": "Shalloq",
+                "resources": 2,
+                "influence": 3,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "16",
+        "type": "faction",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Arretze",
+                "resources": 2,
+                "influence": 0,
+                "type": "home"
+            },
+            {
+                "name": "Hercant",
+                "resources": 1,
+                "influence": 1,
+                "type": "home"
+            },
+            {
+                "name": "Kamdorn",
+                "resources": 0,
+                "influence": 1,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "17",
+        "type": "faction",
+        "expansion": "base",
+        "wormholes": ["delta"],
+        "planets": []
+    },
+    {
+        "tile_number": "18",
+        "type": "mecatol_rex",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Mecatol Rex",
+                "resources": 1,
+                "influence": 6,
+                "type": "mecatol_rex"
+            }
+        ]
+    },
+    {
+        "tile_number": "19",
+        "type": "blue",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Wellon",
+                "resources": 1,
+                "influence": 2,
+                "tech_specialty": "yellow",
+                "type": "industrial"
+            }
+        ]
+    },
+    {
+        "tile_number": "20",
+        "type": "blue",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Vefut II",
+                "resources": 2,
+                "influence": 2,
+                "type": "hazardous"
+            }
+        ]
+    },
+    {
+        "tile_number": "21",
+        "type": "blue",
+        "expansion": "pok",
+        "planets": [
+            {
+                "name": "Thibah",
+                "resources": 1,
+                "influence": 1,
+                "tech_specialty": "blue",
+                "type": "industrial"
+            }
+        ]
+    },
+    {
+        "tile_number": "22",
+        "type": "blue",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Tar'mann",
+                "resources": 1,
+                "influence": 1,
+                "tech_specialty": "green",
+                "type": "industrial"
+            }
+        ]
+    },
+    {
+        "tile_number": "23",
+        "type": "blue",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Saudor",
+                "resources": 2,
+                "influence": 2,
+                "type": "industrial"
+            }
+        ]
+    },
+    {
+        "tile_number": "24",
+        "type": "blue",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Mehar Xull",
+                "resources": 1,
+                "influence": 3,
+                "tech_specialty": "red",
+                "type": "hazardous"
+            }
+        ]
+    },
+    {
+        "tile_number": "25",
+        "type": "blue",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Quann",
+                "resources": 2,
+                "influence": 1,
+                "type": "cultural"
+            }
+        ],
+        "wormholes": ["beta"]
+    },
+    {
+        "tile_number": "26",
+        "type": "blue",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Lodor",
+                "resources": 3,
+                "influence": 1,
+                "type": "cultural"
+            }
+        ],
+        "wormholes": ["alpha"]
+    },
+    {
+        "tile_number": "27",
+        "type": "blue",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "New Albion",
+                "resources": 1,
+                "influence": 1,
+                "tech_specialty": "green",
+                "type": "industrial"
+            },
+            {
+                "name": "Starpoint",
+                "resources": 3,
+                "influence": 1,
+                "type": "hazardous"
+            }
+        ]
+    },
+    {
+        "tile_number": "28",
+        "type": "blue",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Tequ'ran",
+                "resources": 2,
+                "influence": 0,
+                "type": "hazardous"
+            },
+            {
+                "name": "Tequ'ran",
+                "resources": 2,
+                "influence": 0,
+                "type": "hazardous"
+            }
+        ]
+    },
+    {
+        "tile_number": "29",
+        "type": "blue",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Qucen'n",
+                "resources": 1,
+                "influence": 2,
+                "type": "industrial"
+            },
+            {
+                "name": "Rarron",
+                "resources": 0,
+                "influence": 3,
+                "type": "cultural"
+            }
+        ]
+    },
+    {
+        "tile_number": "30",
+        "type": "blue",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Mellon",
+                "resources": 0,
+                "influence": 2,
+                "type": "home"
+            },
+            {
+                "name": "Zohbat",
+                "resources": 3,
+                "influence": 1,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "31",
+        "type": "blue",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Lazar",
+                "resources": 1,
+                "influence": 0,
+                "tech_specialty": "yellow",
+                "type": "industrial"
+            },
+            {
+                "name": "Sakulag",
+                "resources": 2,
+                "influence": 1,
+                "type": "hazardous"
+            }
+        ]
+    },
+    {
+        "tile_number": "32",
+        "type": "blue",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Dal Bootha",
+                "resources": 0,
+                "influence": 2,
+                "type": "cultural"
+            },
+            {
+                "name": "Xxehan",
+                "resources": 1,
+                "influence": 1,
+                "type": "cultural"
+            }
+        ]
+    },
+    {
+        "tile_number": "33",
+        "type": "blue",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Corneeq",
+                "resources": 1,
+                "influence": 2,
+                "type": "cultural"
+            },
+            {
+                "name": "Resculon",
+                "resources": 2,
+                "influence": 0,
+                "type": "cultural"
+            }
+        ]
+    },
+    {
+        "tile_number": "34",
+        "type": "blue",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Centauri",
+                "resources": 1,
+                "influence": 3,
+                "type": "cultural"
+            },
+            {
+                "name": "Gral",
+                "resources": 1,
+                "influence": 1,
+                "tech_specialty": "blue",
+                "type": "industrial"
+            }
+        ]
+    },
+    {
+        "tile_number": "35",
+        "type": "blue",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Bereg",
+                "resources": 3,
+                "influence": 1,
+                "type": "hazardous"
+            },
+            {
+                "name": "Lirta IV",
+                "resources": 2,
+                "influence": 3,
+                "type": "hazardous"
+            }
+        ]
+    },
+    {
+        "tile_number": "36",
+        "type": "blue",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Arnor",
+                "resources": 2,
+                "influence": 1,
+                "type": "industrial"
+            },
+            {
+                "name": "Lor",
+                "resources": 1,
+                "influence": 2,
+                "type": "industrial"
+            }
+        ]
+    },
+    {
+        "tile_number": "37",
+        "type": "blue",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Arinam",
+                "resources": 1,
+                "influence": 2,
+                "type": "industrial"
+            },
+            {
+                "name": "Meer",
+                "resources": 0,
+                "influence": 4,
+                "tech_specialty": "red",
+                "type": "hazardous"
+            }
+        ]
+    },
+    {
+        "tile_number": "38",
+        "type": "blue",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Abyz",
+                "resources": 3,
+                "influence": 0,
+                "type": "hazardous"
+            },
+            {
+                "name": "Fria",
+                "resources": 2,
+                "influence": 0,
+                "type": "hazardous"
+            }
+        ]
+    },
+    {
+        "tile_number": "39",
+        "type": "red",
+        "expansion": "base",
+        "wormholes": ["alpha"],
+        "planets": []
+    },
+    {
+        "tile_number": "40",
+        "type": "red",
+        "expansion": "base",
+        "wormholes": ["beta"],
+        "planets": []
+    },
+    {
+        "tile_number": "41",
+        "type": "red",
+        "expansion": "base",
+        "anomalies": ["gravity_rift"],
+        "planets": []
+    },
+    {
+        "tile_number": "42",
+        "type": "red",
+        "expansion": "base",
+        "anomalies": ["nebula"],
+        "planets": []
+    },
+    {
+        "tile_number": "43",
+        "type": "red",
+        "expansion": "base",
+        "anomalies": ["supernova"],
+        "planets": []
+    },
+    {
+        "tile_number": "44",
+        "type": "red",
+        "expansion": "base",
+        "anomalies": ["asteroid_field"],
+        "planets": []
+    },
+    {
+        "tile_number": "45",
+        "type": "red",
+        "expansion": "base",
+        "anomalies": ["asteroid_field"],
+        "planets": []
+    },
+    {
+        "tile_number": "46",
+        "type": "red",
+        "expansion": "base",
+        "planets": []
+    },
+    {
+        "tile_number": "47",
+        "type": "red",
+        "expansion": "base",
+        "planets": []
+    },
+    {
+        "tile_number": "48",
+        "type": "red",
+        "expansion": "base",
+        "planets": []
+    },
+    {
+        "tile_number": "49",
+        "type": "red",
+        "expansion": "base",
+        "planets": []
+    },
+    {
+        "tile_number": "50",
+        "type": "red",
+        "expansion": "base",
+        "planets": []
+    },
+    {
+        "tile_number": "51",
+        "type": "faction",
+        "expansion": "base",
+        "starts_off_board": true,
+        "wormholes": ["delta"],
+        "planets": [
+            {
+                "name": "Creuss",
+                "resources": 4,
+                "influence": 2,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "52",
+        "type": "faction",
+        "expansion": "pok",
+        "planets": [
+            {
+                "name": "Ixth",
+                "resources": 3,
+                "influence": 5,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "53",
+        "type": "faction",
+        "expansion": "pok",
+        "planets": [
+            {
+                "name": "Arcturus",
+                "resources": 4,
+                "influence": 4,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "54",
+        "type": "faction",
+        "expansion": "base",
+        "planets": [
+            {
+                "name": "Acheron",
+                "resources": 4,
+                "influence": 0,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "55",
+        "type": "faction",
+        "expansion": "pok",
+        "planets": [
+            {
+                "name": "Elysium",
+                "resources": 4,
+                "influence": 1,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "56",
+        "type": "faction",
+        "expansion": "pok",
+        "anomalies": ["nebula"],
+        "planets": [
+            {
+                "name": "The Dark",
+                "resources": 3,
+                "influence": 4,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "57",
+        "type": "faction",
+        "expansion": "pok",
+        "planets": [
+            {
+                "name": "Naazir",
+                "resources": 2,
+                "influence": 1,
+                "type": "home"
+            },
+            {
+                "name": "Rokha",
+                "resources": 1,
+                "influence": 2,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "58",
+        "type": "faction",
+        "expansion": "pok",
+        "planets": [
+            {
+                "name": "Yur",
+                "resources": 0,
+                "influence": 2,
+                "type": "home"
+            },
+            {
+                "name": "Valk",
+                "resources": 2,
+                "influence": 0,
+                "type": "home"
+            },
+            {
+                "name": "Avar",
+                "resources": 1,
+                "influence": 1,
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "tile_number": "59",
+        "type": "blue",
+        "expansion": "pok",
+        "planets": [
+            {
+                "name": "Archon Vail",
+                "resources": 1,
+                "influence": 3,
+                "tech_specialty": "blue",
+                "type": "hazardous"
+            }
+        ]
+    },
+    {
+        "tile_number": "60",
+        "type": "blue",
+        "expansion": "pok",
+        "planets": [
+            {
+                "name": "Perimeter",
+                "resources": 2,
+                "influence": 1,
+                "type": "industrial"
+            }
+        ]
+    },
+    {
+        "tile_number": "61",
+        "type": "blue",
+        "expansion": "pok",
+        "planets": [
+            {
+                "name": "Ang",
+                "resources": 2,
+                "influence": 0,
+                "tech_specialty": "red",
+                "type": "industrial"
+            }
+        ]
+    },
+    {
+        "tile_number": "62",
+        "type": "blue",
+        "expansion": "pok",
+        "planets": [
+            {
+                "name": "Sem-Lore",
+                "resources": 3,
+                "influence": 2,
+                "tech_specialty": "yellow",
+                "type": "cultural"
+            }
+        ]
+    },
+    {
+        "tile_number": "63",
+        "type": "blue",
+        "expansion": "pok",
+        "planets": [
+            {
+                "name": "Vorhal",
+                "resources": 0,
+                "influence": 2,
+                "tech_specialty": "green",
+                "type": "cultural"
+            }
+        ]
+    },
+    {
+        "tile_number": "64",
+        "type": "blue",
+        "expansion": "pok",
+        "planets": [
+            {
+                "name": "Atlas",
+                "resources": 3,
+                "influence": 1,
+                "type": "cultural"
+            }
+        ],
+        "wormholes": ["beta"]
+    },
+    {
+        "tile_number": "65",
+        "type": "blue",
+        "expansion": "pok",
+        "planets": [
+            {
+                "name": "Primor",
+                "resources": 2,
+                "influence": 1,
+                "type": ["cultural", "legendary"]
+            }
+        ]
+    },
+    {
+        "tile_number": "66",
+        "type": "blue",
+        "expansion": "pok",
+        "planets": [
+            {
+                "name": "Hope's End",
+                "resources": 3,
+                "influence": 0,
+                "type": ["hazardous", "legendary"]
+            }
+        ]
+    },
+    {
+        "tile_number": "67",
+        "type": "red",
+        "expansion": "pok",
+        "anomalies": ["gravity_rift"],
+        "planets": [
+            {
+                "name": "Cormund",
+                "resources": 2,
+                "influence": 0,
+                "type": "hazardous"
+            }
+        ]
+    },
+    {
+        "tile_number": "68",
+        "type": "red",
+        "expansion": "pok",
+        "anomalies": ["nebula"],
+        "planets": [
+            {
+                "name": "Everra",
+                "resources": 3,
+                "influence": 1,
+                "type": "cultural"
+            }
+        ]
+    },
+    {
+        "tile_number": "69",
+        "type": "blue",
+        "expansion": "pok",
+        "planets": [
+            {
+                "name": "Accoen",
+                "resources": 2,
+                "influence": 3,
+                "type": "industrial"
+            },
+            {
+                "name": "Jeol Ir",
+                "resources": 2,
+                "influence": 3,
+                "type": "industrial"
+            }
+        ]
+    },
+    {
+        "tile_number": "70",
+        "type": "blue",
+        "expansion": "pok",
+        "planets": [
+            {
+                "name": "Kraag",
+                "resources": 2,
+                "influence": 1,
+                "type": "hazardous"
+            },
+            {
+                "name": "Siig",
+                "resources": 0,
+                "influence": 2,
+                "type": "hazardous"
+            }
+        ]
+    },
+    {
+        "tile_number": "71",
+        "type": "blue",
+        "expansion": "pok",
+        "planets": [
+            {
+                "name": "Ba;kal",
+                "resources": 3,
+                "influence": 2,
+                "type": "industrial"
+            },
+            {
+                "name": "Alio Prima",
+                "resources": 1,
+                "influence": 1,
+                "type": "cultural"
+            }
+        ]
+    },
+    {
+        "tile_number": "72",
+        "type": "blue",
+        "expansion": "pok",
+        "planets": [
+            {
+                "name": "Lisis",
+                "resources": 2,
+                "influence": 2,
+                "type": "industrial"
+            },
+            {
+                "name": "Velnor",
+                "resources": 2,
+                "influence": 1,
+                "tech_specialty": "red",
+                "type": "industrial"
+            }
+        ]
+    },
+    {
+        "tile_number": "73",
+        "type": "blue",
+        "expansion": "pok",
+        "planets": [
+            {
+                "name": "Cealdri",
+                "resources": 0,
+                "influence": 2,
+                "tech_specialty": "yellow",
+                "type": "cultural"
+            },
+            {
+                "name": "Xanhact",
+                "resources": 0,
+                "influence": 1,
+                "type": "hazardous"
+            }
+        ]
+    },
+    {
+        "tile_number": "74",
+        "type": "blue",
+        "expansion": "pok",
+        "planets": [
+            {
+                "name": "Vega Major",
+                "resources": 2,
+                "influence": 1,
+                "type": "cultural"
+            },
+            {
+                "name": "Vega Minor",
+                "resources": 1,
+                "influence": 2,
+                "tech_specialty": "blue",
+                "type": "cultural"
+            }
+        ]
+    },
+    {
+        "tile_number": "75",
+        "type": "blue",
+        "expansion": "pok",
+        "planets": [
+            {
+                "name": "Abaddon",
+                "resources": 1,
+                "influence": 0,
+                "type": "cultural"
+            },
+            {
+                "name": "Loki",
+                "resources": 1,
+                "influence": 2,
+                "type": "cultural"
+            },
+            {
+                "name": "Ashtroth",
+                "resources": 2,
+                "influence": 0,
+                "type": "hazardous"
+            }
+        ]
+    },
+    {
+        "tile_number": "76",
+        "type": "blue",
+        "expansion": "pok",
+        "planets": [
+            {
+                "name": "Rigel II",
+                "resources": 1,
+                "influence": 2,
+                "type": "industrial"
+            },
+            {
+                "name": "Rigel III",
+                "resources": 1,
+                "influence": 1,
+                "tech_specialty": "green",
+                "type": "industrial"
+            },
+            {
+                "name": "Rigel I",
+                "resources": 0,
+                "influence": 1,
+                "type": "hazardous"
+            }
+        ]
+    },
+    {
+        "tile_number": "77",
+        "type": "red",
+        "expansion": "pok",
+        "planets": []
+    },
+    {
+        "tile_number": "78",
+        "type": "red",
+        "expansion": "pok",
+        "planets": []
+    },
+    {
+        "tile_number": "79",
+        "type": "red",
+        "expansion": "pok",
+        "anomalies": ["asteroid_field"],
+        "wormholes": ["alpha"],
+        "planets": []
+    },
+    {
+        "tile_number": "80",
+        "type": "red",
+        "expansion": "pok",
+        "anomalies": ["supernova"],
+        "planets": []
+    },
+    {
+        "tile_number": "81",
+        "type": "faction",
+        "expansion": "pok",
+        "anomalies": ["supernova"],
+        "planets": []
+    },
+    {
+        "tile_number": "82A",
+        "type": "wormhole_nexus",
+        "expansion": "pok",
+        "starts_off_board": true,
+        "wormholes": ["gamma"],
+        "planets": [
+            {
+                "name": "Mallice",
+                "resources": 0,
+                "influence": 3,
+                "type": ["cultural", "legendary"]
+            }
+        ]
+    },
+    {
+        "tile_number": "82B",
+        "type": "wormhole_nexus",
+        "expansion": "pok",
+        "starts_off_board": true,
+        "wormholes": ["alpha", "beta", "gamma"],
+        "planets": [
+            {
+                "name": "Mallice",
+                "resources": 0,
+                "influence": 3,
+                "type": ["cultural", "legendary"]
+            }
+        ]
+    }
+]

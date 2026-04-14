@@ -1,0 +1,14 @@
+[
+    {
+        "name" : , // text, REQUIRED
+        "cost" : , // numeric
+        "combat" : , // text
+        "move" : , // integer
+        "capacity" : , //integer
+        "sustain_damage" : ,//boolean
+        "bombardment" : , // text
+        "afb" : , // text
+        "space_cannon" : , // text
+        "planetary" : , // boolean
+    }
+]

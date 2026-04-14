@@ -1,0 +1,9 @@
+[
+    {
+        "name" : , // text, REQUIRED
+        "planet_trait" : , // text
+        "resource_modifier" : , // text
+        "influence_modifier" : , // text
+        "text" : , // text
+    }
+]
