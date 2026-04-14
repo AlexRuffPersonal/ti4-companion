@@ -70,4 +70,10 @@ export const shuffleDeck = (gameId, deckType) =>
 export const updateCommandTokens = (gameId, tokens) =>
   callFunction('game-update-command-tokens', { game_id: gameId, ...tokens })
 
+export const drawActionCard = (gameId) =>
+  callFunction('game-draw-action-card', { game_id: gameId })
+
+export const discardActionCard = (gameId, cardId) =>
+  callFunction('game-discard-action-card', { game_id: gameId, card_id: cardId })
+
 export { callFunction }
