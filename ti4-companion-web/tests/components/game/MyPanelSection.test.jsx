@@ -9,6 +9,7 @@ const PLAYER = {
   commodities: 3, trade_goods: 1,
   technologies: ['Neural Motivator', 'Sarween Tools'],
   leaders: { agent: 'unlocked', commander: 'locked', hero: 'locked' },
+  action_card_count: 4,
 }
 const PLANETS = [
   { id: 'pl1', player_id: 'p1', planet_name: 'Mecatol Rex', exhausted: false },
@@ -31,6 +32,7 @@ function renderPanel(overrides = {}) {
       onUpdateCommodities={vi.fn()}
       onUpdateTradeGoods={vi.fn()}
       onCycleLeader={vi.fn()}
+      onOpenActionCards={vi.fn()}
       {...overrides}
     />
   )
@@ -88,5 +90,14 @@ describe('MyPanelSection', () => {
   it('hides token redistribution controls outside status phase', () => {
     renderPanel({ game: { phase: 'action' } })
     expect(screen.queryByRole('button', { name: /confirm tokens/i })).not.toBeInTheDocument()
+  })
+
+  it('shows Action Cards button with count and calls onOpenActionCards when clicked', () => {
+    const onOpenActionCards = vi.fn()
+    renderPanel({ onOpenActionCards })
+    const btn = screen.getByRole('button', { name: /action cards \(4\)/i })
+    expect(btn).toBeInTheDocument()
+    fireEvent.click(btn)
+    expect(onOpenActionCards).toHaveBeenCalledOnce()
   })
 })

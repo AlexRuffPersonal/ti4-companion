@@ -5,6 +5,7 @@ export default function MyPanelSection({
   onPass, onEndTurn, onUpdateTokens,
   onExhaustPlanet, onReadyPlanet,
   onPickStrategyCard, onUpdateCommodities, onUpdateTradeGoods, onCycleLeader,
+  onOpenActionCards,
 }) {
   const tokens = player?.command_tokens ?? { tactic_total: 0, fleet: 0, strategy: 0 }
   const [draftTokens, setDraftTokens] = useState(tokens)
@@ -124,6 +125,11 @@ export default function MyPanelSection({
           <p className="text-dim text-xs">{player.technologies.join(' · ')}</p>
         </div>
       )}
+
+      {/* Action Cards */}
+      <button className="btn-ghost text-xs self-start" onClick={onOpenActionCards}>
+        ACTION CARDS ({player.action_card_count ?? 0})
+      </button>
     </div>
   )
 }
