@@ -38,8 +38,11 @@ function mockDb({
   playersError = null,
   updateError = null,
   objectives = [{ id: 'obj-1', expansion: 'base' }, { id: 'obj-2', expansion: 'base' }],
-  insertError = null,
+  insertObjError = null,
+  actionCards = [{ id: 'ac-1', quantity: 2, expansion: 'base' }, { id: 'ac-2', quantity: 1, expansion: 'base' }],
+  insertActionError = null,
 } = {}) {
+  const actionCardInsertMock = vi.fn().mockResolvedValue({ error: insertActionError })
   db.from.mockImplementation((table) => {
     if (table === 'games') {
       return {
@@ -67,10 +70,19 @@ function mockDb({
     }
     if (table === 'game_public_objectives') {
       return {
-        insert: vi.fn().mockResolvedValue({ error: insertError }),
+        insert: vi.fn().mockResolvedValue({ error: insertObjError }),
       }
     }
+    if (table === 'action_cards') {
+      return {
+        select: vi.fn().mockResolvedValue({ data: actionCards, error: null }),
+      }
+    }
+    if (table === 'game_action_card_deck') {
+      return { insert: actionCardInsertMock }
+    }
   })
+  return { actionCardInsertMock }
 }
 
 let handler
@@ -139,6 +151,27 @@ describe('game-start', () => {
 
   it('returns 500 when db update fails', async () => {
     mockDb({ updateError: { message: 'constraint violation' } })
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    expect(res.status).toBe(500)
+  })
+
+  it('inserts action cards into game_action_card_deck with correct copy counts', async () => {
+    const { actionCardInsertMock } = mockDb()
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    expect(res.status).toBe(200)
+    // ac-1 has quantity 2 → 2 copies; ac-2 has quantity 1 → 1 copy = 3 total
+    expect(actionCardInsertMock).toHaveBeenCalledOnce()
+    const inserted = actionCardInsertMock.mock.calls[0][0]
+    expect(inserted).toHaveLength(3)
+    expect(inserted.filter(r => r.action_card_id === 'ac-1')).toHaveLength(2)
+    expect(inserted.filter(r => r.action_card_id === 'ac-2')).toHaveLength(1)
+    expect(inserted[0]).toMatchObject({ game_id: GAME_ID, state: 'deck' })
+    const ac1Copies = inserted.filter(r => r.action_card_id === 'ac-1').map(r => r.copy_index).sort()
+    expect(ac1Copies).toEqual([0, 1])
+  })
+
+  it('returns 500 when action card insert fails', async () => {
+    mockDb({ insertActionError: { message: 'insert failed' } })
     const res = await handler(makeRequest({ game_id: GAME_ID }))
     expect(res.status).toBe(500)
   })
