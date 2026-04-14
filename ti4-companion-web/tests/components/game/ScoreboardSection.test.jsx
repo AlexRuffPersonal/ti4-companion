@@ -3,9 +3,9 @@ import { render, screen } from '@testing-library/react'
 import ScoreboardSection from '../../../src/components/game/ScoreboardSection.jsx'
 
 const PLAYERS = [
-  { id: 'p1', display_name: 'Alice', faction: 'Arborec', colour: 'green',  strategy_card: 1, passed: false, vp: 8 },
-  { id: 'p2', display_name: 'Bob',   faction: 'Letnev',  colour: 'red',    strategy_card: 3, passed: true,  vp: 5 },
-  { id: 'p3', display_name: 'Carol', faction: 'Saar',    colour: 'yellow', strategy_card: 5, passed: false, vp: 3 },
+  { id: 'p1', display_name: 'Alice', faction: 'Arborec', colour: 'green',  strategy_card: 1, passed: false, vp: 8, action_card_count: 3 },
+  { id: 'p2', display_name: 'Bob',   faction: 'Letnev',  colour: 'red',    strategy_card: 3, passed: true,  vp: 5, action_card_count: 0 },
+  { id: 'p3', display_name: 'Carol', faction: 'Saar',    colour: 'yellow', strategy_card: 5, passed: false, vp: 3, action_card_count: 7 },
 ]
 
 const ACTION_GAME = { phase: 'action', active_player_id: 'p1' }
@@ -55,5 +55,12 @@ describe('ScoreboardSection', () => {
     renderScoreboard({ game: { phase: 'strategy', active_player_id: null } })
     expect(screen.queryByText('ACTIVE')).not.toBeInTheDocument()
     expect(screen.queryByText('PASSED')).not.toBeInTheDocument()
+  })
+
+  it('shows action card count badge for each player', () => {
+    renderScoreboard()
+    expect(screen.getByLabelText('Alice action cards: 3')).toBeInTheDocument()
+    expect(screen.getByLabelText('Bob action cards: 0')).toBeInTheDocument()
+    expect(screen.getByLabelText('Carol action cards: 7')).toBeInTheDocument()
   })
 })

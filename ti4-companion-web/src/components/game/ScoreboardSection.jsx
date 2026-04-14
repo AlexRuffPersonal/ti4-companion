@@ -46,6 +46,12 @@ export default function ScoreboardSection({ players, game, currentPlayerId }) {
               {game?.phase === 'action' && isPassed && !isActive && (
                 <span className="label text-success text-xs">PASSED</span>
               )}
+              <span
+                className="label text-xs text-muted"
+                aria-label={`${player.display_name} action cards: ${player.action_card_count ?? 0}`}
+              >
+                ✦ {player.action_card_count ?? 0}
+              </span>
               <span className="font-display text-gold text-sm font-bold">{player.vp} VP</span>
             </div>
           )
