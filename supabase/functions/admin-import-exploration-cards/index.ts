@@ -1,4 +1,4 @@
-import { requireAdmin, AuthError } from '../_shared/auth.ts'
+import { requireServiceRole, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 
@@ -16,7 +16,7 @@ function validate(record: unknown, index: number): string | null {
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
   try {
-    await requireAdmin(req)
+    requireServiceRole(req)
   } catch (e) {
     if (e instanceof AuthError) {
       return errorResponse(e.message, e.message.startsWith('Forbidden') ? 403 : 401)
@@ -38,7 +38,11 @@ Deno.serve(async (req: Request) => {
   const { error: deleteError } = await db.from('exploration_cards').delete().neq('id', '00000000-0000-0000-0000-000000000000')
   if (deleteError) return errorResponse(`Delete failed: ${deleteError.message}`, 500)
 
-  const { error: insertError } = await db.from('exploration_cards').insert(body.records as object[])
+  const rows = (body.records as Record<string, unknown>[]).map(r => ({
+    ...r,
+    quantity: r.quantity ?? 1,
+  }))
+  const { error: insertError } = await db.from('exploration_cards').insert(rows)
   if (insertError) return errorResponse(`Insert failed: ${insertError.message}`, 500)
 
   return okResponse({ imported: (body.records as object[]).length })

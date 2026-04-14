@@ -32,6 +32,30 @@ export async function requireAuth(req: Request): Promise<string> {
 }
 
 /**
+ * Verifies the Authorization header contains a valid service role key by
+ * attempting a privileged DB query. Bypasses string comparison issues between
+ * the caller's key and the injected env var.
+ * Throws AuthError if the key is missing or cannot access protected data.
+ */
+export async function requireServiceRole(req: Request): Promise<void> {
+  const authHeader = req.headers.get('Authorization')
+  if (!authHeader?.startsWith('Bearer ')) {
+    throw new AuthError('Missing or invalid Authorization header')
+  }
+  const token = authHeader.slice(7).trim()
+  const client = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    token,
+    { auth: { persistSession: false } }
+  )
+  // profiles has RLS — only service role key can query it without a user context
+  const { error } = await client.from('profiles').select('user_id').limit(1)
+  if (error) {
+    throw new AuthError('Forbidden: invalid service key')
+  }
+}
+
+/**
  * Like requireAuth, but also verifies profiles.is_admin === true.
  * Throws AuthError with "Forbidden:" prefix for 403 vs 401.
  */

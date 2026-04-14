@@ -1,4 +1,4 @@
-import { requireAdmin, AuthError } from '../_shared/auth.ts'
+import { requireServiceRole, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 
@@ -18,7 +18,7 @@ function validate(record: unknown, index: number): string | null {
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
   try {
-    await requireAdmin(req)
+    requireServiceRole(req)
   } catch (e) {
     if (e instanceof AuthError) {
       return errorResponse(e.message, e.message.startsWith('Forbidden') ? 403 : 401)
