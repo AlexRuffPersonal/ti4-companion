@@ -1,4 +1,4 @@
-// Run from the project root: node supabase/scripts/import-action-cards.js
+// Run from the project root: node supabase/scripts/import-promissory-notes.js
 //
 // Reads SUPABASE_SERVICE_ROLE_KEY from ti4-companion-web/.env automatically.
 
@@ -6,8 +6,8 @@ const fs = require('fs')
 const path = require('path')
 
 const ENV_FILE = path.resolve(__dirname, '../../ti4-companion-web/.env')
-const JSON_FILE = path.resolve(__dirname, '../jsons/action-cards.json')
-const FUNCTION_URL = 'https://mgbagajfrfielqrjpuvi.supabase.co/functions/v1/admin-import-action-cards'
+const JSON_FILE = path.resolve(__dirname, '../jsons/promissory-notes.json')
+const FUNCTION_URL = 'https://mgbagajfrfielqrjpuvi.supabase.co/functions/v1/admin-import-promissory-notes'
 
 function loadEnv(envPath) {
   const lines = fs.readFileSync(envPath, 'utf8').split('\n')
@@ -31,7 +31,7 @@ async function main() {
   }
 
   const records = JSON.parse(fs.readFileSync(JSON_FILE, 'utf8'))
-  console.log(`Importing ${records.length} action cards...`)
+  console.log(`Importing ${records.length} promissory notes...`)
 
   const res = await fetch(FUNCTION_URL, {
     method: 'POST',
