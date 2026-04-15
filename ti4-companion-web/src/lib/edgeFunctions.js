@@ -76,4 +76,12 @@ export const drawActionCard = (gameId) =>
 export const discardActionCard = (gameId, cardId) =>
   callFunction('game-discard-action-card', { game_id: gameId, card_id: cardId })
 
+export const researchTechnology = (gameId, techName, exhaustPlanetIds = [], bypassPrerequisites = false) =>
+  callFunction('game-research-technology', {
+    game_id: gameId,
+    tech_name: techName,
+    exhaust_planet_ids: exhaustPlanetIds,
+    bypass_prerequisites: bypassPrerequisites,
+  })
+
 export { callFunction }

@@ -6,6 +6,7 @@ import {
   endTurn, passAction, advancePhase, scoreObjective,
   revealObjective, shuffleDeck, updateCommandTokens,
   drawActionCard, discardActionCard,
+  researchTechnology,
 } from '../lib/edgeFunctions.js'
 
 export function useGame(code, userId) {
@@ -266,5 +267,8 @@ export function useGame(code, userId) {
     // Phase 4b wrappers (action cards)
     drawTheActionCard: () => game ? drawActionCard(game.id) : Promise.reject(new Error('Game not loaded')),
     discardTheActionCard: (cardId) => game ? discardActionCard(game.id, cardId) : Promise.reject(new Error('Game not loaded')),
+    // Phase 4a wrappers (tech research)
+    researchTech: (techName, exhaustPlanetIds, bypassPrerequisites) =>
+      game ? researchTechnology(game.id, techName, exhaustPlanetIds, bypassPrerequisites) : Promise.reject(new Error('Game not loaded')),
   }
 }
