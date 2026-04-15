@@ -1,0 +1,52 @@
+[
+    {
+        "name" : "Dominus Orb",
+        "text" : "Before you move units during a tactical action, you may purge this card to move and transport units that are in systems that contain 1 of your command tokens.",
+        "purge_on_use" : true
+    },
+    {
+        "name" : "Maw Of Worlds",
+        "text" : "At the start of the agenda phase, you may purge this card and exhaust all of your planets to gain any 1 technology.",
+        "purge_on_use" : true
+    },
+    {
+        "name" : "Scepter Of Emelpar",
+        "text" : "When you would spend a token from your strategy pool, you may exhaust this card to spend a token from your reinforcements instead.",
+        "exhaustable" : true
+    },
+    {
+        "name" : "Shard Of The Throne",
+        "text" : "When you gain this card, gain 1 victory point; when you lose this card, lose 1 victory point.\nWhen a player gains control of a legendary planet you control or a planet you control in your home system, that player gains this card.",
+        "transferable" : true,
+        "vp_bearing" : true
+    },
+    {
+        "name" : "Stellar Converter",
+        "text" : "ACTION: Choose 1 non-home, non-legendary planet other than Mecatol Rex in a system that is adjacent to 1 or more of your units that have Bombardment; destroy all units on that planet and purge all its attachments and its planet card.\nThen, place the destroyed planet token on that planet and purge this card.",
+        "purge_on_use" : true
+    },
+    {
+        "name" : "The Codex",
+        "text" : "ACTION: Purge this card to take up to 3 action cards of your choice from the action card discard pile.",
+        "purge_on_use" : true
+    },
+    {
+        "name" : "The Crown Of Emphidia",
+        "text" : "After you perform a tactical action, you may exhaust this card to explore 1 planet you control.\nAt the end of the status phase, if you control the \"Tomb of Emphidia\", you may purge this card to gain 1 victory point.",
+        "exhaustable" : true,
+        "purge_on_use" : true
+    },
+    {
+        "name" : "The Crown Of Thalnos",
+        "text" : "During each combat round, this card's owner may reroll any number of dice, applying +1 to the results; any units that reroll dice but do not produce at least 1 hit are destroyed."
+    },
+    {
+        "name" : "The Obsidian",
+        "text" : "When you gain this card, draw 1 secret objective.\nYou can have 1 additional scored or unscored secret objective."
+    },
+    {
+        "name" : "The Prophet's Tears",
+        "text" : "When you research a technology, you may exhaust this card to ignore 1 prerequisite or draw 1 action card.",
+        "exhaustable" : true
+    }
+]

@@ -1,0 +1,34 @@
+[
+    {
+        "name" : "Ceasefire",
+        "text" : "After {{owner}} activates a system that contains 1 or more of your units:\n{{owner}} cannot move units into the active system.\nThen, return this card to {{owner}}.",
+        "returns_to_owner" : true
+    },
+    {
+        "name" : "Political Secret",
+        "text" : "When an agenda is revealed:\n{{owner}} cannot vote, play action cards, or use faction abilities until after that agenda has been resolved.\nThen, return this card to {{owner}}."
+    },
+    {
+        "name" : "Support For The Throne",
+        "text" : "When you receive this card, if you are not {{owner}}, you must play it faceup in your play area and gain 1 victory point.\nIf you activate a system that contains 1 or more of {{owner}}'s units, or if {{owner}} is eliminated, lose 1 victory point and return this card to {{owner}}.",
+        "into_play_area" : true
+    },
+    {
+        "name" : "Trade Agreement",
+        "text" : "When {{owner}} replenishes commodities:\n{{owner}} gives you all of his commodities.\nThen, return this card to {{owner}}."
+    },
+    {
+        "name" : "Alliance",
+        "text" : "When you receive this card, if you are not {{owner}}, you must place it faceup in your play area.\nWhile this card is in your play area, you can use {{owner}}'s commander ability, if unlocked.\nIf you activate a system that contains 1 or more of {{owner}}'s units, return this card to {{owner}}.",
+        "into_play_area" : true,
+        "expansion" : "pok"
+    },
+    {
+        "name" : "PLACEHOLDER",
+        "text" : "PLACEHOLDER",
+        "faction" : "PLACEHOLDER",
+        "purge_on_use" : false,
+        "into_play_area" : false,
+        "expansion" : ""
+    }
+]

@@ -1,15 +1,701 @@
 [
-    {
-        "name" : , // text, REQUIRED
-        "expansion" : , // text
-        "starting_techs" : , // text array
-        "home_tile_number" : , // text
-        "abilities" : {
-            "name" : , //text
-            "text" : , //text
+   {
+        "name" : "The Federation Of Sol",
+        "commodities" : 4,
+        "abilities" : [
+            {
+                "name" : "Orbital Drop",
+                "text" : "ACTION: Spend 1 token from your strategy pool to place 2 infantry from your reinforcements on 1 planet you control."
+            },
+            {
+                "name" : "Versatile",
+                "text" : "When you gain command tokens during the status phase, gain 1 additional command token."
+            }
+        ],
+        "starting_techs" : [
+            "Neural Motivator",
+            "Antimass Deflectors"
+        ],
+        "starting_units" : 
+        {
+            "carrier" : 2,
+            "destroyer" : 1,
+            "fighter" : 3,
+            "infantry" : 5,
+            "space_dock" : 1
         },
-        "flagship" : ,
-        "mech" : , //text
-        "promissory_notes" ,
+        "overridden_units" : [
+            "Advanced Carrier I",
+            "Spec Ops I"
+        ]
+    },
+    {
+        "name" : "The Mentak Coalition",
+        "commodities" : 2,
+        "abilities" : [
+            {
+                "name" : "Ambush",
+                "text" : "At the start of a space combat, you may roll 1 die for each of up to 2 of your cruisers or destroyers in the system. For each result equal to or greater than that ship's combat value, produce 1 hit; your opponent must assign it to 1 of his ships."
+            },
+            {
+                "name" : "Pillage",
+                "text" : "After 1 of your neighbors gains trade goods or resolves a transaction, if he has 3 or more trade goods, you make take 1 of his trade goods or commodities."
+            }
+        ],
+        "starting_techs" : [
+            "Sarween Tools",
+            "Plasma Scoring"
+        ],
+        "starting_units" : 
+        {
+            "carrier" : 1,
+            "cruiser" : 2,
+            "fighter" : 3,
+            "pds" : 1,
+            "infantry" : 4,
+            "space_dock" : 1
+        }
+    },
+    {
+        "name" : "The Yin Brotherhood",
+        "commodities" : 2,
+        "abilities" : [
+            {
+                "name" : "Indoctrination",
+                "text" : "At the start of a ground combat, you may spend 2 influence to replace 1 of your opponent's participating infantry with 1 infantry from your reinforcements."
+            },
+            {
+                "name" : "Devotion",
+                "text" : "After each space battle round, you may destroy 1 of your cruisers or destroyers to produce 1 hit and assign it to 1 of your opponent's ships."
+            }
+        ],
+        "starting_techs" : [
+            "Sarween Tools"
+        ],
+        "starting_units" : 
+        {
+            "carrier" : 2,
+            "destroyer" : 1,
+            "fighter" : 4,
+            "infantry" : 4,
+            "space_dock" : 1
+        }
+    },
+    {
+        "name" : "The Embers Of Muaat",
+        "commodities" : 4,
+        "abilities" : [
+            {
+                "name" : "Star Forge",
+                "text" : "ACTION: Spend 1 token from your strategy pool to place either 2 fighters or 1 destroyer from your reinforcements in a system that contains 1 or more of your war suns."
+            },
+            {
+                "name" : "Gashlai Physiology",
+                "text" : "Your ships can move through supernovas."
+            }
+        ],
+        "starting_techs" : [
+            "Plasma Scoring"
+        ],
+        "starting_units" : 
+        {
+            "war_sun" : 1,
+            "fighter" : 2,
+            "infantry" : 4,
+            "space_dock" : 1
+        },
+        "overridden_units" : [
+            "Prototype War Sun I"
+        ]
+    },
+    {
+        "name" : "The Arborec",
+        "commodities" : 3,
+        "abilities" : [
+            {
+                "name" : "Mitosis",
+                "text" : "Your space docks cannot produce infantry. At the start of the status phase, place 1 infantry from your reinforcements on any planet you control."
+            }
+        ],
+        "starting_techs" : [
+            "Magen Defense Grid"
+        ],
+        "starting_units" : 
+        {
+            "carrier" : 1,
+            "cruiser" : 1,
+            "fighter" : 2,
+            "pds" : 1,
+            "infantry" : 4,
+            "space_dock" : 1
+        },
+        "overridden_units" : [
+            "Letani Warrior I"
+        ]
+    },
+    {
+        "name" : "The L1Z1X Mindnet",
+        "commodities" : 2,
+        "abilities" : [
+            {
+                "name" : "Assimilate",
+                "text" : "When you gain control of a planet, replace each PDS and space dock that is on that planet with a matching unit from your reinforcements."
+            },
+            {
+                "name" : "Harrow",
+                "text" : "After each round of ground combat, your ships in the active system may use their Bombardment abilities against your opponent's ground forces on the planet."
+            }
+        ],
+        "starting_techs" : [
+            "Neural Motivator",
+            "Plasma Scoring"
+        ],
+        "starting_units" : 
+        {
+            "dreadnought" : 1,
+            "carrier" : 1,
+            "fighter" : 3,
+            "pds" : 1,
+            "infantry" : 5,
+            "space_dock" : 1
+        },
+        "overridden_units" : [
+            "Super-Dreadnought I"
+        ]
+    },
+    {
+        "name" : "The Winnu",
+        "commodities" : 3,
+        "abilities" : [
+            {
+                "name" : "Blood Ties",
+                "text" : "You do not have to spend influence to remove the custodians token from Mecatol Rex."
+            },
+            {
+                "name" : "Reclamation",
+                "text" : "After you resolve a tactical action during which you gained control of Mecatol Rex, you may place 1 PDS and 1 space dock from your reinforcements on Mecatol Rex."
+            }
+        ],
+        "starting_techs" : [
+            "no_prerequisites"
+        ],
+        "num_of_starting_techs" : 1,
+        "starting_units" : 
+        {
+            "carrier" : 1,
+            "cruiser" : 1,
+            "fighter" : 2,
+            "pds" : 1,
+            "infantry" : 2,
+            "space_dock" : 1
+        }
+    },
+    {
+        "name" : "The Nekro Virus",
+        "commodities" : 3,
+        "abilities" : [
+            {
+                "name" : "Galactic Threat",
+                "text" : "You cannot vote on agendas. Once per agenda phase, after an agenda is revealed, you may predict aloud the outcome of that agenda.\nIf your prediction is correct, gain 1 technology that is owned by a player who voted how you predicted."
+            },
+            {
+                "name" : "Technological Singularity",
+                "text" : "Once per combat, after 1 of your opponent's units is destroyed, you may gain 1 technology that is owned by that player."
+            },
+            {
+                "name" : "Propogation",
+                "text" : "You cannot research technology. When you would research a technology, gain 3 command tokens instead."
+            }
+        ],
+        "starting_techs" : [
+            "Daxcive Animators",
+            "Valefar Assimilator X",
+            "Valefar Assimilator Y"
+        ],
+        "starting_units" : 
+        {
+            "dreadnought" : 1,
+            "carrier" : 1,
+            "cruiser" : 1,
+            "fighter" : 2,
+            "infantry" : 2,
+            "space_dock" : 1
+        }
+    },
+    {
+        "name" : "The Naalu Collective",
+        "commodities" : 3,
+        "abilities" : [
+            {
+                "name" : "Telepathic",
+                "text" : "At the end of the strategy phase, place the Naalu \"0\" token on your strategy card; you are first in initiative order."
+            },
+            {
+                "name" : "Foresight",
+                "text" : "After another player moves ships into a system that contains 1 or more of your ships, you may place 1 token from your strategy pool in an adjacent system that does not contain another player's ships; move your ships from the active system into that system."
+            }
+        ],
+        "starting_techs" : [
+            "Neural Motivator",
+            "Sarween Tools"
+        ],
+        "starting_units" : 
+        {
+            "carrier" : 1,
+            "cruiser" : 1,
+            "destroyer" : 1,
+            "fighter" : 3,
+            "pds" : 1,
+            "infantry" : 4,
+            "space_dock" : 1
+        },
+        "overridden_units" : [
+            "Hybrid Crystal Fighter I"
+        ]
+    },
+    {
+        "name" : "The Barony Of Letnev",
+        "commodities" : 2,
+        "abilities" : [
+            {
+                "name" : "Munitions Reserve",
+                "text" : "At the start of each round of space combat, you may spend 2 trade goods; you may reroll any number of your dice during that combat round."
+            },
+            {
+                "name" : "Armada",
+                "text" : "The maximum number of non-fighter ships you can have in each system is equal to 2 more than the number of tokens in your fleet pool."
+            }
+        ],
+        "starting_techs" : [
+            "Antimass Deflectors",
+            "Plasma Scoring"
+        ],
+        "starting_units" : 
+        {
+            "dreadnought" : 1,
+            "carrier" : 1,
+            "destroyer" : 1,
+            "fighter" : 1,
+            "infantry" : 3,
+            "space_dock" : 1
+        }
+    },
+    {
+        "name" : "The Clan Of Saar",
+        "commodities" : 3,
+        "abilities" : [
+            {
+                "name" : "Scavenge",
+                "text" : "After you gain control of a planet, gain 1 trade good."
+            },
+            {
+                "name" : "Nomadic",
+                "text" : "You can score objectives even if you do not control the planets in your home system."
+            }
+        ],
+        "starting_techs" : [
+            "Antimass Deflectors"
+        ],
+        "starting_units" : {
+            "carrier" : 2,
+            "cruiser" : 1,
+            "fighter" : 2,
+            "infantry" : 4,
+            "space_dock" : 1
+        },
+        "overridden_units" : [
+            "Floating Factory I"
+        ]
+    },
+    {
+        "name" : "The Universities Of Jol-Nar",
+        "commodities" : 4,
+        "abilities" : [
+            {
+                "name" : "Fragile",
+                "text" : "Apply -1 to the result of each of your unit's combat rolls."
+            },
+            {
+                "name" : "Brilliant",
+                "text" : "When you spend a command token to resolve the secondary ability of the \"Technology\" strategy card, you may resolve the primary ability instead."
+            },
+            {
+                "name" : "Analytical",
+                "text" : "When you research a technology that is not a unit upgrade technology, you may ignore 1 prerequisite."
+            }
+        ],
+        "starting_techs" : [
+            "Neural Motivator",
+            "Antimass Deflectors",
+            "Sarween Tools",
+            "Plasma Scoring"
+        ],
+        "starting_units" : 
+        {
+            "dreadnought" : 1,
+            "carrier" : 2,
+            "fighter" :1,
+            "pds" : 2,
+            "infantry" : 2,
+            "space_dock" : 1
+        }
+    },
+    {
+        "name" : "Sardakk N'orr",
+        "commodities" : 3,
+        "abilities" : [
+            {
+                "name" : "Unrelenting",
+                "text" : "Apply +1 to the result of each of your unit's combat rolls."
+            }
+        ],
+        "starting_techs" : [],
+        "starting_units" : 
+        {
+            "carrier" : 2,
+            "cruiser" : 1,
+            "pds" : 1,
+            "infantry" : 5,
+            "space_dock" : 1
+        },
+        "overridden_units" : [
+            "Exotrireme I"
+        ]
+    },
+    {
+        "name" : "The Xxcha Kingdom",
+        "commodities" : 4,
+        "abilities" : [
+            {
+                "name" : "Peace Accords",
+                "text" : "After you resolve the primary or secondary ability of the \"Diplomacy\" strategy card, you may gain control of 1 planet other than Mecatol Rex that does not contain any units and is in a system that is adjacent to a planet you control."
+            },
+            {
+                "name" : "Quash",
+                "text" : "When an agenda is revealed, you may spend 1 token from you strategy pool to discard that agenda and reveal 1 agenda from the top of the deck. Players vote on this agenda instead."
+            }
+        ],
+        "starting_techs" : [
+            "Graviton Laser System"
+        ],
+        "starting_units" : {
+            "carrier" : 1,
+            "cruiser" : 2,
+            "fighter" : 3,
+            "pds" : 1,
+            "infantry" : 4,
+            "space_dock" : 1
+        }
+    },
+    {
+        "name" : "The Yssaril Tribes",
+        "commodities" : 3,
+        "abilities" : [
+            {
+                "name" : "Stall Tactics",
+                "text" : "ACTION: Discard 1 action card from your hand."
+            },
+            {
+                "name" : "Scheming",
+                "text" : "When you draw 1 or more action cards, draw 1 additional action card. Then, choose and discard 1 action card from your hand."
+            },
+            {
+                "name" : "Crafty",
+                "text" : "You can have any number of action cards in your hand. Game effects cannot prevent you from using this ability."
+            }
+        ],
+        "starting_techs" : [
+            "Neural Motivator"
+        ],
+        "starting_units" : 
+        {
+            "carrier" : 2,
+            "cruiser" : 1,
+            "fighter" : 2,
+            "pds" : 1,
+            "infantry" : 5,
+            "space_dock" : 1
+        }
+    },
+    {
+        "name" : "The Emirates Of Hacan",
+        "commodities" : 6,
+        "abilities" : [
+            {
+                "name" : "Masters Of Trade",
+                "text" : "You do not have to spend a command token to resolve the secondary ability \"Trade\" strategy card."
+            },
+            {
+                "name" : "Guild Ships",
+                "text" : "You can negotiate transactions with players who are not your neighbor."
+            },
+            {
+                "name" : "Arbiters",
+                "text" : "When you are negotiating a transactions, action cards can be exchanged as part of that transaction."
+            }
+        ],
+        "starting_techs" : [
+            "Antimass Deflectors",
+            "Sarween Tools"
+        ],
+        "starting_units" : 
+        {
+            "carrier" : 2,
+            "cruiser" : 1,
+            "fighter" : 2,
+            "infantry" : 4,
+            "space_dock" : 1
+        }
+    },
+    {
+        "name" : "The Ghosts Of Creuss",
+        "commodities" : 4,
+        "abilities" : [
+            {
+                "name" : "Quantum Entanglement",
+                "text" : "You treat all systems that contain either an alpha or beta wormhole as adjacent to each other. Game effects cannot prevent you from using this ability."
+            },
+            {
+                "name" : "Slipstream",
+                "text" : "During your tactical actions, apply +1 to the move value of each of your ships that starts its movement in your home system or in a system that contains either an alpha or beta wormhole."
+            },
+            {
+                "name" : "Creuss Gate",
+                "text" : "When you create the game board, place the Creuss Gate where your home system would normally be placed. The Creuss Gate system is not your home system. Then, place your home system in your play area."
+            }
+        ],
+        "starting_techs" : [
+            "Gravity Drive"
+        ],
+        "starting_units" : 
+        {
+            "carrier" : 1,
+            "destroyer" : 2,
+            "fighter" : 2,
+            "infantry" : 4,
+            "space_dock" : 1
+        }
+    },
+    {
+        "name" : "The Mahact Gene-Sorcerers",
+        "expansion" : "pok",
+        "commodities" : 3,
+        "abilities" : [
+            {
+                "name" : "Edict",
+                "text" : "When you win a combat, place 1 command token from your opponent's reinforcements in your fleet pool if it does not already contain 1 of that player's tokens; other player's tokens in your fleet pool increase your fleet limit but cannot be redistributed."
+            },
+            {
+                "name" : "Imperia",
+                "text" : "While another player's command token is in your fleet pool, you can use the ability of that player's commander, if it is unlocked."
+            },
+            {
+                "name" : "Hubris",
+                "text" : "During setup, purge your \"Alliance\" promissory note. Other players cannot give you their \"Alliance\" promissory notes."
+            }
+        ],
+        "starting_techs" : [
+            "Bio-Stims",
+            "Predictive Intelligence"
+        ],
+        "starting_units" : 
+        {
+            "dreadnought" : 1,
+            "carrier" : 1,
+            "cruiser" : 1,
+            "fighter" : 2,
+            "infantry" : 3,
+            "space_dock" : 1
+        },
+        "overridden_units" : [
+            "Crimson Legionnaire I"
+        ]
+    },
+    {
+        "name" : "The Nomad",
+        "expansion" : "pok",
+        "commodities" : 4,
+        "abilities" : [
+            {
+                "name" : "The Company",
+                "text" : "During setup, take the 2 additional Nomad faction agents and place them next to your faction sheet; you have 3 agents."
+            },
+            {
+                "name" : "Future Sight",
+                "text" : "During the agenda phase, after an outcome you voted for or predicted is resolved, gain 1 trade good."
+            }
+        ],
+        "starting_techs" : [
+            "Sling Relay"
+        ],
+        "starting_units" : 
+        {
+            "flagship" : 1,
+            "carrier" : 1,
+            "destroyer" : 1,
+            "fighter" : 3,
+            "infantry" : 4,
+            "space_dock" : 1
+        }
+    },
+    {
+        "name" : "The Vuil'raith Cabal",
+        "expansion" : "pok",
+        "commodities" : 2,
+        "abilities" : [
+            {
+                "name" : "Devour",
+                "text" : "Capture your opponent's non-structure units that are destroyed during combat."
+            },
+            {
+                "name" : "Amalgamation",
+                "text" : "When you produce a unit, you may return 1 captured unit of that type to produce that unit without spending resources."
+            },
+            {
+                "name" : "Riftmeld",
+                "text" : "When you research a unit upgrade technology, you may return 1 captured unit of that type to ignore all of that technology's prerequisites."
+            }
+        ],
+        "starting_techs" : [
+            "Self-Assembly Routines"
+        ],
+        "starting_units" : 
+        {
+            "dreadnought" : 1,
+            "carrier" : 1,
+            "cruiser" : 1,
+            "fighter" : 3,
+            "infantry" : 3,
+            "space_dock" : 1
+        },
+        "overridden_units" : [
+            "Dimensional Tear I"
+        ]
+    },
+    {
+        "name" : "The Titans Of Ul",
+        "expansion" : "pok",
+        "commodities" : 2,
+        "abilities" : [
+            {
+                "name" : "Terragenesis",
+                "text" : "After you explore a planet that does not have a sleeper token, you may place or move 1 sleeper token onto that planet."
+            },
+            {
+                "name" : "Awaken",
+                "text" : "After you activate a system that contains 1 or more of your sleeper tokens, you may replace each of those tokens with 1 PDS from your reinforcements."
+            },
+            {
+                "name" : "Coalescence",
+                "text" : "If your flagship or your Awaken ability places your units into the same space area or onto the same planet as another player's units, your units must participate in combat during the \"Space Combat\" or \"Ground Combat\" steps."
+            }
+        ],
+        "starting_techs" : [
+            "Antimass Deflectors",
+            "Scanlink Drone Network"
+        ],
+        "starting_units" : 
+        {
+            "dreadnought" : 1,
+            "cruiser" : 2,
+            "fighter" : 2,
+            "infantry" : 3,
+            "space_dock" : 1
+        },
+        "overridden_units" : [
+            "Saturn Engine I",
+            "Hel-Titan I"
+        ]
+    },
+    {
+        "name" : "The Empyrean",
+        "expansion" : "pok",
+        "commodities" : 4,
+        "abilities" : [
+            {
+                "name" : "Voidborn",
+                "text" : "Nebulae do not affect your ships' movement."
+            },
+            {
+                "name" : "Aetherpassage",
+                "text" : "After a player activates a system, you may allow that player to move their ships through systems that contain your ships."
+            },
+            {
+                "name" : "Dark Whispers",
+                "text" : "During setup, take the additional Empyrean faction promissory note; you have 2 faction promissory notes."
+            }
+        ],
+        "starting_techs" : [
+            "Dark Energy Tap"
+        ],
+        "starting_units" : 
+        {
+            "carrier" : 2,
+            "destroyer" : 1,
+            "fighter" : 2,
+            "infantry" : 4,
+            "space_dock" : 1
+        }
+    },
+    {
+        "name" : "The Naaz-Rokha Alliance",
+        "expansion" : "pok",
+        "commodities" : 3,
+        "abilities" : [
+            {
+                "name" : "Distant Suns",
+                "text" : "When you explore a planet that contains 1 of your mechs, you may draw 1 additional card; choose 1 to resolve and discard the rest."
+            },
+            {
+                "name" : "Fabrication",
+                "text" : "ACTION: Either purge 2 of your relic fragments to gain 1 relic or purge 1 of your relic fragments to gain 1 command token."
+            }
+        ],
+        "starting_techs" : [
+            "Psychoarchaeology",
+            "AI Development Algorithm"
+        ],
+        "starting_units" : 
+        {
+            "carrier" : 2,
+            "destroyer" : 1,
+            "fighter" : 2,
+            "infantry" : 3,
+            "space_dock" : 1,
+            "mech" : 1
+        }
+    },
+    {
+        "name" : "The Argent Flight",
+        "expansion" : "pok",
+        "commodities" : 3,
+        "abilities" : [
+            {
+                "name" : "Zeal",
+                "text" : "You always vote first during the agenda phase. When you cast at least 1 vote, cast 1 additional vote for each player in the game, including you."
+            },
+            {
+                "name" : "Raid Formation",
+                "text" : "When 1 or more of your units use Anti-Fighter Barrage, for each hit produced in excess of your opponent's fighters, choose 1 of your opponent's ships that has Sustain Damage to become damaged."
+            }
+        ],
+        "starting_techs" : [
+            "Neural Motivator",
+            "Sarween Tools",
+            "Plasma Scoring"
+        ],
+        "num_of_starting_techs" : 2,
+        "starting_units" : 
+        {
+            "carrier" : 1,
+            "destroyer" : 2,
+            "fighter" : 2,
+            "pds" : 1,
+            "infantry" : 5,
+            "space_dock" : 1
+        },
+        "overridden_units" : [
+            "Strike Wing Alpha I"
+        ]
     }
 ]

@@ -1,14 +1,556 @@
 [
     {
-        "name" : , // text, REQUIRED
-        "cost" : , // numeric
-        "combat" : , // text
-        "move" : , // integer
-        "capacity" : , //integer
-        "sustain_damage" : ,//boolean
-        "bombardment" : , // text
-        "afb" : , // text
-        "space_cannon" : , // text
-        "planetary" : , // boolean
+        "name": "Dreadnought I",
+        "unit_type" : "dreadnought",
+        "cost" : 4,
+        "combat" : "5",
+        "move" : 1,
+        "capacity" : 1,
+        "sustain_damage" : true,
+        "bombardment" : "5"
+    },
+    {
+        "name": "Carrier I",
+        "unit_type" : "carrier",
+        "cost" : 3,
+        "combat" : "9",
+        "move" : 1,
+        "capacity" : 4
+    },
+    {
+        "name": "Cruiser I",
+        "unit_type" : "cruiser",
+        "cost" : 2,
+        "combat" : "7",
+        "move" : 2
+    },
+    {
+        "name": "Destroyer I",
+        "unit_type" : "destroyer",
+        "cost" : 1,
+        "combat" : "9",
+        "move" : 2,
+        "afb" : "9(x2)"
+    },
+    {
+        "name": "Fighter I",
+        "unit_type" : "fighter",
+        "cost" : 0.5,
+        "combat" : "9"
+    },
+    {
+        "name": "PDS I",
+        "unit_type" : "pds",
+        "space_cannon" : "6",
+        "planetary_shield" : true
+    },
+    {
+        "name": "Infantry I",
+        "unit_type" : "infantry",
+        "cost" : 0.5,
+        "combat" : "8"
+    },
+    {
+        "name": "Space Dock 1",
+        "unit_type" : "space_dock",
+        "production" : "X",
+        "abilities" : [
+            "This unit's Production value is equal to 2 more than the resource value of this planet.",
+            "Up to 3 fighters in this system do not count against your ships' capacity."
+        ]
+    },
+    {
+        "name": "War Sun",
+        "unit_type" : "war_sun",
+        "cost" : 12,
+        "combat" : "3(x3)",
+        "move" : 2,
+        "capacity" : 6,
+        "sustain_damage" : true,
+        "bombardment" : "3(x3)",
+        "abilities" : [
+            "Other players' units in this system lose Planetary Shield."
+        ]
+    },
+    {
+        "name": "Dreadnought II",
+        "unit_type" : "dreadnought",
+        "cost" : 4,
+        "combat" : "5",
+        "move" : 2,
+        "capacity" : 1,
+        "sustain_damage" : true,
+        "bombardment" : "5",
+        "abilities" : [
+            "This unit cannot be destroyed by \"Direct Hit\" action cards."
+        ]
+    },
+    {
+        "name": "Carrier II",
+        "unit_type" : "carrier",
+        "cost" : 3,
+        "combat" : "9",
+        "move" : 2,
+        "capacity" : 6
+    },
+    {
+        "name": "Cruiser II",
+        "unit_type" : "cruiser",
+        "cost" : 2,
+        "combat" : "6",
+        "move" : 3,
+        "capacity" : 1
+    },
+    {
+        "name": "Destroyer II",
+        "unit_type" : "destroyer",
+        "cost" : 1,
+        "combat" : "8",
+        "move" : 2,
+        "afb" : "6(x3)"
+    },
+    {
+        "name": "Fighter II",
+        "unit_type" : "fighter",
+        "cost" : 0.5,
+        "combat" : "8",
+        "move" : 2,
+        "abilities" : [
+            "This unit may move without being transported. Fighters in excess of your ships' capacity count against your fleet pool."
+        ]
+    },
+    {
+        "name": "PDS II",
+        "unit_type" : "pds",
+        "space_cannon" : "5",
+        "planetary_shield" : true,
+        "abilities" : [
+            "You may use this unit's Space Cannon against ships that are adjacent to this unit's system."
+        ]
+    },
+    {
+        "name": "Infantry II",
+        "unit_type" : "infantry",
+        "cost" : 0.5,
+        "combat" : "7",
+        "abilities" : [
+            "After this unit is destroyed, roll 1 die. If the result is 6 or greater, place the unit on this card. At the start of your next turn, place each unit that is on this card on a planet you control in your home system."
+        ]
+    },
+    {
+        "name": "Space Dock II",
+        "unit_type" : "space_dock",
+        "production" : "X",
+        "abilities" : [
+            "This unit's Production value is equal to 4 more than the resource value of this planet.",
+            "Up to 3 fighters in this system do not count against your ships' capacity."
+        ]
+    },
+    {
+        "name": "Genesis",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "5(x2)",
+        "move" : 1,
+        "capacity" : 12,
+        "sustain_damage" : true,
+        "abilities" : [
+            "At the end of the status phase, place 1 infantry from your reinforcements in this system's space area."
+        ]
+    },
+    {
+        "name": "Advanced Carrier I",
+        "unit_type" : "carrier",
+        "cost" : 3,
+        "combat" : "9",
+        "move" : 1,
+        "capacity" : 6
+    },
+    {
+        "name": "Spec Ops I",
+        "unit_type" : "infantry",
+        "cost" : 0.5,
+        "combat" : "7"
+    },
+    {
+        "name": "Fourth Moon",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "7(x2)",
+        "move" : 1,
+        "capacity" : 3,
+        "sustain_damage" : true,
+        "abilities" : [
+            "Other players' ships in this system cannot use Sustain Damage."
+        ]
+    },
+    {
+        "name": "Van Hauge",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "9(x2)",
+        "move" : 1,
+        "capacity" : 3,
+        "sustain_damage" : true,
+        "abilities" : [
+            "When this ship is destroyed, destroy all ships in this system."
+        ]
+    },
+    {
+        "name": "The Inferno",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "5(x2)",
+        "move" : 1,
+        "capacity" : 3,
+        "sustain_damage" : true,
+        "abilities" : [
+            "ACTION: Spend 1 token from your strategy pool to place 1 cruiser in this unit's system."
+        ]
+    },
+    {
+        "name": "Prototype War Sun I",
+        "unit_type" : "war_sun",
+        "cost" : 12,
+        "combat" : "3(x3)",
+        "move" : 1,
+        "capacity" : 6,
+        "sustain_damage" : true,
+        "bombardment" : "3(x3)",
+        "abilities" : [
+            "Other players' units in this system lose Planetary Shield."
+        ]
+    },
+    {
+        "name": "Duha Menaimon",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "7(x2)",
+        "move" : 1,
+        "capacity" : 5,
+        "sustain_damage" : true,
+        "abilities" : [
+            "After you activate this system, you may produce up to 5 units in this system."
+        ]
+    },
+    {
+        "name": "Letani Warrior I",
+        "unit_type" : "infantry",
+        "cost" : 0.5,
+        "combat" : "8",
+        "production" : "1"
+    },
+    {
+        "name": "[0,0,1]",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "5(x2)",
+        "move" : 1,
+        "capacity" : 5,
+        "sustain_damage" : true,
+        "abilities" : [
+            "During a space combat, hits produced by this ship and by this ship and by your dreadnoughts in this system must be assigned to non-fighter ships if able."
+        ]
+    },
+    {
+        "name": "Super-Dreadnought I",
+        "unit_type" : "dreadnought",
+        "cost" : 4,
+        "combat" : "5",
+        "move" : 1,
+        "capacity" : 2,
+        "sustain_damage" : true,
+        "bombardment" : "5"
+    },
+    {
+        "name": "Salai Sai Corian",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "7",
+        "move" : 1,
+        "capacity" : 3,
+        "sustain_damage" : true,
+        "abilities" : [
+            "When this unit makes a combat roll, it rolls a number of dice equal to the number of your opponent's non-fighter ships in this system."
+        ]
+    },
+    {
+        "name": "The Alastor",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "9(x2)",
+        "move" : 1,
+        "capacity" : 3,
+        "sustain_damage" : true,
+        "abilities" : [
+            "At the start of a space combat, choose any number of your ground forces in this system to participate in that combat as if they were ships."
+        ]
+    },
+    {
+        "name": "Matriarch",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "9(x2)",
+        "move" : 1,
+        "capacity" : 6,
+        "sustain_damage" : true,
+        "abilities" : [
+            "During an invasion in this system, you may commit fighters to planets as if they were ground forces. After combat, return those units to the space area."
+        ]
+    },
+    {
+        "name": "Hybrid Crystal Fighter I",
+        "unit_type" : "fighter",
+        "cost" : 0.5,
+        "combat" : "8"
+    },
+    {
+        "name": "Arc Secundus",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "5(x2)",
+        "move" : 1,
+        "capacity" : 3,
+        "sustain_damage" : true,
+        "bombardment" : "5(x3)",
+        "abilities" : [
+            "Other players' units in this system lose Planetary Shield. At the start of each space combat round, repair this ship."
+        ]
+    },
+    {
+        "name": "Son Of Ragh",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "5(x2)",
+        "move" : 1,
+        "capacity" : 3,
+        "sustain_damage" : true,
+        "afb" : "6(x4)"
+    },
+    {
+        "name": "Floating Factory II",
+        "unit_type" : "space_dock",
+        "move" : 1,
+        "capacity" : 4,
+        "production" : 5,
+        "abilities" : [
+            "This unit is placed in a space area instead on a planet. This unit can move and retreat as if it were a ship. If this unit is blockaded, it is destroyed."
+        ]
+    },
+    {
+        "name": "J.N.S. Hylarim",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "6(x2)",
+        "move" : 1,
+        "capacity" : 3,
+        "sustain_damage" : true,
+        "abilities" : [
+            "When making a combat roll for this ship, each result of 9 or 10, before applying modifiers, produces 2 additional hits."
+        ]
+    },
+    {
+        "name": "Sardakk N'orr",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "6(x2)",
+        "move" : 1,
+        "capacity" : 3,
+        "sustain_damage" : true,
+        "abilities" : [
+            "Apply +1 to the result of each of your other ships combat rolls in this system."
+        ]
+    },
+    {
+        "name": "Exotrireme I",
+        "unit_type" : "dreadnought",
+        "cost" : 4,
+        "combat" : "5",
+        "move" : 1,
+        "capacity" : 1,
+        "sustain_damage" : true,
+        "bombardment" : "4(x2)"
+    },
+    {
+        "name": "Loncara Ssodu",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "7(x2)",
+        "move" : 1,
+        "capacity" : 3,
+        "sustain_damage" : true,
+        "space_cannon" : "5(x3)",
+        "abilities" : [
+            "You may use this unit's Space Cannon against ships that are in adjacent systems."
+        ]
+    },
+    {
+        "name": "Y'sia Y'ssrila",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "5(x2)",
+        "move" : 2,
+        "capacity" : 3,
+        "sustain_damage" : true,
+        "abilities" : [
+            "This ship can move through systems that contain other players' ships."
+        ]
+    },
+    {
+        "name": "Wrath Of Kenara",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "7(x2)",
+        "move" : 1,
+        "capacity" : 3,
+        "sustain_damage" : true,
+        "abilities" : [
+            "After you roll a die during a space combat in this system, you may spend 1 trade good to apply +1 to the result."
+        ]
+    },
+    {
+        "name": "Hil Colish",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "5",
+        "move" : 1,
+        "capacity" : 3,
+        "sustain_damage" : true,
+        "abilities" : [
+            "This ship's system contains a delta wormhole. During movement, this ship may move before or after your other ships."
+        ]
+    },
+    {
+        "name": "Arvicon Rex",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "5(x2",
+        "move" : 1,
+        "capacity" : 3,
+        "sustain_damage" : true,
+        "abilities" : [
+            "During combat against an opponent whose command token is not in your fleet pool, apply +2 to the results of this unit's combat rolls."
+        ]
+    },
+    {
+        "name": "Crimson Legionnaire I",
+        "unit_type" : "infantry",
+        "cost" : 0.5,
+        "combat" : "8",
+        "abilities" : [
+            "After this unit is destroyed, gain 1 commodity or convert 1 of your commodities to a trade good."
+        ]
+    },
+    {
+        "name": "Memoria I",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "7(x2)",
+        "move" : 1,
+        "capacity" : 3,
+        "sustain_damage" : true,
+        "afb" : "8(x3)",
+        "abilities" : [
+            "You may treat this unit as if it were adjacent to systems that contain 1 or more of your mechs."
+        ]
+    },
+    {
+        "name": "The Terror Between",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "5(x2)",
+        "move" : 1,
+        "capacity" : 3,
+        "sustain_damage" : true,
+        "bombardment" : 5,
+        "abilities" : [
+            "Capture all other non-structure units that are destroyed in this system, including your own."
+        ]
+    },
+    {
+        "name": "Dimensional Tear I",
+        "unit_type" : "space_dock",
+        "production" : 5,
+        "abilities" : [
+            "This system is a gravity rift; your ships do not roll for this gravity rift. Place a dimensional tear token beneath this unit as a reminder.",
+            "Up to 6 fighters in this system do not count against your ships' capacity."
+        ]
+    },
+    {
+        "name": "Ouranos",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "7(x2)",
+        "move" : 1,
+        "capacity" : 3,
+        "sustain_damage" : true,
+        "abilities" : [
+            "DEPLOY: After you activate a system that contains 1 or more of your PDS, you may replace 1 of those PDS with this unit."
+        ]
+    },
+    {
+        "name": "Saturn Engine I",
+        "unit_type" : "cruiser",
+        "cost" : 2,
+        "combat" : "7",
+        "move" : 2,
+        "capacity" : 1
+    },
+    {
+        "name": "Hel-Titan I",
+        "unit_type" : "pds",
+        "combat" : "7",
+        "sustain_damage" : true,
+        "space_cannon" : "6",
+        "planetary_shield" : true,
+        "production" : 1,
+        "abilities" : [
+            "This unit is treated as both a structure and a ground force. It cannot be transported."
+        ]
+    },
+    {
+        "name": "Dynamo",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "5(x2)",
+        "move" : 1,
+        "capacity" : 3,
+        "sustain_damage" : true,
+        "abilities" : [
+            "After any player's unit in this system or an adjacent system uses Sustain Damage, you may spend 2 influence to repair that unit."
+        ]
+    },
+    {
+        "name": "Visz El Vir",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "9(x2)",
+        "move" : 1,
+        "capacity" : 4,
+        "sustain_damage" : true,
+        "abilities" : [
+            "Your mechs in this system roll 1 additional die during combat."
+        ]
+    },
+    {
+        "name": "Quetzecoatl",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "7(x2)",
+        "move" : 1,
+        "capacity" : 3,
+        "sustain_damage" : true,
+        "abilities" : [
+            "Other players cannot use Space Cannon against your ships in this system."
+        ]
+    },
+    {
+        "name": "Strike Wing Alpha I",
+        "unit_type" : "destroyer",
+        "cost" : 1,
+        "combat" : "8",
+        "move" : 2,
+        "capacity" : 1,
+        "afb" : "9(x2)"
     }
 ]

@@ -1,9 +1,57 @@
 [
     {
-        "name" : , // text, REQUIRED
-        "planet_trait" : , // text
-        "resource_modifier" : , // text
-        "influence_modifier" : , // text
-        "text" : , // text
+        "name" : "Biotic Research Facility",
+        "resource_modifier" : 1,
+        "influence_modifier" : 1,
+        "text" : "green"
+    },
+    {
+        "name" : "Cybernetic Research Facility",
+        "resource_modifier" : 1,
+        "influence_modifier" : 1,
+        "text" : "yellow"
+    },
+    {
+        "name" : "Demilitarized Zone",
+        "text" : "Units cannot be committed to, produced on, or placed on this planet. During the agenda phase, this planet's planet card can be traded as part of a transaction."
+    },
+    {
+        "name" : "Dyson Sphere",
+        "resource_modifier" : 2,
+        "influence_modifier" : 1
+    },
+    {
+        "name" : "Lazax Survivors",
+        "resource_modifier" : 1,
+        "influence_modifier" : 2
+    },
+    {
+        "name" : "Mining World",
+        "resource_modifier" : 2
+    },
+    {
+        "name" : "Paradise World",
+        "influence_modifier" : 2
+    },
+    {
+        "name" : "Propulsion Research Facility",
+        "resource_modifier" : 1,
+        "influence_modifier" : 1,
+        "text" : "blue"
+    },
+    {
+        "name" : "Rich World",
+        "resource_modifier" : 1
+    },
+    {
+        "name" : "Tomb Of Emphidia",
+        "influence_modifier" : 1,
+        "text" : "If the player who has the \"Crown of Emphidia\" relic has control of this planet, they can use that relic to gain 1 VP."
+    },
+    {
+        "name" : "Warfare Research Facility",
+        "resource_modifier" : 1,
+        "influence_modifier" : 1,
+        "tech_specialty" : "red"
     }
 ]

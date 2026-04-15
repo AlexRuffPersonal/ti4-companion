@@ -1,0 +1,222 @@
+[
+    {
+        "name" : "Corner The Market",
+        "stage" : 1,
+        "condition" : "Control 4 planets that each have the same planet trait."
+    },
+    {
+        "name" : "Develop Weaponry",
+        "stage" : 1,
+        "condition" : "Own 2 unit upgrade technologies."
+    },
+    {
+        "name" : "Diversify Research",
+        "stage" : 1,
+        "condition" : "Own 2 technologies in each of 2 colors."
+    },
+    {
+        "name" : "Erect A Moment",
+        "stage" : 1,
+        "condition" : "Spend 8 resources."
+    },
+    {
+        "name" : "Expand Borders",
+        "stage" : 1,
+        "condition" : "Control 6 planets in non-home systems."
+    },
+    {
+        "name" : "Found Research Outposts",
+        "stage" : 1,
+        "condition" : "Control 3 planets that have technology specialties."
+    },
+    {
+        "name" : "Intimidate Council",
+        "stage" : 1,
+        "condition" : "Have 1 or more ships in 2 systems that are adjacent to Mecatol Rex's system."
+    },
+    {
+        "name" : "Lead From The Front",
+        "stage" : 1,
+        "condition" : "Spend a total of 3 tokens from your tactic and/or strategy pools."
+    },
+    {
+        "name" : "Negotiate Trade Routes",
+        "stage" : 1,
+        "condition" : "Spend 5 trade goods."
+    },
+    {
+        "name" : "Sway The Council",
+        "stage" : 1,
+        "condition" : "Spend 8 influence."
+    },
+    {
+        "name" : "Centralize Galactic Trade",
+        "stage" : 2,
+        "condition" : "Spend 10 trade goods."
+    },
+    {
+        "name" : "Conquer The Weak",
+        "stage" : 2,
+        "condition" : "Control 1 planet that is in another player's home system."
+    },
+    {
+        "name" : "Form Galactic Brain Trust",
+        "stage" : 2,
+        "condition" : "Control 5 planets that have technology specialties."
+    },
+    {
+        "name" : "Found A Golden Age",
+        "stage" : 2,
+        "condition" : "Spend 16 resources"
+    },
+    {
+        "name" : "Galvanize The People",
+        "stage" : 2,
+        "condition" : "Spend a total of 6 tokens from your tactic and/or strategy pools."
+    },
+    {
+        "name" : "Manipulate Galactic Law",
+        "stage" : 2,
+        "condition" : "Spend 16 influence."
+    },
+    {
+        "name" : "Master The Sciences",
+        "stage" : 2,
+        "condition" : "Own 2 technologies in each of 4 colors."
+    },
+    {
+        "name" : "Revolutionize Warfare",
+        "stage" : 2,
+        "condition" : "Own 3 unit upgrade technologies."
+    },
+    {
+        "name" : "Subdue The Galaxy",
+        "stage" : 2,
+        "condition" : "Control 11 planets in non-home systems."
+    },
+    {
+        "name" : "Unify The Colonies",
+        "stage" : 2,
+        "condition" : "Control 6 planets that each have the same planet trait."
+    },
+    {
+        "name" : "Amass Wealth",
+        "stage" : 1,
+        "condition" : "Spend 3 influence, 3 resources, and 3 trade goods.",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Build Defenses",
+        "stage" : 1,
+        "condition" : "Have 4 or more structures.",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Discover Lost Outposts",
+        "stage" : 1,
+        "condition" : "Control 2 planets that have attachments.",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Engineer A Marvel",
+        "stage" : 1,
+        "condition" : "Have your flagship or a war sun on the game board.",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Explore Deep Space",
+        "stage" : 1,
+        "condition" : "Have units in 3 systems that do not contain planets.",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Improve Infrastructure",
+        "stage" : 1,
+        "condition" : "Have structures on 3 planets outside of your home system.",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Make History",
+        "stage" : 1,
+        "condition" : "Have units in 2 systems that contain legendary planets, Mecatol Rex, or anomalies.",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Populate The Outer Rim",
+        "stage" : 1,
+        "condition" : "Have units in 3 systems on the edge of the game board other than your home system.",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Push Boundaries",
+        "stage" : 1,
+        "condition" : "Control more planets than each of 2 of your neighbors.",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Raise A Fleet",
+        "stage" : 1,
+        "condition" : "Have 5 or more non-fighter ships in 1 system.",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Achieve Supremacy",
+        "stage" : 2,
+        "condition" : "Have your flagship or a war sun in another player's home system or the Mecatol Rex system.",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Become A Legend",
+        "stage" : 2,
+        "condition" : "Have units in 4 systems that contain legendary planets, Mecatol Rex, or anomalies.",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Command An Armada",
+        "stage" : 2,
+        "condition" : "Have 8 or more non-fighter ships in 1 system.",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Construct Massive Cities",
+        "stage" : 2,
+        "condition" : "Have 7 or more structures.",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Control The Borderlands",
+        "stage" : 2,
+        "condition" : "Have units in 5 systems on the edge of the game board other than your home system.",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Hold Vast Reserves",
+        "stage" : 2,
+        "condition" : "Spend 6 influence, 6 resources, and 6 trade goods.",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Patrol Vast Territories",
+        "stage" : 2,
+        "condition" : "Have units in 5 systems that do not contain planets.",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Protect The Border",
+        "stage" : 2,
+        "condition" : "Have structures on 5 planets outside of your home system.",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Reclaim Ancient Monuments",
+        "stage" : 2,
+        "condition" : "Control 3 planets that have attachments.",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Rule Distant Lands",
+        "stage" : 2,
+        "condition" : "Control 2 planets that are each in or adjacent to a different, other player's home system.",
+        "expansion" : "pok"
+    }
+]

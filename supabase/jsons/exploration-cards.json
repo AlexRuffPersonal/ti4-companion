@@ -1,0 +1,177 @@
+[
+    {
+        "name" : "Abandoned Warehouses",
+        "deck_type" : "industrial",
+        "text" : "You may gain 2 commodities, or you may convert up to 2 of your commodities to trade goods.",
+        "quantity" : 4
+    },
+    {
+        "name" : "Biotic Research Facility",
+        "deck_type" : "industrial",
+        "has_attachment" : true
+    },
+    {
+        "name" : "Core Mine",
+        "deck_type" : "hazardous",
+        "text" : "If you have at least 1 mech on this planet, or if you remove 1 infantry from this planet, gain 1 trade good.",
+        "quantity" : 3
+    },
+    {
+        "name" : "Cultural Relic Fragment",
+        "deck_type" : "cultural",
+        "quantity" : 9,
+        "relic_fragment_type" : "cultural"
+    },
+    {
+        "name" : "Cybernetic Research Facility",
+        "deck_type" : "industrial",
+        "has_attachment" : true
+    },
+    {
+        "name" : "Demilitarized Zone",
+        "deck_type" : "cultural",
+        "text" : "Return all structures on this planet to your reinforcements. Then, return all ground forces on this planet to the space area.",
+        "has_attachment" : true
+    },
+    {
+        "name" : "Derelict Vessel",
+        "deck_type" : "frontier",
+        "text" : "Draw 1 secret objective.",
+        "quantity" : 2
+    },
+    {
+        "name" : "Dyson Sphere",
+        "deck_type" : "cultural",
+        "has_attachment" : true
+    },
+    {
+        "name" : "Enigmatic Device",
+        "deck_type" : "frontier",
+        "text" : "Place this card faceup in your play area.\nACTION: You may spend 6 resources to purge this card to research 1 technology.",
+        "quantity" : 2
+    },
+    {
+        "name" : "Expedition",
+        "deck_type" : "hazardous",
+        "text" : "If you have at least 1 mech on this planet, or if you remove 1 infantry from this planet, ready this planet.",
+        "quantity" : 3
+    },
+    {
+        "name" : "Freelancers",
+        "deck_type" : "cultural",
+        "text" : "You may produce 1 unit in this system; you may spend influence as if it were resources to produce this unit.",
+        "quantity" : 3
+    },
+    {
+        "name" : "Functioning Base",
+        "deck_type" : "industrial",
+        "text" : "You may gain 1 commodity, or you may spend 1 trade good or 1 commodity to draw 1 action card.",
+        "quantity" : 4
+    },
+    {
+        "name" : "Gamma Relay",
+        "deck_type" : "frontier",
+        "text" : "Place a gamma wormhole token in this system. Then, purge this card.",
+        "purge" : true
+    },
+    {
+        "name" : "Gamma Wormhole",
+        "deck_type" : "cultural",
+        "text" : "Place a gamma wormhole token in this system. Then, purge this card.",
+        "purge" : true
+    },
+    {
+        "name" : "Hazardous Relic Fragment",
+        "deck_type" : "hazardous",
+        "quantity" : 7,
+        "relic_fragment_type" : "hazardous"
+    },
+    {
+        "name" : "Industrial Relic Fragment",
+        "deck_type" : "industrial",
+        "quantity" : 5,
+        "relic_fragment_type" : "industrial"
+    },
+    {
+        "name" : "Ion Storm",
+        "deck_type" : "frontier",
+        "text" : "Place the ion storm token in this system with either side faceup. Then, place this card in the common play area.\nAt the end of a \"Move Ships\" or \"Retreat\" substep of a tactical action during which 1 or more of your ships use the ion storm wormhole, flip the ion storm token to its opposing side."
+    },
+    {
+        "name" : "Lazax Survivors",
+        "deck_type" : "hazardous",
+        "has_attachment" : true
+    },
+    {
+        "name" : "Local Fabricators",
+        "deck_type" : "industrial",
+        "text" : "You may gain 1 commodity, or you may spend 1 trade good or 1 commodity to place 1 mech from your reinforcements on this planet.",
+        "quantity" : 4
+    },
+    {
+        "name" : "Lost Crew",
+        "deck_type" : "frontier",
+        "text" : "Draw 2 action cards.",
+        "quantity" : 2
+    },
+    {
+        "name" : "Mercenary Outfit",
+        "deck_type" : "cultural",
+        "text" : "You may place 1 infantry from your reinforcements on this planet.",
+        "quantity" : 3
+    },
+    {
+        "name" : "Merchant Station",
+        "deck_type" : "frontier",
+        "text" : "You may replenish your commodities, or you may convert your commodities to trade goods.",
+        "quantity" : 2
+    },
+    {
+        "name" : "Mining World",
+        "deck_type" : "hazardous",
+        "has_attachment" : true
+    },
+    {
+        "name" : "Mirage",
+        "deck_type" : "frontier",
+        "text" : "Place the Mirage planet token in this system.\nGain the Mirage planet card and ready it.\nThen purge this card.",
+        "purge" : true
+    },
+    {
+        "name" : "Paradise World",
+        "deck_type" : "cultural",
+        "has_attachment" : true
+    },
+    {
+        "name" : "Propulsion Research Facility",
+        "deck_type" : "industrial",
+        "has_attachment" : true
+    },
+    {
+        "name" : "Rich World",
+        "deck_type" : "hazardous",
+        "has_attachment" : true
+    },
+    {
+        "name" : "Tomb Of Emphidia",
+        "deck_type" : "cultural",
+        "has_attachment" : true
+    },
+    {
+        "name" : "Unknown Relic Fragment",
+        "deck_type" : "frontier",
+        "quantity" : 3,
+        "relic_fragment_type" : "unknown"
+    },
+    {
+        "name" : "Volatile Fuel Source",
+        "deck_type" : "hazardous",
+        "text" : "If you have at least 1 mech on this planet, or if you remove 1 infantry from this planet, gain 1 command token.",
+        "quantity" : 3
+    },
+    {
+        "name" : "Warfare Research Facility",
+        "deck_type" : "hazardous",
+        "has_attachment" : true
+    }
+]
