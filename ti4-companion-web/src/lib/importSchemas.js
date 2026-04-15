@@ -85,51 +85,44 @@ const importSchemas = {
         description: 'Expansion this faction belongs to (e.g. "base", "pok", "te").',
       },
       {
-        name: 'starting_techs',
-        required: false,
-        type: 'TEXT array',
-        default: '{}',
-        description: 'Array of technology name strings the faction starts with.',
-      },
-      {
-        name: 'home_tile_number',
-        required: false,
-        type: 'text',
-        description: 'tile_number of this faction\'s home system tile.',
-      },
-      {
         name: 'commodities',
-        required: false,
+        required: true,
         type: 'integer',
-        default: '3',
         description: 'Starting commodity capacity.',
       },
       {
         name: 'abilities',
-        required: false,
+        required: true,
         type: 'JSONB array',
         default: '[]',
         description: 'Faction ability objects; each has name (text) and text (text).',
       },
       {
-        name: 'flagship',
-        required: false,
-        type: 'JSONB',
-        description: 'Flagship unit stats object; has name and combat stats.',
+        name: 'starting_techs',
+        required: true,
+        type: 'TEXT array',
+        default: '{}',
+        description: 'Array of technology name strings the faction starts with.',
       },
       {
-        name: 'mech',
+        name: 'num_of_starting_techs',
         required: false,
-        type: 'JSONB',
-        description: 'Mech unit stats object; has name and abilities.',
+        type: 'integer',
+        description: 'The number of starting techs to choose from.',
       },
       {
-        name: 'promissory_notes',
-        required: false,
-        type: 'JSONB array',
-        default: '[]',
-        description: 'Faction-specific promissory note objects included with the faction sheet.',
+        name: 'starting_units',
+        required: true,
+        type: 'JSONB',
+        description: 'A JSON of the starting units for the faction.',
       },
+      {
+        name: 'overridden_units',
+        required: false,
+        type: 'TEXT array',
+        default: '{}',
+        description: 'A list of units that override the generic units.'
+      }
     ],
   },
 
@@ -145,20 +138,33 @@ const importSchemas = {
         name: 'type',
         required: true,
         type: 'text',
-        values: ['law', 'directive'],
-        description: 'Whether the agenda is a law (permanent effect) or a directive (one-time effect).',
+        values: ['law', 'directive', 'special'],
+        description: 'Whether the agenda is a law (permanent effect), a directive (one-time effect), or special (e.g. Covert Legislation).',
       },
       {
         name: 'outcome',
         required: true,
         type: 'text',
-        description: 'How the vote is decided (e.g. "For/Against", "Elect Player").',
+        values: ['for_against', 'elect'],
+        description: 'How the vote is decided (e.g. "For/Against", "Elect").',
       },
       {
         name: 'elect_type',
         required: false,
         type: 'text',
-        description: 'What is being elected when outcome is an Elect (e.g. "Planet", "Strategy Card").',
+        description: 'What is being elected when outcome is an Elect (e.g. "Planet", "Strategy Card", "Player").',
+      },
+      {
+        name: 'effect',
+        required: true,
+        type: 'text',
+        description: 'What happens if the agenda passes.',
+      },
+      {
+        name: 'reject_effect',
+        required: false,
+        type: 'text',
+        description: 'What happens if the agenda is rejected.',
       },
       {
         name: 'expansion',
@@ -168,11 +174,11 @@ const importSchemas = {
         description: 'Expansion this agenda belongs to.',
       },
       {
-        name: 'note',
+        name: 'remove_if_expansion_in_play',
         required: false,
         type: 'text',
-        description: 'Additional notes about the agenda\'s effect or errata.',
-      },
+        description: 'This agenda should be removed if this expansion is in play.'
+      }
     ],
   },
 
@@ -185,11 +191,11 @@ const importSchemas = {
         description: 'Technology name.',
       },
       {
-        name: 'colour',
+        name: 'technology_type',
         required: true,
         type: 'text',
-        values: ['green', 'blue', 'red', 'yellow'],
-        description: 'Technology colour/category.',
+        values: ['green', 'blue', 'red', 'yellow', 'unit_upgrade'],
+        description: 'Technology type.',
       },
       {
         name: 'prerequisites',
@@ -203,19 +209,6 @@ const importSchemas = {
         required: false,
         type: 'text',
         description: 'Rules text describing the technology\'s effect.',
-      },
-      {
-        name: 'is_unit_upgrade',
-        required: false,
-        type: 'boolean',
-        default: 'false',
-        description: 'Whether this technology is a unit upgrade.',
-      },
-      {
-        name: 'unit_stats',
-        required: false,
-        type: 'JSONB',
-        description: 'Stat block for unit upgrade technologies.',
       },
       {
         name: 'faction',
@@ -239,7 +232,14 @@ const importSchemas = {
         name: 'name',
         required: true,
         type: 'text',
-        description: 'Unit type name (e.g. "Carrier", "Dreadnought"). Must be unique.',
+        description: 'Unit name. Must be unique.',
+      },
+      {
+        name: 'unit_type',
+        required: true,
+        type: 'text',
+        values: ['flagship','war_sun','dreadnought','carrier','cruiser','destroyer','fighter','pds','infantry','space_dock','mech'],
+        description: 'Unit type'
       },
       {
         name: 'cost',
@@ -291,12 +291,25 @@ const importSchemas = {
         description: 'Space Cannon dice notation.',
       },
       {
-        name: 'planetary',
+        name: 'planetary_shield',
         required: false,
         type: 'boolean',
         default: 'false',
         description: 'Whether this unit is a ground force (placed on planets).',
       },
+      {
+        name: 'production',
+        required: false,
+        type: 'text',
+        description: 'What production value this unit has (X in case of calculation).'
+      },
+      {
+        name: 'abilities',
+        required: false,
+        type: 'TEXT array',
+        default : [],
+        description: 'An array of any abilities'
+      }
     ],
   },
 
@@ -321,19 +334,6 @@ const importSchemas = {
         description: 'The scoring condition text as printed on the card.',
       },
       {
-        name: 'points',
-        required: false,
-        type: 'integer',
-        default: '1',
-        description: 'Victory points awarded for scoring.',
-      },
-      {
-        name: 'category',
-        required: false,
-        type: 'text',
-        description: 'Thematic category (e.g. "military", "expansion").',
-      },
-      {
         name: 'expansion',
         required: false,
         type: 'text',
@@ -356,13 +356,6 @@ const importSchemas = {
         required: true,
         type: 'text',
         description: 'The scoring condition text as printed on the card.',
-      },
-      {
-        name: 'points',
-        required: false,
-        type: 'integer',
-        default: '1',
-        description: 'Victory points awarded for scoring.',
       },
       {
         name: 'timing',
@@ -502,6 +495,20 @@ const importSchemas = {
         type: 'text',
         description: 'Relic fragment type if this is a relic fragment card (e.g. "cultural", "industrial", "hazardous").',
       },
+      {
+        name: 'has_attachment',
+        required: true,
+        type: 'boolean',
+        default: 'false',
+        description: 'Does this exploration card have a related attachment?',
+      },
+      {
+        name: 'purge',
+        required: true,
+        type: 'boolean',
+        default: 'false',
+        description: 'Does this exploration card purge after it\'s drawn?',
+      },
     ],
   },
 
@@ -512,12 +519,6 @@ const importSchemas = {
         required: true,
         type: 'text',
         description: 'Attachment token name.',
-      },
-      {
-        name: 'planet_trait',
-        required: false,
-        type: 'text',
-        description: 'Planet trait this attachment applies to (e.g. "cultural", "industrial", "hazardous").',
       },
       {
         name: 'resource_modifier',
@@ -532,6 +533,13 @@ const importSchemas = {
         type: 'integer',
         default: '0',
         description: 'Modifier added to the planet\'s influence value.',
+      },
+      {
+        name: 'tech_specialty',
+        required: false,
+        type: 'text',
+        values: ['blue','green','red','yellow'],
+        description: 'The tech specialty that is added to the planet.',
       },
       {
         name: 'text',
@@ -551,23 +559,16 @@ const importSchemas = {
         description: 'Promissory note name.',
       },
       {
-        name: 'faction',
-        required: false,
-        type: 'text',
-        description: 'Faction name if this is a faction-specific note; omit for generic notes.',
-      },
-      {
         name: 'text',
         required: false,
         type: 'text',
         description: 'Rules text describing the note\'s effect.',
       },
       {
-        name: 'returns_to_owner',
+        name: 'faction',
         required: false,
-        type: 'boolean',
-        default: 'false',
-        description: 'Whether this note returns to the original owner after use.',
+        type: 'text',
+        description: 'Faction name if this is a faction-specific note; omit for generic notes.',
       },
       {
         name: 'purge_on_use',
@@ -575,6 +576,13 @@ const importSchemas = {
         type: 'boolean',
         default: 'false',
         description: 'Whether this note is purged after use.',
+      },
+      {
+        name: 'into_play_area',
+        required: false,
+        type: 'boolean',
+        default: 'false',
+        description: 'Whether this note is put straight into play.',
       },
       {
         name: 'expansion',
