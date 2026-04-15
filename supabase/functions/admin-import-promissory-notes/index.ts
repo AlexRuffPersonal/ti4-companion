@@ -12,7 +12,7 @@ function validate(record: unknown, index: number): string | null {
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
   try {
-    requireServiceRole(req)
+    await requireServiceRole(req)
   } catch (e) {
     if (e instanceof AuthError) {
       return errorResponse(e.message, e.message.startsWith('Forbidden') ? 403 : 401)
@@ -34,11 +34,16 @@ Deno.serve(async (req: Request) => {
   const { error: deleteError } = await db.from('promissory_notes').delete().neq('id', '00000000-0000-0000-0000-000000000000')
   if (deleteError) return errorResponse(`Delete failed: ${deleteError.message}`, 500)
 
-  const rows = (body.records as Record<string, unknown>[]).map(r => ({
-    ...r,
-    returns_to_owner: r.returns_to_owner ?? false,
-    purge_on_use: r.purge_on_use ?? false,
-  }))
+  const rows = (body.records as Record<string, unknown>[]).map(r => {
+    // returns_to_owner was dropped from the schema; exclude it to avoid insert errors
+    const { returns_to_owner: _rto, ...rest } = r as Record<string, unknown>
+    return {
+      ...rest,
+      expansion: rest.expansion ?? 'base',
+      purge_on_use: rest.purge_on_use ?? false,
+      into_play_area: rest.into_play_area ?? false,
+    }
+  })
   const { error: insertError } = await db.from('promissory_notes').insert(rows)
   if (insertError) return errorResponse(`Insert failed: ${insertError.message}`, 500)
 

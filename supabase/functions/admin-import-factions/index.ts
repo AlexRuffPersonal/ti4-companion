@@ -12,7 +12,7 @@ function validate(record: unknown, index: number): string | null {
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
   try {
-    requireServiceRole(req)
+    await requireServiceRole(req)
   } catch (e) {
     if (e instanceof AuthError) {
       return errorResponse(e.message, e.message.startsWith('Forbidden') ? 403 : 401)
@@ -36,10 +36,9 @@ Deno.serve(async (req: Request) => {
 
   const rows = (body.records as Record<string, unknown>[]).map(r => ({
     ...r,
+    expansion: r.expansion ?? 'base',
     starting_techs: r.starting_techs ?? [],
-    commodities: r.commodities ?? 3,
     abilities: r.abilities ?? [],
-    promissory_notes: r.promissory_notes ?? [],
   }))
   const { error: insertError } = await db.from('factions').insert(rows)
   if (insertError) return errorResponse(`Insert failed: ${insertError.message}`, 500)

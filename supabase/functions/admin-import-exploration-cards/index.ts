@@ -16,7 +16,7 @@ function validate(record: unknown, index: number): string | null {
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
   try {
-    requireServiceRole(req)
+    await requireServiceRole(req)
   } catch (e) {
     if (e instanceof AuthError) {
       return errorResponse(e.message, e.message.startsWith('Forbidden') ? 403 : 401)
@@ -41,6 +41,8 @@ Deno.serve(async (req: Request) => {
   const rows = (body.records as Record<string, unknown>[]).map(r => ({
     ...r,
     quantity: r.quantity ?? 1,
+    has_attachment: r.has_attachment ?? false,
+    purge: r.purge ?? false,
   }))
   const { error: insertError } = await db.from('exploration_cards').insert(rows)
   if (insertError) return errorResponse(`Insert failed: ${insertError.message}`, 500)

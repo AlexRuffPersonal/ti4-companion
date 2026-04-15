@@ -2,21 +2,21 @@ import { requireServiceRole, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 
-const VALID_COLOURS = new Set(['green', 'blue', 'red', 'yellow'])
+const VALID_TYPES = new Set(['green', 'blue', 'red', 'yellow', 'unit_upgrade'])
 
 function validate(record: unknown, index: number): string | null {
   const r = record as Record<string, unknown>
   if (!r.name || typeof r.name !== 'string')
     return `Record ${index}: missing or invalid 'name'`
-  if (!r.colour || typeof r.colour !== 'string' || !VALID_COLOURS.has(r.colour as string))
-    return `Record ${index}: 'colour' must be one of: green, blue, red, yellow`
+  if (!r.technology_type || typeof r.technology_type !== 'string' || !VALID_TYPES.has(r.technology_type as string))
+    return `Record ${index}: 'technology_type' must be one of: green, blue, red, yellow, unit_upgrade`
   return null
 }
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
   try {
-    requireServiceRole(req)
+    await requireServiceRole(req)
   } catch (e) {
     if (e instanceof AuthError) {
       return errorResponse(e.message, e.message.startsWith('Forbidden') ? 403 : 401)
@@ -41,7 +41,7 @@ Deno.serve(async (req: Request) => {
   const rows = (body.records as Record<string, unknown>[]).map(r => ({
     ...r,
     prerequisites: r.prerequisites ?? {},
-    is_unit_upgrade: r.is_unit_upgrade ?? false,
+    expansion: r.expansion ?? 'base',
   }))
   const { error: insertError } = await db.from('technologies').insert(rows)
   if (insertError) return errorResponse(`Insert failed: ${insertError.message}`, 500)
