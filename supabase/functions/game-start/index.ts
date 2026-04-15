@@ -41,11 +41,11 @@ Deno.serve(async (req: Request) => {
     }
   }
 
+  // Initialise public objective decks (filtered by active expansions)
   const activeExpansions = Object.entries(game.expansions ?? {})
     .filter(([, active]) => active)
     .map(([exp]) => exp)
 
-  // Initialise public objective decks (filtered by active expansions)
   const { data: allObjs, error: objsError } = await db
     .from('public_objectives')
     .select('id, expansion')
@@ -62,7 +62,6 @@ Deno.serve(async (req: Request) => {
       const j = Math.floor(Math.random() * (i + 1))
       ;[positions[i], positions[j]] = [positions[j], positions[i]]
     }
-
     const { error: insertError } = await db
       .from('game_public_objectives')
       .insert(
@@ -100,7 +99,6 @@ Deno.serve(async (req: Request) => {
       const j = Math.floor(Math.random() * (i + 1))
       ;[acPositions[i], acPositions[j]] = [acPositions[j], acPositions[i]]
     }
-
     const { error: insertActionError } = await db
       .from('game_action_card_deck')
       .insert(
@@ -113,6 +111,57 @@ Deno.serve(async (req: Request) => {
         }))
       )
     if (insertActionError) return errorResponse(`Failed to initialise action cards: ${insertActionError.message}`, 500)
+  }
+
+  // Initialise starting technologies and home planets for each player
+  for (const player of players) {
+    const { data: factionData, error: factionError } = await db
+      .from('factions')
+      .select('home_tile_number, starting_techs')
+      .eq('name', player.faction)
+      .maybeSingle()
+    if (factionError) return errorResponse('Database error', 500)
+    if (!factionData) return errorResponse(`Faction not found for player "${player.display_name}"`, 409)
+
+    // Set starting technologies
+    const startingTechs = (factionData?.starting_techs ?? []) as string[]
+    if (startingTechs.length > 0) {
+      const { error: techError } = await db
+        .from('game_players')
+        .update({ technologies: startingTechs })
+        .eq('id', player.id)
+      if (techError) return errorResponse(`Failed to set starting techs for ${player.display_name}: ${techError.message}`, 500)
+    }
+
+    // Insert home-system planets with tech_specialty
+    if (factionData?.home_tile_number) {
+      const { data: tile, error: tileError } = await db
+        .from('tiles')
+        .select('planets')
+        .eq('tile_number', factionData.home_tile_number)
+        .maybeSingle()
+      if (tileError) return errorResponse('Database error', 500)
+
+      const homePlanets = (tile?.planets ?? []) as Array<{
+        name: string
+        tech_specialty?: string
+      }>
+
+      if (homePlanets.length > 0) {
+        const { error: planetError } = await db
+          .from('game_player_planets')
+          .insert(
+            homePlanets.map(p => ({
+              game_id: body.game_id,
+              player_id: player.id,
+              planet_name: p.name,
+              exhausted: false,
+              tech_specialty: p.tech_specialty ?? null,
+            }))
+          )
+        if (planetError) return errorResponse(`Failed to insert planets for ${player.display_name}: ${planetError.message}`, 500)
+      }
+    }
   }
 
   const { error: updateError } = await db

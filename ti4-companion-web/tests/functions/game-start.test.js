@@ -41,6 +41,12 @@ function mockDb({
   insertObjError = null,
   actionCards = [{ id: 'ac-1', quantity: 2, expansion: 'base' }, { id: 'ac-2', quantity: 1, expansion: 'base' }],
   insertActionError = null,
+  factionData = { home_tile_number: '5', starting_techs: ['Neural Motivator'] },
+  factionError = null,
+  tileData = { planets: [{ name: 'Nestphar', tech_specialty: null }] },
+  tileError = null,
+  planetInsertError = null,
+  techUpdateError = null,
 } = {}) {
   const actionCardInsertMock = vi.fn().mockResolvedValue({ error: insertActionError })
   db.from.mockImplementation((table) => {
@@ -61,6 +67,9 @@ function mockDb({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockResolvedValue({ data: players, error: playersError }),
         }),
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: techUpdateError }),
+        }),
       }
     }
     if (table === 'public_objectives') {
@@ -80,6 +89,29 @@ function mockDb({
     }
     if (table === 'game_action_card_deck') {
       return { insert: actionCardInsertMock }
+    }
+    if (table === 'factions') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: factionData, error: factionError }),
+          }),
+        }),
+      }
+    }
+    if (table === 'tiles') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: tileData, error: tileError }),
+          }),
+        }),
+      }
+    }
+    if (table === 'game_player_planets') {
+      return {
+        insert: vi.fn().mockResolvedValue({ error: planetInsertError }),
+      }
     }
   })
   return { actionCardInsertMock }
@@ -174,5 +206,39 @@ describe('game-start', () => {
     mockDb({ insertActionError: { message: 'insert failed' } })
     const res = await handler(makeRequest({ game_id: GAME_ID }))
     expect(res.status).toBe(500)
+  })
+
+  it('sets starting technologies from faction data', async () => {
+    mockDb({ factionData: { home_tile_number: null, starting_techs: ['Neural Motivator', 'Sarween Tools'] } })
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    expect(res.status).toBe(200)
+  })
+
+  it('returns 200 when faction has no home tile number', async () => {
+    mockDb({ factionData: { home_tile_number: null, starting_techs: [] } })
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    expect(res.status).toBe(200)
+  })
+
+  it('returns 200 when home tile has no planets', async () => {
+    mockDb({ tileData: { planets: [] } })
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    expect(res.status).toBe(200)
+  })
+
+  it('returns 500 when planet insert fails', async () => {
+    mockDb({ planetInsertError: { message: 'insert failed' } })
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    expect(res.status).toBe(500)
+    const body = await res.json()
+    expect(body.error).toMatch(/Failed to insert planets/)
+  })
+
+  it('returns 409 when faction data is not found', async () => {
+    mockDb({ factionData: null })
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body.error).toMatch(/Faction not found/)
   })
 })
