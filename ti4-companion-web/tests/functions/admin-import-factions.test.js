@@ -4,14 +4,14 @@ vi.mock('../../../supabase/functions/_shared/auth.ts', () => {
   class AuthError extends Error {
     constructor(msg) { super(msg); this.name = 'AuthError' }
   }
-  return { requireAdmin: vi.fn(), AuthError }
+  return { requireServiceRole: vi.fn(), AuthError }
 })
 
 vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
   db: { from: vi.fn() },
 }))
 
-import { requireAdmin, AuthError } from '../../../supabase/functions/_shared/auth.ts'
+import { requireServiceRole, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 
 function makeRequest(body) {
@@ -43,7 +43,7 @@ beforeEach(() => {
 
 describe('admin-import-factions', () => {
   it('returns 401 for unauthenticated requests', async () => {
-    requireAdmin.mockRejectedValue(new AuthError('Missing or invalid Authorization header'))
+    requireServiceRole.mockRejectedValue(new AuthError('Missing or invalid Authorization header'))
     const res = await handler(makeRequest({ records: [] }))
     expect(res.status).toBe(401)
     const body = await res.json()
@@ -51,7 +51,7 @@ describe('admin-import-factions', () => {
   })
 
   it('returns 403 for authenticated non-admin users', async () => {
-    requireAdmin.mockRejectedValue(new AuthError('Forbidden: admin access required'))
+    requireServiceRole.mockRejectedValue(new AuthError('Forbidden: admin access required'))
     const res = await handler(makeRequest({ records: [] }))
     expect(res.status).toBe(403)
     const body = await res.json()
@@ -59,7 +59,7 @@ describe('admin-import-factions', () => {
   })
 
   it('returns 400 when name field is missing', async () => {
-    requireAdmin.mockResolvedValue('user-id')
+    requireServiceRole.mockResolvedValue('user-id')
     const res = await handler(makeRequest({ records: [{ other: 'data' }] }))
     expect(res.status).toBe(400)
     const body = await res.json()
@@ -68,7 +68,7 @@ describe('admin-import-factions', () => {
   })
 
   it('returns 400 when name is not a string', async () => {
-    requireAdmin.mockResolvedValue('user-id')
+    requireServiceRole.mockResolvedValue('user-id')
     const res = await handler(makeRequest({ records: [{ name: 123 }] }))
     expect(res.status).toBe(400)
     const body = await res.json()
@@ -76,7 +76,7 @@ describe('admin-import-factions', () => {
   })
 
   it('returns 200 with imported count on valid payload', async () => {
-    requireAdmin.mockResolvedValue('user-id')
+    requireServiceRole.mockResolvedValue('user-id')
     const records = [{ name: 'Barony of Letnev' }, { name: 'Federation of Sol' }]
     const res = await handler(makeRequest({ records }))
     expect(res.status).toBe(200)
@@ -85,7 +85,7 @@ describe('admin-import-factions', () => {
   })
 
   it('returns 500 when the database insert fails', async () => {
-    requireAdmin.mockResolvedValue('user-id')
+    requireServiceRole.mockResolvedValue('user-id')
     mockDb({ insertError: { message: 'constraint violation' } })
     const res = await handler(makeRequest({ records: [{ name: 'Barony of Letnev' }] }))
     expect(res.status).toBe(500)
