@@ -5,7 +5,7 @@ const COLOUR_HEX = {
   orange: '#f0883e', pink: '#ff7bda', purple: '#bc8cff', white: '#f0f6fc',
 }
 
-export default function ScoreboardSection({ players, game, currentPlayerId }) {
+export default function ScoreboardSection({ players, game, currentPlayerId, onViewTech }) {
   const activePlayer = deriveActivePlayer(players, game)
   const sorted = [...players].sort((a, b) => b.vp - a.vp)
 
@@ -52,6 +52,13 @@ export default function ScoreboardSection({ players, game, currentPlayerId }) {
               >
                 ✦ {player.action_card_count ?? 0}
               </span>
+              <button
+                className="label text-xs text-dim hover:text-text px-1"
+                onClick={(e) => { e.stopPropagation(); onViewTech(player.id) }}
+                title="View tech tree"
+              >
+                TECH
+              </button>
               <span className="font-display text-gold text-sm font-bold">{player.vp} VP</span>
             </div>
           )

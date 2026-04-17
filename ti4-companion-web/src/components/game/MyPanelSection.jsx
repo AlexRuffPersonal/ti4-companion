@@ -5,7 +5,7 @@ export default function MyPanelSection({
   onPass, onEndTurn, onUpdateTokens,
   onExhaustPlanet, onReadyPlanet,
   onPickStrategyCard, onUpdateCommodities, onUpdateTradeGoods, onCycleLeader,
-  onOpenActionCards,
+  onOpenActionCards, onViewTech,
 }) {
   const tokens = player?.command_tokens ?? { tactic_total: 0, fleet: 0, strategy: 0 }
   const [draftTokens, setDraftTokens] = useState(tokens)
@@ -119,12 +119,14 @@ export default function MyPanelSection({
       )}
 
       {/* Technologies */}
-      {player.technologies?.length > 0 && (
-        <div>
-          <p className="label text-xs mb-1">TECHNOLOGIES ({player.technologies.length})</p>
-          <p className="text-dim text-xs">{player.technologies.join(' · ')}</p>
-        </div>
-      )}
+      <div className="flex items-center justify-between">
+        <p className="label text-xs">
+          TECHNOLOGIES ({player.technologies?.length ?? 0})
+        </p>
+        <button className="btn-ghost text-xs" onClick={onViewTech}>
+          VIEW TREE
+        </button>
+      </div>
 
       {/* Action Cards */}
       <button className="btn-ghost text-xs self-start" onClick={onOpenActionCards}>
