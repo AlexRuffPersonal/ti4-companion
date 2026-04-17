@@ -1,0 +1,154 @@
+import { requireAuth, AuthError } from '../_shared/auth.ts'
+import { db } from '../_shared/db.ts'
+import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') return corsPreflightResponse()
+
+  let userId: string
+  try {
+    userId = await requireAuth(req)
+  } catch (e) {
+    if (e instanceof AuthError) return errorResponse(e.message, 401)
+    return errorResponse('Internal server error', 500)
+  }
+
+  let body: {
+    game_id?: unknown
+    tech_name?: unknown
+    exhaust_planet_ids?: unknown
+    bypass_prerequisites?: unknown
+  }
+  try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
+  if (!body.game_id || typeof body.game_id !== 'string') return errorResponse("'game_id' is required")
+  if (!body.tech_name || typeof body.tech_name !== 'string') return errorResponse("'tech_name' is required")
+
+  const exhaustPlanetIds: string[] = Array.isArray(body.exhaust_planet_ids)
+    ? body.exhaust_planet_ids.filter((id: unknown) => typeof id === 'string')
+    : []
+  const bypassPrerequisites = body.bypass_prerequisites === true
+
+  // Load game (for expansion filter)
+  const { data: game, error: gameError } = await db
+    .from('games')
+    .select('expansions')
+    .eq('id', body.game_id)
+    .maybeSingle()
+  if (gameError) return errorResponse('Database error', 500)
+  if (!game) return errorResponse('Game not found', 404)
+
+  const activeExpansions = Object.entries(game.expansions ?? {})
+    .filter(([, active]) => active)
+    .map(([exp]) => exp)
+
+  // Load tech reference data
+  const { data: tech, error: techError } = await db
+    .from('technologies')
+    .select('name, technology_type, prerequisites, expansion')
+    .eq('name', body.tech_name)
+    .maybeSingle()
+  if (techError) return errorResponse('Database error', 500)
+  if (!tech) return errorResponse('Technology not found', 404)
+  if (!activeExpansions.includes((tech.expansion as string) ?? 'base')) {
+    return errorResponse('Technology is not available for this game', 400)
+  }
+
+  // Load calling player
+  const { data: player, error: playerError } = await db
+    .from('game_players')
+    .select('id, technologies')
+    .eq('game_id', body.game_id)
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (playerError) return errorResponse('Database error', 500)
+  if (!player) return errorResponse('Player not found in this game', 404)
+
+  const heldTechs: string[] = (player.technologies as string[]) ?? []
+  if (heldTechs.includes(body.tech_name)) return errorResponse('Technology already researched', 409)
+
+  // Validate prerequisites (unless bypassed)
+  if (!bypassPrerequisites) {
+    const { data: allTechs, error: allTechsError } = await db
+      .from('technologies')
+      .select('name, technology_type')
+    if (allTechsError) return errorResponse('Database error', 500)
+
+    // Count held techs by colour family only (unit_upgrade does not satisfy colour prereqs)
+    const heldCounts: Record<string, number> = { green: 0, blue: 0, yellow: 0, red: 0 }
+    for (const name of heldTechs) {
+      const t = (allTechs ?? []).find((t: { name: string; technology_type: string }) => t.name === name)
+      if (t && t.technology_type !== 'unit_upgrade') {
+        heldCounts[t.technology_type as string] = (heldCounts[t.technology_type as string] ?? 0) + 1
+      }
+    }
+
+    const hasAIDA = heldTechs.includes('AI Development Algorithm')
+    let aidaUsed = false
+
+    let planetsToExhaust: Array<{ id: string; tech_specialty: string | null; exhausted: boolean; player_id: string }> = []
+    if (exhaustPlanetIds.length > 0) {
+      const { data: planets, error: planetsError } = await db
+        .from('game_player_planets')
+        .select('id, tech_specialty, exhausted, player_id')
+        .in('id', exhaustPlanetIds)
+      if (planetsError) return errorResponse('Database error', 500)
+      planetsToExhaust = (planets ?? []) as typeof planetsToExhaust
+
+      for (const planet of planetsToExhaust) {
+        if (planet.player_id !== player.id) return errorResponse('Planet does not belong to this player', 403)
+        if (planet.exhausted) return errorResponse('Planet is already exhausted', 400)
+      }
+    }
+
+    const prereqs = (tech.prerequisites ?? {}) as Record<string, number>
+    const remainingPlanets = [...planetsToExhaust]
+
+    for (const [colour, needed] of Object.entries(prereqs)) {
+      const deficit = needed - (heldCounts[colour] ?? 0)
+      if (deficit <= 0) continue
+
+      let remaining = deficit
+
+      // Consume matching-specialty planets from the pool
+      const used: number[] = []
+      for (let i = 0; i < remainingPlanets.length && remaining > 0; i++) {
+        if (remainingPlanets[i].tech_specialty === colour) {
+          used.push(i)
+          remaining--
+        }
+      }
+      for (const i of used.reverse()) remainingPlanets.splice(i, 1)
+
+      // Use AIDA for one remaining if available
+      if (remaining > 0 && hasAIDA && !aidaUsed) {
+        aidaUsed = true
+        remaining--
+      }
+
+      if (remaining > 0) {
+        return errorResponse(
+          `Missing prerequisite: need ${needed} ${colour} technology, have ${heldCounts[colour] ?? 0}`,
+          400
+        )
+      }
+    }
+  }
+
+  // Write: append tech to player's technologies
+  const { error: updateError } = await db
+    .from('game_players')
+    .update({ technologies: [...heldTechs, body.tech_name] })
+    .eq('id', player.id)
+  if (updateError) return errorResponse(`Failed to research technology: ${updateError.message}`, 500)
+
+  // Write: exhaust planets
+  if (exhaustPlanetIds.length > 0) {
+    const { error: exhaustError } = await db
+      .from('game_player_planets')
+      .update({ exhausted: true })
+      .in('id', exhaustPlanetIds)
+    if (exhaustError) return errorResponse(`Failed to exhaust planets: ${exhaustError.message}`, 500)
+  }
+
+  return okResponse({ researched: true })
+})
