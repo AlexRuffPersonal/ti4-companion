@@ -45,6 +45,7 @@ export function computeTechStatus(tech, heldTechNames, allTechnologies, readyPla
   let aidaAvailable = hasAIDA
   const exhaustOptions = []
   const usedPlanetIds = new Set()
+  const trulyMissing = []
 
   for (const [colour, deficit] of Object.entries(missingByColour)) {
     let remaining = deficit
@@ -65,11 +66,12 @@ export function computeTechStatus(tech, heldTechNames, allTechnologies, readyPla
     }
 
     if (remaining > 0) {
-      const missingPrereqs = Object.entries(missingByColour).map(
-        ([c, count]) => ({ colour: c, count })
-      )
-      return { status: 'unavailable', missingPrereqs, exhaustOptions: [] }
+      trulyMissing.push({ colour, count: remaining })
     }
+  }
+
+  if (trulyMissing.length > 0) {
+    return { status: 'unavailable', missingPrereqs: trulyMissing, exhaustOptions: [] }
   }
 
   return { status: 'exhaust', missingPrereqs: [], exhaustOptions }

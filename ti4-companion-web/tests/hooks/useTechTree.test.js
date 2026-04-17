@@ -84,6 +84,21 @@ describe('computeTechStatus', () => {
     expect(result.missingPrereqs).toEqual([{ colour: 'green', count: 1 }])
   })
 
+  it('missingPrereqs only lists unresolvable colours for multi-colour prereqs', () => {
+    // Suppose a tech needs { green: 1, blue: 1 }.
+    // Player holds one green (satisfies green), no blue coverage.
+    // missingPrereqs should only list blue, not green.
+    const multiColourTech = {
+      id: 'mx', name: 'Multi Test', technology_type: 'red',
+      prerequisites: { green: 1, blue: 1 }, faction: null, expansion: 'base',
+    }
+    const held = ['Neural Motivator'] // 1 green
+    const result = computeTechStatus(multiColourTech, held, ALL_TECHS, [])
+    expect(result.status).toBe('unavailable')
+    expect(result.missingPrereqs).toHaveLength(1)
+    expect(result.missingPrereqs[0].colour).toBe('blue')
+  })
+
   it('returns exhaust when a missing prereq can be covered by a readied specialty planet', () => {
     // Bio-Stims needs green: 2 — hold one green, have a readied green-specialty planet
     const held = ['Neural Motivator']
