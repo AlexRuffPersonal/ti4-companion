@@ -3,7 +3,8 @@
         "name" : "Ancient Burial Sites",
         "timing" : "At the start of the agenda phase",
         "text" : "Choose 1 player. Exhaust each cultural planet owned by that player.",
-        "quantity" : 1
+        "quantity" : 1,
+        "expansion" : "base"
     },
     {
         "name" : "Archaeolgical Expedition",
@@ -16,13 +17,15 @@
         "name" : "Bribery",
         "timing" : "After the speaker votes on an agenda",
         "text" : "Spend any number of trade goods. For each trade good spent, cast 1 additional vote for any outcome.",
-        "quantity" : 1
+        "quantity" : 1,
+        "expansion" : "base"
     },
     {
         "name" : "Bunker",
         "timing" : "At the start of an invasion",
         "text" : "During this invasion, apply -4 to the result of each BOMBARDMENT roll against planets you control.",
-        "quantity" : 1
+        "quantity" : 1,
+        "expansion" : "base"
     },
     {
         "name" : "Confounding Legal Text",
@@ -35,7 +38,8 @@
         "name" : "Confusing Legal Text",
         "timing" : "When you are elected as the outcome of an agenda",
         "text" : "Choose 1 player. That player is the elected player instead.",
-        "quantity" : 1
+        "quantity" : 1,
+        "expansion" : "base"
     },
     {
         "name" : "Construction Rider",
@@ -434,7 +438,7 @@
         "timing" : "ACTION",
         "text" : "Choose 1 player. That player gives you 1 random action card from his hand.",
         "quantity" : 1,
-        "expansion" : ""
+        "expansion" : "base"
     },
     {
         "name" : "Summit",

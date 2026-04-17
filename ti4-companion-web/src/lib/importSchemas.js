@@ -194,7 +194,7 @@ const importSchemas = {
         name: 'technology_type',
         required: true,
         type: 'text',
-        values: ['green', 'blue', 'red', 'yellow', 'unit_upgrade'],
+        values: ['green', 'blue', 'red', 'yellow', 'unit_upgrade', 'special'],
         description: 'Technology type.',
       },
       {
@@ -546,6 +546,18 @@ const importSchemas = {
         required: false,
         type: 'text',
         description: 'Additional rules text describing the attachment\'s effect.',
+      },
+      {
+        name: 'trait_modifier',
+        required: false,
+        type: 'array',
+        description: 'Planet traits granted by this attachment, e.g. ["cultural","hazardous"].',
+      },
+      {
+        name: 'ability_modifier',
+        required: false,
+        type: 'JSONB',
+        description: 'Unit ability overrides granted by this attachment, e.g. {"space_cannon":"5(x3)"}.',
       },
     ],
   },

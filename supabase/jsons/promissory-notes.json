@@ -97,7 +97,7 @@
         "name" : "Trade Convoys",
         "text" : "ACTION: Place this card faceup in your play area.\nWhile this card is in your play area, you may negotiate transactions with players who are not your neighbor.\nIf you activate a system that containts 1 or more of the Hacan player's units, return this card to the Hacan player.",
         "faction" : "The Emirates Of Hacan"
-    }.
+    },
     {
         "name" : "Promise Of Protection",
         "text" : "ACTION: Place this card faceup in your play area.\nWhile this card is in your play area, the Mentak player cannot use his Pillage faction ability against you.\nIf you activate a system that contains 1 or more of the Mentak's player's units, return this card to the Mentak player.",

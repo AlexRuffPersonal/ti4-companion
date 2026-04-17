@@ -2,14 +2,14 @@ import { requireServiceRole, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 
-const VALID_TYPES = new Set(['green', 'blue', 'red', 'yellow', 'unit_upgrade'])
+const VALID_TYPES = new Set(['green', 'blue', 'red', 'yellow', 'unit_upgrade', 'special'])
 
 function validate(record: unknown, index: number): string | null {
   const r = record as Record<string, unknown>
   if (!r.name || typeof r.name !== 'string')
     return `Record ${index}: missing or invalid 'name'`
   if (!r.technology_type || typeof r.technology_type !== 'string' || !VALID_TYPES.has(r.technology_type as string))
-    return `Record ${index}: 'technology_type' must be one of: green, blue, red, yellow, unit_upgrade`
+    return `Record ${index}: 'technology_type' must be one of: green, blue, red, yellow, unit_upgrade, special`
   return null
 }
 
