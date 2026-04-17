@@ -28,14 +28,15 @@ Deno.serve(async (req: Request) => {
     : []
   const bypassPrerequisites = body.bypass_prerequisites === true
 
-  // Load game (for expansion filter)
+  // Load game (for status + expansion filter)
   const { data: game, error: gameError } = await db
     .from('games')
-    .select('expansions')
+    .select('status, expansions')
     .eq('id', body.game_id)
     .maybeSingle()
   if (gameError) return errorResponse('Database error', 500)
   if (!game) return errorResponse('Game not found', 404)
+  if (game.status !== 'active') return errorResponse('Game is not active', 409)
 
   const activeExpansions = Object.entries(game.expansions ?? {})
     .filter(([, active]) => active)
