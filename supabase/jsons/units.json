@@ -328,7 +328,7 @@
         "afb" : "6(x4)"
     },
     {
-        "name": "Floating Factory II",
+        "name": "Floating Factory I",
         "unit_type" : "space_dock",
         "move" : 1,
         "capacity" : 4,
@@ -552,5 +552,408 @@
         "move" : 2,
         "capacity" : 1,
         "afb" : "9(x2)"
+    },
+    {
+        "name" : "Starlancer",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : 6,
+        "sustain_damage" : true,
+        "abilities" : [
+            "After a player whose command token is in your fleet pool activates this system, you may spend their token from your fleet pool to end their turn; they gain that token."
+        ]
+    },
+    {
+        "name" : "Crimson Legionnaire II",
+        "unit_type" : "infantry",
+        "cost" : 0.5,
+        "combat" : "7",
+        "abilities" : [
+            "After this unit is destroyed, gain 1 commodity or convert 1 of your commodities to a trade good. Then, place the unit on this card. At the start of your next turn, place each unit that is on this card on a planet you control in your home system."
+        ]
+    },
+    {
+        "name" : "Strike Wing Alpha II",
+        "unit_type" : "destroyer",
+        "cost" : 1,
+        "combat" : "7",
+        "move" : 2,
+        "capacity" : 1,
+        "afb" : "6(x3)",
+        "abilities" : [
+            "When this unit uses Anti-Fighter Barrage, each result of 9 or 10 also destroys 1 of your opponent's infantry in the space area of the active system."
+        ]
+    },
+    {
+        "name" : "Aerie Sentinel",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : 6,
+        "sustain_damage" : true,
+        "abilities" : [
+            "This unit does not count against capacity if it is being transported or if it in a space area with 1 or more of your ships that have capacity values."
+        ]
+    },
+    {
+        "name" : "Mordred",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : "6",
+        "abilities" : [
+            "During combat against an opponent who has an \"X\" or \"Y\" token on 1 or more of their technologies, apply +2 to the result of each of this unit's combat rolls."
+        ]
+    },
+    {
+        "name" : "Hecatoncheires",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : 6,
+        "sustain_damage" : true,
+        "abilities" : [
+            "DEPLOY: When you would place a PDS on a planet, you may place 1 mech and 1 infantry on that planet instead."
+        ]
+    },
+    {
+        "name" : "Saturn Engine II",
+        "unit_type" : "cruiser",
+        "cost" : 2,
+        "combat" : "6",
+        "move" : 3,
+        "capacity" : 2,
+        "sustain_damage" : true
+    },
+    {
+        "name" : "Hel-Titan II",
+        "unit_type" : "pds",
+        "combat" : 6,
+        "space_cannon" : "5",
+        "sustain_damage" : true,
+        "planetary_shield" : true,
+        "production" : 1,
+        "abilities" : [
+            "This unit is treated as both a structure and a ground force. It cannot be transported. You may use this unit's Space Cannon against ships that are adjacent to this unit's system."
+        ]
+    },
+    {
+        "name" : "Reanimator",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : "6",
+        "sustain_damage" : true,
+        "abilities" : [
+            "When your infantry on this planet are destroyed, place them on your faction sheet; those units are captured."
+        ]
+    },
+    {
+        "name" : "Dimensional Tear II",
+        "unit_type" : "space_dock",
+        "production" : 7,
+        "abilities" : [
+            "This system is a gravity rift; your ships do not roll for this gravity rift. Place a dimensional tear token beneath this unit as a reminder.",
+            "Up to 12 fighters in this system do not count against your ships' capacity."
+        ]
+    },
+    {
+        "name" : "Ember Colossus",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : "6",
+        "sustain_damage" : true,
+        "abilities" : [
+            "When you use your Star Forge faction ability in this system or an adjacent system, you may place 1 infantry from your reinforcements with this unit."
+        ]
+    },
+    {
+        "name" : "Prototype War Sun II",
+        "unit_type" : "war_sun",
+        "cost" : 10,
+        "combat" : "3(x3)",
+        "move" : 3,
+        "capacity" : 6,
+        "sustain_damage" : true,
+        "bombardment" : "3(x3)",
+        "abilities" : [
+            "Other players' units in this system lose Planetary Shield."
+        ]
+    },
+    {
+        "name" : "Annihilator",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : "6",
+        "sustain_damage" : true,
+        "bombardment" : "8",
+        "abilities" : [
+            "While not participating in ground combat, this unit can use its Bombardment ability on planets in its system as if it were a ship."
+        ]
+    },
+    {
+        "name" : "Super-Dreadnought II",
+        "unit_type" : "dreadnought",
+        "cost" : 4,
+        "combat" : 4,
+        "move" : 2,
+        "capacity" : 2,
+        "sustain_damage" : true,
+        "bombardment" : "4",
+        "abilities" : [
+            "This unit cannot be destroyed by \"Direct Hit\" action cards."
+        ]
+    },
+    {
+        "name" : "Z-Grav Eidolon (Ground)",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : "6(x2)",
+        "sustain_damage" : true,
+        "abilities" : [
+            "If this unit is in the space area of the active system at the start of a space combat, flip this card."
+        ]
+    },
+    {
+        "name" : "Z-Grav Eidolon (Space)",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : "8(x2)",
+        "abilities" : [
+            "If this unit is in the space area of the active system, it is also a ship. At the end of a space battle in the active system, flip this card."
+        ]
+    },
+    {
+        "name" : "ZS Thunderbolt M2",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : 6,
+        "sustain_damage" : true,
+        "abilities" : [
+            "After you use your Orbital Drop faction ability, you may spend 3 resources to place 1 mech on that planet"
+        ]
+    },
+    {
+        "name" : "Advanced Carrier II",
+        "unit_type" : "carrier",
+        "cost" : 3,
+        "combat" : 9,
+        "move" : 2,
+        "capacity" : 8,
+        "sustain_damage" : true
+    },
+    {
+        "name" : "Spec Ops II",
+        "unit_type" : "infantry",
+        "cost" : 0.5,
+        "combat" : 6,
+        "abilities" : [
+            "After this unit is destroyed, roll 1 die. If the result is 6 or greater, place the unit on this card. At the start of your next turn, place each unit that is on this card on a planet you control in your home system."
+        ]
+    },
+    {
+        "name" : "Scavenger Zeta",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : 6,
+        "sustain_damage" : true,
+        "abilities" : [
+            "DEPLOY: After you gain control of a planet, you may spend 1 trade good to place 1 mech on that planet."
+        ]
+    },
+    {
+        "name" : "Floating Factory II",
+        "unit_type" : "space_dock",
+        "move" : 2,
+        "capacity" : 5,
+        "production" : 7,
+        "abilities" : [
+            "This unit is placed in a space area instead of on a planet. This unit can move and retreat as if it were a ship. If this unit is blockaded, it is destroyed."
+        ]
+    },
+    {
+        "name" : "Dunlain Reaper",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : "6",
+        "sustain_damage" : true,
+        "abilities" : [
+            "DEPLOY: At the start of a round of ground combat, you may spend 2 resources to replace 1 of your infantry in that combat with 1 mech."
+        ]
+    },
+    {
+        "name" : "Shield Paling",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : "6",
+        "sustain_damage" : true,
+        "abilities" : [
+            "Your infantry on this planet are not affected by your Fragile faction ability."
+        ]
+    },
+    {
+        "name" : "Moyin's Ashes",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : "6",
+        "sustain_damage" : true,
+        "abilities" : [
+            "DEPLOY: When you use your Indoctrination faction ability, you may spend 1 additional influence to replace your opponent's unit with 1 mech instead of 1 infantry."
+        ]
+    },
+    {
+        "name" : "Pride Of Kenara",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : "6",
+        "sustain_damage" : true,
+        "abilities" : [
+            "This planet's planet card may be traded as part of a transaction; if you do, move all of your units from this planet to another planet you control."
+        ]
+    },
+    {
+        "name" : "Reclaimer",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : "6",
+        "sustain_damage" : true,
+        "abilities" : [
+            "After you resolve a tactical action during which you gained control of this planet, you may place 1 PDS or 1 space dock from your reinforcements on this planet."
+        ]
+    },
+    {
+        "name" : "Indomitus",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : "6",
+        "sustain_damage" : true,
+        "space_cannon" : "6",
+        "abilities" : [
+            "You may use this unit's Space Cannon against ships that are in adjacent systems."
+        ]
+    },
+    {
+        "name" : "Blackshade Infiltrator",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : "6",
+        "sustain_damage" : true,
+        "abilities" : [
+            "DEPLOY: After you use your Stall Tactics faction ability, you may place 1 mech on a planet you control."
+        ]
+    },
+    {
+        "name" : "Moll Terminus",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : "6",
+        "sustain_damage" : true,
+        "abilities" : [
+            "Other players' ground forces on this planet cannot use Sustain Damage."
+        ]
+    },
+    {
+        "name" : "Quantum Manipulator",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : "6",
+        "sustain_damage" : true,
+        "abilities" : [
+            "While this unit is in a space area during combat, you may use its Sustain Damage ability to cancel a hit that is produced against your ships in this system."
+        ]
+    },
+    {
+        "name" : "Watcher",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : "6",
+        "sustain_damage" : true,
+        "abilities" : [
+            "You may remove this unit from a system that contains or is adjacent to another player's units to cancel an action card played by that player."
+        ]
+    },
+    {
+        "name" : "Valkyrie Exeskeleton",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : "6",
+        "sustain_damage" : true,
+        "abilities" : [
+            "After this unit its Sustain Damage ability during ground combat, it produces 1 hit against your opponent's ground forces on this planet."
+        ]
+    },
+    {
+        "name" : "Icarus Drive",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : "6",
+        "sustain_damage" : true,
+        "abilities" : [
+            "After any player activates a system, you may remove this unit from the game board to place or move a Creuss wormhole token into this system."
+        ]
+    },
+    {
+        "name" : "Letani Behemoth",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : "6",
+        "sustain_damage" : true,
+        "planetary_shield" : true,
+        "production" : "2",
+        "abilities" : [
+            "DEPLOY: When you would use your Mitosis faction ability, you may replace 1 of your infantry with 1 mech from your reinforcements instead."
+        ]
+    },
+    {
+        "name" : "Iconoclast",
+        "unit_type" : "mech",
+        "cost" : 2,
+        "combat" : "6",
+        "sustain_damage" : true,
+        "abilities" : [
+            "During combat against an opponent who has at least 1 relic fragment, apply +2 to the results of this unit's combat rolls."
+        ]
+    },
+    {
+        "name" : "Letani Warrior II",
+        "unit_type" : "infantry",
+        "cost" : 0.5,
+        "combat" : 7,
+        "production" : "2",
+        "abilities" : [
+            "After this unit is destroyed, roll 1 die. If the result is 6 or greater, place this unit on this card. At the start of your next turn, place each unit that is on this card on a planet you control in your home system."
+        ]
+    },
+    {
+        "name" : "Memoria II",
+        "unit_type" : "flagship",
+        "cost" : 8,
+        "combat" : "5(x2)",
+        "move" : 2,
+        "capacity" : 6,
+        "sustain_damage" : true,
+        "afb" : "5(x3)",
+        "abilities" : [
+            "You may treat this unit as if it were adjacent to systems that contain 1 or more of your mechs."
+        ]
+    },
+    {
+        "name" : "Hybrid Crystal Fighter II",
+        "unit_type" : "fighter",
+        "cost" : 0.5,
+        "combat" : 7,
+        "move" : 2,
+        "abilities" : [
+            "This unit may move without being transported. Each fighter in excess of your ships' capacity counts as 1/2 of a ship against your fleet pool."
+        ]
+    },
+    {
+        "name" : "Exotrireme II",
+        "unit_type" : "dreadnought",
+        "cost" : 4,
+        "combat" : "5",
+        "move" : 2,
+        "capacity" : 1,
+        "sustain_damage" : true,
+        "bombardment" : "4(x2)",
+        "abilities" : [
+            "This unit cannot be destroyed by \"Direct Hit\" action cards. After a round of space combat, you may destroy this unit to destroy up to 2 ships in this system."
+        ]
     }
 ]

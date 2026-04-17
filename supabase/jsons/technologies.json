@@ -243,5 +243,411 @@
       },
       "text" : "At the end of your turn, you may exhaust this card to redistribute your command tokens.\nWhen you cast votes during the agenda phase, you may cast 3 additional votes; if you do, and the outcome you voted for is not resolved, exhaust this card.",
       "expansion" : "pok"
-    }
+    },
+    {
+      "name" : "Crimson Legionnaire II",
+      "technology_type" : "unit_upgrade",
+      "prerequisites" : {
+        "green" : 2
+      },
+      "faction" : "The Mahact Gene-Sorcerers",
+      "expansion" : "pok"
+    },
+    {
+      "name" : "Genetic Recombination",
+      "technology_type" : "green",
+      "prerequisites" : {
+        "green" : 1
+      },
+      "faction" : "The Mahact Gene-Sorcerers",
+      "text" : "You may exhaust this card before a player casts votes; that player must cast at least 1 vote for an outcome of your choice or remove 1 token from their fleet pool and return it to their reinforcements."
+    },
+    {
+      "name" : "Aerie Hololattice",
+      "technology_type" : "yellow",
+      "prerequisites" : {
+        "yellow" : 1
+      },
+      "faction" : "The Argent Flight",
+      "text" : "Other players cannot move ships through the system that contain your structures.\nEach planet that contains 1 or more of your structures gains the Production 1 ability as if it were a unit."
+    },
+    {
+      "name" : "Strike Wing Alpha II",
+      "technology_type" : "unit_upgrade",
+      "prerequisites" : {
+        "red" : 2
+      },
+      "faction" : "The Argent Flight"
+    },
+    {
+      "name" : "Saturn Engine II",
+      "technology_type" : "unit_upgrade",
+      "prerequisites" : {
+        "green" : 1,
+        "red" : 1,
+        "yellow" : 1
+      },
+      "faction" : "The Titans Of Ul"
+    },
+    {
+      "name" : "Hel-Titan II",
+      "technology_type" : "unit_upgrade",
+      "prerequisites" : {
+        "red" : 1,
+        "yellow" : 1
+      },
+      "faction" : "The Titans Of Ul"
+    },
+    {
+      "name" : "Valefar Assimilator X",
+      "technology_type" : "special",
+      "faction" : "The Nekro Virus",
+      "text" : "When you would gain another player's technology using 1 of your faction abilities, you may place the \"X\" assimilator token on a faction technology owned by that player instead. While that token is on a technology, this card gains that technology's text. You cannot place an assimilator token on technology that already has an assimilator token."
+    },
+    {
+      "name" : "Valefar Assimilator Y",
+      "technology_type" : "special",
+      "faction" : "The Nekro Virus",
+      "text" : "When you would gain another player's technology using 1 of your faction abilities, you may place the \"Y\" assimilator token on a faction technology owned by that player instead. While that token is on a technology, this card gains that technology's text. You cannot place an assimilator token on technology that already has an assimilator token."
+    },
+    {
+      "name" : "Dimensional Tear II",
+      "technology_type" : "unit_upgrade",
+      "prerequisites" : {
+        "yellow" : 2
+      },
+      "faction" : "The Vuil'raith Cabal"
+    },
+    {
+      "name" : "Vortex",
+      "technology_type" : "red",
+      "prerequisites" : {
+        "red" : 1
+      },
+      "faction" : "The Vuil'raith Cabal",
+      "text" : "ACTION: Exhaust this card to choose another player's non-structure unit in a system that is adjacent to 1 or more of your space docks. Capture 1 unit of that type from that player's reinforcements."
+    },
+    {
+      "name" : "Prototype War Sun II",
+      "technology_type" : "unit_upgrade",
+      "prerequisites" : {
+        "red" : 3,
+        "yellow" : 1
+      },
+      "faction" : "The Embers Of Muaat"
+    },
+    {
+      "name" : "Magmus Reactor",
+      "technology_type" : "red",
+      "prerequisites" : {
+        "red" : 2
+      },
+      "faction" : "The Embers Of Muaat",
+      "text" : "Your ships can move into supernovas.\nAfter 1 or more of your units use Production in a system that either contains a war sun or is adjacent to a supernova, gain 1 trade good."
+    },
+    {
+      "name" : "Super-Dreadnought II",
+      "technology_type" : "unit_upgrade",
+      "prerequisites" : {
+        "blue" : 2,
+        "yellow" : 1
+      },
+      "faction" : "The L1Z1X Mindnet"
+    },
+    {
+      "name" : "Inheritance Systems",
+      "technology_type" : "yellow",
+      "prerequisites" : {
+        "yellow" : 2
+      },
+      "faction" :"The L1Z1X Mindnet",
+      "text" : "You may exhaust this card and spend 2 resources when you research a technology; ignore all of that technology's prerequisites."
+    },
+    {
+      "name" : "Pre-Fab Arcologies",
+      "technology_type" : "green",
+      "prerequisites" : {
+        "green" : 3
+      },
+      "faction" : "The Naaz-Rokha Alliance",
+      "text" : "After you explore a planet, ready that planet."
+    },
+    {
+      "name" : "Supercharge",
+      "technology_type" : "green",
+      "prerequisites" : {
+        "red" : 1
+      },
+      "faction" : "The Naaz-Rokha Alliance",
+      "text" : "At the start of a combat round, you may exhaust this card to apply +1 to the result of each of your unit's combat rolls during this combat round."
+    },
+    {
+      "name" : "Advanced Carrier II",
+      "technology_type" : "unit_upgrade",
+      "prerequisites" : {
+        "blue" : 2
+      },
+      "faction" : "The Federation Of Sol"
+    },
+    {
+      "name" : "Spec Ops II",
+      "technology_type" : "unit_upgrade",
+      "prerequisites" : {
+        "green" : 2
+      },
+      "faction" : "The Federation Of Sol"
+    },
+    {
+      "name" : "Floating Factiory II",
+      "technology_type" : "unit_upgrade",
+      "prerequisites" : {
+        "yellow" : 2
+      },
+      "faction" : "The Clan Of Saar"
+    },
+    {
+      "name" : "Chaos Mapping",
+      "technology_type" : "blue",
+      "prerequisites" : {
+        "blue" : 1
+      },
+      "faction" : "The Clan Of Saar",
+      "text" : "Other players cannot activate asteroid fields that contain 1 or more of your ships.\nAt the start of your turn during the action phase, you may produce 1 unit in a system the contains at least 1 of your units that has Production."
+    },
+    {
+      "name" : "Non-Euclidean Shielding",
+      "technology_type" : "red",
+      "prerequisites" : {
+        "red" : 2
+      },
+      "faction" : "The Barony Of Letnev",
+      "text" : "When 1 of your units uses Sustain Damage, cancel 2 hits instead of 1."
+    },
+    {
+      "name" : "L4 Disruptors",
+      "technology_type" : "yellow",
+      "prerequisites" : {
+        "yellow" : 1
+      },
+      "faction" :"The Barony Of Letnev",
+      "text" : "During an invasion, units cannot use Space Cannon against your units."
+    },
+    {
+      "name" : "Spacial Conduit Cylinder",
+      "technology_type" : "blue",
+      "prerequisites" : {
+        "blue" : 2
+      },
+      "faction" : "The Universities Of Jol-Nar",
+      "text" : "You may exhaust this card after you activate a system that contains 1 or more of your units; that system is adjacent that contain 1 or more of your units during this activation."
+    },
+    {
+      "name" : "E-Res Siphons",
+      "technology_type" : "yellow",
+      "prerequisites" : {
+        "yellow" : 2
+      },
+      "faction" :"The Universities Of Jol-Nar",
+      "text" : "After another player activates a system that contains 1 or more of your ships, gain 4 trade goods."
+    },
+    {
+      "name" : "Yin Spinner",
+      "technology_type" : "green",
+      "prerequisites" : {
+        "green" : 2
+      },
+      "faction" : "The Yin Brotherhood",
+      "text" : "After 1 or more of your units use Production, place 1 infantry from your reinforcements on a planet you control in that system."
+    },
+    {
+      "name" : "Impulse Core",
+      "technology_type" : "yellow",
+      "prerequisites" : {
+        "yellow" : 2
+      },
+      "faction" :"The Yin Brotherhood",
+      "text" : "At the start of a space combat, you may destroy 1 of your cruisers or destroyers in the active system to produce 1 hit against your opponent's ships; that hit must be assigned by your opponent to 1 of his non-fighter ships if able."
+    },
+    {
+      "name" : "Production Biomes",
+      "technology_type" : "green",
+      "prerequisites" : {
+        "green" : 2
+      },
+      "faction" : "The Emirates Of Hacan",
+      "text" : "ACTION: Exhaust this card and spend 1 token from your strategy pool to gain 4 trade goods and choose 1 other player; that player gains 2 trade goods."
+    },
+    {
+      "name" : "Quantum Datahub Node",
+      "technology_type" : "yellow",
+      "prerequisites" : {
+        "yellow" : 3
+      },
+      "faction" : "The Emirates Of Hacan",
+      "text" : "At the end of the strategy phase, you may spend 1 token from your strategy pool and give another player 3 of your trade goods. If you do, give 1 of your strategy cards to that player and take 1 of his strategy cards."
+    },
+    {
+      "name" : "Letani Warrior II",
+      "technology_type" : "unit_upgrade",
+      "faction" : "The Arborec"
+    },
+    {
+      "name" : "Hybrid Crystal Fighter II",
+      "technology_type" : "unit_upgrade",
+      "faction" : "The Naalu Collective"
+    },
+    {
+      "name" : "Memoria II",
+      "technology_type" : "unit_upgrade",
+      "faction" : "The Nomad"
+    },
+    {
+      "name" : "Exotrireme II",
+      "technology_type" : "unit_upgrade",
+      "faction" : "Sardakk N'orr"
+    },
+    {
+      "name" : "Salvage Operations",
+      "technology_type" : "yellow",
+      "prerequisites" : {
+        "yellow" : 2
+      },
+      "faction" : "The Mentak Coalition",
+      "text" : "After you win or lose a space combat, gain 1 trade good; if you won the combat, you may also produce 1 ship in that system of any ship type that was destroyed during the combat."
+    },
+    {
+      "name" : "Mirror Computing",
+      "technology_type" : "yellow",
+      "prerequisites" : {
+        "yellow" : 3
+      },
+      "faction" : "The Mentak Coalition",
+      "text" : "When you spend trade goods, each trade good is worth 2 resources or influence instead of 1."
+    },
+    {
+      "name" : "Temporal Command Suite",
+      "technology_type" : "yellow",
+      "prerequisites" : {
+        "yellow" : 1
+      },
+      "faction" : "The Nomad",
+      "text" : "After any planet's agent becomes exhausted, you may exhaust this card to ready that agent; if you ready another player's agent, you may perform a transcation with that player."
+    },
+    {
+      "name" : "Voidwatch",
+      "technology_type" : "green",
+      "prerequisites" : {
+        "green" : 1
+      },
+      "faction" : "The Empyrean",
+      "text" : "After a player moves ships into a system that contains 1 or more of your inits, they must give you 1 promissory notes from their hand, if able."
+    },
+    {
+      "name" : "Aetherstream",
+      "technology_type" : "blue",
+      "prerequisites" : {
+        "blue" : 2
+      },
+      "faction" : "The Empyrean",
+      "text" : "After you or one of your neighbors activates a system that is adjacent to an anomaly, you may apply +1 to the move value of all of that player's ships during this tactical action."
+    },
+    {
+      "name" : "Valkyrie Particle Weave",
+      "technology_type" : "red",
+      "prerequisites" : {
+        "red" : 2
+      },
+      "faction" : "Sardakk N'orr",
+      "text" : "After making combat rolls during a round of ground combat, if your opponent produced 1 or more hits, you produce 1 additional hit."
+    },
+    {
+      "name" : "Dimensional Splicer",
+      "technology_type" : "red",
+      "prerequisites" : {
+        "red" : 1
+      },
+      "faction" : "The Ghosts Of Creuss",
+      "text" : "At the start of a space combat in a system that contains a wormhole and 1 or more of your ships, you may produce 1 hit and assign it to 1 of your opponent's ships."
+    },
+    {
+      "name" : "Wormhole Generator",
+      "technology_type" : "blue",
+      "prerequisites" : {
+        "blue" : 2
+      },
+      "faction" : "The Ghosts Of Creuss",
+      "text" : "At the start of the status phase, place or move a Creuss wormhole token into either a system that contains a planet you control or a non-home system that does not contain another player's ships."
+    },
+    {
+      "name" : "Instinct Training",
+      "technology_type" : "green",
+      "prerequisites" : {
+        "green" : 1
+      },
+      "faction" : "The Xxcha Kingdom",
+      "text" : "You may exhaust this card and spend 1 token from your strategy pool when another player plays an action card; cancel that action card."
+    },
+    {
+      "name" : "Nullification Field",
+      "technology_type" : "yellow",
+      "prerequisites" : {
+        "yellow" : 2
+      },
+      "faction" : "The Xxcha Kingdom",
+      "text" : "After another player activates a system that contains 1 or more of your ships, you may exhaust this card and spend 1 token from your strategy pool; immediately end that player's turn."
+    },
+    {
+      "name" : "Neuroglaive",
+      "technology_type" : "green",
+      "prerequisites" : {
+        "green" : 3
+      },
+      "faction" : "The Naalu Collective",
+      "text" : "After another player activates a system that contains 1 or more of your ships, that player removes 1 token from his fleet pool and returns it to his reinforcements."
+    },
+    {
+      "name" : "Bioplasmosis",
+      "technology_type" : "green",
+      "prerequisites" : {
+        "green" : 2
+      },
+      "faction" : "The Arborec",
+      "text" : "At the end of the status phase, you may remove any number of infantry from planets you control and place them on 1 or more planets you control in the same or adjacent systems."
+    },
+    {
+      "name" : "Lazax Gate Folding",
+      "technology_type" : "blue",
+      "prerequisites" : {
+        "blue" : 2
+      },
+      "faction" : "The Winnu",
+      "text" : "During your tactical actions, if you do not control Mecatol Rex, treat its system as if it contains both an alpha and beta wormhole.\nACTION: If you control Mecatol Rex, exhaust this card to place 1 infantry from your reinforcements on Mecatol Rex."
+    },
+    {
+      "name" : "Hegemonic Trade Policy",
+      "technology_type" : "yellow",
+      "prerequisites" : {
+        "yellow" : 2
+      },
+      "faction" : "The Winnu",
+      "text" : "Exhaust this card when 1 or more of your units use Production; swap the resource and influence values of 1 planet you control until the end of your turn."
+    },
+    {
+      "name" : "Transparasteel Plating",
+      "technology_type" : "green",
+      "prerequisites" : {
+        "green" : 1
+      },
+      "faction" : "The Yssaril Tribes",
+      "text" : "During your turn of the action phase, players that have passed cannot play action cards."
+    },
+    {
+      "name" : "Mageon Implants",
+      "technology_type" : "green",
+      "prerequisites" : {
+        "green" : 3
+      },
+      "faction" : "The Yssaril Tribes",
+      "text" : "ACTION: Exhaust this card to look at another player's hand of action cards. Choose 1 of those cards and add it to your hand."
+    },
 ]

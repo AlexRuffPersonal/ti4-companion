@@ -24,11 +24,133 @@
         "expansion" : "pok"
     },
     {
-        "name" : "PLACEHOLDER",
-        "text" : "PLACEHOLDER",
-        "faction" : "PLACEHOLDER",
-        "purge_on_use" : false,
-        "into_play_area" : false,
-        "expansion" : ""
+        "name" : "Scepter Of Dominion",
+        "text" : "At the start of the strategy phase:\nChoose 1 non-home system that contains your units; each other player who has a token on the Mahact player's command sheet places a token from their reinforcements in that system.\nThen, return this card to the Mahact player.",
+        "faction" : "The Mahact Gene-Sorcerers",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Strike Wing Ambuscade",
+        "text" : "When 1 or more of your units make a roll for a unit ability:\nChoose 1 of those units to roll 1 additional die.\nThen, return this card to the Argent player.",
+        "faction" : "The Argent Flight",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Antivirus",
+        "text" : "At the start of combat:\nPlace this card faceup in your play area. While this card is in your play area, the Nekro player cannot use his Technological Singularity faction ability against you.\nIf you activate a system that contains 1 or more of the Nekro player's units, return this card to the Nekro player.",
+        "faction" : "The Nekro Virus"
+    },
+    {
+        "name" : "Terraform",
+        "text" : "ACTION: Attach this card to a non-home planet you control other than Mecatol Rex. Its resource and influence values are each increased by 1, and it is treated as having all 3 planet traits (cultural, hazardous, and industrial).",
+        "faction" : "The Titans Of Ul",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Crucible",
+        "text" : "After you activate a system:\nYour ships do not roll for gravity rifts during this movement; apply an additional +1 to the move values of your ships that would move out of or through a gravity rift instead.\nThen, return this card to the Vuil'raith player.",
+        "faction" : "The Vuil'raith Cabal",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Fires Of The Gashlai",
+        "text" : "ACTION: Remove 1 token from the Muaat player's fleet pool and return it to his reinforcements. Then, gain your war sun unit upgrade technology card.\nThen, return this card to the Muaat player.",
+        "faction" : "The Embers Of Muaat"
+    },
+    {
+        "name" : "Cybernetic Enhancements",
+        "text" : "At the start of your turn:\nRemove 1 token from the L1Z1X player's strategy pool and return it to his reinforcements. Then, place 1 command token from your reinforcements in your strategy pool.\nThen, return this card to the L1Z1X player.",
+        "faction" : "The L1Z1X Mindnet"
+    },
+    {
+        "name" : "Black Market Forgery",
+        "text" : "ACTION: Purge 2 of your relic fragments of the same type to gain 1 relic.\nThen, return this card to the Naaz-Rokha player.",
+        "faction" : "The Naaz-Roka Alliance",
+        "expansion" : "pok"
+    },
+    {
+        "name" : "Military Support",
+        "text" : "At the start of the Sol player's turn:\nRemove 1 token from the Sol player's strategy pool, if able, and return it to his reinforcements. Then, you may place 2 infantry from your reinforcements on any planet you control.\nThen, return this card to the Sol player.",
+        "faction" : "The Federation Of Sol"
+    },
+    {
+        "name" : "Ragh's Call",
+        "text" : "After you commit 1 or more units to land on a planet:\nRemova all of the Saar player's ground forces from that planet and place them on a planet controlled by the Saar player.\nThen, return this card to the Saar player.",
+        "faction" : "The Clan Of Saar"
+    },
+    {
+        "name" : "War Funding",
+        "text" : "At the start of a round of space combat:\nThe Letnev player loses 2 trade goods.\nDuring this combat round, reroll any number of dice.\nThen, return this card to the Letnev player.",
+        "faction" : "The Barony Of Letnev"
+    },
+    {
+        "name" : "Research Agreement",
+        "text" : "After the Jol-Nar player researches a technology that is not a faction technology:\nGain that technology.\nThen, return this card to the Jol-Nar player.",
+        "faction" : "The Universities Of Jol-Nar"
+    },
+    {
+        "name" : "Greyfire Mutagen",
+        "text" : "After a system is activated:\nThe Yin player cannot use faction abilities or faction technology during this tactical action.\nThen, return this card to the Yin player.",
+        "faction" : "The Yin Brotherhood"
+    },
+    {
+        "name" : "Trade Convoys",
+        "text" : "ACTION: Place this card faceup in your play area.\nWhile this card is in your play area, you may negotiate transactions with players who are not your neighbor.\nIf you activate a system that containts 1 or more of the Hacan player's units, return this card to the Hacan player.",
+        "faction" : "The Emirates Of Hacan"
+    }.
+    {
+        "name" : "Promise Of Protection",
+        "text" : "ACTION: Place this card faceup in your play area.\nWhile this card is in your play area, the Mentak player cannot use his Pillage faction ability against you.\nIf you activate a system that contains 1 or more of the Mentak's player's units, return this card to the Mentak player.",
+        "faction" : "The Mentak Coalition"
+    },
+    {
+        "name" : "The Cavalry",
+        "text" : "At the start of a space combat against a player other than the Nomad:\nDuring this combat, treat 1 of your non-fighter ships as if it has the Sustain Damage ability, combat value, and Anti-Fighter Barrage value of the Nomad's flagship.\nReturn this card to the Nomad player at the end of the combat.",
+        "faction" : "The Nomad"
+    },
+    {
+        "name" : "Blood Pact",
+        "text" : "ACTION: Place this card faceup in your play area.\nWhen you and the Empyrean player cast votes for the same outcome, cast 4 additional votes for that outcome.\nIf you activate a system that contains 1 or more of the Empyrean player's units, return this card to the Empyrean player.",
+        "faction" : "The Empyrean"
+    },
+    {
+        "name" : "Dark Pact",
+        "text" : "ACTION: Place this card faceup in your play area.\nWhen you give a number of commodities to the Empyrean player equal to your maximum commodity value, you each gain 1 trade good.\nIf you activate a system that contains 1 or more of the Empyrean player's units, return this card to the Empyrean player.",
+        "faction" : "The Empyrean"
+    },
+    {
+        "name" : "Tekklar Legion",
+        "text" : "At the start of an invasion combat:\nApply +1 to the result of each of your unit's combat rolls during this combat. If your opponent is the N'orr player, apply -1 to the result of each of his unit's combat rolls during this combat.\nThen, return this card to the N'orr player.",
+        "faction" : "Sardakk N'orr"
+    },
+    {
+        "name" : "Creuss Iff",
+        "text" : "At the start of your turn during the action phase:\nPlace or move a Creuss wormhole token into either a system that contains a planet you control or a non-home system that does not contain another player's ships.\nThen, return this card to the Creuss player.",
+        "faction" : "The Ghosts Of Creuss"
+    },
+    {
+        "name" : "Spy Net",
+        "text" : "At the start of your turn:\nLook at the Yssaril player's hand of action cards. Choose 1 of those cards and add it to your hand.\nThen, return this card to the Yssaril player.",
+        "faction" : "The Tribes Of Yssaril"
+    },
+    {
+        "name" : "Acquisecence",
+        "text" : "At the end of the strategy phase:\nExchange 1 of your strategy cards with a strategy card that was chosen by the Winnu player.\nThen, return this card to the Winnu player.",
+        "faction" : "The Winnu"
+    },
+    {
+        "name" : "Stymie",
+        "text" : "ACTION: Place this card faceup in your play area.\nWhile this card is in your play area, the Arborec player cannot produce units in or adjacent to non-home systems that contain 1 or more of your units.\nIf you activate a system that contains 1 or more of the Arborec player's units, return this card to the Arborec player.",
+        "faction" : "The Arborec"
+    },
+    {
+        "name" : "Gift Of Prescience",
+        "text" : "At the end of the strategy phase:\nPlace this card faceup in your play area and place the Naalu \"0\" token on your strategy card; you are first in initiative order. The Naalu player cannot use his Telepathic faction ability during this game round.\nReturn this card to the Naalu player at the end fo the status phase.",
+        "faction" : "The Naalu Collective"
+    },
+    {
+        "name" : "Political Favor",
+        "text" : "After an agenda is revealed:\nRemove 1 token from the Xxcha player's strategy pool and return it to his reinforcements. Then, discard the revealed agenda and reveal 1 agenda from the top of the deck. Players vote on this agenda instead.\nThen, return this card to the Xxcha player.",
+        "faction" : "The Xxcha Kingdom"
     }
 ]

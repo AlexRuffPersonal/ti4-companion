@@ -8,6 +8,8 @@
 
 **Tech Stack:** React 19, Vite, Tailwind CSS 3, Supabase JS v2, Vitest 4, @testing-library/react, Deno/TypeScript (Edge Functions)
 
+**Schema note:** The `technologies` table uses `technology_type TEXT` (values: `'green'`, `'blue'`, `'yellow'`, `'red'`, `'unit_upgrade'`) instead of separate `colour` and `is_unit_upgrade` columns. There is no `unit_stats` column. Throughout this plan, filter unit upgrades with `technology_type === 'unit_upgrade'` and colour with `technology_type === 'green'` etc.
+
 ---
 
 ## File Map
@@ -151,6 +153,44 @@ Deno.serve(async (req: Request) => {
     if (insertError) return errorResponse(`Failed to initialise objectives: ${insertError.message}`, 500)
   }
 
+  // Initialise action card deck (filtered by active expansions, expanded by quantity)
+  const { data: allActionCards, error: actionCardsError } = await db
+    .from('action_cards')
+    .select('id, quantity, expansion')
+  if (actionCardsError) return errorResponse('Database error', 500)
+
+  const eligibleActionCards = (allActionCards ?? []).filter(
+    (c: { id: string; quantity: number; expansion: string | null }) =>
+      activeExpansions.includes(c.expansion ?? 'base')
+  )
+
+  const deckEntries: Array<{ action_card_id: string; copy_index: number }> = []
+  for (const card of eligibleActionCards) {
+    for (let i = 0; i < (card.quantity ?? 1); i++) {
+      deckEntries.push({ action_card_id: card.id, copy_index: i })
+    }
+  }
+
+  if (deckEntries.length > 0) {
+    const acPositions = deckEntries.map((_: unknown, i: number) => i)
+    for (let i = acPositions.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[acPositions[i], acPositions[j]] = [acPositions[j], acPositions[i]]
+    }
+    const { error: insertActionError } = await db
+      .from('game_action_card_deck')
+      .insert(
+        deckEntries.map((entry: { action_card_id: string; copy_index: number }, i: number) => ({
+          game_id: body.game_id,
+          action_card_id: entry.action_card_id,
+          copy_index: entry.copy_index,
+          deck_position: acPositions[i],
+          state: 'deck',
+        }))
+      )
+    if (insertActionError) return errorResponse(`Failed to initialise action cards: ${insertActionError.message}`, 500)
+  }
+
   // Initialise starting technologies and home planets for each player
   for (const player of players) {
     const { data: factionData, error: factionError } = await db
@@ -213,7 +253,7 @@ Deno.serve(async (req: Request) => {
 
 - [ ] **Step 2: Update the mockDb helper in game-start.test.js**
 
-The `mockDb` function needs to handle four new table interactions. Replace the existing `mockDb` function with:
+The `mockDb` function needs to handle four new table interactions while preserving the existing action card mocks. Replace the existing `mockDb` function (lines 34–86) with:
 
 ```js
 function mockDb({
@@ -223,7 +263,9 @@ function mockDb({
   playersError = null,
   updateError = null,
   objectives = [{ id: 'obj-1', expansion: 'base' }, { id: 'obj-2', expansion: 'base' }],
-  insertError = null,
+  insertObjError = null,
+  actionCards = [{ id: 'ac-1', quantity: 2, expansion: 'base' }, { id: 'ac-2', quantity: 1, expansion: 'base' }],
+  insertActionError = null,
   factionData = { home_tile_number: '5', starting_techs: ['Neural Motivator'] },
   factionError = null,
   tileData = { planets: [{ name: 'Nestphar', tech_specialty: null }] },
@@ -231,6 +273,7 @@ function mockDb({
   planetInsertError = null,
   techUpdateError = null,
 } = {}) {
+  const actionCardInsertMock = vi.fn().mockResolvedValue({ error: insertActionError })
   db.from.mockImplementation((table) => {
     if (table === 'games') {
       return {
@@ -261,8 +304,16 @@ function mockDb({
     }
     if (table === 'game_public_objectives') {
       return {
-        insert: vi.fn().mockResolvedValue({ error: insertError }),
+        insert: vi.fn().mockResolvedValue({ error: insertObjError }),
       }
+    }
+    if (table === 'action_cards') {
+      return {
+        select: vi.fn().mockResolvedValue({ data: actionCards, error: null }),
+      }
+    }
+    if (table === 'game_action_card_deck') {
+      return { insert: actionCardInsertMock }
     }
     if (table === 'factions') {
       return {
@@ -288,39 +339,36 @@ function mockDb({
       }
     }
   })
+  return { actionCardInsertMock }
 }
 ```
 
-- [ ] **Step 3: Add two new test cases for the new behaviour**
+- [ ] **Step 3: Add new test cases for the new behaviour**
 
 Append these inside the `describe('game-start', ...)` block, after the existing tests:
 
 ```js
 it('sets starting technologies from faction data', async () => {
   mockDb({ factionData: { home_tile_number: null, starting_techs: ['Neural Motivator', 'Sarween Tools'] } })
-  const req = makeRequest({ game_id: GAME_ID })
-  const res = await handler(req)
+  const res = await handler(makeRequest({ game_id: GAME_ID }))
   expect(res.status).toBe(200)
 })
 
 it('returns 200 when faction has no home tile number', async () => {
   mockDb({ factionData: { home_tile_number: null, starting_techs: [] } })
-  const req = makeRequest({ game_id: GAME_ID })
-  const res = await handler(req)
+  const res = await handler(makeRequest({ game_id: GAME_ID }))
   expect(res.status).toBe(200)
 })
 
 it('returns 200 when home tile has no planets', async () => {
   mockDb({ tileData: { planets: [] } })
-  const req = makeRequest({ game_id: GAME_ID })
-  const res = await handler(req)
+  const res = await handler(makeRequest({ game_id: GAME_ID }))
   expect(res.status).toBe(200)
 })
 
 it('returns 500 when planet insert fails', async () => {
   mockDb({ planetInsertError: { message: 'insert failed' } })
-  const req = makeRequest({ game_id: GAME_ID })
-  const res = await handler(req)
+  const res = await handler(makeRequest({ game_id: GAME_ID }))
   expect(res.status).toBe(500)
   const body = await res.json()
   expect(body.error).toMatch(/Failed to insert planets/)
@@ -381,15 +429,17 @@ import {
   updateGameSettings, pickFactionColor, setSpeaker, startGame,
   endTurn, passAction, advancePhase, scoreObjective,
   revealObjective, shuffleDeck, updateCommandTokens,
+  drawActionCard, discardActionCard,
   researchTechnology,
 } from '../lib/edgeFunctions.js'
 ```
 
-Then add to the return object at the bottom of `useGame`, after `cycleLeader`:
+Then add to the return object at the bottom of `useGame`, after `discardTheActionCard`:
 
 ```js
-researchTech: (techName, exhaustPlanetIds, bypassPrerequisites) =>
-  game ? researchTechnology(game.id, techName, exhaustPlanetIds, bypassPrerequisites) : Promise.reject(new Error('Game not loaded')),
+    // Phase 4a wrappers (tech research)
+    researchTech: (techName, exhaustPlanetIds, bypassPrerequisites) =>
+      game ? researchTechnology(game.id, techName, exhaustPlanetIds, bypassPrerequisites) : Promise.reject(new Error('Game not loaded')),
 ```
 
 - [ ] **Step 3: Run existing tests to confirm nothing is broken**
@@ -418,6 +468,8 @@ git commit -m "feat: add researchTechnology edge function wrapper"
 
 The exported pure functions `computeHeldCounts` and `computeTechStatus` are tested directly. The hook itself is tested via `renderHook`.
 
+Note on test data: `technology_type` is `'green'`/`'blue'`/`'yellow'`/`'red'` for the four colour families, and `'unit_upgrade'` for unit upgrades. There is no separate `is_unit_upgrade` field. Unit upgrades are excluded from prerequisite colour counts.
+
 - [ ] **Step 1: Write the failing tests**
 
 Create `ti4-companion-web/tests/hooks/useTechTree.test.js`:
@@ -438,17 +490,20 @@ import {
 import { researchTechnology } from '../../src/lib/edgeFunctions.js'
 
 // ── Sample reference data ─────────────────────────────────────────────────────
+// technology_type replaces colour + is_unit_upgrade:
+//   'green'/'blue'/'yellow'/'red' = colour families
+//   'unit_upgrade' = unit upgrade (excluded from prereq colour counts)
 
 const ALL_TECHS = [
-  { id: 't1', name: 'Neural Motivator',       colour: 'green',  prerequisites: {},           faction: null,    is_unit_upgrade: false, expansion: 'base' },
-  { id: 't2', name: 'Psychoarchaeology',       colour: 'green',  prerequisites: { green: 1 }, faction: null,    is_unit_upgrade: false, expansion: 'base' },
-  { id: 't3', name: 'Bio-Stims',               colour: 'green',  prerequisites: { green: 2 }, faction: null,    is_unit_upgrade: false, expansion: 'base' },
-  { id: 't4', name: 'Hyper Metabolism',        colour: 'green',  prerequisites: { green: 3 }, faction: null,    is_unit_upgrade: false, expansion: 'base' },
-  { id: 't5', name: 'Sarween Tools',           colour: 'yellow', prerequisites: {},           faction: null,    is_unit_upgrade: false, expansion: 'base' },
-  { id: 't6', name: 'AI Development Algorithm',colour: 'yellow', prerequisites: { red: 1 },   faction: null,    is_unit_upgrade: false, expansion: 'base' },
-  { id: 't7', name: 'Antimass Deflectors',     colour: 'blue',   prerequisites: {},           faction: null,    is_unit_upgrade: false, expansion: 'base' },
-  { id: 't8', name: 'Carrier II',              colour: 'blue',   prerequisites: { blue: 1 },  faction: null,    is_unit_upgrade: true,  expansion: 'base' },
-  { id: 't9', name: 'Chaos Mapping',           colour: 'green',  prerequisites: {},           faction: 'Arborec', is_unit_upgrade: false, expansion: 'base' },
+  { id: 't1', name: 'Neural Motivator',        technology_type: 'green',        prerequisites: {},           faction: null,      expansion: 'base' },
+  { id: 't2', name: 'Psychoarchaeology',        technology_type: 'green',        prerequisites: { green: 1 }, faction: null,      expansion: 'base' },
+  { id: 't3', name: 'Bio-Stims',               technology_type: 'green',        prerequisites: { green: 2 }, faction: null,      expansion: 'base' },
+  { id: 't4', name: 'Hyper Metabolism',         technology_type: 'green',        prerequisites: { green: 3 }, faction: null,      expansion: 'base' },
+  { id: 't5', name: 'Sarween Tools',            technology_type: 'yellow',       prerequisites: {},           faction: null,      expansion: 'base' },
+  { id: 't6', name: 'AI Development Algorithm', technology_type: 'yellow',       prerequisites: { red: 1 },   faction: null,      expansion: 'base' },
+  { id: 't7', name: 'Antimass Deflectors',      technology_type: 'blue',         prerequisites: {},           faction: null,      expansion: 'base' },
+  { id: 't8', name: 'Carrier II',               technology_type: 'unit_upgrade', prerequisites: { blue: 1 },  faction: null,      expansion: 'base' },
+  { id: 't9', name: 'Chaos Mapping',            technology_type: 'green',        prerequisites: {},           faction: 'Arborec', expansion: 'base' },
 ]
 
 const ACTIVE_EXPANSIONS = { base: true }
@@ -460,9 +515,14 @@ describe('computeHeldCounts', () => {
     expect(computeHeldCounts([], ALL_TECHS)).toEqual({ green: 0, blue: 0, yellow: 0, red: 0 })
   })
 
-  it('counts held techs by colour', () => {
+  it('counts held techs by technology_type', () => {
     const held = ['Neural Motivator', 'Sarween Tools', 'Antimass Deflectors']
     expect(computeHeldCounts(held, ALL_TECHS)).toEqual({ green: 1, blue: 1, yellow: 1, red: 0 })
+  })
+
+  it('does not count unit_upgrade techs toward colour prereqs', () => {
+    const held = ['Carrier II']
+    expect(computeHeldCounts(held, ALL_TECHS)).toEqual({ green: 0, blue: 0, yellow: 0, red: 0 })
   })
 
   it('ignores tech names not found in allTechnologies', () => {
@@ -513,8 +573,7 @@ describe('computeTechStatus', () => {
   })
 
   it('returns exhaust when AI Development Algorithm covers one missing prereq', () => {
-    // AI Dev Algorithm needs red: 1 — hold AIDA itself is not the test case.
-    // Test: Bio-Stims needs green: 2, hold one green, hold AIDA (covers any colour)
+    // Bio-Stims needs green: 2, hold one green, hold AIDA (covers any colour for one missing prereq)
     const held = ['Neural Motivator', 'AI Development Algorithm']
     const result = computeTechStatus(ALL_TECHS[2], held, ALL_TECHS, noReadyPlanets)
     expect(result.status).toBe('exhaust')
@@ -576,7 +635,7 @@ describe('useTechTree', () => {
     vi.clearAllMocks()
   })
 
-  it('sections contain the correct techs grouped by colour/type', () => {
+  it('sections contain the correct techs grouped by technology_type', () => {
     const { result } = renderHook(() =>
       useTechTree(PLAYER, PLANETS, ALL_TECHS, 'game-id', ACTIVE_EXPANSIONS)
     )
@@ -685,13 +744,16 @@ Create `ti4-companion-web/src/hooks/useTechTree.js`:
 import { useState } from 'react'
 import { researchTechnology } from '../lib/edgeFunctions.js'
 
+const COLOUR_TYPES = new Set(['green', 'blue', 'yellow', 'red'])
+
 // Exported for unit testing.
 // Returns how many of each colour the player currently holds.
+// unit_upgrade techs are excluded — they don't satisfy colour prerequisites.
 export function computeHeldCounts(heldTechNames, allTechnologies) {
   const counts = { green: 0, blue: 0, yellow: 0, red: 0 }
   for (const name of heldTechNames) {
     const tech = allTechnologies.find(t => t.name === name)
-    if (tech && counts[tech.colour] !== undefined) counts[tech.colour]++
+    if (tech && COLOUR_TYPES.has(tech.technology_type)) counts[tech.technology_type]++
   }
   return counts
 }
@@ -775,12 +837,12 @@ function buildSections(heldTechNames, allTechnologies, readyPlanets, faction, ac
   const annotate = t => ({ ...t, ...computeTechStatus(t, heldTechNames, allTechnologies, readyPlanets) })
 
   return {
-    faction:      eligible.filter(t =>  t.faction === faction && !t.is_unit_upgrade).map(annotate).sort(sortByPrereqs),
-    unitUpgrades: eligible.filter(t =>  t.is_unit_upgrade).map(annotate).sort(sortByPrereqs),
-    biotic:       eligible.filter(t => !t.faction && !t.is_unit_upgrade && t.colour === 'green').map(annotate).sort(sortByPrereqs),
-    propulsion:   eligible.filter(t => !t.faction && !t.is_unit_upgrade && t.colour === 'blue').map(annotate).sort(sortByPrereqs),
-    cybernetic:   eligible.filter(t => !t.faction && !t.is_unit_upgrade && t.colour === 'yellow').map(annotate).sort(sortByPrereqs),
-    warfare:      eligible.filter(t => !t.faction && !t.is_unit_upgrade && t.colour === 'red').map(annotate).sort(sortByPrereqs),
+    faction:      eligible.filter(t => t.faction === faction && t.technology_type !== 'unit_upgrade').map(annotate).sort(sortByPrereqs),
+    unitUpgrades: eligible.filter(t => t.technology_type === 'unit_upgrade').map(annotate).sort(sortByPrereqs),
+    biotic:       eligible.filter(t => !t.faction && t.technology_type === 'green').map(annotate).sort(sortByPrereqs),
+    propulsion:   eligible.filter(t => !t.faction && t.technology_type === 'blue').map(annotate).sort(sortByPrereqs),
+    cybernetic:   eligible.filter(t => !t.faction && t.technology_type === 'yellow').map(annotate).sort(sortByPrereqs),
+    warfare:      eligible.filter(t => !t.faction && t.technology_type === 'red').map(annotate).sort(sortByPrereqs),
   }
 }
 
@@ -875,6 +937,8 @@ git commit -m "feat: add useTechTree hook with prerequisite logic and preview"
 - Create: `ti4-companion-web/src/components/game/TechCard.jsx`
 - Create: `ti4-companion-web/tests/components/TechCard.test.jsx`
 
+Note: TechCard does not reference `technology_type` directly — it renders `tech.name`, `tech.status`, `tech.prerequisites`, and `tech.missingPrereqs`. The prerequisite dots are keyed by colour strings from the `prerequisites` object keys (e.g. `{ green: 1 }`), which remain colour names regardless of the schema change.
+
 - [ ] **Step 1: Write the failing tests**
 
 Create `ti4-companion-web/tests/components/TechCard.test.jsx`:
@@ -887,7 +951,7 @@ import TechCard from '../../src/components/game/TechCard.jsx'
 const BASE_TECH = {
   id: 't1',
   name: 'Neural Motivator',
-  colour: 'green',
+  technology_type: 'green',
   prerequisites: {},
   text: 'Draw 1 action card at the start of the action phase.',
   status: 'available',
@@ -990,6 +1054,8 @@ Expected: FAIL (module not found).
 Create `ti4-companion-web/src/components/game/TechCard.jsx`:
 
 ```jsx
+// Prereq dot colours are keyed by the colour strings from tech.prerequisites object keys,
+// which remain 'green'/'blue'/'yellow'/'red' regardless of the technology_type field.
 const COLOUR_DOT = {
   green:  'bg-success',
   blue:   'bg-plasma',
@@ -1288,10 +1354,11 @@ vi.mock('../../src/lib/edgeFunctions.js', () => ({
 
 import TechTreeModal from '../../src/components/game/TechTreeModal.jsx'
 
+// technology_type replaces colour + is_unit_upgrade
 const ALL_TECHS = [
-  { id: 't1', name: 'Neural Motivator', colour: 'green',  prerequisites: {},           faction: null,      is_unit_upgrade: false, expansion: 'base' },
-  { id: 't2', name: 'Chaos Mapping',    colour: 'green',  prerequisites: {},           faction: 'Arborec', is_unit_upgrade: false, expansion: 'base' },
-  { id: 't3', name: 'Carrier II',       colour: 'blue',   prerequisites: { blue: 1 },  faction: null,      is_unit_upgrade: true,  expansion: 'base' },
+  { id: 't1', name: 'Neural Motivator', technology_type: 'green',        prerequisites: {}, faction: null,      expansion: 'base' },
+  { id: 't2', name: 'Chaos Mapping',    technology_type: 'green',        prerequisites: {}, faction: 'Arborec', expansion: 'base' },
+  { id: 't3', name: 'Carrier II',       technology_type: 'unit_upgrade', prerequisites: { blue: 1 }, faction: null, expansion: 'base' },
 ]
 
 const PLAYER = { id: 'p1', technologies: [], faction: 'Arborec' }
@@ -1664,6 +1731,18 @@ export default function GameScreen({ userId }) {
 
 - [ ] **Step 2: Update MyPanelSection.jsx**
 
+Add `onViewTech` to the destructured props at the top of the function:
+
+```jsx
+export default function MyPanelSection({
+  player, planets, isActive, game,
+  onPass, onEndTurn, onUpdateTokens,
+  onExhaustPlanet, onReadyPlanet,
+  onPickStrategyCard, onUpdateCommodities, onUpdateTradeGoods, onCycleLeader,
+  onViewTech,
+}) {
+```
+
 Replace the Technologies section at the bottom of `MyPanelSection` (the block that starts `{player.technologies?.length > 0 && ...}`) with a button:
 
 ```jsx
@@ -1678,21 +1757,9 @@ Replace the Technologies section at the bottom of `MyPanelSection` (the block th
       </div>
 ```
 
-Also add `onViewTech` to the destructured props at the top of the function:
-
-```jsx
-export default function MyPanelSection({
-  player, planets, isActive, game,
-  onPass, onEndTurn, onUpdateTokens,
-  onExhaustPlanet, onReadyPlanet,
-  onPickStrategyCard, onUpdateCommodities, onUpdateTradeGoods, onCycleLeader,
-  onViewTech,
-}) {
-```
-
 - [ ] **Step 3: Update ScoreboardSection.jsx**
 
-Add a "View Tech" icon button to each player row. Add `onViewTech` to the function signature and add the button inside the row div, before the VP span:
+Add `onViewTech` to the function signature:
 
 ```jsx
 export default function ScoreboardSection({ players, game, currentPlayerId, onViewTech }) {
@@ -1785,7 +1852,7 @@ Deno.serve(async (req: Request) => {
   // Load tech reference data
   const { data: tech, error: techError } = await db
     .from('technologies')
-    .select('name, colour, prerequisites, expansion')
+    .select('name, technology_type, prerequisites, expansion')
     .eq('name', body.tech_name)
     .maybeSingle()
   if (techError) return errorResponse('Database error', 500)
@@ -1811,13 +1878,16 @@ Deno.serve(async (req: Request) => {
   if (!bypassPrerequisites) {
     const { data: allTechs, error: allTechsError } = await db
       .from('technologies')
-      .select('name, colour')
+      .select('name, technology_type')
     if (allTechsError) return errorResponse('Database error', 500)
 
+    // Count held techs by colour family only (unit_upgrade does not satisfy colour prereqs)
     const heldCounts: Record<string, number> = { green: 0, blue: 0, yellow: 0, red: 0 }
     for (const name of heldTechs) {
-      const t = (allTechs ?? []).find((t: { name: string; colour: string }) => t.name === name)
-      if (t) heldCounts[t.colour as string] = (heldCounts[t.colour as string] ?? 0) + 1
+      const t = (allTechs ?? []).find((t: { name: string; technology_type: string }) => t.name === name)
+      if (t && t.technology_type !== 'unit_upgrade') {
+        heldCounts[t.technology_type as string] = (heldCounts[t.technology_type as string] ?? 0) + 1
+      }
     }
 
     const hasAIDA = heldTechs.includes('AI Development Algorithm')

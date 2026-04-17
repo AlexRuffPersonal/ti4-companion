@@ -10,6 +10,12 @@ Features and improvements that were deliberately deferred. Review this list when
 
 ---
 
+## game-start (Phase 4a)
+
+- **N+1 query in player initialisation loop** — `game-start` issues 2–3 DB round-trips per player when initialising starting techs and home planets (faction lookup + tile lookup + planet insert). With 8 players this is up to 24 sequential calls. Fix: batch faction names with `.in()`, bulk-fetch tiles, and do a single insert for all players' planets.
+
+---
+
 ## Admin UI
 
 - **Read views for reference tables** — browse imported records per table (tiles, factions, agendas, etc.) with search/filter
