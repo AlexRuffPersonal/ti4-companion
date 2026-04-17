@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 
-vi.mock('../../../src/lib/edgeFunctions.js', () => ({
+vi.mock('../../src/lib/edgeFunctions.js', () => ({
   researchTechnology: vi.fn().mockResolvedValue({}),
 }))
 
-import TechTreeModal from '../../../src/components/game/TechTreeModal.jsx'
+import TechTreeModal from '../../src/components/game/TechTreeModal.jsx'
 
 // technology_type replaces colour + is_unit_upgrade
 const ALL_TECHS = [

@@ -8,7 +8,7 @@ const SPECIALTY_COLOUR = {
 // exhaustOptions: array of { id, planet_name, tech_specialty, coversColour }
 // selected: array of planet IDs the player has toggled on
 // onToggle: (planetId) => void
-export default function ExhaustPlanetPicker({ exhaustOptions, selected, onToggle }) {
+export default function ExhaustPlanetPicker({ exhaustOptions, selected = [], onToggle }) {
   if (!exhaustOptions || exhaustOptions.length === 0) return null
 
   return (
