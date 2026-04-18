@@ -84,4 +84,19 @@ export const researchTechnology = (gameId, techName, exhaustPlanetIds = [], bypa
     bypass_prerequisites: bypassPrerequisites,
   })
 
+export const resolveAbility = (gameId, abilityDefinitionId, sourceType, sourceId, selections = {}) =>
+  callFunction('game-resolve-ability', {
+    game_id: gameId,
+    ability_definition_id: abilityDefinitionId,
+    source_type: sourceType,
+    source_id: sourceId,
+    selections,
+  })
+
+export const unlockCommander = (gameId, abilityDefinitionId) =>
+  callFunction('game-unlock-commander', {
+    game_id: gameId,
+    ability_definition_id: abilityDefinitionId,
+  })
+
 export { callFunction }
