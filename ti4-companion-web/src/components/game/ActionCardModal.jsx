@@ -6,7 +6,7 @@ const TIMING_COLOURS = {
   Component: 'text-success',
 }
 
-export default function ActionCardModal({ cards, onDraw, onDiscard, onClose }) {
+export default function ActionCardModal({ cards, onDraw, onDiscard, onClose, triggerableByActionCardId = new Map(), onPlay }) {
   const { mustDiscard } = deriveHandState(cards)
 
   return (
@@ -34,23 +34,37 @@ export default function ActionCardModal({ cards, onDraw, onDiscard, onClose }) {
         )}
 
         <div className="flex flex-col gap-3">
-          {cards.map(card => (
-            <div key={card.id} className="panel-inset flex flex-col gap-1">
-              <div className="flex items-center justify-between">
-                <span className="font-body text-bright text-sm">{card.action_cards.name}</span>
-                <span className={`label text-xs ${TIMING_COLOURS[card.action_cards.timing] ?? 'text-muted'}`}>
-                  {card.action_cards.timing}
-                </span>
+          {cards.map(card => {
+            const triggerableAbility = triggerableByActionCardId.get(card.action_card_id)
+            const isPlayable = !!triggerableAbility
+            return (
+              <div key={card.id} className="panel-inset flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-body text-bright text-sm">{card.action_cards.name}</span>
+                  <span className={`label text-xs ${TIMING_COLOURS[card.action_cards.timing] ?? 'text-muted'}`}>
+                    {card.action_cards.timing}
+                  </span>
+                </div>
+                <p className="text-dim text-xs font-body">{card.action_cards.text}</p>
+                <div className="flex gap-2 self-end mt-1">
+                  {isPlayable && (
+                    <button
+                      className="btn-primary text-xs"
+                      onClick={() => onPlay?.(card, triggerableAbility)}
+                    >
+                      PLAY
+                    </button>
+                  )}
+                  <button
+                    className="btn-ghost text-xs"
+                    onClick={() => onDiscard(card.id)}
+                  >
+                    PLAY / DISCARD
+                  </button>
+                </div>
               </div>
-              <p className="text-dim text-xs font-body">{card.action_cards.text}</p>
-              <button
-                className="btn-ghost text-xs self-end mt-1"
-                onClick={() => onDiscard(card.id)}
-              >
-                PLAY / DISCARD
-              </button>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </div>
