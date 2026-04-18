@@ -9,16 +9,20 @@ import MyPanelSection from './MyPanelSection.jsx'
 import ObjectivesSection from './ObjectivesSection.jsx'
 import HostControlsSection from './HostControlsSection.jsx'
 import TechTreeModal from './TechTreeModal.jsx'
+import ActionCardModal from './ActionCardModal.jsx'
 
 export default function GameScreen({ userId }) {
   const { code } = useParams()
   const {
-    game, players, objectives, planets, currentPlayer, isHost, loading, error,
+    game, players, objectives, planets, myCards, currentPlayer, isHost, loading, error,
     endTheTurn, passTheAction, advanceThePhase,
     scoreAnObjective, revealAnObjective, shuffleTheDeck,
     updateTokens, exhaustPlanet, readyPlanet,
     pickStrategyCard, updateCommodities, updateTradeGoods, cycleLeader,
+    drawTheActionCard, discardTheActionCard,
   } = useGame(code, userId)
+
+  const [actionCardModalOpen, setActionCardModalOpen] = useState(false)
 
   const [allTechnologies, setAllTechnologies] = useState([])
   const [viewingTechPlayerId, setViewingTechPlayerId] = useState(null)
@@ -82,6 +86,7 @@ export default function GameScreen({ userId }) {
           onUpdateTradeGoods={updateTradeGoods}
           onCycleLeader={cycleLeader}
           onViewTech={() => setViewingTechPlayerId(currentPlayer?.id ?? null)}
+          onOpenActionCards={() => setActionCardModalOpen(true)}
         />
         <ObjectivesSection objectives={objectives} players={players} />
         <HostControlsSection
@@ -95,6 +100,15 @@ export default function GameScreen({ userId }) {
           onAdvancePhase={advanceThePhase}
         />
       </div>
+
+      {actionCardModalOpen && (
+        <ActionCardModal
+          cards={myCards}
+          onDraw={drawTheActionCard}
+          onDiscard={discardTheActionCard}
+          onClose={() => setActionCardModalOpen(false)}
+        />
+      )}
 
       {viewingPlayer && (
         <TechTreeModal
