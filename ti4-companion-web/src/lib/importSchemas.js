@@ -605,6 +605,91 @@ const importSchemas = {
       },
     ],
   },
+
+  'ability-definitions': {
+    fields: [
+      {
+        name: 'ability_key',
+        required: true,
+        type: 'text',
+        description: 'Unique slug used to link sources to this ability (e.g. "ancient_burial_sites"). Lowercase with underscores.',
+      },
+      {
+        name: 'ability_name',
+        required: true,
+        type: 'text',
+        description: 'Human-readable ability name (e.g. "Ancient Burial Sites").',
+      },
+      {
+        name: 'trigger',
+        required: true,
+        type: 'JSONB object',
+        description: 'When the ability fires. Required field: event (string). Optional: owner ("self"|"other"|"any"), conditions (array of condition objects). Use event "PASSIVE" for always-on abilities.',
+      },
+      {
+        name: 'unlock_conditions',
+        required: false,
+        type: 'JSONB array',
+        description: 'Commander unlock criteria only. Array of condition objects, each with check (string) and gte (integer). Supported checks: scored_objectives, tech_count, vp_count.',
+      },
+      {
+        name: 'effects',
+        required: false,
+        type: 'JSONB array',
+        description: 'Composable effect ops array. Mutually exclusive with handler. Each op has an "op" field and type-specific fields. See ability system design spec for full op catalogue.',
+      },
+      {
+        name: 'handler',
+        required: false,
+        type: 'text',
+        description: 'Named escape hatch for complex effects not expressible as DSL ops. Mutually exclusive with effects. Must match a registered handler name in abilityHandlers.ts.',
+      },
+      {
+        name: 'exhausts_source',
+        required: false,
+        type: 'boolean',
+        default: 'false',
+        description: 'If true, the source card is exhausted after this ability resolves.',
+      },
+      {
+        name: 'purges_source',
+        required: false,
+        type: 'boolean',
+        default: 'false',
+        description: 'If true, the source card is purged (discarded permanently) after this ability resolves.',
+      },
+    ],
+  },
+
+  'ability-sources': {
+    fields: [
+      {
+        name: 'ability_key',
+        required: true,
+        type: 'text',
+        description: 'The ability_key of the ability_definition this source belongs to.',
+      },
+      {
+        name: 'source_type',
+        required: true,
+        type: 'text',
+        values: ['action_card', 'leader', 'relic', 'faction_ability', 'promissory_note', 'exploration_card', 'technology'],
+        description: 'The kind of card or entity granting this ability.',
+      },
+      {
+        name: 'source_name',
+        required: false,
+        type: 'text',
+        description: 'The name of the source card (e.g. "Ancient Burial Sites"). Required for all source_types except faction_ability. Used to look up the source UUID automatically.',
+      },
+      {
+        name: 'faction_name',
+        required: false,
+        type: 'text',
+        description: 'Required when source_type is faction_ability. The canonical faction name (e.g. "The Mentak Coalition").',
+      },
+    ],
+  },
 }
 
 export default importSchemas
