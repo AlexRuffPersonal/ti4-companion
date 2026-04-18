@@ -7,10 +7,11 @@ const EXPECTED_TABLES = [
   'tiles', 'factions', 'agendas', 'technologies', 'units',
   'public-objectives', 'secret-objectives', 'action-cards',
   'relics', 'exploration-cards', 'attachments', 'promissory-notes',
+  'ability-definitions', 'ability-sources',
 ]
 
 describe('importSchemas structure', () => {
-  it('exports all 12 table slugs', () => {
+  it('exports all 14 table slugs', () => {
     expect(Object.keys(importSchemas)).toEqual(EXPECTED_TABLES)
   })
 
