@@ -33,6 +33,13 @@ const GROUPS = [
       { name: 'Secret Objectives', key: 'secret-objectives' },
     ],
   },
+  {
+    label: 'Abilities',
+    tables: [
+      { name: 'Ability Definitions', key: 'ability-definitions' },
+      { name: 'Ability Sources', key: 'ability-sources' },
+    ],
+  },
 ]
 
 export default function AdminDashboard() {
