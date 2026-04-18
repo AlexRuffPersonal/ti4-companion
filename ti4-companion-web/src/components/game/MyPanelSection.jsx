@@ -6,6 +6,11 @@ export default function MyPanelSection({
   onExhaustPlanet, onReadyPlanet,
   onPickStrategyCard, onUpdateCommodities, onUpdateTradeGoods, onCycleLeader,
   onOpenActionCards, onViewTech,
+  factionAbilities = [],
+  triggerableAbilityIds = new Set(),
+  unlockableCommanderAbility = null,
+  onPlayAbility,
+  onUnlockCommander,
 }) {
   const tokens = player?.command_tokens ?? { tactic_total: 0, fleet: 0, strategy: 0 }
   const [draftTokens, setDraftTokens] = useState(tokens)
@@ -132,6 +137,43 @@ export default function MyPanelSection({
       <button className="btn-ghost text-xs self-start" onClick={onOpenActionCards}>
         ACTION CARDS ({player.action_card_count ?? 0})
       </button>
+
+      {/* Faction Abilities */}
+      {factionAbilities.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <p className="label text-xs">FACTION ABILITIES</p>
+          {factionAbilities.map(ability => {
+            const isActionTimed = ability.trigger?.event === 'PLAYER_ACTION'
+            const isPlayable = triggerableAbilityIds.has(ability.id)
+            return isActionTimed ? (
+              <button
+                key={ability.id}
+                className={isPlayable ? 'btn-primary text-xs self-start' : 'btn-ghost text-xs self-start opacity-50'}
+                disabled={!isPlayable}
+                onClick={() => isPlayable && onPlayAbility?.(ability)}
+              >
+                {ability.ability_name.toUpperCase()}
+              </button>
+            ) : (
+              <p key={ability.id} className="text-dim text-xs font-body">
+                <span className="text-muted">{ability.ability_name}:</span> passive
+              </p>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Commander unlock */}
+      {unlockableCommanderAbility && (
+        <div className="panel-inset flex items-center justify-between gap-3">
+          <p className="text-gold text-xs font-body">
+            Commander unlockable: {unlockableCommanderAbility.ability_name}
+          </p>
+          <button className="btn-primary text-xs" onClick={() => onUnlockCommander?.(unlockableCommanderAbility)}>
+            UNLOCK
+          </button>
+        </div>
+      )}
     </div>
   )
 }
