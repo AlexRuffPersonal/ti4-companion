@@ -1,5 +1,6 @@
-export default function ObjectivesSection({ objectives, players }) {
+export default function ObjectivesSection({ objectives, players, game, currentPlayerId, onScore }) {
   const revealed = objectives.filter(o => o.state === 'revealed')
+  const isStatusPhase = game?.phase === 'status'
 
   return (
     <div>
@@ -13,6 +14,8 @@ export default function ObjectivesSection({ objectives, players }) {
             const scorers = (obj.scored_by ?? [])
               .map(pid => players.find(p => p.id === pid)?.display_name)
               .filter(Boolean)
+            const alreadyScored = (obj.scored_by ?? []).includes(currentPlayerId)
+            const showScore = isStatusPhase && !alreadyScored && onScore
 
             return (
               <div key={obj.id} className="flex items-start justify-between gap-4">
@@ -22,8 +25,18 @@ export default function ObjectivesSection({ objectives, players }) {
                     Stage {ref?.stage} · {ref?.points ?? 1} VP
                   </span>
                 </div>
-                <div className="text-xs text-success flex-shrink-0">
-                  {scorers.length > 0 ? scorers.join(', ') : <span className="text-dim">—</span>}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="text-xs text-success">
+                    {scorers.length > 0 ? scorers.join(', ') : <span className="text-dim">—</span>}
+                  </div>
+                  {showScore && (
+                    <button
+                      className="btn-ghost text-xs"
+                      onClick={() => onScore(obj.id)}
+                    >
+                      SCORE
+                    </button>
+                  )}
                 </div>
               </div>
             )

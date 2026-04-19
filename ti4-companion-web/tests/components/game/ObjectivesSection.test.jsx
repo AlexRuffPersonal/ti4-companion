@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
 import ObjectivesSection from '../../../src/components/game/ObjectivesSection.jsx'
 
 const PLAYERS = [
@@ -41,5 +41,65 @@ describe('ObjectivesSection', () => {
   it('shows empty state when no objectives are revealed', () => {
     render(<ObjectivesSection objectives={[]} players={PLAYERS} />)
     expect(screen.getByText(/no objectives revealed/i)).toBeInTheDocument()
+  })
+
+  it('shows Score button for unscored objectives during status phase', () => {
+    render(
+      <ObjectivesSection
+        objectives={OBJECTIVES}
+        players={PLAYERS}
+        game={{ phase: 'status' }}
+        currentPlayerId="p2"
+        onScore={vi.fn()}
+      />
+    )
+    // p2 has not scored either revealed objective; should see score buttons
+    expect(screen.getAllByRole('button', { name: /score/i })).toHaveLength(2)
+  })
+
+  it('does not show Score button for already-scored objectives', () => {
+    render(
+      <ObjectivesSection
+        objectives={OBJECTIVES}
+        players={PLAYERS}
+        game={{ phase: 'status' }}
+        currentPlayerId="p1"
+        onScore={vi.fn()}
+      />
+    )
+    // p1 already scored 'Spend 8 Resources' (scored_by includes p1)
+    // There are 2 revealed objectives; p1 hasn't scored the second
+    // So one score button visible (for Control 6 Planets)
+    const scoreBtns = screen.queryAllByRole('button', { name: /score/i })
+    // Spend 8 Resources has no score button for p1; Control 6 Planets does
+    expect(scoreBtns).toHaveLength(1)
+  })
+
+  it('does not show Score buttons outside status phase', () => {
+    render(
+      <ObjectivesSection
+        objectives={OBJECTIVES}
+        players={PLAYERS}
+        game={{ phase: 'action' }}
+        currentPlayerId="p2"
+        onScore={vi.fn()}
+      />
+    )
+    expect(screen.queryByRole('button', { name: /score/i })).not.toBeInTheDocument()
+  })
+
+  it('calls onScore with objective id when Score button clicked', () => {
+    const onScore = vi.fn()
+    render(
+      <ObjectivesSection
+        objectives={OBJECTIVES}
+        players={PLAYERS}
+        game={{ phase: 'status' }}
+        currentPlayerId="p2"
+        onScore={onScore}
+      />
+    )
+    fireEvent.click(screen.getAllByRole('button', { name: /score/i })[0])
+    expect(onScore).toHaveBeenCalledWith(expect.any(String))
   })
 })
