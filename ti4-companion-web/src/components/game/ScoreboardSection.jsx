@@ -52,6 +52,12 @@ export default function ScoreboardSection({ players, game, currentPlayerId, onVi
               >
                 ✦ {player.action_card_count ?? 0}
               </span>
+              <span
+                className="label text-xs text-muted"
+                aria-label={`${player.display_name} secret objectives: ${player.secret_objective_count ?? 0}`}
+              >
+                ★ {player.secret_objective_count ?? 0}
+              </span>
               <button
                 className="label text-xs text-dim hover:text-text px-1"
                 onClick={(e) => { e.stopPropagation(); onViewTech(player.id) }}

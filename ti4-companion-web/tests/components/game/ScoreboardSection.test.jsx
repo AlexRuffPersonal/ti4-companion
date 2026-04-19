@@ -63,4 +63,14 @@ describe('ScoreboardSection', () => {
     expect(screen.getByLabelText('Bob action cards: 0')).toBeInTheDocument()
     expect(screen.getByLabelText('Carol action cards: 7')).toBeInTheDocument()
   })
+
+  it('shows secret objective count badge for each player', () => {
+    const players = [
+      { id: 'p1', display_name: 'Alice', vp: 5, colour: 'green', passed: false, action_card_count: 2, secret_objective_count: 1 },
+      { id: 'p2', display_name: 'Bob',   vp: 3, colour: 'red',   passed: false, action_card_count: 0, secret_objective_count: 0 },
+    ]
+    render(<ScoreboardSection players={players} game={{ phase: 'action' }} currentPlayerId="p1" onViewTech={vi.fn()} />)
+    expect(screen.getByLabelText(/alice secret objectives: 1/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/bob secret objectives: 0/i)).toBeInTheDocument()
+  })
 })
