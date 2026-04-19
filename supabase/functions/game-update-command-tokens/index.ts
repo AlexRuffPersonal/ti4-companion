@@ -37,7 +37,7 @@ Deno.serve(async (req: Request) => {
 
   const { error: updateError } = await db
     .from('game_players')
-    .update({ command_tokens: { tactic_total: tactic, fleet, strategy } })
+    .update({ command_tokens: { tactic_total: tactic, fleet, strategy }, tokens_redistributed: true })
     .eq('id', player.id)
   if (updateError) return errorResponse(`Update failed: ${updateError.message}`, 500)
 
