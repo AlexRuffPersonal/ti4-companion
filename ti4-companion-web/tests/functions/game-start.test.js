@@ -47,6 +47,13 @@ function mockDb({
   tileError = null,
   planetInsertError = null,
   techUpdateError = null,
+  secretObjectives = [
+    { id: 'so-1', expansion: 'base' },
+    { id: 'so-2', expansion: 'base' },
+    { id: 'so-3', expansion: 'base' },
+    { id: 'so-4', expansion: 'base' },
+  ],
+  insertSecretsError = null,
 } = {}) {
   const actionCardInsertMock = vi.fn().mockResolvedValue({ error: insertActionError })
   db.from.mockImplementation((table) => {
@@ -111,6 +118,16 @@ function mockDb({
     if (table === 'game_player_planets') {
       return {
         insert: vi.fn().mockResolvedValue({ error: planetInsertError }),
+      }
+    }
+    if (table === 'secret_objectives') {
+      return {
+        select: vi.fn().mockResolvedValue({ data: secretObjectives, error: null }),
+      }
+    }
+    if (table === 'game_player_secret_objectives') {
+      return {
+        insert: vi.fn().mockResolvedValue({ error: insertSecretsError }),
       }
     }
   })
@@ -240,5 +257,64 @@ describe('game-start', () => {
     expect(res.status).toBe(409)
     const body = await res.json()
     expect(body.error).toMatch(/Faction not found/)
+  })
+
+  it('deals exactly 2 secret objectives per player', async () => {
+    const secretInsertMock = vi.fn().mockResolvedValue({ error: null })
+    mockDb()
+    // Override just the secret objectives insert
+    const originalImpl = db.from.getMockImplementation()
+    db.from.mockImplementation((table) => {
+      if (table === 'game_player_secret_objectives') return { insert: secretInsertMock }
+      return originalImpl(table)
+    })
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    expect(res.status).toBe(200)
+    expect(secretInsertMock).toHaveBeenCalledOnce()
+    const inserted = secretInsertMock.mock.calls[0][0]
+    // 2 players × 2 secrets each = 4 rows
+    expect(inserted).toHaveLength(4)
+    expect(inserted.filter(r => r.player_id === 'p1')).toHaveLength(2)
+    expect(inserted.filter(r => r.player_id === 'p2')).toHaveLength(2)
+    inserted.forEach(r => expect(r.state).toBe('held'))
+  })
+
+  it('returns 409 when secret objective deck is too small for all players', async () => {
+    // 2 players × 2 = 4 needed; only 3 in deck
+    mockDb({ secretObjectives: [
+      { id: 'so-1', expansion: 'base' },
+      { id: 'so-2', expansion: 'base' },
+      { id: 'so-3', expansion: 'base' },
+    ]})
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body.error).toMatch(/not enough secret objectives/i)
+  })
+
+  it('filters secret objectives by active expansions', async () => {
+    const secretInsertMock = vi.fn().mockResolvedValue({ error: null })
+    mockDb({
+      gameData: { host_user_id: HOST_ID, status: 'lobby', speaker_player_id: SPEAKER_ID, expansions: { base: true, pok: false } },
+      secretObjectives: [
+        { id: 'so-1', expansion: 'base' },
+        { id: 'so-2', expansion: 'base' },
+        { id: 'so-3', expansion: 'base' },
+        { id: 'so-4', expansion: 'base' },
+        { id: 'so-pok', expansion: 'pok' },
+      ],
+    })
+    const originalImpl = db.from.getMockImplementation()
+    db.from.mockImplementation((table) => {
+      if (table === 'game_player_secret_objectives') return { insert: secretInsertMock }
+      return originalImpl(table)
+    })
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    expect(res.status).toBe(200)
+    const inserted = secretInsertMock.mock.calls[0][0]
+    // only base objectives dealt; pok filtered out
+    inserted.forEach(r => {
+      expect(['so-1', 'so-2', 'so-3', 'so-4']).toContain(r.secret_objective_id)
+    })
   })
 })

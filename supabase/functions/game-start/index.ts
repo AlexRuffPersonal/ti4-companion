@@ -113,6 +113,45 @@ Deno.serve(async (req: Request) => {
     if (insertActionError) return errorResponse(`Failed to initialise action cards: ${insertActionError.message}`, 500)
   }
 
+  // Deal 2 secret objectives per player
+  const { data: allSecrets, error: secretsError } = await db
+    .from('secret_objectives')
+    .select('id, expansion')
+  if (secretsError) return errorResponse('Database error', 500)
+
+  const eligibleSecrets = (allSecrets ?? []).filter(
+    (s: { id: string; expansion: string }) =>
+      activeExpansions.includes(s.expansion ?? 'base')
+  )
+
+  const secretsNeeded = players.length * 2
+  if (eligibleSecrets.length < secretsNeeded) {
+    return errorResponse(
+      `Not enough secret objectives in the deck (need ${secretsNeeded}, have ${eligibleSecrets.length})`,
+      409
+    )
+  }
+
+  // Shuffle eligible secrets
+  const shuffledSecrets = [...eligibleSecrets]
+  for (let i = shuffledSecrets.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[shuffledSecrets[i], shuffledSecrets[j]] = [shuffledSecrets[j], shuffledSecrets[i]]
+  }
+
+  // Deal 2 to each player
+  const secretRows: Array<{ game_id: string; player_id: string; secret_objective_id: string; state: string }> = []
+  let secretIdx = 0
+  for (const player of players) {
+    secretRows.push({ game_id: body.game_id, player_id: player.id, secret_objective_id: shuffledSecrets[secretIdx++].id, state: 'held' })
+    secretRows.push({ game_id: body.game_id, player_id: player.id, secret_objective_id: shuffledSecrets[secretIdx++].id, state: 'held' })
+  }
+
+  const { error: insertSecretsError } = await db
+    .from('game_player_secret_objectives')
+    .insert(secretRows)
+  if (insertSecretsError) return errorResponse(`Failed to deal secret objectives: ${insertSecretsError.message}`, 500)
+
   // Initialise starting technologies and home planets for each player
   for (const player of players) {
     const { data: factionData, error: factionError } = await db
