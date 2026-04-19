@@ -16,6 +16,18 @@ Features and improvements that were deliberately deferred. Review this list when
 
 ---
 
+## Promissory Notes (Phase 8) — HIGH PRIORITY
+
+- **Automated note effect resolution** — `game-play-promissory-note` currently only transitions state (held → played/discarded) without applying the note's game effect. A future phase should encode each note's effect (gain resources, cancel votes, adjust VP, etc.) and apply it mechanically, similar to how `game-resolve-ability` handles faction abilities. Each note type needs a structured effect definition and an execution branch in the Edge Function.
+
+---
+
+## Agenda Phase (Phase 7) — implement in Phase 9
+
+- **Custodians gate** — the agenda phase is currently always visible (host-discipline only). When Phase 9 (map + planet claiming) is implemented, wire up `game-claim-custodians`: award 1 VP to the claiming player, set `games.agenda_unlocked = true`, and hide the "Begin Agenda Phase" button in `HostControlsSection` until that flag is set. See Phase 7 spec for details.
+
+---
+
 ## Admin UI
 
 - **Read views for reference tables** — browse imported records per table (tiles, factions, agendas, etc.) with search/filter

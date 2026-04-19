@@ -6,7 +6,7 @@
 
 ## Key Decisions
 
-- **Agenda phase always visible** — no custodians gate; host controls when the phase begins via `HostControlsSection`. Host discipline determines timing.
+- **Agenda phase always visible** — no custodians gate; host controls when the phase begins via `HostControlsSection`. Host discipline determines timing. The custodians gate (agenda unlocks when a player claims Mecatol Rex) is deliberately deferred to Phase 9 when map and planet-claiming are implemented. At that point, `game-claim-custodians` should award 1 VP, set `games.agenda_unlocked = true`, and the "Begin Agenda Phase" button should be hidden until that flag is set.
 - **One agenda at a time** — first agenda is fully resolved before the second is drawn. No simultaneous dual-agenda state.
 - **Hybrid resolution** — tractable `elect_type` values (player, planet, law, VP adjust, tech grant, planet exhaust) get full structured resolution. Non-tractable types show a "host applies manually" banner with the effect text.
 - **Server-enforced vote order** — `game-cast-votes` rejects out-of-turn votes. Order is reverse speaker (speaker votes last).
