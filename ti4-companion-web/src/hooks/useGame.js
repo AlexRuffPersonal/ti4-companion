@@ -6,7 +6,8 @@ import {
   endTurn, passAction, advancePhase, scoreObjective,
   revealObjective, shuffleDeck, updateCommandTokens,
   drawActionCard, discardActionCard,
-  researchTechnology,
+  researchTechnology, discardSecretObjective,
+  scoreSecretObjective, statusPhase,
 } from '../lib/edgeFunctions.js'
 
 export function useGame(code, userId) {
@@ -17,6 +18,7 @@ export function useGame(code, userId) {
   const [objectives, setObjectives] = useState([])
   const [planets, setPlanets] = useState([])
   const [myCards, setMyCards] = useState([])
+  const [mySecrets, setMySecrets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -64,6 +66,7 @@ export function useGame(code, userId) {
       let objectivesData = []
       let planetsData = []
       let myCardsData = []
+      let mySecretsData = []
       let myPlayer = null
 
       if (isGameScreen) {
@@ -90,6 +93,15 @@ export function useGame(code, userId) {
             .eq('held_by_player_id', myPlayer.id)
           if (!mounted) return
           myCardsData = cards ?? []
+
+          const { data: secrets } = await supabase
+            .from('game_player_secret_objectives')
+            .select('*, secret_objectives(name, timing, condition)')
+            .eq('game_id', gameData.id)
+            .eq('player_id', myPlayer.id)
+            .eq('state', 'held')
+          if (!mounted) return
+          mySecretsData = secrets ?? []
         }
       }
 
@@ -98,6 +110,7 @@ export function useGame(code, userId) {
       setObjectives(objectivesData)
       setPlanets(planetsData)
       setMyCards(myCardsData)
+      setMySecrets(mySecretsData)
       setLoading(false)
 
       channel = supabase
@@ -164,6 +177,20 @@ export function useGame(code, userId) {
                 .eq('game_id', gameData.id)
                 .eq('held_by_player_id', myPlayer.id)
               if (mounted && data) setMyCards(data)
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'game_player_secret_objectives', filter: `game_id=eq.${gameData.id}` },
+            async () => {
+              if (!mounted || !myPlayer) return
+              const { data } = await supabase
+                .from('game_player_secret_objectives')
+                .select('*, secret_objectives(name, timing, condition)')
+                .eq('game_id', gameData.id)
+                .eq('player_id', myPlayer.id)
+                .eq('state', 'held')
+              if (mounted && data) setMySecrets(data)
             }
           )
       }
@@ -241,6 +268,7 @@ export function useGame(code, userId) {
     objectives,
     planets,
     myCards,
+    mySecrets,
     currentPlayer,
     isHost,
     loading,
@@ -270,5 +298,9 @@ export function useGame(code, userId) {
     // Phase 4a wrappers (tech research)
     researchTech: (techName, exhaustPlanetIds, bypassPrerequisites) =>
       game ? researchTechnology(game.id, techName, exhaustPlanetIds, bypassPrerequisites) : Promise.reject(new Error('Game not loaded')),
+    // Phase 6 wrappers
+    discardTheSecret: (objectiveId) => game ? discardSecretObjective(game.id, objectiveId) : Promise.reject(new Error('Game not loaded')),
+    scoreTheSecret: (objectiveId) => game ? scoreSecretObjective(game.id, objectiveId) : Promise.reject(new Error('Game not loaded')),
+    endStatusPhase: () => game ? statusPhase(game.id) : Promise.reject(new Error('Game not loaded')),
   }
 }
