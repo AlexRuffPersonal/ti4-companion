@@ -5,6 +5,9 @@ const PHASE_LABELS = { strategy: 'Action', action: 'Status', status: 'Strategy' 
 export default function HostControlsSection({
   isHost, game, players, objectives,
   onScoreObjective, onRevealObjective, onShuffleDeck, onAdvancePhase,
+  onEndStatusPhase,
+  pendingSecretPlayers = [],
+  pendingTokenPlayers = [],
 }) {
   const [scoringObj, setScoringObj] = useState(null)
   const [scoringPlayer, setScoringPlayer] = useState('')
@@ -12,6 +15,7 @@ export default function HostControlsSection({
 
   if (!isHost) return null
 
+  const isStatusPhase = game?.phase === 'status'
   const revealedObjs = objectives.filter(o => o.state === 'revealed')
   const nextPhaseLabel = PHASE_LABELS[game?.phase] ?? '?'
 
@@ -76,11 +80,31 @@ export default function HostControlsSection({
         </button>
       </div>
 
-      {/* Advance Phase */}
+      {/* Pending banners (status phase) */}
+      {isStatusPhase && pendingSecretPlayers.length > 0 && (
+        <div className="panel-inset">
+          <p className="label text-xs text-warning mb-1">WAITING: SECRET SELECTION</p>
+          <p className="text-muted text-xs font-body">{pendingSecretPlayers.map(p => p.display_name).join(', ')}</p>
+        </div>
+      )}
+      {isStatusPhase && pendingTokenPlayers.length > 0 && (
+        <div className="panel-inset">
+          <p className="label text-xs text-warning mb-1">WAITING: TOKEN REDISTRIBUTION</p>
+          <p className="text-muted text-xs font-body">{pendingTokenPlayers.map(p => p.display_name).join(', ')}</p>
+        </div>
+      )}
+
+      {/* Phase advance */}
       <div className="flex justify-end">
-        <button className="btn-primary" onClick={onAdvancePhase}>
-          ADVANCE PHASE → {nextPhaseLabel.toUpperCase()}
-        </button>
+        {isStatusPhase ? (
+          <button className="btn-primary" onClick={onEndStatusPhase}>
+            END STATUS PHASE
+          </button>
+        ) : (
+          <button className="btn-primary" onClick={onAdvancePhase}>
+            ADVANCE PHASE → {nextPhaseLabel.toUpperCase()}
+          </button>
+        )}
       </div>
     </div>
   )
