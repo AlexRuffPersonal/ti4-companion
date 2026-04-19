@@ -24,6 +24,7 @@
 | `agenda_phase_step` | TEXT | `'inactive'` | CHECK: `inactive \| agenda_1_voting \| agenda_1_resolved \| agenda_2_voting \| done` |
 | `agenda_current_card_id` | INT FK → `agendas` | NULL | Single card currently in play; null when no card drawn |
 | `agenda_vote_current_player_id` | INT FK → `game_players` | NULL | Whose turn it is to vote; null when voting complete |
+| `current_vote_sequence` | INT | `0` | Increments each time a new agenda card is drawn for voting. Used by `game-create-transaction` (Phase 8) to enforce the one-trade-per-agenda-vote rule — a player may only confirm one transaction per unique `current_vote_sequence` value. |
 
 ### New `game_agenda_deck` table
 
@@ -95,7 +96,7 @@ Shuffle agendas into `game_agenda_deck` with random `position` (state = `deck`).
 ### `game-draw-agenda`
 - **Auth:** Speaker only.
 - **Validates:** Step is `agenda_1_voting` (no card drawn yet) or `agenda_1_resolved` (ready for second card); no card currently in play.
-- **Effect:** Sets top `deck` card (lowest `position`) to `voting`; sets `games.agenda_current_card_id`; sets `agenda_vote_current_player_id` to the first voter in reverse speaker order (via `getNextPlayer`). If step was `agenda_1_resolved`, advances it to `agenda_2_voting`.
+- **Effect:** Sets top `deck` card (lowest `position`) to `voting`; sets `games.agenda_current_card_id`; sets `agenda_vote_current_player_id` to the first voter in reverse speaker order (via `getNextPlayer`); increments `current_vote_sequence`. If step was `agenda_1_resolved`, advances it to `agenda_2_voting`.
 
 ### `game-cast-votes`
 - **Auth:** Any player, but only when `agenda_vote_current_player_id` matches the caller.
