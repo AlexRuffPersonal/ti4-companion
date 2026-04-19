@@ -33,6 +33,8 @@ function renderPanel(overrides = {}) {
       onUpdateTradeGoods={vi.fn()}
       onCycleLeader={vi.fn()}
       onOpenActionCards={vi.fn()}
+      secretCount={0}
+      onOpenSecrets={vi.fn()}
       {...overrides}
     />
   )
@@ -99,5 +101,17 @@ describe('MyPanelSection', () => {
     expect(btn).toBeInTheDocument()
     fireEvent.click(btn)
     expect(onOpenActionCards).toHaveBeenCalledOnce()
+  })
+
+  it('shows Secrets button with count when secretCount is provided', () => {
+    renderPanel({ secretCount: 2, onOpenSecrets: vi.fn() })
+    expect(screen.getByRole('button', { name: /secrets \(2\)/i })).toBeInTheDocument()
+  })
+
+  it('calls onOpenSecrets when Secrets button is clicked', () => {
+    const onOpenSecrets = vi.fn()
+    renderPanel({ secretCount: 1, onOpenSecrets })
+    fireEvent.click(screen.getByRole('button', { name: /secrets \(1\)/i }))
+    expect(onOpenSecrets).toHaveBeenCalledOnce()
   })
 })
