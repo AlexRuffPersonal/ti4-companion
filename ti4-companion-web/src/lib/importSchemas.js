@@ -178,7 +178,19 @@ const importSchemas = {
         required: false,
         type: 'text',
         description: 'This agenda should be removed if this expansion is in play.'
-      }
+      },
+      {
+        name: 'tractable',
+        type: 'boolean',
+        required: false,
+        description: 'Whether the app can auto-resolve this agenda'
+      },
+      {
+        name: 'effect_json',
+        type: 'object',
+        required: false,
+        description: 'Effect descriptor: { op, amount?, tech? }'
+      },
     ],
   },
 
