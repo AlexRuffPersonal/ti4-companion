@@ -15,6 +15,9 @@ import TechTreeModal from './TechTreeModal.jsx'
 import ActionCardModal from './ActionCardModal.jsx'
 import AbilityNotificationBar from './AbilityNotificationBar.jsx'
 import AbilityTargetModal from './AbilityTargetModal.jsx'
+import SecretObjectiveSelectionScreen from './SecretObjectiveSelectionScreen.jsx'
+import SecretObjectivesModal from './SecretObjectivesModal.jsx'
+import TokenRedistributionModal from './TokenRedistributionModal.jsx'
 
 export default function GameScreen({ userId }) {
   const { code } = useParams()
@@ -25,6 +28,7 @@ export default function GameScreen({ userId }) {
     updateTokens, exhaustPlanet, readyPlanet,
     pickStrategyCard, updateCommodities, updateTradeGoods, cycleLeader,
     drawTheActionCard, discardTheActionCard,
+    mySecrets, discardTheSecret, scoreTheSecret, endStatusPhase,
   } = useGame(code, userId)
 
   const [allTechnologies, setAllTechnologies] = useState([])
@@ -32,6 +36,7 @@ export default function GameScreen({ userId }) {
   const [viewingTechPlayerId, setViewingTechPlayerId] = useState(null)
   const [actionCardModalOpen, setActionCardModalOpen] = useState(false)
   const [activatingAbility, setActivatingAbility] = useState(null)
+  const [secretsModalOpen, setSecretsModalOpen] = useState(false)
 
   useEffect(() => {
     supabase
@@ -164,6 +169,18 @@ export default function GameScreen({ userId }) {
     ? planets.filter(p => p.player_id === viewingTechPlayerId)
     : []
 
+  // Blocking gate: secret objective selection
+  if (currentPlayer && !currentPlayer.secrets_selected) {
+    const pendingPlayers = players.filter(p => !p.secrets_selected && p.id !== currentPlayer.id)
+    return (
+      <SecretObjectiveSelectionScreen
+        secrets={mySecrets}
+        pendingPlayers={pendingPlayers}
+        onDiscard={discardTheSecret}
+      />
+    )
+  }
+
   return (
     <div className="min-h-screen bg-void">
       <GameHeader game={game} speaker={speaker} />
@@ -201,8 +218,16 @@ export default function GameScreen({ userId }) {
           unlockableCommanderAbility={unlockableCommanderAbility}
           onPlayAbility={a => handlePlayAbility(a)}
           onUnlockCommander={handleUnlockCommander}
+          onOpenSecrets={() => setSecretsModalOpen(true)}
+          secretCount={mySecrets.length}
         />
-        <ObjectivesSection objectives={objectives} players={players} />
+        <ObjectivesSection
+          objectives={objectives}
+          players={players}
+          game={game}
+          currentPlayerId={currentPlayer?.id}
+          onScore={(objId) => scoreAnObjective(objId, currentPlayer?.id)}
+        />
         <HostControlsSection
           isHost={isHost}
           game={game}
@@ -212,6 +237,9 @@ export default function GameScreen({ userId }) {
           onRevealObjective={revealAnObjective}
           onShuffleDeck={shuffleTheDeck}
           onAdvancePhase={advanceThePhase}
+          onEndStatusPhase={endStatusPhase}
+          pendingSecretPlayers={players.filter(p => !p.secrets_selected)}
+          pendingTokenPlayers={players.filter(p => !p.tokens_redistributed)}
         />
       </div>
 
@@ -235,6 +263,22 @@ export default function GameScreen({ userId }) {
           planets={myPlanets}
           onConfirm={handleConfirmAbility}
           onClose={() => setActivatingAbility(null)}
+        />
+      )}
+
+      {secretsModalOpen && (
+        <SecretObjectivesModal
+          secrets={mySecrets}
+          game={game}
+          onScore={(objId) => { scoreTheSecret(objId); setSecretsModalOpen(false) }}
+          onClose={() => setSecretsModalOpen(false)}
+        />
+      )}
+
+      {currentPlayer && currentPlayer.tokens_redistributed === false && (
+        <TokenRedistributionModal
+          player={currentPlayer}
+          onSubmit={updateTokens}
         />
       )}
 
