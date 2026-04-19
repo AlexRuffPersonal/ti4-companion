@@ -99,4 +99,13 @@ export const unlockCommander = (gameId, abilityDefinitionId) =>
     ability_definition_id: abilityDefinitionId,
   })
 
+export const discardSecretObjective = (gameId, objectiveId) =>
+  callFunction('game-discard-secret-objective', { game_id: gameId, objective_id: objectiveId })
+
+export const scoreSecretObjective = (gameId, objectiveId) =>
+  callFunction('game-score-secret-objective', { game_id: gameId, objective_id: objectiveId })
+
+export const statusPhase = (gameId) =>
+  callFunction('game-status-phase', { game_id: gameId })
+
 export { callFunction }
