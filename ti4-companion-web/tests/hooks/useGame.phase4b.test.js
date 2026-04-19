@@ -96,6 +96,17 @@ function mockSupabase({ myCards = MY_CARDS } = {}) {
         }),
       }
     }
+    if (table === 'game_player_secret_objectives') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }),
+        }),
+      }
+    }
   })
 }
 

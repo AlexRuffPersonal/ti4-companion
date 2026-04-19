@@ -91,11 +91,20 @@ function mockGameScreenLoad() {
         eq: vi.fn().mockResolvedValue({ data: PLANETS, error: null }),
       }),
     }
-    // game_action_card_deck
-    return {
+    if (callCount === 5) return {
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+        }),
+      }),
+    }
+    // game_player_secret_objectives
+    return {
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
         }),
       }),
     }
