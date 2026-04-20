@@ -152,6 +152,53 @@ Deno.serve(async (req: Request) => {
     .insert(secretRows)
   if (insertSecretsError) return errorResponse(`Failed to deal secret objectives: ${insertSecretsError.message}`, 500)
 
+  // Deal promissory notes (faction + generic)
+  const { data: allNotes, error: notesError } = await db
+    .from('promissory_notes')
+    .select('id, faction, expansion')
+  if (notesError) return errorResponse('Database error', 500)
+
+  const eligibleNotes = (allNotes ?? []).filter(
+    (n: { id: string; faction: string | null; expansion: string | null }) =>
+      activeExpansions.includes(n.expansion ?? 'base')
+  )
+
+  // Collect notes to deal: faction notes + generic notes
+  const notesToDeal: Array<{ game_id: string; player_id: string; note_id: string; state: string; origin_player_id: string }> = []
+
+  for (const player of players) {
+    // Faction notes: match player's faction
+    const factionNotes = eligibleNotes.filter((n: { faction: string | null }) => n.faction === player.faction)
+    for (const note of factionNotes) {
+      notesToDeal.push({
+        game_id: body.game_id,
+        player_id: player.id,
+        note_id: note.id,
+        state: 'held',
+        origin_player_id: player.id,
+      })
+    }
+
+    // Generic notes: deal one copy to every player
+    const genericNotes = eligibleNotes.filter((n: { faction: string | null }) => n.faction === null)
+    for (const note of genericNotes) {
+      notesToDeal.push({
+        game_id: body.game_id,
+        player_id: player.id,
+        note_id: note.id,
+        state: 'held',
+        origin_player_id: player.id,
+      })
+    }
+  }
+
+  if (notesToDeal.length > 0) {
+    const { error: insertNotesError } = await db
+      .from('game_player_promissory_notes')
+      .insert(notesToDeal)
+    if (insertNotesError) return errorResponse(`Failed to deal promissory notes: ${insertNotesError.message}`, 500)
+  }
+
   // Initialise agenda deck (filtered by active expansions)
   const { data: allAgendas, error: agendasError } = await db
     .from('agendas')

@@ -56,9 +56,19 @@ function mockDb({
     { id: 'so-4', expansion: 'base' },
   ],
   insertSecretsError = null,
+  promissoryNotes = [
+    { id: 'note-1', faction: 'Arborec', expansion: 'base' },
+    { id: 'note-2', faction: 'Letnev', expansion: 'base' },
+    { id: 'note-base', faction: 'Barony', expansion: 'base' },
+    { id: 'note-pok', faction: 'Barony', expansion: 'pok' },
+    { id: 'generic-1', faction: null, expansion: 'base' },
+    { id: 'generic-2', faction: null, expansion: 'base' },
+  ],
+  insertPromissoryNotesError = null,
 } = {}) {
   const actionCardInsertMock = vi.fn().mockResolvedValue({ error: insertActionError })
   const agendaInsertMock = vi.fn().mockResolvedValue({ error: insertAgendasError })
+  const promissoryNoteInsertMock = vi.fn().mockResolvedValue({ error: insertPromissoryNotesError })
   db.from.mockImplementation((table) => {
     if (table === 'games') {
       return {
@@ -140,6 +150,14 @@ function mockDb({
     }
     if (table === 'game_agenda_deck') {
       return { insert: agendaInsertMock }
+    }
+    if (table === 'promissory_notes') {
+      return {
+        select: vi.fn().mockResolvedValue({ data: promissoryNotes, error: null }),
+      }
+    }
+    if (table === 'game_player_promissory_notes') {
+      return { insert: promissoryNoteInsertMock }
     }
   })
   return { actionCardInsertMock, agendaInsertMock }
@@ -326,6 +344,92 @@ describe('game-start', () => {
     // only base objectives dealt; pok filtered out
     inserted.forEach(r => {
       expect(['so-1', 'so-2', 'so-3', 'so-4']).toContain(r.secret_objective_id)
+    })
+  })
+  
+  it('deals faction notes to matching players only', async () => {
+    const promissoryNoteInsertMock = vi.fn().mockResolvedValue({ error: null })
+    const notes = [
+      { id: 'note-1', faction: 'Arborec', expansion: 'base' },
+      { id: 'note-2', faction: 'Letnev', expansion: 'base' }
+    ]
+    mockDb({ promissoryNotes: notes })
+    const originalImpl = db.from.getMockImplementation()
+    db.from.mockImplementation((table) => {
+      if (table === 'game_player_promissory_notes') return { insert: promissoryNoteInsertMock }
+      return originalImpl(table)
+    })
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    expect(res.status).toBe(200)
+    expect(promissoryNoteInsertMock).toHaveBeenCalledOnce()
+    const inserted = promissoryNoteInsertMock.mock.calls[0][0]
+    // p1 gets Arborec note, p2 gets Letnev note
+    expect(inserted.filter(r => r.player_id === 'p1' && r.note_id === 'note-1')).toHaveLength(1)
+    expect(inserted.filter(r => r.player_id === 'p2' && r.note_id === 'note-2')).toHaveLength(1)
+  })
+
+  it('deals generic notes (faction = null) to all players', async () => {
+    const promissoryNoteInsertMock = vi.fn().mockResolvedValue({ error: null })
+    const notes = [
+      { id: 'generic-1', faction: null, expansion: 'base' },
+      { id: 'generic-2', faction: null, expansion: 'base' },
+    ]
+    mockDb({ promissoryNotes: notes, players: READY_PLAYERS })
+    const originalImpl = db.from.getMockImplementation()
+    db.from.mockImplementation((table) => {
+      if (table === 'game_player_promissory_notes') return { insert: promissoryNoteInsertMock }
+      return originalImpl(table)
+    })
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    expect(res.status).toBe(200)
+    expect(promissoryNoteInsertMock).toHaveBeenCalledOnce()
+    const inserted = promissoryNoteInsertMock.mock.calls[0][0]
+    // 2 players × 2 generic notes = 4 rows
+    expect(inserted).toHaveLength(4)
+    expect(inserted.filter(r => r.player_id === 'p1')).toHaveLength(2)
+    expect(inserted.filter(r => r.player_id === 'p2')).toHaveLength(2)
+  })
+
+  it('skips notes outside active expansions', async () => {
+    const promissoryNoteInsertMock = vi.fn().mockResolvedValue({ error: null })
+    const notes = [
+      { id: 'note-base', faction: 'Arborec', expansion: 'base' },
+      { id: 'note-pok', faction: 'Arborec', expansion: 'pok' },
+    ]
+    mockDb({
+      gameData: { host_user_id: HOST_ID, status: 'lobby', speaker_player_id: SPEAKER_ID, expansions: { base: true, pok: false } },
+      promissoryNotes: notes,
+    })
+    const originalImpl = db.from.getMockImplementation()
+    db.from.mockImplementation((table) => {
+      if (table === 'game_player_promissory_notes') return { insert: promissoryNoteInsertMock }
+      return originalImpl(table)
+    })
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    expect(res.status).toBe(200)
+    expect(promissoryNoteInsertMock).toHaveBeenCalledOnce()
+    const inserted = promissoryNoteInsertMock.mock.calls[0][0]
+    // only base note dealt; pok filtered out
+    inserted.forEach(r => {
+      expect(r.note_id).toBe('note-base')
+    })
+  })
+
+  it('sets origin_player_id = player.id for all notes', async () => {
+    const promissoryNoteInsertMock = vi.fn().mockResolvedValue({ error: null })
+    mockDb()
+    const originalImpl = db.from.getMockImplementation()
+    db.from.mockImplementation((table) => {
+      if (table === 'game_player_promissory_notes') return { insert: promissoryNoteInsertMock }
+      return originalImpl(table)
+    })
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    expect(res.status).toBe(200)
+    expect(promissoryNoteInsertMock).toHaveBeenCalledOnce()
+    const inserted = promissoryNoteInsertMock.mock.calls[0][0]
+    // each dealt note has origin_player_id matching recipient player_id
+    inserted.forEach(r => {
+      expect(r.origin_player_id).toBe(r.player_id)
     })
   })
 })
