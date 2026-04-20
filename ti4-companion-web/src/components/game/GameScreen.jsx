@@ -41,6 +41,7 @@ export default function GameScreen({ userId }) {
   const [actionCardModalOpen, setActionCardModalOpen] = useState(false)
   const [activatingAbility, setActivatingAbility] = useState(null)
   const [secretsModalOpen, setSecretsModalOpen] = useState(false)
+  const [tradeLogModalOpen, setTradeLogModalOpen] = useState(false)
 
   useEffect(() => {
     supabase
@@ -198,7 +199,7 @@ export default function GameScreen({ userId }) {
 
   return (
     <div className="min-h-screen bg-void">
-      <GameHeader game={game} speaker={speaker} />
+      <GameHeader game={game} speaker={speaker} onOpenTradeLog={() => setTradeLogModalOpen(true)} />
       <AbilityNotificationBar
         triggerable={triggerable.filter(a =>
           !a.ability_sources?.some(s => s.source_type === 'action_card')
