@@ -53,7 +53,9 @@ function mockDb({
 } = {}) {
   upsertVotesMock = vi.fn().mockResolvedValue({ error: upsertError })
   updateGameMock = vi.fn().mockReturnValue({
-    eq: vi.fn().mockResolvedValue({ error: updateGameError }),
+    eq: vi.fn().mockReturnValue({
+      eq: vi.fn().mockResolvedValue({ error: updateGameError }),
+    }),
   })
 
   db.from.mockImplementation((table) => {

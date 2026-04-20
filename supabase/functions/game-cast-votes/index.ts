@@ -88,10 +88,14 @@ export async function handler(req: Request): Promise<Response> {
     nextVoterId = await getNextPlayer(body.game_id, callerPlayer.id, 'reverse_speaker', game.speaker_player_id, db)
   }
 
+  // Conditional update: only advance if this player is still the current voter.
+  // This prevents a race where two simultaneous last-voters both see allVoted=false
+  // and each advance the pointer independently.
   const { error: updateError } = await db
     .from('games')
     .update({ agenda_vote_current_player_id: nextVoterId })
     .eq('id', body.game_id)
+    .eq('agenda_vote_current_player_id', callerPlayer.id)
   if (updateError) return errorResponse(`Failed to advance voter: ${updateError.message}`, 500)
 
   return okResponse({ voted: true, all_voted: allVoted })

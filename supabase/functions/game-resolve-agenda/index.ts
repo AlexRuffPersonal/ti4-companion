@@ -23,11 +23,12 @@ export async function handler(req: Request): Promise<Response> {
   if (!body.game_id || typeof body.game_id !== 'string') return errorResponse("'game_id' is required")
   if (!body.agenda_id || typeof body.agenda_id !== 'string') return errorResponse("'agenda_id' is required")
 
-  const { data: game } = await db
+  const { data: game, error: gameError } = await db
     .from('games')
     .select('id, speaker_player_id, agenda_current_card_id, agenda_phase_step, round')
     .eq('id', body.game_id)
     .maybeSingle()
+  if (gameError) return errorResponse('Database error', 500)
   if (!game) return errorResponse('Game not found', 404)
 
   const { data: callerPlayer } = await db
@@ -63,6 +64,17 @@ export async function handler(req: Request): Promise<Response> {
   const electedTarget = typeof body.elected_target === 'string' ? body.elected_target : null
   const isLaw = agenda.type === 'law'
   const terminalDeckState = isLaw ? 'enacted' : 'discarded'
+
+  // For player-elect agendas, validate that electedTarget belongs to this game
+  if (agenda.elect_type === 'player' && electedTarget) {
+    const { data: targetPlayer } = await db
+      .from('game_players')
+      .select('id')
+      .eq('game_id', body.game_id)
+      .eq('id', electedTarget)
+      .maybeSingle()
+    if (!targetPlayer) return errorResponse('elected_target is not a player in this game', 400)
+  }
 
   // Apply tractable effect
   if (isLaw && agenda.tractable && agenda.effect_json?.op) {
