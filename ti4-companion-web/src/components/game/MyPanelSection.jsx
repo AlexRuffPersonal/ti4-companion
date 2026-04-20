@@ -13,6 +13,7 @@ export default function MyPanelSection({
   onUnlockCommander,
   onOpenSecrets,
   secretCount = 0,
+  onOpenNotes, noteCount = 0, onOpenTrade
 }) {
   const tokens = player?.command_tokens ?? { tactic_total: 0, fleet: 0, strategy: 0 }
   const [draftTokens, setDraftTokens] = useState(tokens)
@@ -143,6 +144,16 @@ export default function MyPanelSection({
       {/* Secret Objectives */}
       <button className="btn-ghost text-xs self-start" onClick={onOpenSecrets}>
         SECRETS ({secretCount})
+      </button>
+
+      {/* Promissory Notes */}
+      <button className="btn-ghost text-xs self-start" onClick={onOpenNotes}>
+        PROMISSORY NOTES ({noteCount})
+      </button>
+
+      {/* Trade */}
+      <button className="btn-ghost text-xs self-start" onClick={onOpenTrade}>
+        TRADE
       </button>
 
       {/* Faction Abilities */}

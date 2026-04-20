@@ -114,4 +114,258 @@ describe('MyPanelSection', () => {
     fireEvent.click(screen.getByRole('button', { name: /secrets \(1\)/i }))
     expect(onOpenSecrets).toHaveBeenCalledOnce()
   })
+
+  it('returns null when player is not provided', () => {
+    const { container } = render(
+      <MyPanelSection
+        player={null}
+        planets={[]}
+        isActive={false}
+        game={{ phase: 'action' }}
+      />
+    )
+    expect(container.firstChild).toBeNull()
+  })
+
+  it('shows Promissory Notes button with count', () => {
+    renderPanel({ noteCount: 3 })
+    expect(screen.getByRole('button', { name: /promissory notes \(3\)/i })).toBeInTheDocument()
+  })
+
+  it('calls onOpenNotes when Promissory Notes button is clicked', () => {
+    const onOpenNotes = vi.fn()
+    renderPanel({ noteCount: 1, onOpenNotes })
+    fireEvent.click(screen.getByRole('button', { name: /promissory notes/i }))
+    expect(onOpenNotes).toHaveBeenCalledOnce()
+  })
+
+  it('shows Trade button and calls onOpenTrade when clicked', () => {
+    const onOpenTrade = vi.fn()
+    renderPanel({ onOpenTrade })
+    const btn = screen.getByRole('button', { name: /^trade$/i })
+    expect(btn).toBeInTheDocument()
+    fireEvent.click(btn)
+    expect(onOpenTrade).toHaveBeenCalledOnce()
+  })
+
+  it('increments commodities when + button is clicked', () => {
+    const onUpdateCommodities = vi.fn()
+    renderPanel({
+      player: { ...PLAYER, commodities: 2 },
+      planets: [],
+      onUpdateCommodities
+    })
+    const addButtons = screen.getAllByRole('button', { name: '+' })
+    fireEvent.click(addButtons[addButtons.length - 2]) // Trade + is last, commodities + is second to last
+    expect(onUpdateCommodities).toHaveBeenCalledWith(3)
+  })
+
+  it('decrements commodities when − button is clicked', () => {
+    const onUpdateCommodities = vi.fn()
+    renderPanel({
+      player: { ...PLAYER, commodities: 2 },
+      planets: [],
+      onUpdateCommodities
+    })
+    const subButtons = screen.getAllByRole('button', { name: '−' })
+    fireEvent.click(subButtons[subButtons.length - 2])
+    expect(onUpdateCommodities).toHaveBeenCalledWith(1)
+  })
+
+  it('prevents commodities from going below zero', () => {
+    const onUpdateCommodities = vi.fn()
+    renderPanel({
+      player: { ...PLAYER, commodities: 0 },
+      planets: [],
+      onUpdateCommodities
+    })
+    const subButtons = screen.getAllByRole('button', { name: '−' })
+    fireEvent.click(subButtons[subButtons.length - 2])
+    expect(onUpdateCommodities).toHaveBeenCalledWith(0)
+  })
+
+  it('increments trade goods when + button is clicked', () => {
+    const onUpdateTradeGoods = vi.fn()
+    renderPanel({
+      player: { ...PLAYER, trade_goods: 1 },
+      planets: [],
+      onUpdateTradeGoods
+    })
+    const addButtons = screen.getAllByRole('button', { name: '+' })
+    fireEvent.click(addButtons[addButtons.length - 1]) // Last + button is trade
+    expect(onUpdateTradeGoods).toHaveBeenCalledWith(2)
+  })
+
+  it('decrements trade goods when − button is clicked', () => {
+    const onUpdateTradeGoods = vi.fn()
+    renderPanel({
+      player: { ...PLAYER, trade_goods: 2 },
+      planets: [],
+      onUpdateTradeGoods
+    })
+    const subButtons = screen.getAllByRole('button', { name: '−' })
+    fireEvent.click(subButtons[subButtons.length - 1]) // Last − button is trade
+    expect(onUpdateTradeGoods).toHaveBeenCalledWith(1)
+  })
+
+  it('prevents trade goods from going below zero', () => {
+    const onUpdateTradeGoods = vi.fn()
+    renderPanel({
+      player: { ...PLAYER, trade_goods: 0 },
+      planets: [],
+      onUpdateTradeGoods
+    })
+    const subButtons = screen.getAllByRole('button', { name: '−' })
+    fireEvent.click(subButtons[subButtons.length - 1])
+    expect(onUpdateTradeGoods).toHaveBeenCalledWith(0)
+  })
+
+  it('calls onExhaustPlanet when exhaust button is clicked on ready planet', () => {
+    const onExhaustPlanet = vi.fn()
+    renderPanel({ onExhaustPlanet })
+    const buttons = screen.getAllByRole('button', { name: /exhaust/i })
+    fireEvent.click(buttons[0])
+    expect(onExhaustPlanet).toHaveBeenCalledWith('Mecatol Rex')
+  })
+
+  it('calls onReadyPlanet when ready button is clicked on exhausted planet', () => {
+    const onReadyPlanet = vi.fn()
+    renderPanel({ onReadyPlanet })
+    const buttons = screen.getAllByRole('button', { name: /ready/i })
+    fireEvent.click(buttons[0])
+    expect(onReadyPlanet).toHaveBeenCalledWith('Jord')
+  })
+
+  it('shows exhausted planet with line-through style', () => {
+    renderPanel()
+    expect(screen.getByText('Jord')).toHaveClass('line-through')
+    expect(screen.getByText('Mecatol Rex')).not.toHaveClass('line-through')
+  })
+
+  it('displays technology count', () => {
+    renderPanel()
+    expect(screen.getByText(/technologies \(2\)/i)).toBeInTheDocument()
+  })
+
+  it('displays VIEW TREE button and calls onViewTech', () => {
+    const onViewTech = vi.fn()
+    renderPanel({ onViewTech })
+    const btn = screen.getByRole('button', { name: /view tree/i })
+    expect(btn).toBeInTheDocument()
+    fireEvent.click(btn)
+    expect(onViewTech).toHaveBeenCalledOnce()
+  })
+
+  it('adjusts token count during status phase', () => {
+    renderPanel({ game: { phase: 'status' } })
+    const addButtons = screen.getAllByRole('button', { name: '+' })
+    fireEvent.click(addButtons[0]) // First + is tactic token
+    expect(screen.getByLabelText('tactic tokens')).toHaveValue('4')
+  })
+
+  it('confirms token changes with onUpdateTokens during status phase', () => {
+    const onUpdateTokens = vi.fn()
+    renderPanel({ game: { phase: 'status' }, onUpdateTokens })
+    const addButtons = screen.getAllByRole('button', { name: '+' })
+    fireEvent.click(addButtons[0]) // First + is tactic token
+    const confirmBtn = screen.getByRole('button', { name: /confirm tokens/i })
+    fireEvent.click(confirmBtn)
+    expect(onUpdateTokens).toHaveBeenCalledWith({ tactic_total: 4, fleet: 3, strategy: 2 })
+  })
+
+  it('renders action-timed faction abilities as buttons', () => {
+    const ability = {
+      id: 'a1',
+      ability_name: 'Test Action',
+      trigger: { event: 'PLAYER_ACTION' }
+    }
+    renderPanel({ factionAbilities: [ability], triggerableAbilityIds: new Set(['a1']) })
+    const btn = screen.getByRole('button', { name: /test action/i })
+    expect(btn).toBeInTheDocument()
+    expect(btn).toHaveClass('btn-primary')
+  })
+
+  it('calls onPlayAbility when action-timed ability is clicked', () => {
+    const onPlayAbility = vi.fn()
+    const ability = {
+      id: 'a1',
+      ability_name: 'Test Action',
+      trigger: { event: 'PLAYER_ACTION' }
+    }
+    renderPanel({
+      factionAbilities: [ability],
+      triggerableAbilityIds: new Set(['a1']),
+      onPlayAbility
+    })
+    fireEvent.click(screen.getByRole('button', { name: /test action/i }))
+    expect(onPlayAbility).toHaveBeenCalledWith(ability)
+  })
+
+  it('disables action-timed ability when not triggerable', () => {
+    const ability = {
+      id: 'a1',
+      ability_name: 'Test Action',
+      trigger: { event: 'PLAYER_ACTION' }
+    }
+    renderPanel({
+      factionAbilities: [ability],
+      triggerableAbilityIds: new Set()
+    })
+    const btn = screen.getByRole('button', { name: /test action/i })
+    expect(btn).toBeDisabled()
+    expect(btn).toHaveClass('opacity-50')
+  })
+
+  it('renders passive faction abilities as text', () => {
+    const ability = {
+      id: 'a1',
+      ability_name: 'Test Passive',
+      trigger: { event: 'SOMETHING_ELSE' }
+    }
+    renderPanel({ factionAbilities: [ability] })
+    expect(screen.getByText('Test Passive:')).toBeInTheDocument()
+    const passiveElements = screen.queryAllByText((content, element) =>
+      content === 'passive' && element?.className.includes('text-dim')
+    )
+    expect(passiveElements.length).toBeGreaterThan(0)
+  })
+
+  it('renders commander unlock section when available', () => {
+    const commander = {
+      id: 'cmd1',
+      ability_name: 'Supreme Commander'
+    }
+    renderPanel({ unlockableCommanderAbility: commander })
+    expect(screen.getByText(/commander unlockable: supreme commander/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /unlock/i })).toBeInTheDocument()
+  })
+
+  it('calls onUnlockCommander when unlock button is clicked', () => {
+    const onUnlockCommander = vi.fn()
+    const commander = {
+      id: 'cmd1',
+      ability_name: 'Supreme Commander'
+    }
+    renderPanel({
+      unlockableCommanderAbility: commander,
+      onUnlockCommander
+    })
+    fireEvent.click(screen.getByRole('button', { name: /unlock/i }))
+    expect(onUnlockCommander).toHaveBeenCalledWith(commander)
+  })
+
+  it('does not render commander section when not available', () => {
+    renderPanel({ unlockableCommanderAbility: null })
+    expect(screen.queryByText(/commander unlockable/i)).not.toBeInTheDocument()
+  })
+
+  it('does not render faction abilities section when empty', () => {
+    renderPanel({ factionAbilities: [] })
+    expect(screen.queryByText(/faction abilities/i)).not.toBeInTheDocument()
+  })
+
+  it('does not render planets section when empty', () => {
+    renderPanel({ planets: [] })
+    expect(screen.queryByText(/planets/i)).not.toBeInTheDocument()
+  })
 })
