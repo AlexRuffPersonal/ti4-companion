@@ -117,4 +117,19 @@ export const castVotes = (gameId, payload) =>
 export const resolveAgenda = (gameId, agendaId, electedTarget) =>
   callFunction('game-resolve-agenda', { game_id: gameId, agenda_id: agendaId, elected_target: electedTarget })
 
+export const createTransaction = (gameId, toPlayerId, offer, request) =>
+  callFunction('game-create-transaction', { game_id: gameId, to_player_id: toPlayerId, offer, request })
+
+export const confirmTransaction = (gameId, transactionId) =>
+  callFunction('game-confirm-transaction', { game_id: gameId, transaction_id: transactionId })
+
+export const rejectTransaction = (gameId, transactionId) =>
+  callFunction('game-reject-transaction', { game_id: gameId, transaction_id: transactionId })
+
+export const rescindTransaction = (gameId, transactionId) =>
+  callFunction('game-rescind-transaction', { game_id: gameId, transaction_id: transactionId })
+
+export const playPromissoryNote = (gameId, noteInstanceId) =>
+  callFunction('game-play-promissory-note', { game_id: gameId, note_instance_id: noteInstanceId })
+
 export { callFunction }
