@@ -152,6 +152,36 @@ Deno.serve(async (req: Request) => {
     .insert(secretRows)
   if (insertSecretsError) return errorResponse(`Failed to deal secret objectives: ${insertSecretsError.message}`, 500)
 
+  // Initialise agenda deck (filtered by active expansions)
+  const { data: allAgendas, error: agendasError } = await db
+    .from('agendas')
+    .select('id, expansion')
+  if (agendasError) return errorResponse('Database error', 500)
+
+  const eligibleAgendas = (allAgendas ?? []).filter(
+    (a: { id: string; expansion: string }) =>
+      activeExpansions.includes(a.expansion ?? 'base')
+  )
+
+  if (eligibleAgendas.length > 0) {
+    const agendaPositions = eligibleAgendas.map((_: unknown, i: number) => i)
+    for (let i = agendaPositions.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[agendaPositions[i], agendaPositions[j]] = [agendaPositions[j], agendaPositions[i]]
+    }
+    const { error: insertAgendasError } = await db
+      .from('game_agenda_deck')
+      .insert(
+        eligibleAgendas.map((ag: { id: string }, i: number) => ({
+          game_id: body.game_id,
+          agenda_id: ag.id,
+          deck_position: agendaPositions[i],
+          state: 'deck',
+        }))
+      )
+    if (insertAgendasError) return errorResponse(`Failed to initialise agenda deck: ${insertAgendasError.message}`, 500)
+  }
+
   // Initialise starting technologies and home planets for each player
   for (const player of players) {
     const { data: factionData, error: factionError } = await db
@@ -184,6 +214,8 @@ Deno.serve(async (req: Request) => {
       const homePlanets = (tile?.planets ?? []) as Array<{
         name: string
         tech_specialty?: string
+        influence?: number
+        resources?: number
       }>
 
       if (homePlanets.length > 0) {
@@ -196,6 +228,8 @@ Deno.serve(async (req: Request) => {
               planet_name: p.name,
               exhausted: false,
               tech_specialty: p.tech_specialty ?? null,
+              influence: p.influence ?? 0,
+              resources: p.resources ?? 0
             }))
           )
         if (planetError) return errorResponse(`Failed to insert planets for ${player.display_name}: ${planetError.message}`, 500)
