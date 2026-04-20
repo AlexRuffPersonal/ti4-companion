@@ -44,6 +44,8 @@ Deno.serve(async (req: Request) => {
   const rows = (body.records as Record<string, unknown>[]).map(r => ({
     ...r,
     expansion: r.expansion ?? 'base',
+    tractable: r.tractable ?? false,
+    effect_json: r.effect_json ?? {},
   }))
   const { error: insertError } = await db.from('agendas').insert(rows)
   if (insertError) return errorResponse(`Insert failed: ${insertError.message}`, 500)
