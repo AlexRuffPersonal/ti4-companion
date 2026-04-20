@@ -5,7 +5,7 @@ import { useGame } from '../../hooks/useGame.js'
 import { useGameEvents } from '../../hooks/useGameEvents.js'
 import { useAbilities } from '../../hooks/useAbilities.js'
 import { resolveAbility, unlockCommander } from '../../lib/edgeFunctions.js'
-import { deriveActivePlayer, deriveSpeaker } from '../../lib/gameUtils.js'
+import { deriveActivePlayer, deriveSpeaker, isSpeaker } from '../../lib/gameUtils.js'
 import GameHeader from './GameHeader.jsx'
 import ScoreboardSection from './ScoreboardSection.jsx'
 import MyPanelSection from './MyPanelSection.jsx'
@@ -18,6 +18,8 @@ import AbilityTargetModal from './AbilityTargetModal.jsx'
 import SecretObjectiveSelectionScreen from './SecretObjectiveSelectionScreen.jsx'
 import SecretObjectivesModal from './SecretObjectivesModal.jsx'
 import TokenRedistributionModal from './TokenRedistributionModal.jsx'
+import AgendaSection from './AgendaSection.jsx'
+import EnactedLawsPanel from './EnactedLawsPanel.jsx'
 
 export default function GameScreen({ userId }) {
   const { code } = useParams()
@@ -29,6 +31,8 @@ export default function GameScreen({ userId }) {
     pickStrategyCard, updateCommodities, updateTradeGoods, cycleLeader,
     drawTheActionCard, discardTheActionCard,
     mySecrets, discardTheSecret, scoreTheSecret, endStatusPhase,
+    agendaVotes, enactedLaws, currentAgenda,
+    drawTheAgenda, castTheVotes, resolveTheAgenda,
   } = useGame(code, userId)
 
   const [allTechnologies, setAllTechnologies] = useState([])
@@ -143,6 +147,16 @@ export default function GameScreen({ userId }) {
     await unlockCommander(game.id, ability.id)
   }
 
+  async function beginAgendaPhase() {
+    if (!game) return
+    await supabase.from('games').update({ agenda_phase_step: 'agenda_1_voting' }).eq('id', game.id)
+  }
+
+  async function endAgendaPhase() {
+    if (!game) return
+    await supabase.from('games').update({ agenda_phase_step: 'inactive' }).eq('id', game.id)
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-void flex items-center justify-center">
@@ -161,6 +175,7 @@ export default function GameScreen({ userId }) {
 
   const speaker = deriveSpeaker(players, game)
   const activePlayer = deriveActivePlayer(players, game)
+  const isSpeakerFlag = isSpeaker(players, game, userId)
 
   const viewingPlayer = viewingTechPlayerId
     ? players.find(p => p.id === viewingTechPlayerId) ?? null
@@ -228,6 +243,19 @@ export default function GameScreen({ userId }) {
           currentPlayerId={currentPlayer?.id}
           onScore={(objId) => scoreAnObjective(objId, currentPlayer?.id)}
         />
+        <AgendaSection
+          game={game}
+          agenda={currentAgenda}
+          votes={agendaVotes}
+          players={players}
+          currentPlayer={currentPlayer}
+          isSpeaker={isSpeakerFlag}
+          planets={planets.filter(p => p.player_id === currentPlayer?.id)}
+          onDrawAgenda={drawTheAgenda}
+          onCastVote={castTheVotes}
+          onResolve={resolveTheAgenda}
+        />
+        <EnactedLawsPanel laws={enactedLaws} />
         <HostControlsSection
           isHost={isHost}
           game={game}
@@ -238,6 +266,8 @@ export default function GameScreen({ userId }) {
           onShuffleDeck={shuffleTheDeck}
           onAdvancePhase={advanceThePhase}
           onEndStatusPhase={endStatusPhase}
+          onBeginAgendaPhase={beginAgendaPhase}
+          onEndAgendaPhase={endAgendaPhase}
           pendingSecretPlayers={players.filter(p => !p.secrets_selected)}
           pendingTokenPlayers={players.filter(p => !p.tokens_redistributed)}
         />
