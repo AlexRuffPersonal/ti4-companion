@@ -114,6 +114,26 @@ function mockSupabase({ myCards = MY_CARDS } = {}) {
         }),
       }
     }
+    if (table === 'game_player_promissory_notes') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        }),
+      }
+    }
+    if (table === 'game_transactions') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }),
+        }),
+      }
+    }
   })
 }
 

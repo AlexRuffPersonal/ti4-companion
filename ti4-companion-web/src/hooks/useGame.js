@@ -9,6 +9,7 @@ import {
   researchTechnology, discardSecretObjective,
   scoreSecretObjective, statusPhase,
   drawAgenda, castVotes, resolveAgenda,
+  createTransaction, confirmTransaction, rejectTransaction, rescindTransaction, playPromissoryNote,
 } from '../lib/edgeFunctions.js'
 
 export function useGame(code, userId) {
@@ -20,6 +21,8 @@ export function useGame(code, userId) {
   const [planets, setPlanets] = useState([])
   const [myCards, setMyCards] = useState([])
   const [mySecrets, setMySecrets] = useState([])
+  const [myNotes, setMyNotes] = useState([])
+  const [pendingIncomingTrades, setPendingIncomingTrades] = useState([])
   const [agendaVotes, setAgendaVotes] = useState([])
   const [enactedLaws, setEnactedLaws] = useState([])
   const [currentAgenda, setCurrentAgenda] = useState(null)
@@ -71,6 +74,8 @@ export function useGame(code, userId) {
       let planetsData = []
       let myCardsData = []
       let mySecretsData = []
+      let myNotesData = []
+      let pendingIncomingTradesData = []
       let enactedLawsData = []
       let currentAgendaData = null
       let myPlayer = null
@@ -108,6 +113,23 @@ export function useGame(code, userId) {
             .eq('state', 'held')
           if (!mounted) return
           mySecretsData = secrets ?? []
+
+          const { data: notes } = await supabase
+            .from('game_player_promissory_notes')
+            .select('id, state, held_by_player_id, note_id, promissory_notes(name, text, into_play_area), origin_player_id')
+            .eq('game_id', gameData.id)
+            .eq('held_by_player_id', myPlayer.id)
+          if (!mounted) return
+          myNotesData = notes ?? []
+
+          const { data: trades } = await supabase
+            .from('game_transactions')
+            .select('*')
+            .eq('game_id', gameData.id)
+            .eq('to_player_id', myPlayer.id)
+            .eq('status', 'pending')
+          if (!mounted) return
+          pendingIncomingTradesData = trades ?? []
         }
 
         // fetch enacted laws
@@ -136,6 +158,8 @@ export function useGame(code, userId) {
       setPlanets(planetsData)
       setMyCards(myCardsData)
       setMySecrets(mySecretsData)
+      setMyNotes(myNotesData)
+      setPendingIncomingTrades(pendingIncomingTradesData)
       setAgendaVotes([])
       setEnactedLaws(enactedLawsData)
       setCurrentAgenda(currentAgendaData)
@@ -253,6 +277,33 @@ export function useGame(code, userId) {
               })
             }
           )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'game_player_promissory_notes', filter: `game_id=eq.${gameData.id}` },
+            async () => {
+              if (!mounted || !myPlayer) return
+              const { data } = await supabase
+                .from('game_player_promissory_notes')
+                .select('id, state, held_by_player_id, note_id, promissory_notes(name, text, into_play_area), origin_player_id')
+                .eq('game_id', gameData.id)
+                .eq('held_by_player_id', myPlayer.id)
+              if (mounted && data) setMyNotes(data)
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'game_transactions', filter: `game_id=eq.${gameData.id}` },
+            async () => {
+              if (!mounted || !myPlayer) return
+              const { data } = await supabase
+                .from('game_transactions')
+                .select('*')
+                .eq('game_id', gameData.id)
+                .eq('to_player_id', myPlayer.id)
+                .eq('status', 'pending')
+              if (mounted && data) setPendingIncomingTrades(data)
+            }
+          )
       }
 
       channel.subscribe()
@@ -322,6 +373,26 @@ export function useGame(code, userId) {
       .eq('id', currentPlayer.id)
   }
 
+  function createTheTransaction(toPlayerId, offer, request) {
+    return game ? createTransaction(game.id, toPlayerId, offer, request) : Promise.reject(new Error('Game not loaded'))
+  }
+
+  function confirmTheTransaction(transactionId) {
+    return game ? confirmTransaction(game.id, transactionId) : Promise.reject(new Error('Game not loaded'))
+  }
+
+  function rejectTheTransaction(transactionId) {
+    return game ? rejectTransaction(game.id, transactionId) : Promise.reject(new Error('Game not loaded'))
+  }
+
+  function rescindTheTransaction(transactionId) {
+    return game ? rescindTransaction(game.id, transactionId) : Promise.reject(new Error('Game not loaded'))
+  }
+
+  function playTheNote(noteInstanceId) {
+    return game ? playPromissoryNote(game.id, noteInstanceId) : Promise.reject(new Error('Game not loaded'))
+  }
+
   return {
     game,
     players,
@@ -329,6 +400,8 @@ export function useGame(code, userId) {
     planets,
     myCards,
     mySecrets,
+    myNotes,
+    pendingIncomingTrades,
     currentPlayer,
     isHost,
     loading,
@@ -369,5 +442,11 @@ export function useGame(code, userId) {
     drawTheAgenda: () => game ? drawAgenda(game.id) : Promise.reject(new Error('Game not loaded')),
     castTheVotes: (payload) => game ? castVotes(game.id, payload) : Promise.reject(new Error('Game not loaded')),
     resolveTheAgenda: (agendaId, electedTarget) => game ? resolveAgenda(game.id, agendaId, electedTarget) : Promise.reject(new Error('Game not loaded')),
+    // Phase 8 wrappers (promissory notes & transactions)
+    createTheTransaction,
+    confirmTheTransaction,
+    rejectTheTransaction,
+    rescindTheTransaction,
+    playTheNote,
   }
 }
