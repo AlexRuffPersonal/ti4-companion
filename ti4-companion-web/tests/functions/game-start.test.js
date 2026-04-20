@@ -41,6 +41,8 @@ function mockDb({
   insertObjError = null,
   actionCards = [{ id: 'ac-1', quantity: 2, expansion: 'base' }, { id: 'ac-2', quantity: 1, expansion: 'base' }],
   insertActionError = null,
+  agendas = [{ id: 'ag-1', expansion: 'base' }, { id: 'ag-2', expansion: 'base' }],
+  insertAgendasError = null,
   factionData = { home_tile_number: '5', starting_techs: ['Neural Motivator'] },
   factionError = null,
   tileData = { planets: [{ name: 'Nestphar', tech_specialty: null }] },
@@ -56,6 +58,7 @@ function mockDb({
   insertSecretsError = null,
 } = {}) {
   const actionCardInsertMock = vi.fn().mockResolvedValue({ error: insertActionError })
+  const agendaInsertMock = vi.fn().mockResolvedValue({ error: insertAgendasError })
   db.from.mockImplementation((table) => {
     if (table === 'games') {
       return {
@@ -130,8 +133,16 @@ function mockDb({
         insert: vi.fn().mockResolvedValue({ error: insertSecretsError }),
       }
     }
+    if (table === 'agendas') {
+      return {
+        select: vi.fn().mockResolvedValue({ data: agendas, error: null }),
+      }
+    }
+    if (table === 'game_agenda_deck') {
+      return { insert: agendaInsertMock }
+    }
   })
-  return { actionCardInsertMock }
+  return { actionCardInsertMock, agendaInsertMock }
 }
 
 let handler

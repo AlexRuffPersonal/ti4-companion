@@ -190,7 +190,7 @@ const importSchemas = {
         type: 'object',
         required: false,
         description: 'Effect descriptor: { op, amount?, tech? }'
-      },
+      }
     ],
   },
 

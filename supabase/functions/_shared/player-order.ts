@@ -5,7 +5,7 @@ export type PlayerOrder = 'initiative' | 'reverse_speaker'
 
 interface PlayerRow {
   id: string
-  strategy_card: number | null
+  seat_index: number | null
   created_at: string
 }
 
