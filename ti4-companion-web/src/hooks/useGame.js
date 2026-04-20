@@ -8,6 +8,7 @@ import {
   drawActionCard, discardActionCard,
   researchTechnology, discardSecretObjective,
   scoreSecretObjective, statusPhase,
+  drawAgenda, castVotes, resolveAgenda,
 } from '../lib/edgeFunctions.js'
 
 export function useGame(code, userId) {
@@ -19,6 +20,9 @@ export function useGame(code, userId) {
   const [planets, setPlanets] = useState([])
   const [myCards, setMyCards] = useState([])
   const [mySecrets, setMySecrets] = useState([])
+  const [agendaVotes, setAgendaVotes] = useState([])
+  const [enactedLaws, setEnactedLaws] = useState([])
+  const [currentAgenda, setCurrentAgenda] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -67,6 +71,8 @@ export function useGame(code, userId) {
       let planetsData = []
       let myCardsData = []
       let mySecretsData = []
+      let enactedLawsData = []
+      let currentAgendaData = null
       let myPlayer = null
 
       if (isGameScreen) {
@@ -103,6 +109,25 @@ export function useGame(code, userId) {
           if (!mounted) return
           mySecretsData = secrets ?? []
         }
+
+        // fetch enacted laws
+        const { data: laws } = await supabase
+          .from('game_laws')
+          .select('*, agendas(name, note)')
+          .eq('game_id', gameData.id)
+        if (!mounted) return
+        enactedLawsData = laws ?? []
+
+        // fetch current agenda card if one is in play
+        if (gameData.agenda_current_card_id) {
+          const { data: ag } = await supabase
+            .from('agendas')
+            .select('*')
+            .eq('id', gameData.agenda_current_card_id)
+            .maybeSingle()
+          if (!mounted) return
+          currentAgendaData = ag ?? null
+        }
       }
 
       setGame(gameData)
@@ -111,6 +136,9 @@ export function useGame(code, userId) {
       setPlanets(planetsData)
       setMyCards(myCardsData)
       setMySecrets(mySecretsData)
+      setAgendaVotes([])
+      setEnactedLaws(enactedLawsData)
+      setCurrentAgenda(currentAgendaData)
       setLoading(false)
 
       channel = supabase
@@ -118,9 +146,28 @@ export function useGame(code, userId) {
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'games', filter: `id=eq.${gameData.id}` },
-          (payload) => {
+          async (payload) => {
             if (!mounted) return
             setGame(prev => ({ ...prev, ...payload.new }))
+            // Re-fetch current agenda when card changes
+            if (payload.new.agenda_current_card_id !== payload.old?.agenda_current_card_id) {
+              if (payload.new.agenda_current_card_id) {
+                const { data: ag } = await supabase
+                  .from('agendas')
+                  .select('*')
+                  .eq('id', payload.new.agenda_current_card_id)
+                  .maybeSingle()
+                if (mounted) setCurrentAgenda(ag ?? null)
+              } else {
+                setCurrentAgenda(null)
+                // Re-fetch laws after resolution
+                const { data: updatedLaws } = await supabase
+                  .from('game_laws')
+                  .select('*, agendas(name, note)')
+                  .eq('game_id', gameData.id)
+                if (mounted && updatedLaws) setEnactedLaws(updatedLaws)
+              }
+            }
             if (payload.new.status === 'active' && !isGameScreen) {
               navigate(`/game/${code}`, { replace: true })
             }
@@ -191,6 +238,19 @@ export function useGame(code, userId) {
                 .eq('player_id', myPlayer.id)
                 .eq('state', 'held')
               if (mounted && data) setMySecrets(data)
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'game_agenda_votes', filter: `game_id=eq.${gameData.id}` },
+            (payload) => {
+              if (!mounted) return
+              setAgendaVotes(prev => {
+                if (payload.eventType === 'INSERT') return [...prev, payload.new]
+                if (payload.eventType === 'UPDATE') return prev.map(v => v.id === payload.new.id ? payload.new : v)
+                if (payload.eventType === 'DELETE') return prev.filter(v => v.id !== payload.old.id)
+                return prev
+              })
             }
           )
       }
@@ -302,5 +362,12 @@ export function useGame(code, userId) {
     discardTheSecret: (objectiveId) => game ? discardSecretObjective(game.id, objectiveId) : Promise.reject(new Error('Game not loaded')),
     scoreTheSecret: (objectiveId) => game ? scoreSecretObjective(game.id, objectiveId) : Promise.reject(new Error('Game not loaded')),
     endStatusPhase: () => game ? statusPhase(game.id) : Promise.reject(new Error('Game not loaded')),
+    // Phase 7 wrappers (agenda)
+    agendaVotes,
+    enactedLaws,
+    currentAgenda,
+    drawTheAgenda: () => game ? drawAgenda(game.id) : Promise.reject(new Error('Game not loaded')),
+    castTheVotes: (payload) => game ? castVotes(game.id, payload) : Promise.reject(new Error('Game not loaded')),
+    resolveTheAgenda: (agendaId, electedTarget) => game ? resolveAgenda(game.id, agendaId, electedTarget) : Promise.reject(new Error('Game not loaded')),
   }
 }

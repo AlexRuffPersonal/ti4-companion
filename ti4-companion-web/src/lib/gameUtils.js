@@ -18,6 +18,15 @@ export function deriveSpeaker(players, game) {
 /**
  * Returns a human-readable phase label for display in the game header.
  */
+/**
+ * Returns true if the given userId belongs to the current speaker.
+ */
+export function isSpeaker(players, game, userId) {
+  if (!game?.speaker_player_id) return false
+  const speaker = players.find(p => p.id === game.speaker_player_id)
+  return speaker?.user_id === userId
+}
+
 export function phaseLabel(phase) {
   const labels = {
     strategy: 'STRATEGY PHASE',

@@ -108,4 +108,13 @@ export const scoreSecretObjective = (gameId, objectiveId) =>
 export const statusPhase = (gameId) =>
   callFunction('game-status-phase', { game_id: gameId })
 
+export const drawAgenda = (gameId) =>
+  callFunction('game-draw-agenda', { game_id: gameId })
+
+export const castVotes = (gameId, payload) =>
+  callFunction('game-cast-votes', { game_id: gameId, ...payload })
+
+export const resolveAgenda = (gameId, agendaId, electedTarget) =>
+  callFunction('game-resolve-agenda', { game_id: gameId, agenda_id: agendaId, elected_target: electedTarget })
+
 export { callFunction }
