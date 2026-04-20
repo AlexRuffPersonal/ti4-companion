@@ -20,6 +20,10 @@ import SecretObjectivesModal from './SecretObjectivesModal.jsx'
 import TokenRedistributionModal from './TokenRedistributionModal.jsx'
 import AgendaSection from './AgendaSection.jsx'
 import EnactedLawsPanel from './EnactedLawsPanel.jsx'
+import PromissoryNotesModal from './PromissoryNotesModal.jsx'
+import TradeModal from './TradeModal.jsx'
+import TradeOfferBanner from './TradeOfferBanner.jsx'
+import TransactionLogModal from './TransactionLogModal.jsx'
 
 export default function GameScreen({ userId }) {
   const { code } = useParams()
@@ -33,6 +37,8 @@ export default function GameScreen({ userId }) {
     mySecrets, discardTheSecret, scoreTheSecret, endStatusPhase,
     agendaVotes, enactedLaws, currentAgenda,
     drawTheAgenda, castTheVotes, resolveTheAgenda,
+    myNotes, pendingIncomingTrades, createTheTransaction, confirmTheTransaction,
+    rejectTheTransaction, rescindTheTransaction, playTheNote,
   } = useGame(code, userId)
 
   const [allTechnologies, setAllTechnologies] = useState([])
@@ -41,7 +47,10 @@ export default function GameScreen({ userId }) {
   const [actionCardModalOpen, setActionCardModalOpen] = useState(false)
   const [activatingAbility, setActivatingAbility] = useState(null)
   const [secretsModalOpen, setSecretsModalOpen] = useState(false)
+  const [notesModalOpen, setNotesModalOpen] = useState(false)
+  const [tradeModalOpen, setTradeModalOpen] = useState(false)
   const [tradeLogModalOpen, setTradeLogModalOpen] = useState(false)
+  const [initialTradeNoteId, setInitialTradeNoteId] = useState(null)
 
   useEffect(() => {
     supabase
@@ -197,14 +206,65 @@ export default function GameScreen({ userId }) {
     )
   }
 
+  const handleOpenNotes = () => setNotesModalOpen(true)
+  const handleOpenTrade = () => {
+    setInitialTradeNoteId(null)
+    setTradeModalOpen(true)
+  }
+  const handleGiveNote = (note) => {
+    setInitialTradeNoteId(note.id)
+    setNotesModalOpen(false)
+    setTradeModalOpen(true)
+  }
+  const handlePlayNote = async (noteId) => {
+    try {
+      await playTheNote(noteId)
+    } catch (e) {
+      console.error('Play note error:', e)
+    }
+  }
+  const handleSubmitTrade = async (payload) => {
+    try {
+      await createTheTransaction(payload.to_player_id, payload.offer, payload.request)
+      setTradeModalOpen(false)
+    } catch (e) {
+      console.error('Create transaction error:', e)
+    }
+  }
+  const handleAcceptTrade = async (txId) => {
+    try {
+      await confirmTheTransaction(txId)
+    } catch (e) {
+      console.error('Confirm transaction error:', e)
+    }
+  }
+  const handleDeclineTrade = async (txId) => {
+    try {
+      await rejectTheTransaction(txId)
+    } catch (e) {
+      console.error('Reject transaction error:', e)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-void">
-      <GameHeader game={game} speaker={speaker} onOpenTradeLog={() => setTradeLogModalOpen(true)} />
+      <GameHeader
+        game={game}
+        speaker={deriveSpeaker(players, game)}
+        onOpenTradeLog={() => setTradeLogModalOpen(true)}
+      />
       <AbilityNotificationBar
         triggerable={triggerable.filter(a =>
           !a.ability_sources?.some(s => s.source_type === 'action_card')
         )}
         onPlay={a => handlePlayAbility(a)}
+      />
+      <TradeOfferBanner
+        trades={pendingIncomingTrades}
+        players={players}
+        currentPlayerId={currentPlayer?.id}
+        onAccept={handleAcceptTrade}
+        onDecline={handleDeclineTrade}
       />
       <div className="max-w-2xl mx-auto px-4 py-6 flex flex-col gap-6">
         <ScoreboardSection
@@ -236,6 +296,9 @@ export default function GameScreen({ userId }) {
           onUnlockCommander={handleUnlockCommander}
           onOpenSecrets={() => setSecretsModalOpen(true)}
           secretCount={mySecrets.length}
+          onOpenNotes={handleOpenNotes}
+          noteCount={myNotes?.filter(n => n.state === 'held').length ?? 0}
+          onOpenTrade={handleOpenTrade}
         />
         <ObjectivesSection
           objectives={objectives}
@@ -303,6 +366,36 @@ export default function GameScreen({ userId }) {
           game={game}
           onScore={(objId) => { scoreTheSecret(objId); setSecretsModalOpen(false) }}
           onClose={() => setSecretsModalOpen(false)}
+        />
+      )}
+
+      {notesModalOpen && (
+        <PromissoryNotesModal
+          notes={myNotes?.filter(n => n.state === 'held') ?? []}
+          players={players}
+          currentPlayerId={currentPlayer?.id}
+          onGive={handleGiveNote}
+          onPlay={handlePlayNote}
+          onClose={() => setNotesModalOpen(false)}
+        />
+      )}
+
+      {tradeModalOpen && (
+        <TradeModal
+          currentPlayer={currentPlayer}
+          players={players}
+          myNotes={myNotes?.filter(n => n.state === 'held') ?? []}
+          initialNoteId={initialTradeNoteId}
+          onSubmit={handleSubmitTrade}
+          onClose={() => setTradeModalOpen(false)}
+        />
+      )}
+
+      {tradeLogModalOpen && (
+        <TransactionLogModal
+          transactions={/* all confirmed transactions for this game */}
+          players={players}
+          onClose={() => setTradeLogModalOpen(false)}
         />
       )}
 
