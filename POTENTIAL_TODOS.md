@@ -22,9 +22,15 @@ Features and improvements that were deliberately deferred. Review this list when
 
 ---
 
-## Agenda Phase (Phase 7) — implement in Phase 9
+## Agenda Phase (Phase 7) — resolved in Phase 9
 
-- **Custodians gate** — the agenda phase is currently always visible (host-discipline only). When Phase 9 (map + planet claiming) is implemented, wire up `game-claim-custodians`: award 1 VP to the claiming player, set `games.agenda_unlocked = true`, and hide the "Begin Agenda Phase" button in `HostControlsSection` until that flag is set. See Phase 7 spec for details.
+- **Custodians gate** — implemented in Phase 9 via `game-land-troops`: landing troops on Mecatol Rex (system_key "0,0") sets `custodians_claimed=true`, `agenda_unlocked=true`, and awards 1 VP. `game-advance-phase` is patched to automatically advance to the agenda phase after the status phase when `agenda_unlocked=true`. The manual "Begin Agenda Phase" button is removed from `HostControlsSection`.
+
+---
+
+## Map Configuration (Phase 9+)
+
+- **Map builder in lobby** — Phase 9 hardcodes a standard 37-tile map. A future phase should let the host configure the map during lobby setup. Two options: (1) a drag-and-drop hex tile placement UI, or (2) paste a standard Milty/TI4 map string (space-separated tile numbers in spiral order) that gets parsed into `games.map_tiles` JSONB keyed by axial `"q,r"` coordinates. Option 2 is simpler and interops with existing TI4 map tools.
 
 ---
 
