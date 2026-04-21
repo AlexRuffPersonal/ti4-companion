@@ -214,7 +214,7 @@ Renders one `HexTile` per entry in `mapTiles`. Supports zoom/pan via SVG `viewBo
 
 Single SVG `<g>` group at the computed position. Renders:
 
-- **Hex polygon** — border colour = colour of the player who activated the system this round (if exactly one activating player); neutral grey if unactivated or multiple players have activated it
+- **Hex polygon** — border colour = colour of the player who has units in the space area (`game_player_units` rows where `on_planet IS NULL` for this `system_key`); neutral grey if the space area is empty or contested (multiple players have units there)
 - **Tile number** — top centre, gold
 - **Planet rows** — one row per planet: status dot + name
   - Green filled dot = claimed and ready
