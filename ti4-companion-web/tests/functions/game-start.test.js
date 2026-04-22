@@ -433,3 +433,58 @@ describe('game-start', () => {
     })
   })
 })
+
+describe('game-start — map_tiles seeding', () => {
+  it('seeds map_tiles with 37 tile entries after successful start', async () => {
+    // Create tiles data for all map positions
+    const allTilesData = [
+      { id: 'tile-18', tile_number: '18' },
+      { id: 'tile-32', tile_number: '32' },
+      { id: 'tile-30', tile_number: '30' },
+      { id: 'tile-35', tile_number: '35' },
+      { id: 'tile-36', tile_number: '36' },
+      { id: 'tile-29', tile_number: '29' },
+      { id: 'tile-34', tile_number: '34' },
+      { id: 'tile-26', tile_number: '26' },
+      { id: 'tile-22', tile_number: '22' },
+      { id: 'tile-31', tile_number: '31' },
+    ]
+
+    mockDb()
+    const updateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    const originalImpl = db.from.getMockImplementation()
+    db.from.mockImplementation((table) => {
+      if (table === 'games') {
+        const gamesFromResult = originalImpl(table)
+        return { ...gamesFromResult, update: updateMock }
+      }
+      if (table === 'tiles') {
+        const originalResult = originalImpl(table)
+        // Add handler for .select('id, tile_number') without filters
+        return {
+          ...originalResult,
+          select: vi.fn((cols) => {
+            if (cols === 'id, tile_number') {
+              // Return awaitable that resolves to all tiles data
+              return Promise.resolve({ data: allTilesData, error: null })
+            }
+            // Fall back to original for other select patterns
+            return originalResult.select()
+          }),
+        }
+      }
+      return originalImpl(table)
+    })
+
+    const req = makeRequest({ game_id: GAME_ID })
+    await handler(req)
+
+    const mapTilesCall = updateMock.mock.calls.find(call => call[0]?.map_tiles !== undefined)
+    expect(mapTilesCall).toBeDefined()
+    expect(typeof mapTilesCall[0].map_tiles).toBe('object')
+    // Mecatol Rex should be at "0,0"
+    const mapTiles = mapTilesCall[0].map_tiles
+    expect(mapTiles['0,0']).toBeDefined()
+    expect(mapTiles['0,0'].tile_number).toBe('18')
+  })
+})

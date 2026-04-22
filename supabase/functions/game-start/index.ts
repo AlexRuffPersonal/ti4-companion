@@ -2,6 +2,22 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 
+const INNER_TILE_NUMBERS = [
+  '18',
+  '32','30','35','36','29','34',
+  '26','22','31','21','25','27','23','24','28','20','19','33',
+  '37','38','39','40','41','42','43','44','45','46','47','48',
+]
+
+const INNER_POSITIONS = [
+  '0,0',
+  '1,-1','1,0','0,1','-1,1','-1,0','0,-1',
+  '2,-2','2,-1','2,0','1,1','0,2','-1,2','-2,2','-2,1','-2,0','-1,-1','0,-2','1,-2',
+  '3,-2','3,-1','2,1','1,2','-1,3','-2,3','-3,2','-3,1','-2,-1','-1,-2','1,-3','2,-3',
+]
+
+const HOME_POSITIONS = ['3,-3','3,0','0,3','-3,3','-3,0','0,-3']
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
 
@@ -283,6 +299,49 @@ Deno.serve(async (req: Request) => {
       }
     }
   }
+
+  // Seed map_tiles
+  const { data: allTiles, error: tilesError } = await db
+    .from('tiles')
+    .select('id, tile_number')
+  if (tilesError) return errorResponse('Database error', 500)
+
+  const tileByNumber = new Map<string, string>()
+  for (const t of (allTiles ?? []) as Array<{ id: string; tile_number: string }>) {
+    tileByNumber.set(String(t.tile_number), t.id)
+  }
+
+  const mapTiles: Record<string, { tile_id: string; tile_number: string }> = {}
+  for (let i = 0; i < INNER_POSITIONS.length; i++) {
+    const tileNumber = INNER_TILE_NUMBERS[i]
+    const tileId = tileByNumber.get(tileNumber)
+    if (tileId) mapTiles[INNER_POSITIONS[i]] = { tile_id: tileId, tile_number: tileNumber }
+  }
+
+  // Assign home systems to corner positions in join order
+  const homeTileNumbers: string[] = []
+  for (const player of players) {
+    const { data: fd } = await db
+      .from('factions')
+      .select('home_tile_number')
+      .eq('name', player.faction)
+      .maybeSingle()
+    homeTileNumbers.push(fd?.home_tile_number ? String(fd.home_tile_number) : '')
+  }
+
+  for (let i = 0; i < players.length && i < HOME_POSITIONS.length; i++) {
+    const homeTileNumber = homeTileNumbers[i]
+    const homeTileId = homeTileNumber ? tileByNumber.get(homeTileNumber) : undefined
+    if (homeTileId && homeTileNumber) {
+      mapTiles[HOME_POSITIONS[i]] = { tile_id: homeTileId, tile_number: homeTileNumber }
+    }
+  }
+
+  const { error: mapError } = await db
+    .from('games')
+    .update({ map_tiles: mapTiles })
+    .eq('id', body.game_id)
+  if (mapError) return errorResponse(`Failed to seed map tiles: ${mapError.message}`, 500)
 
   const { error: updateError } = await db
     .from('games')
