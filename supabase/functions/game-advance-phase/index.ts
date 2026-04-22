@@ -2,7 +2,7 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 
-Deno.serve(async (req: Request) => {
+export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
 
   let userId: string
@@ -19,7 +19,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: game, error: gameError } = await db
     .from('games')
-    .select('id, host_user_id, phase, round')
+    .select('id, host_user_id, phase, round, agenda_unlocked')
     .eq('id', body.game_id)
     .maybeSingle()
   if (gameError) return errorResponse('Database error', 500)
@@ -48,7 +48,7 @@ Deno.serve(async (req: Request) => {
     if (error) return errorResponse(`Update failed: ${error.message}`, 500)
 
   } else if (game.phase === 'action') {
-    // Action → Status: clear active player, ready all planets
+    // Action → Status: clear active player
     const { error: planetsError } = await db
       .from('game_player_planets')
       .update({ exhausted: false })
@@ -61,20 +61,32 @@ Deno.serve(async (req: Request) => {
       .eq('id', body.game_id)
     if (error) return errorResponse(`Update failed: ${error.message}`, 500)
 
-  } else {
-    // Status → Strategy: new round — reset passed, strategy cards, increment round
+  } else if (game.phase === 'status') {
+    // Status phase: new round — refresh planets, reset passed, strategy cards
+    const { error: planetsError } = await db
+      .from('game_player_planets')
+      .update({ exhausted: false })
+      .eq('game_id', body.game_id)
+    if (planetsError) return errorResponse(`Failed to ready planets: ${planetsError.message}`, 500)
+
     const { error: playersError } = await db
       .from('game_players')
       .update({ passed: false, strategy_card: null, strategy_card_2: null })
       .eq('game_id', body.game_id)
     if (playersError) return errorResponse(`Failed to reset players: ${playersError.message}`, 500)
 
+    
+    const nextPhase = game.agenda_unlocked ? 'agenda' : 'strategy'
+    const roundUpdate = game.agenda_unlocked ? game.round : game.round + 1
+    
     const { error } = await db
       .from('games')
-      .update({ phase: 'strategy', round: game.round + 1, active_player_id: null })
+      .update({ phase: nextPhase, round: roundUpdate, active_player_id: null })
       .eq('id', body.game_id)
     if (error) return errorResponse(`Update failed: ${error.message}`, 500)
   }
 
   return okResponse({ advanced: true })
-})
+}
+
+if (typeof Deno !== 'undefined') Deno.serve(handler)
