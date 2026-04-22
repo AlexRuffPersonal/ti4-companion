@@ -108,4 +108,23 @@ describe('HostControlsSection', () => {
     fireEvent.click(screen.getByRole('button', { name: /end status phase/i }))
     expect(onEndStatusPhase).toHaveBeenCalledOnce()
   })
+  
+  it('does NOT render BEGIN AGENDA PHASE button', () => {
+    render(
+      <HostControlsSection
+        isHost={true}
+        game={{ phase: 'action', round: 2, agenda_phase_step: 'inactive' }}
+        players={PLAYERS}
+        objectives={OBJECTIVES}
+        onScoreObjective={vi.fn()}
+        onRevealObjective={vi.fn()}
+        onShuffleDeck={vi.fn()}
+        onAdvancePhase={vi.fn()}
+        onEndStatusPhase={vi.fn()}
+        onBeginAgendaPhase={vi.fn()}
+        onEndAgendaPhase={vi.fn()}
+      />
+    )
+    expect(screen.queryByRole('button', { name: /begin agenda phase/i })).not.toBeInTheDocument()
+  })
 })

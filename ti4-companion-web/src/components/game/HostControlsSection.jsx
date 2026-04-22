@@ -6,7 +6,7 @@ export default function HostControlsSection({
   isHost, game, players, objectives,
   onScoreObjective, onRevealObjective, onShuffleDeck, onAdvancePhase,
   onEndStatusPhase,
-  onBeginAgendaPhase, onEndAgendaPhase,
+  onEndAgendaPhase,
   pendingSecretPlayers = [],
   pendingTokenPlayers = [],
 }) {
@@ -95,12 +95,6 @@ export default function HostControlsSection({
         </div>
       )}
 
-      {/* Agenda phase controls */}
-      {game?.agenda_phase_step === 'inactive' && (
-        <button className="btn-ghost text-xs" onClick={onBeginAgendaPhase}>
-          BEGIN AGENDA PHASE
-        </button>
-      )}
       {game?.agenda_phase_step === 'done' && (
         <button className="btn-ghost text-xs" onClick={onEndAgendaPhase}>
           END AGENDA PHASE

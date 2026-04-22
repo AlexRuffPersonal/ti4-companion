@@ -24,6 +24,8 @@ import PromissoryNotesModal from './PromissoryNotesModal.jsx'
 import TradeModal from './TradeModal.jsx'
 import TradeOfferBanner from './TradeOfferBanner.jsx'
 import TransactionLogModal from './TransactionLogModal.jsx'
+import { useGalaxy } from '../../hooks/useGalaxy.js'
+import GalaxyTab from './GalaxyTab.jsx'
 
 export default function GameScreen({ userId }) {
   const { code } = useParams()
@@ -41,6 +43,8 @@ export default function GameScreen({ userId }) {
     rejectTheTransaction, rescindTheTransaction, playTheNote,
   } = useGame(code, userId)
 
+  const galaxyState = useGalaxy(code, userId)
+
   const [allTechnologies, setAllTechnologies] = useState([])
   const [allAbilityDefinitions, setAllAbilityDefinitions] = useState([])
   const [viewingTechPlayerId, setViewingTechPlayerId] = useState(null)
@@ -51,6 +55,7 @@ export default function GameScreen({ userId }) {
   const [tradeModalOpen, setTradeModalOpen] = useState(false)
   const [tradeLogModalOpen, setTradeLogModalOpen] = useState(false)
   const [initialTradeNoteId, setInitialTradeNoteId] = useState(null)
+  const [activeTab, setActiveTab] = useState('my-panel') // 'my-panel' | 'scoreboard' | 'galaxy'
 
   useEffect(() => {
     supabase
@@ -155,11 +160,6 @@ export default function GameScreen({ userId }) {
 
   async function handleUnlockCommander(ability) {
     await unlockCommander(game.id, ability.id)
-  }
-
-  async function beginAgendaPhase() {
-    if (!game) return
-    await supabase.from('games').update({ agenda_phase_step: 'agenda_1_voting' }).eq('id', game.id)
   }
 
   async function endAgendaPhase() {
@@ -300,6 +300,12 @@ export default function GameScreen({ userId }) {
           noteCount={myNotes?.filter(n => n.state === 'held').length ?? 0}
           onOpenTrade={handleOpenTrade}
         />
+        <button
+          className={`btn-ghost text-xs ${activeTab === 'galaxy' ? 'text-bright' : 'text-muted'}`}
+          onClick={() => setActiveTab('galaxy')}
+        >
+          GALAXY
+        </button>
         <ObjectivesSection
           objectives={objectives}
           players={players}
@@ -330,7 +336,6 @@ export default function GameScreen({ userId }) {
           onShuffleDeck={shuffleTheDeck}
           onAdvancePhase={advanceThePhase}
           onEndStatusPhase={endStatusPhase}
-          onBeginAgendaPhase={beginAgendaPhase}
           onEndAgendaPhase={endAgendaPhase}
           pendingSecretPlayers={players.filter(p => !p.secrets_selected)}
           pendingTokenPlayers={players.filter(p => !p.tokens_redistributed)}
@@ -415,6 +420,15 @@ export default function GameScreen({ userId }) {
           gameExpansions={game?.expansions}
           isOwnTree={viewingPlayer.id === currentPlayer?.id}
           onClose={() => setViewingTechPlayerId(null)}
+        />
+      )}
+
+      {activeTab === 'galaxy' && (
+        <GalaxyTab
+          {...galaxyState}
+          players={players}
+          currentPlayer={currentPlayer}
+          game={game}
         />
       )}
     </div>
