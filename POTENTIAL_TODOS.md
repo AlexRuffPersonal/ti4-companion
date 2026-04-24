@@ -28,6 +28,17 @@ Features and improvements that were deliberately deferred. Review this list when
 
 ---
 
+## Space Combat (Phase 10)
+
+- **Trade not firing Space Cannon** — diplomatic deal / promissory note to pre-agree not to fire Space Cannon
+- **Per-unit hit tracking in dice rolls** — store which unit generated each hit; prerequisite for Direct Hit action card
+- **Direct Hit action card** — cancel Sustain Damage during hit assignment; requires per-unit hit tracking
+- **Maneuvering Jets action card** — cancel one incoming hit during assignment
+- **Dark Energy Tap technology** — +1 movement extending valid retreat range to 2 hops instead of 1
+- **Skilled Retreat action card** — retreat to an enemy-free adjacent system; combat ends in a draw; CC placed from reinforcements (same CC rule as normal retreat, different destination validation and outcome)
+
+---
+
 ## Map Configuration (Phase 9+)
 
 - **Map builder in lobby** — Phase 9 hardcodes a standard 37-tile map. A future phase should let the host configure the map during lobby setup. Two options: (1) a drag-and-drop hex tile placement UI, or (2) paste a standard Milty/TI4 map string (space-separated tile numbers in spiral order) that gets parsed into `games.map_tiles` JSONB keyed by axial `"q,r"` coordinates. Option 2 is simpler and interops with existing TI4 map tools.
