@@ -6,10 +6,12 @@
 
 ## Changes
 
+### Phase 11 — Ground Combat
+
 ```pseudocode
 import GroundCombatModal
 
-destructure rollGroundDice, assignGroundHits from useCombat(...)
+destructure rollGroundDice, assignHits, fireSpaceCannonDefense from useCombat(...)
 
 derive:
   spaceCombatActive = combatActive && combat?.combat_type === 'space'
@@ -27,29 +29,108 @@ add after CombatModal:
       players={players}
       systemUnits={systemUnits}
       onRollGroundDice={rollGroundDice}
-      onAssignGroundHits={assignGroundHits}
+      onAssignHits={assignHits}
+      onFireScd={fireSpaceCannonDefense}
       onClose={() => setCompletedCombat(null)}
     />
   )}
 ```
 
-`useGalaxy` requires no changes — its `game_combats` Realtime subscription already fires on INSERT and sets `activeCombat` regardless of `combat_type`.
+### Phase 14 — Bombardment Panel
+
+```pseudocode
+import BombardmentPanel (inline section, not a modal)
+
+destructure fireBombardment, advanceBombardment, commitGroundForces from useCombat(...)
+
+// Derive bombardment state
+// bombardmentCombats: active game_combats rows with combat_type='bombardment' for current system
+// (Realtime subscription on game_combats already fires; filter by combat_type)
+bombardmentActive = isActivePlayer &&
+  activationDone &&
+  !activation?.bombardment_done &&
+  spaceCombatPhase === 'complete' (or no space combat)
+
+derive bombardmentCombatsByPlanet = Map(bombardmentCombats by planet_name)
+
+add above GroundCombatModal (shown during pre-commit bombardment window):
+  {bombardmentActive && (
+    <BombardmentPanel
+      systemUnits={systemUnits}
+      unitDefs={unitDefs}
+      bombardmentCombats={bombardmentCombatsByPlanet}
+      myPlayerId={myPlayerId}
+      players={players}
+      onFireBombardment={fireBombardment}
+      onAssignHits={assignHits}
+      onAdvance={advanceBombardment}
+    />
+  )}
+```
+
+### BombardmentPanel (inline component in GalaxyTab.jsx or separate file)
+
+```pseudocode
+props: { systemUnits, unitDefs, bombardmentCombats, myPlayerId, players,
+         onFireBombardment, onAssignHits, onAdvance }
+
+hasBombardmentShips = systemUnits.some(u =>
+  u.player_id===myPlayerId && u.on_planet===null && unitDefs.get(u.unit_type)?.bombardment != null)
+
+planets = derive planet names from systemUnits where defender ground forces exist
+
+PANEL(lg):
+  LABEL("Bombardment")
+
+  for each planet:
+    bc = bombardmentCombats.get(planet)
+    if !bc:
+      // Not yet fired
+      MUTED("{planet}")
+      "Fire Bombardment" btn → onFireBombardment(systemKey, planet)
+      OR "Skip {planet}" btn (fires advance without creating a row — handled client-side by skipping)
+    elif bc.phase === 'bombardment_assign':
+      // Defender must assign hits — show for defender; show waiting for attacker
+      LABEL("{planet} — {bc.attacker_hits} hit(s)")
+      DiceResultsPanel(bc.attacker_dice, bc.attacker_hits)
+      IF myPlayerId === bc.defender_player_id:
+        FleetDisplay(defenderPlanetUnits, isInteractive=true, hitsToAssign=bc.attacker_hits,
+          onConfirm → onAssignHits(bc.id, casualties))
+      ELSE:
+        MUTED("Waiting for defender to assign losses…")
+    elif bc.phase === 'complete':
+      MUTED("{planet} — bombardment complete ({bc.attacker_hits} hits)")
+
+  allResolved = all planets either have bc.phase='complete' OR no bc
+  if allResolved:
+    "Done with Bombardment" btn → onAdvance(systemKey)
+```
 
 ## Tests
 
-No new test file. Existing GalaxyTab tests must still pass. If a GalaxyTab test file exists, add one smoke case:
+No new test file. Existing GalaxyTab tests must still pass. Add smoke cases:
 
 ```pseudocode
 GIVEN activeCombat with combat_type='ground':
   EXPECT GroundCombatModal rendered
   EXPECT CombatModal NOT rendered
+
+GIVEN bombardmentActive=true, hasBombardmentShips=true:
+  EXPECT BombardmentPanel rendered with Fire Bombardment buttons per planet
+
+GIVEN all bombardmentCombats phase='complete':
+  EXPECT "Done with Bombardment" button rendered
 ```
 
-## Deploy (after all other tasks complete)
+## Deploy (after all Phase 14 tasks complete)
 
 ```bash
-supabase functions deploy game-land-troops --no-verify-jwt
+supabase functions deploy game-fire-bombardment --no-verify-jwt
+supabase functions deploy game-advance-bombardment --no-verify-jwt
+supabase functions deploy game-commit-ground-forces --no-verify-jwt
+supabase functions deploy game-fire-space-cannon-defense --no-verify-jwt
+supabase functions deploy game-assign-hits --no-verify-jwt
+supabase functions deploy game-fire-anti-fighter-barrage --no-verify-jwt
 supabase functions deploy game-roll-ground-combat-dice --no-verify-jwt
-supabase functions deploy game-assign-ground-hits --no-verify-jwt
 supabase db push
 ```

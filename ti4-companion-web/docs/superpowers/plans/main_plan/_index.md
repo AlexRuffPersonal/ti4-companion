@@ -8,48 +8,51 @@ See [_standards.md](_standards.md) for shorthand used in all spec files.
 
 ## All Spec Files
 
-| Spec File | Actual File | Feature Area | Status | Depends On |
-|-----------|-------------|-------------|--------|-----------|
-| [migration-028-ground-combat](migration-028-ground-combat.md) | `supabase/migrations/028_ground_combat.sql` | Ground Combat | in-progress | — |
-| [fn-game-land-troops](fn-game-land-troops.md) | `supabase/functions/game-land-troops/index.ts` | Ground Combat | in-progress | migration-028 |
-| [fn-game-roll-ground-combat-dice](fn-game-roll-ground-combat-dice.md) | `supabase/functions/game-roll-ground-combat-dice/index.ts` | Ground Combat | in-progress | migration-028 |
-| [fn-game-assign-ground-hits](fn-game-assign-ground-hits.md) | `supabase/functions/game-assign-ground-hits/index.ts` | Ground Combat | in-progress | migration-028, fn-game-land-troops |
-| [client-edgeFunctions](client-edgeFunctions.md) | `src/lib/edgeFunctions.js` | Ground Combat | in-progress | fn-game-roll-ground-combat-dice, fn-game-assign-ground-hits |
-| [hook-useCombat](hook-useCombat.md) | `src/hooks/useCombat.js` | Ground Combat | in-progress | client-edgeFunctions |
-| [component-GroundCombatModal](component-GroundCombatModal.md) | `src/components/game/GroundCombatModal.jsx` | Ground Combat | in-progress | hook-useCombat |
-| [component-GalaxyTab](component-GalaxyTab.md) | `src/components/game/GalaxyTab.jsx` | Ground Combat | in-progress | component-GroundCombatModal |
-| [migration-030-afb](migration-030-afb.md) | `supabase/migrations/030_afb.sql` | Anti-Fighter Barrage | planned | — |
-| [fn-game-fire-space-cannon](fn-game-fire-space-cannon.md) | `supabase/functions/game-fire-space-cannon/index.ts` | Anti-Fighter Barrage | planned | migration-030-afb |
-| [fn-game-roll-combat-dice](fn-game-roll-combat-dice.md) | `supabase/functions/game-roll-combat-dice/index.ts` | Anti-Fighter Barrage | planned | fn-game-fire-anti-fighter-barrage |
-| [fn-game-fire-anti-fighter-barrage](fn-game-fire-anti-fighter-barrage.md) | `supabase/functions/game-fire-anti-fighter-barrage/index.ts` | Anti-Fighter Barrage | planned | migration-030-afb |
-| [fn-game-advance-barrage](fn-game-advance-barrage.md) | `supabase/functions/game-advance-barrage/index.ts` | Anti-Fighter Barrage | planned | migration-030-afb |
-| [component-SpaceCombatModal](component-SpaceCombatModal.md) | `src/components/game/SpaceCombatModal.jsx` | Anti-Fighter Barrage | planned | hook-useCombat |
-| [migration-029-strategy-production](migration-029-strategy-production.md) | `supabase/migrations/029_strategy_production.sql` | Strategy Cards & Production | planned | — |
-| [shared-abilityDsl](shared-abilityDsl.md) | `supabase/functions/_shared/abilityDsl.ts` | Strategy Cards & Production | planned | migration-029-strategy-production |
-| [fn-game-resolve-ability](fn-game-resolve-ability.md) | `supabase/functions/game-resolve-ability/index.ts` | Strategy Cards & Production | planned | shared-abilityDsl |
-| [fn-game-play-strategy-card](fn-game-play-strategy-card.md) | `supabase/functions/game-play-strategy-card/index.ts` | Strategy Cards & Production | planned | migration-029-strategy-production, fn-game-resolve-ability |
-| [fn-game-use-strategy-secondary](fn-game-use-strategy-secondary.md) | `supabase/functions/game-use-strategy-secondary/index.ts` | Strategy Cards & Production | planned | fn-game-play-strategy-card |
-| [fn-game-pass-strategy-secondary](fn-game-pass-strategy-secondary.md) | `supabase/functions/game-pass-strategy-secondary/index.ts` | Strategy Cards & Production | planned | fn-game-play-strategy-card |
-| [fn-game-produce-units](fn-game-produce-units.md) | `supabase/functions/game-produce-units/index.ts` | Strategy Cards & Production | planned | migration-029-strategy-production |
-| [fn-game-end-turn](fn-game-end-turn.md) | `supabase/functions/game-end-turn/index.ts` | Strategy Cards & Production | planned | fn-game-play-strategy-card |
-| [hook-useStrategyCards](hook-useStrategyCards.md) | `src/hooks/useStrategyCards.js` | Strategy Cards & Production | planned | client-edgeFunctions |
-| [component-StrategyCardPanel](component-StrategyCardPanel.md) | `src/components/game/StrategyCardPanel.jsx` | Strategy Cards & Production | planned | hook-useStrategyCards |
-| [component-StrategyCardModal](component-StrategyCardModal.md) | `src/components/game/StrategyCardModal.jsx` | Strategy Cards & Production | planned | hook-useStrategyCards |
-| [component-ProductionModal](component-ProductionModal.md) | `src/components/game/ProductionModal.jsx` | Strategy Cards & Production | planned | client-edgeFunctions |
-| [component-SystemActionModal](component-SystemActionModal.md) | `src/components/game/SystemActionModal.jsx` | Strategy Cards & Production | planned | component-ProductionModal |
-| [component-MyPanelSection](component-MyPanelSection.md) | `src/components/game/MyPanelSection.jsx` | Strategy Cards & Production | planned | component-StrategyCardPanel |
-| [component-GameScreen](component-GameScreen.md) | `src/components/game/GameScreen.jsx` | Strategy Cards & Production | planned | hook-useStrategyCards, component-StrategyCardModal |
+| Spec File | Actual File | Phase | Feature Area | Status | Depends On |
+|-----------|-------------|-------|-------------|--------|-----------|
+| [migration-028-ground-combat](migration-028-ground-combat.md) | `supabase/migrations/028_ground_combat.sql` | 11 | Ground Combat | in-progress | — |
+| [fn-game-roll-ground-combat-dice](fn-game-roll-ground-combat-dice.md) | `supabase/functions/game-roll-ground-combat-dice/index.ts` | 11 | Ground Combat | in-progress | migration-028 |
+| [fn-game-assign-ground-hits](fn-game-assign-ground-hits.md) | ~~`supabase/functions/game-assign-ground-hits/index.ts`~~ | 11 | Ground Combat | deferred | Superseded by fn-game-assign-hits |
+| [migration-029-strategy-production](migration-029-strategy-production.md) | `supabase/migrations/029_strategy_production.sql` | 12 | Strategy Cards & Production | planned | — |
+| [shared-abilityDsl](shared-abilityDsl.md) | `supabase/functions/_shared/abilityDsl.ts` | 12 | Strategy Cards & Production | planned | migration-029-strategy-production |
+| [fn-game-resolve-ability](fn-game-resolve-ability.md) | `supabase/functions/game-resolve-ability/index.ts` | 12 | Strategy Cards & Production | planned | shared-abilityDsl |
+| [fn-game-play-strategy-card](fn-game-play-strategy-card.md) | `supabase/functions/game-play-strategy-card/index.ts` | 12 | Strategy Cards & Production | planned | migration-029-strategy-production, fn-game-resolve-ability |
+| [fn-game-use-strategy-secondary](fn-game-use-strategy-secondary.md) | `supabase/functions/game-use-strategy-secondary/index.ts` | 12 | Strategy Cards & Production | planned | fn-game-play-strategy-card |
+| [fn-game-pass-strategy-secondary](fn-game-pass-strategy-secondary.md) | `supabase/functions/game-pass-strategy-secondary/index.ts` | 12 | Strategy Cards & Production | planned | fn-game-play-strategy-card |
+| [fn-game-produce-units](fn-game-produce-units.md) | `supabase/functions/game-produce-units/index.ts` | 12 | Strategy Cards & Production | planned | migration-029-strategy-production |
+| [fn-game-end-turn](fn-game-end-turn.md) | `supabase/functions/game-end-turn/index.ts` | 12 | Strategy Cards & Production | planned | fn-game-play-strategy-card |
+| [hook-useStrategyCards](hook-useStrategyCards.md) | `src/hooks/useStrategyCards.js` | 12 | Strategy Cards & Production | planned | client-edgeFunctions |
+| [component-StrategyCardPanel](component-StrategyCardPanel.md) | `src/components/game/StrategyCardPanel.jsx` | 12 | Strategy Cards & Production | planned | hook-useStrategyCards |
+| [component-StrategyCardModal](component-StrategyCardModal.md) | `src/components/game/StrategyCardModal.jsx` | 12 | Strategy Cards & Production | planned | hook-useStrategyCards |
+| [component-ProductionModal](component-ProductionModal.md) | `src/components/game/ProductionModal.jsx` | 12 | Strategy Cards & Production | planned | client-edgeFunctions |
+| [component-SystemActionModal](component-SystemActionModal.md) | `src/components/game/SystemActionModal.jsx` | 12 | Strategy Cards & Production | planned | component-ProductionModal |
+| [component-MyPanelSection](component-MyPanelSection.md) | `src/components/game/MyPanelSection.jsx` | 12 | Strategy Cards & Production | planned | component-StrategyCardPanel |
+| [component-GameScreen](component-GameScreen.md) | `src/components/game/GameScreen.jsx` | 12 | Strategy Cards & Production | planned | hook-useStrategyCards, component-StrategyCardModal |
+| [migration-030-afb](migration-030-afb.md) | `supabase/migrations/030_afb.sql` | 13 | Anti-Fighter Barrage | planned | — |
+| [fn-game-fire-space-cannon](fn-game-fire-space-cannon.md) | `supabase/functions/game-fire-space-cannon/index.ts` | 13 | Anti-Fighter Barrage | planned | migration-030-afb |
+| [fn-game-roll-combat-dice](fn-game-roll-combat-dice.md) | `supabase/functions/game-roll-combat-dice/index.ts` | 13 | Anti-Fighter Barrage | planned | fn-game-fire-anti-fighter-barrage |
+| [fn-game-fire-anti-fighter-barrage](fn-game-fire-anti-fighter-barrage.md) | `supabase/functions/game-fire-anti-fighter-barrage/index.ts` | 13 / 14 | AFB / Full Invasion | planned | migration-030-afb, migration-031-invasion |
+| [fn-game-advance-barrage](fn-game-advance-barrage.md) | `supabase/functions/game-advance-barrage/index.ts` | 13 | Anti-Fighter Barrage | planned | migration-030-afb |
+| [component-SpaceCombatModal](component-SpaceCombatModal.md) | `src/components/game/SpaceCombatModal.jsx` | 13 / 14 | AFB / Full Invasion | planned | hook-useCombat |
+| [migration-031-invasion](migration-031-invasion.md) | `supabase/migrations/031_invasion.sql` | 14 | Full Invasion | planned | migration-030-afb |
+| [fn-game-assign-hits](fn-game-assign-hits.md) | `supabase/functions/game-assign-hits/index.ts` | 14 | Full Invasion | planned | migration-031-invasion |
+| [fn-game-fire-bombardment](fn-game-fire-bombardment.md) | `supabase/functions/game-fire-bombardment/index.ts` | 14 | Full Invasion | planned | migration-031-invasion |
+| [fn-game-advance-bombardment](fn-game-advance-bombardment.md) | `supabase/functions/game-advance-bombardment/index.ts` | 14 | Full Invasion | planned | migration-031-invasion |
+| [fn-game-commit-ground-forces](fn-game-commit-ground-forces.md) | `supabase/functions/game-commit-ground-forces/index.ts` | 11 / 14 | Ground Combat / Full Invasion | planned | migration-028, migration-031-invasion |
+| [fn-game-fire-space-cannon-defense](fn-game-fire-space-cannon-defense.md) | `supabase/functions/game-fire-space-cannon-defense/index.ts` | 14 | Full Invasion | planned | fn-game-commit-ground-forces |
+| [client-edgeFunctions](client-edgeFunctions.md) | `src/lib/edgeFunctions.js` | 11 / 13 / 14 | Ground Combat / AFB / Full Invasion | in-progress | fn-game-commit-ground-forces, fn-game-fire-bombardment, fn-game-advance-bombardment, fn-game-fire-space-cannon-defense |
+| [hook-useCombat](hook-useCombat.md) | `src/hooks/useCombat.js` | 11 / 13 / 14 | Ground Combat / AFB / Full Invasion | in-progress | client-edgeFunctions |
+| [component-GroundCombatModal](component-GroundCombatModal.md) | `src/components/game/GroundCombatModal.jsx` | 11 / 14 | Ground Combat / Full Invasion | in-progress | hook-useCombat |
+| [component-GalaxyTab](component-GalaxyTab.md) | `src/components/game/GalaxyTab.jsx` | 11 / 14 | Ground Combat / Full Invasion | in-progress | component-GroundCombatModal |
 
 ---
 
 ## Planned Feature Areas (specs to be added)
 
-Phases are listed in suggested implementation order after Phase 12.
+Phases 15+ are listed in suggested implementation order.
 
 | Phase | Feature Area | Priority | Notes |
 |-------|-------------|----------|-------|
-| 13 | Anti-Fighter Barrage | high | Small phase; pre-combat step before space combat round 1; hits assignable to fighters only |
-| 14 | Bombardment | medium | Pre-ground-combat step; ships with `bombardment` stat fire before troops land; Planetary Shield blocks it |
 | 15 | Promissory Note Effects | high | `game-play-promissory-note` currently only transitions state; encode + apply each note's effect DSL-style like `game-resolve-ability` |
 | 16 | Leaders & Mechs | high | Agent/Commander/Hero exhaust/unlock/purge; Mech deploy via production; data model exists in `game_players.leaders` JSONB |
 | 17 | Planet Exploration, Attachments & Relics | medium | Capture unclaimed planet → draw exploration card; apply attachments to `game_system_state`; apply relic effects; Frontier Tokens (PoK: draw when entering empty space) |

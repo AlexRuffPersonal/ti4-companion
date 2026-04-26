@@ -35,6 +35,24 @@ Derive and expose `hasAfbUnits` boolean:
 - `hasAfbUnits = systemUnits.some(u => u.system_key===combat.system_key && u.on_planet===null && unitDefs.get(u.unit_type)?.afb != null)`
 - Include both attacker and defender units in the check
 
+### Phase 14 (Full Invasion)
+
+Import `fireBombardment`, `advanceBombardment`, `commitGroundForces`, `fireSpaceCannonDefense`, `assignHits` from `edgeFunctions.js`.
+
+Add to returned object:
+
+```js
+fireBombardment: (systemKey, planetName) => fireBombardmentFn(gameId, systemKey, planetName),
+advanceBombardment: (systemKey) => advanceBombardmentFn(gameId, systemKey),
+commitGroundForces: (systemKey, planetName, troopCount) => commitGroundForcesFn(gameId, systemKey, planetName, troopCount),
+fireSpaceCannonDefense: () => fireSpaceCannonDefenseFn(gameId, combat.id),
+assignHits: (casualties) => assignHitsFn(gameId, combat.id, casualties),
+```
+
+Derive and expose `hasScdUnits` boolean:
+- `hasScdUnits = planetUnits.some(u => u.player_id===combat?.defender_player_id && unitDefs.get(u.unit_type)?.space_cannon != null)`
+- Where `planetUnits = systemUnits.filter(u => u.on_planet === combat?.planet_name)`
+
 ## Tests
 
 None — covered by SpaceCombatModal and GroundCombatModal tests.

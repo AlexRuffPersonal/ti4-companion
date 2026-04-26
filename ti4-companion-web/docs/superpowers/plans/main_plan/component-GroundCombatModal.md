@@ -7,7 +7,8 @@
 ## Props
 
 ```js
-{ combat, myPlayerId, players, systemUnits, onRollGroundDice, onAssignGroundHits, onClose }
+{ combat, myPlayerId, players, systemUnits,
+  onRollGroundDice, onAssignHits, onFireScd, onClose }
 ```
 
 ## Functionality
@@ -28,10 +29,30 @@ IF combat.status === 'complete':
 
 header: "GROUND COMBAT — {combat.planet_name}" | "ROUND {combat.round}"
 
+// Phase 14: SCD phases (before ground combat rounds)
+IF combat.phase === 'scd_fire':
+  LABEL("Space Cannon Defense")
+  IF isDefender:
+    "Fire Space Cannon" btn → onFireScd()
+    show loading/error state
+  ELSE:
+    MUTED("Waiting for defender to fire Space Cannon Defense…")
+
+IF combat.phase === 'scd_assign':
+  LABEL("Space Cannon Defense — Assign Losses")
+  DiceResultsPanel(combat.scd_dice, combat.scd_hits)
+  IF isAttacker:
+    LABEL("Assign {combat.scd_hits} hit(s) to your ground forces")
+    FleetDisplay(attackerUnits, isInteractive=true, hitsToAssign=combat.scd_hits,
+      onConfirm → onAssignHits)
+  ELSE:
+    MUTED("Waiting for attacker to assign losses…")
+
+// Ground combat rounds (unchanged)
 two-column fleet display (FleetDisplay, same as CombatModal):
   attacker: isInteractive = phase=attacker_assign && isAttacker; hitsToAssign = combat.defender_hits
   defender: isInteractive = phase=defender_assign && isDefender; hitsToAssign = combat.attacker_hits
-  onConfirm → onAssignGroundHits
+  onConfirm → onAssignHits
 
 roll phases [attacker_roll, defender_roll]:
   IF my roll → "Roll Dice" button → onRollGroundDice
@@ -54,6 +75,14 @@ mock FleetDisplay + DiceResultsPanel as simple divs
 
 renders null when combat=null
 renders planet name in header
+
+// SCD phases
+scd_fire, isDefender=true: renders "Fire Space Cannon" button → calls onFireScd
+scd_fire, isDefender=false: renders waiting message, no fire button
+scd_assign, isAttacker=true: renders DiceResultsPanel(scd_dice), FleetDisplay isInteractive=true hitsToAssign=scd_hits
+scd_assign, isAttacker=false: renders waiting message, no interactive FleetDisplay
+
+// Ground combat rounds
 shows Roll Dice for attacker on attacker_roll
 shows Roll Dice for defender on defender_roll
 does NOT show Roll Dice for wrong player
@@ -64,4 +93,5 @@ NO retreat picker rendered (assert element absent)
 result screen shows winner name when status=complete
 Close button calls onClose
 Roll Dice calls onRollGroundDice
+Assign hits calls onAssignHits
 ```

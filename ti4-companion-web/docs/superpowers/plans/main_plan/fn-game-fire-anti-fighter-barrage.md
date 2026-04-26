@@ -34,24 +34,28 @@ defResults=[], defHits=0
 for each defUnit where defMap.has(unit_type):
   ROLL_DICE([defUnit], defMap using afb stat)  → append to defResults, accumulate defHits
 
-// Hits apply to fighters only
-applyAfbHits(game_id, system_key, defender_player_id, atkHits)
-applyAfbHits(game_id, system_key, attacker_player_id, defHits)
+// Do NOT auto-destroy fighters — transition to assign phase instead
+// Determine starting assign phase based on which side has hits
+if atkHits > 0:
+  nextPhase = 'afb_attacker_assign'   // attacker assigns their own fighter losses first
+elif defHits > 0:
+  nextPhase = 'afb_defender_assign'
+else:
+  nextPhase = 'attacker_roll'         // no hits on either side — skip assign entirely
 
 update game_combats SET
   barrage_attacker_dice=atkResults, barrage_attacker_hits=atkHits,
-  barrage_defender_dice=defResults, barrage_defender_hits=defHits
+  barrage_defender_dice=defResults, barrage_defender_hits=defHits,
+  phase=nextPhase
 WHERE id=combat_id
 
 OK({ barrage_attacker_dice:atkResults, barrage_attacker_hits:atkHits,
-     barrage_defender_dice:defResults, barrage_defender_hits:defHits })
+     barrage_defender_dice:defResults, barrage_defender_hits:defHits,
+     phase: nextPhase })
 ```
 
-`applyAfbHits(gameId, systemKey, targetId, hits)`:
-- query game_player_units WHERE game_id, system_key, player_id=targetId, unit_type='fighter', on_planet IS NULL
-- for each row: remove = min(hits, row.count); count-remove=0 → delete row, else update; hits -= remove
-
-Note: `ROLL_DICE` here uses the `afb` stat column, not `combat`. Adapt `parseStat` accordingly.
+Note: `ROLL_DICE` uses the `afb` stat column, not `combat`. Adapt `parseStat` accordingly.
+Hit assignment is handled by `game-assign-hits` (`afb_attacker_assign` / `afb_defender_assign` phases).
 
 ## Tests
 
@@ -68,12 +72,14 @@ T409('no AFB units')               — mock unitDefs=[]
 
 GIVEN atk has 2 destroyers (afb='9'), def has 1 destroyer + 3 fighters
   mock rolls: attacker gets [10,10] (2 hits), defender gets [5] (0 hits)
-  EXPECT applyAfbHits(→ defender, 2 hits): 2 fighters removed from defender
-  EXPECT applyAfbHits(→ attacker, 0 hits): no mutations
-  EXPECT game_combats.update called with barrage_attacker_hits=2, barrage_defender_hits=0
-  EXPECT response { barrage_attacker_hits:2, barrage_defender_hits:0, ... }
+  EXPECT game_combats.update called with barrage_attacker_hits=2, barrage_defender_hits=0, phase='afb_attacker_assign'
+  EXPECT no game_player_units mutations (no auto-destroy)
+  EXPECT response { barrage_attacker_hits:2, barrage_defender_hits:0, phase:'afb_attacker_assign' }
 
-GIVEN all rolls miss
-  EXPECT game_combats.update called with both hits=0
+GIVEN only defender rolls hit (atkHits=0, defHits=1)
+  EXPECT phase='afb_defender_assign'
+
+GIVEN all rolls miss (atkHits=0, defHits=0)
+  EXPECT game_combats.update with both hits=0, phase='attacker_roll'
   EXPECT no game_player_units mutations
 ```

@@ -3,6 +3,7 @@
 **File:** `src/components/game/SpaceCombatModal.jsx`
 **Status:** Modify
 **Prereqs:** hook-useCombat
+**Also modified in:** Phase 14 (Full Invasion — AFB assign branches)
 
 ## Changes
 
@@ -41,6 +42,36 @@ IF combat.phase === 'barrage':
 
 `hasAfbUnits` prop: boolean — true if any unit in system (either side) has a non-null `afb` stat.
 
+### Phase 14 — AFB Assign branches
+
+Add after the existing `barrage` branch:
+
+```pseudocode
+IF combat.phase === 'afb_attacker_assign':
+  LABEL("Anti-Fighter Barrage — Assign Losses")
+  DiceResultsPanel(combat.barrage_attacker_dice, combat.barrage_attacker_hits) // attacker fired these
+  DiceResultsPanel(combat.barrage_defender_dice, combat.barrage_defender_hits) // defender fired these
+  IF isAttacker:
+    LABEL("Assign {combat.barrage_defender_hits} hit(s) to your fighters")
+    FleetDisplay(attackerUnits, isInteractive=true, hitsToAssign=combat.barrage_defender_hits,
+      validUnitTypes=['fighter'], onConfirm → onAssignHits)
+  ELSE:
+    MUTED("Waiting for attacker to assign losses…")
+
+IF combat.phase === 'afb_defender_assign':
+  LABEL("Anti-Fighter Barrage — Assign Losses")
+  DiceResultsPanel(combat.barrage_attacker_dice, combat.barrage_attacker_hits)
+  DiceResultsPanel(combat.barrage_defender_dice, combat.barrage_defender_hits)
+  IF isDefender:
+    LABEL("Assign {combat.barrage_attacker_hits} hit(s) to your fighters")
+    FleetDisplay(defenderUnits, isInteractive=true, hitsToAssign=combat.barrage_attacker_hits,
+      validUnitTypes=['fighter'], onConfirm → onAssignHits)
+  ELSE:
+    MUTED("Waiting for defender to assign losses…")
+```
+
+`onAssignHits` calls `assignHits(gameId, combatId, casualties)` from edgeFunctions.
+
 ## Tests
 
 Extend `tests/components/game/SpaceCombatModal.test.jsx` (or equivalent existing test file).
@@ -66,5 +97,22 @@ Extend `tests/components/game/SpaceCombatModal.test.jsx` (or equivalent existing
 // barrage phase, barrage_attacker_dice=[...], isAttacker=false
   renders results panels
   does NOT render "Continue to Combat" button
+  renders waiting message
+
+// afb_attacker_assign, isAttacker=true
+  renders both dice result panels
+  renders FleetDisplay isInteractive=true with hitsToAssign=barrage_defender_hits
+  FleetDisplay validUnitTypes=['fighter']
+  confirm calls onAssignHits
+
+// afb_attacker_assign, isAttacker=false
+  does NOT render interactive FleetDisplay
+  renders waiting message
+
+// afb_defender_assign, isDefender=true
+  renders FleetDisplay isInteractive=true with hitsToAssign=barrage_attacker_hits
+  confirm calls onAssignHits
+
+// afb_defender_assign, isDefender=false
   renders waiting message
 ```
