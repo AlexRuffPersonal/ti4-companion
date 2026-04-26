@@ -1,6 +1,7 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import GalaxyTab from '../../../src/components/game/GalaxyTab.jsx'
+import { useCombat } from '../../../src/hooks/useCombat.js'
 
 vi.mock('../../../src/components/game/HexMap.jsx', () => ({
   default: ({ onSelectSystem }) => (
@@ -71,5 +72,77 @@ describe('GalaxyTab', () => {
     // This would be tested via SystemActionModal's onActivate callback
     // Covered by integration: activateSystem prop is passed down and called
     expect(activateSystem).toBeDefined()
+  })
+})
+
+vi.mock('../../../src/components/game/SpaceCannonModal.jsx', () => ({
+  default: ({ combat, onFire, onPass }) => (
+    <div data-testid="space-cannon-modal">
+      <button onClick={onFire}>Fire SC</button>
+      <button onClick={onPass}>Pass SC</button>
+    </div>
+  ),
+}))
+
+vi.mock('../../../src/components/game/CombatModal.jsx', () => ({
+  default: ({ combat, onRollDice }) => (
+    <div data-testid="combat-modal">
+      <span>{combat?.phase}</span>
+      <button onClick={onRollDice}>Roll</button>
+    </div>
+  ),
+}))
+
+vi.mock('../../../src/hooks/useCombat.js', () => ({
+  useCombat: vi.fn(() => ({
+    combat: null,
+    fireSpaceCannon: vi.fn(),
+    rollDice: vi.fn(),
+    assignHits: vi.fn(),
+    declareRetreat: vi.fn(),
+  })),
+}))
+
+describe('GalaxyTab — combat modals (Phase 10)', () => {
+  beforeEach(() => {
+    useCombat.mockReturnValue({
+      combat: null,
+      fireSpaceCannon: vi.fn(),
+      rollDice: vi.fn(),
+      assignHits: vi.fn(),
+      declareRetreat: vi.fn(),
+    })
+  })
+
+  it('does not render SpaceCannonModal or CombatModal when no active combat', () => {
+    render(<GalaxyTab {...BASE_PROPS} activeCombat={null} gameId="g1" myPlayerId="p1" />)
+    expect(screen.queryByTestId('space-cannon-modal')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('combat-modal')).not.toBeInTheDocument()
+  })
+
+  it('renders SpaceCannonModal when combat phase is space_cannon', () => {
+    useCombat.mockReturnValue({
+      combat: { id: 'c1', phase: 'space_cannon', status: 'active', space_cannon_pending: [] },
+      fireSpaceCannon: vi.fn(),
+      rollDice: vi.fn(),
+      assignHits: vi.fn(),
+      declareRetreat: vi.fn(),
+    })
+    render(<GalaxyTab {...BASE_PROPS} activeCombat={{ id: 'c1', phase: 'space_cannon' }} gameId="g1" myPlayerId="p1" />)
+    expect(screen.getByTestId('space-cannon-modal')).toBeInTheDocument()
+    expect(screen.queryByTestId('combat-modal')).not.toBeInTheDocument()
+  })
+
+  it('renders CombatModal when combat phase is attacker_roll', () => {
+    useCombat.mockReturnValue({
+      combat: { id: 'c1', phase: 'attacker_roll', round: 1, status: 'active', attacker_hits: 0, defender_hits: 0, attacker_dice: null, defender_dice: null, retreat_declared_by: null, winner_player_id: null, system_key: '1,-1', attacker_player_id: 'p1', defender_player_id: 'p2' },
+      fireSpaceCannon: vi.fn(),
+      rollDice: vi.fn(),
+      assignHits: vi.fn(),
+      declareRetreat: vi.fn(),
+    })
+    render(<GalaxyTab {...BASE_PROPS} activeCombat={{ id: 'c1', phase: 'attacker_roll' }} gameId="g1" myPlayerId="p1" />)
+    expect(screen.getByTestId('combat-modal')).toBeInTheDocument()
+    expect(screen.queryByTestId('space-cannon-modal')).not.toBeInTheDocument()
   })
 })
