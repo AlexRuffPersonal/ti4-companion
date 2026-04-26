@@ -3,3 +3,4 @@
 .claude/
 supabase/.temp/
 Mistakes within Supabase.txt
+node_modules/
