@@ -138,4 +138,16 @@ export const activateSystem = (gameId, systemKey) =>
 export const landTroops = (gameId, systemKey, planetName, troopCount) =>
   callFunction('game-land-troops', { game_id: gameId, system_key: systemKey, planet_name: planetName, troop_count: troopCount })
 
+export const fireSpaceCannon = (gameId, combatId, pass) =>
+  callFunction('game-fire-space-cannon', { game_id: gameId, combat_id: combatId, pass })
+
+export const rollCombatDice = (gameId, combatId) =>
+  callFunction('game-roll-combat-dice', { game_id: gameId, combat_id: combatId })
+
+export const assignHits = (gameId, combatId, casualties) =>
+  callFunction('game-assign-hits', { game_id: gameId, combat_id: combatId, casualties })
+
+export const declareRetreat = (gameId, combatId, destination) =>
+  callFunction('game-declare-retreat', { game_id: gameId, combat_id: combatId, destination })
+
 export { callFunction }
