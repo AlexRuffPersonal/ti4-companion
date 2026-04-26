@@ -50,3 +50,34 @@ Features and improvements that were deliberately deferred. Review this list when
 - **Read views for reference tables** — browse imported records per table (tiles, factions, agendas, etc.) with search/filter
 - **Individual record editing** — edit a single record without re-importing the whole table
 - **Selective re-import** — import only new/changed records (upsert) rather than full table replacement
+
+---
+
+## Ground Combat (Phase 11)
+
+- **Bombardment** — ships with a `bombardment` stat can fire on defending ground forces before the active player lands troops; not yet implemented; requires `bombardment` stat in the `units` reference table and a new step in `game-land-troops` (or a dedicated `game-bombard` Edge Function) that fires dice and destroys defending infantry/mechs before spawning ground combat
+- **Planetary Shield** — faction ability that blocks incoming bombardment; depends on bombardment being implemented; `game-land-troops` / `game-bombard` must check whether the target planet contains a unit whose faction sheet lists Planetary Shield
+- **Wormhole-connected bombardment** — allows ships in adjacent wormhole systems to bombard a planet; most complex bombardment variant; requires adjacency checks using wormhole connections on top of basic bombardment
+
+---
+
+## Ability DSL (Phase 5b)
+
+The following ops are defined in `supabase/functions/_shared/abilityDsl.ts` but are no-ops pending their dependent game systems:
+
+- **`modify_roll` / `add_die`** — modify or add dice to combat rolls; requires hooking into `game-roll-combat-dice` / `game-roll-ground-combat-dice` at roll time
+- **`cancel_hit`** — cancel one or more incoming hits during hit assignment; requires hooking into `game-assign-hits` / `game-assign-ground-hits`
+- **`cast_votes` / `prevent_vote`** — cast or block votes during agenda phase; requires integration with `game-cast-votes`
+- **`place_units` / `destroy_units`** — place or destroy units on the map outside of normal production; requires unit placement/removal logic independent of the production flow
+- **`explore_planet`** — trigger a planet exploration draw; requires the exploration deck system
+- **`convert_commodities`** — convert a player's own commodities to trade goods via an ability; bookkeeping only but needs an Edge Function call
+- **`gain_command_tokens`** — grant command tokens to a player; requires `game-update-command-tokens` call
+- **`ignore_prerequisite`** — waive one technology prerequisite for the current research action; requires intercepting `game-research-technology` prerequisite check
+- **`take_from_discard`** — retrieve a card from a discard pile; requires discard pile queries for action/agenda/other decks
+- **`gain_technology`** — grant a technology card directly; similar to `game-research-technology` but without the prerequisite/cost check
+
+---
+
+## Rule Lookup
+
+- **In-app rules reference** — searchable lookup of the TI4 Living Rules Reference (LRR) glossary; players can type a keyword (e.g. "bombardment", "sustain damage") and see the relevant rules text inline without leaving the app; could use the `ti4-lrr.md` document as the data source with client-side fuzzy search

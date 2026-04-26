@@ -38,11 +38,22 @@ See [_standards.md](_standards.md) for shorthand used in all spec files.
 
 ## Planned Feature Areas (specs to be added)
 
-| Feature Area | Priority | Notes |
-|-------------|----------|-------|
-| Bombardment | medium | Pre-ground-combat step; ships with `bombardment` stat fire before troops land |
-| Planet Exploration | medium | Draw exploration card when capturing unclaimed planet |
-| Promissory Note Effects | high | `game-play-promissory-note` currently only transitions state; needs effect application |
-| Unit Transport | medium | Fleet carrying capacity; carry infantry/fighters between systems |
-| Map Builder | low | Paste map string in lobby; parse into `games.map_tiles` |
-| Admin Read Views | low | Browse imported reference records per table |
+Phases are listed in suggested implementation order after Phase 12.
+
+| Phase | Feature Area | Priority | Notes |
+|-------|-------------|----------|-------|
+| 13 | Anti-Fighter Barrage | high | Small phase; pre-combat step before space combat round 1; hits assignable to fighters only |
+| 14 | Bombardment | medium | Pre-ground-combat step; ships with `bombardment` stat fire before troops land; Planetary Shield blocks it |
+| 15 | Promissory Note Effects | high | `game-play-promissory-note` currently only transitions state; encode + apply each note's effect DSL-style like `game-resolve-ability` |
+| 16 | Leaders & Mechs | high | Agent/Commander/Hero exhaust/unlock/purge; Mech deploy via production; data model exists in `game_players.leaders` JSONB |
+| 17 | Planet Exploration, Attachments & Relics | medium | Capture unclaimed planet → draw exploration card; apply attachments to `game_system_state`; apply relic effects; Frontier Tokens (PoK: draw when entering empty space) |
+| 18 | Unit Transport | medium | Fleet carrying capacity; carry infantry/fighters between systems |
+| 19 | Ability DSL Completions | medium | Wire up 10 no-op ops in `abilityDsl.ts`: `modify_roll`, `add_die`, `cancel_hit`, `cast_votes`, `prevent_vote`, `place_units`, `destroy_units`, `convert_commodities`, `gain_command_tokens`, `ignore_prerequisite`, `take_from_discard`, `gain_technology` |
+| 20 | Space Combat Action Cards | medium | Per-unit hit tracking (prereq for Direct Hit) → Direct Hit, Maneuvering Jets, Skilled Retreat, Dark Energy Tap |
+| 21 | Legendary Planets & Wormhole Nexus | low | PoK: legendary planets with persistent abilities; rotating Wormhole Nexus tile |
+| 22 | Map Builder | low | Paste map string in lobby; parse into `games.map_tiles` |
+| 23 | Admin: Read Views + Editing | low | Browse imported records per table; individual record editing; selective re-import (upsert) |
+| 24 | Rule Lookup | low | In-app LRR search via `ti4-lrr.md`; client-side fuzzy search by keyword |
+| 25 | Gravity Rift | low | Anomaly: units moving through roll 1 die; destroyed on a 1 |
+| 26 | Player Elimination | low | Mid-game elimination: remove player, redistribute components, handle VP/objectives |
+| 27 | Tech Debt | low | Concurrent draw race in `game-draw-action-card`; N+1 queries in `game-start` player initialisation |
