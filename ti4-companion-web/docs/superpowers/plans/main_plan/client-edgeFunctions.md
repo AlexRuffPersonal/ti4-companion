@@ -2,7 +2,7 @@
 
 **File:** `src/lib/edgeFunctions.js`
 **Status:** Modify
-**Prereqs:** fn-game-roll-ground-combat-dice, fn-game-assign-ground-hits, fn-game-play-strategy-card, fn-game-use-strategy-secondary, fn-game-pass-strategy-secondary, fn-game-produce-units
+**Prereqs:** fn-game-roll-ground-combat-dice, fn-game-assign-ground-hits, fn-game-play-strategy-card, fn-game-use-strategy-secondary, fn-game-pass-strategy-secondary, fn-game-produce-units, fn-game-fire-anti-fighter-barrage, fn-game-advance-barrage
 
 ## Changes
 
@@ -28,6 +28,13 @@ export const passStrategySecondary = (gameId, playId) =>
 
 export const produceUnits = (gameId, systemKey, units, planetExhausts) =>
   callFunction('game-produce-units', { game_id: gameId, system_key: systemKey, units, planet_exhausts: planetExhausts })
+
+// Phase 13 additions — add after Phase 12 exports:
+export const fireAntiFighterBarrage = (gameId, combatId) =>
+  callFunction('game-fire-anti-fighter-barrage', { game_id: gameId, combat_id: combatId })
+
+export const advanceBarrage = (gameId, combatId) =>
+  callFunction('game-advance-barrage', { game_id: gameId, combat_id: combatId })
 ```
 
 ## Tests

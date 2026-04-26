@@ -18,6 +18,12 @@ See [_standards.md](_standards.md) for shorthand used in all spec files.
 | [hook-useCombat](hook-useCombat.md) | `src/hooks/useCombat.js` | Ground Combat | in-progress | client-edgeFunctions |
 | [component-GroundCombatModal](component-GroundCombatModal.md) | `src/components/game/GroundCombatModal.jsx` | Ground Combat | in-progress | hook-useCombat |
 | [component-GalaxyTab](component-GalaxyTab.md) | `src/components/game/GalaxyTab.jsx` | Ground Combat | in-progress | component-GroundCombatModal |
+| [migration-030-afb](migration-030-afb.md) | `supabase/migrations/030_afb.sql` | Anti-Fighter Barrage | planned | — |
+| [fn-game-fire-space-cannon](fn-game-fire-space-cannon.md) | `supabase/functions/game-fire-space-cannon/index.ts` | Anti-Fighter Barrage | planned | migration-030-afb |
+| [fn-game-roll-combat-dice](fn-game-roll-combat-dice.md) | `supabase/functions/game-roll-combat-dice/index.ts` | Anti-Fighter Barrage | planned | fn-game-fire-anti-fighter-barrage |
+| [fn-game-fire-anti-fighter-barrage](fn-game-fire-anti-fighter-barrage.md) | `supabase/functions/game-fire-anti-fighter-barrage/index.ts` | Anti-Fighter Barrage | planned | migration-030-afb |
+| [fn-game-advance-barrage](fn-game-advance-barrage.md) | `supabase/functions/game-advance-barrage/index.ts` | Anti-Fighter Barrage | planned | migration-030-afb |
+| [component-SpaceCombatModal](component-SpaceCombatModal.md) | `src/components/game/SpaceCombatModal.jsx` | Anti-Fighter Barrage | planned | hook-useCombat |
 | [migration-029-strategy-production](migration-029-strategy-production.md) | `supabase/migrations/029_strategy_production.sql` | Strategy Cards & Production | planned | — |
 | [shared-abilityDsl](shared-abilityDsl.md) | `supabase/functions/_shared/abilityDsl.ts` | Strategy Cards & Production | planned | migration-029-strategy-production |
 | [fn-game-resolve-ability](fn-game-resolve-ability.md) | `supabase/functions/game-resolve-ability/index.ts` | Strategy Cards & Production | planned | shared-abilityDsl |
