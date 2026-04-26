@@ -61,6 +61,13 @@ export async function handler(req: Request): Promise<Response> {
       .eq('id', body.game_id)
     if (error) return errorResponse(`Update failed: ${error.message}`, 500)
 
+    // Reset Sustain Damage for all units in the game
+    const { error: unitsError } = await db
+      .from('game_player_units')
+      .update({ damaged: false })
+      .eq('game_id', body.game_id)
+    if (unitsError) return errorResponse(`Failed to reset damaged units: ${unitsError.message}`, 500)
+
   } else if (game.phase === 'status') {
     // Status phase: new round — refresh planets, reset passed, strategy cards
     const { error: planetsError } = await db
