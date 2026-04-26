@@ -15,7 +15,7 @@ Before asking to move on to another section, consider whether the next step woul
 - `ti4-companion/` (future) — Flutter/Dart + Riverpod + Freezed (iOS/Android)
 - `supabase/` — shared backend: PostgreSQL + Realtime + Edge Functions (Deno/TypeScript)
 
-**Phase status:** Phases 0 (infrastructure), 1 (Admin UI), and 2 (lobby flow) are complete. Phase 3 (in-game UI) is next. Implementation plans are in `ti4-companion-web/docs/superpowers/plans/`.
+**Phase status:** Phases 0–10 are complete (infrastructure through space combat). Ground combat (Phase 11) is in progress. Strategy Cards & Production (Phase 12) is planned. Current feature status and all spec files are tracked in `ti4-companion-web/docs/superpowers/plans/main_plan/_index.md`.
 
 ---
 
@@ -111,19 +111,64 @@ VITE_SUPABASE_ANON_KEY=<anon-key>
 
 ## Supabase (`supabase/`)
 
-**Migrations:** `001_core.sql` through `006_rls.sql`
+**Migrations:** `001_core.sql` through `027_combat.sql` (ground combat adds `028_ground_combat.sql`)
 
 **Edge Functions:**
 - `_shared/` — `auth.ts`, `db.ts`, `errors.ts`
 - `health/` — health check
 - `admin-import-{tiles,factions,agendas,technologies,units,public-objectives,secret-objectives,action-cards,relics,exploration-cards,attachments,promissory-notes}/` — 12 bulk import functions
-- `game-create/`, `game-join/`, `game-update-settings/`, `game-pick-faction-color/`, `game-set-speaker/`, `game-start/` — Phase 2 lobby functions
+- `game-create`, `game-join`, `game-update-settings`, `game-pick-faction-color`, `game-set-speaker`, `game-start` — lobby
+- `game-end-turn`, `game-advance-phase`, `game-player-pass` — turn flow
+- `game-research-technology`, `game-draw-action-card`, `game-discard-action-card` — action phase
+- `game-resolve-ability`, `game-unlock-commander` — ability system
+- `game-status-phase`, `game-reveal-objective`, `game-score-objective`, `game-score-secret-objective`, `game-discard-secret-objective` — status phase
+- `game-draw-agenda`, `game-cast-votes`, `game-resolve-agenda` — agenda phase
+- `game-create-transaction`, `game-confirm-transaction`, `game-reject-transaction`, `game-rescind-transaction`, `game-play-promissory-note` — trade
+- `game-activate-system`, `game-land-troops`, `game-update-command-tokens`, `game-shuffle-deck` — map / actions
+- `game-fire-space-cannon`, `game-roll-combat-dice`, `game-assign-hits`, `game-declare-retreat` — space combat
+
+**Deploy:** Always include `--no-verify-jwt` (project uses ES256 JWTs):
+```bash
+supabase functions deploy <function-name> --no-verify-jwt
+```
 
 ---
 
 ## Deferred Features
 
 When a feature is deferred, add it to `POTENTIAL_TODOS.md` at the project root. When brainstorming or planning new phases, ask: "Should I add [feature] to the Potential To-Do list?" before moving on.
+
+---
+
+## Feature Specs
+
+All spec files live in `ti4-companion-web/docs/superpowers/plans/main_plan/`.
+
+**Before implementing any feature:**
+1. Read `main_plan/_standards.md` — defines shorthand tokens used in all spec files
+2. Check `main_plan/_index.md` — find the spec file(s) for the feature you're building and their prerequisites
+3. Read the relevant spec file(s) — each covers one actual file (functionality pseudo-code + test pseudo-code)
+
+**When completing a feature:** update the `Status` column in `main_plan/_index.md` from `in-progress` → `done`.
+
+**When planning a new feature:**
+1. Add a row to `main_plan/_index.md` with status `planned` and its dependencies
+2. Create a spec file per new/modified file in `main_plan/` using the format in existing spec files
+3. Use tokens from `main_plan/_standards.md`; add new tokens there if a pattern will recur
+
+**Spec file format** (keep files short — pseudo-code only, no full implementations):
+```markdown
+# component-or-fn-name
+**File:** `path/to/actual/file`
+**Status:** New | Modify
+**Prereqs:** comma-separated spec file names
+
+## Functionality
+[pseudo-code using _standards.md tokens]
+
+## Tests
+[pseudo-code test scenarios using _standards.md tokens]
+```
 
 ---
 
