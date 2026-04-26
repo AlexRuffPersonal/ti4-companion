@@ -32,7 +32,7 @@ let insertMock
 function mockDb({
   player = { id: PLAYER_ID, command_tokens: { tactic_total: 3, fleet: 2, strategy: 1 } },
   playerError = null,
-  game = { active_player_id: PLAYER_ID, round: 2 },
+  game = { id: GAME_ID, active_player_id: PLAYER_ID, round: 2, map_tiles: {} },
   gameError = null,
   activations = [],
   activationError = null,
@@ -70,6 +70,23 @@ function mockDb({
           }),
         }),
         insert: insertMock,
+      }
+    }
+    if (table === 'tiles') {
+      return {
+        select: vi.fn().mockReturnValue({
+          in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        }),
+      }
+    }
+    if (table === 'game_player_units') {
+      // Single broad fetch: .eq('game_id').is('on_planet', null) — no enemy units in base tests
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            is: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        }),
       }
     }
   })
