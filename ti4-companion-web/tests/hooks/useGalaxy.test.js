@@ -103,6 +103,17 @@ function mockSupabase() {
         }),
       }
     }
+    if (table === 'game_combats') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+            }),
+          }),
+        }),
+      }
+    }
   })
 }
 

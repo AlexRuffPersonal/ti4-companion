@@ -10,6 +10,7 @@ export function useGalaxy(gameCode, userId) {
   const [allPlanets, setAllPlanets] = useState([])
   const [systemUnits, setSystemUnits] = useState([])
   const [myPlayerId, setMyPlayerId] = useState(null)
+  const [activeCombat, setActiveCombat] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -82,6 +83,16 @@ export function useGalaxy(gameCode, userId) {
       if (!mounted) return
       setMyPlayerId(myPlayer?.id ?? null)
 
+      // Fetch active combat for this game
+      const { data: combat } = await supabase
+        .from('game_combats')
+        .select('*')
+        .eq('game_id', game.id)
+        .eq('status', 'active')
+        .maybeSingle()
+      if (!mounted) return
+      setActiveCombat(combat ?? null)
+
       setLoading(false)
 
       channel = supabase
@@ -134,6 +145,18 @@ export function useGalaxy(gameCode, userId) {
             })
           }
         )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'game_combats', filter: `game_id=eq.${game.id}` },
+          (payload) => {
+            if (!mounted) return
+            if (payload.eventType === 'INSERT') {
+              setActiveCombat(payload.new)
+            } else if (payload.eventType === 'UPDATE') {
+              setActiveCombat(payload.new.status === 'complete' ? null : payload.new)
+            } else if (payload.eventType === 'DELETE') {
+              setActiveCombat(null)
+            }
+          }
+        )
         .subscribe()
     }
 
@@ -164,6 +187,8 @@ export function useGalaxy(gameCode, userId) {
     activatedSystems,
     myActivations,
     planetOwnership,
+    activeCombat,
+    myPlayerId,
     loading,
     error,
     activateSystem: (systemKey) => activateSystemFn(gameId, systemKey),
