@@ -151,10 +151,13 @@ All spec files live in `ti4-companion-web/docs/superpowers/plans/main_plan/`.
 
 **When completing a feature:** update the `Status` column in `main_plan/_index.md` from `in-progress` → `done`.
 
-**When planning a new feature:**
+**When planning a new feature** — this happens during the planning/brainstorming session, not during implementation:
 1. Add a row to `main_plan/_index.md` with status `planned` and its dependencies
 2. Create a spec file per new/modified file in `main_plan/` using the format in existing spec files
 3. Use tokens from `main_plan/_standards.md`; add new tokens there if a pattern will recur
+4. Commit the spec files and `_index.md` update together with the implementation plan
+
+**IMPORTANT:** Never leave "create main_plan spec files" or "update _index.md" as a task inside an implementation plan. These must be done by the time the plan is committed. An implementation plan that defers its own spec files to Task 1 is incomplete.
 
 **Spec file format** (keep files short — pseudo-code only, no full implementations):
 ```markdown
