@@ -140,6 +140,30 @@ When a feature is deferred, add it to `POTENTIAL_TODOS.md` at the project root. 
 
 ---
 
+## Rules Reference
+
+The full TI4 Living Rules Reference is at `ti4-companion-web/docs/ti4-lrr.md`.
+
+**Before brainstorming or planning any game feature:** read the relevant section(s) of the LRR to ensure the design matches the actual rules. Use the section numbers in the LRR header line (e.g. `## 51 LEADERS`) and the table of contents on page 3 to locate them. Key sections and their line offsets in the file:
+
+| Topic | LRR § | ~Line |
+|-------|--------|-------|
+| Leaders / Leader Sheet | 50–51 | 789 |
+| Mechs | 55 | 1042 |
+| Deploy | 30 | 575 |
+| Purge | 70 | 1230 |
+| Exhausted / Readied | 34 | 623 |
+| Exploration | 35 | 632 |
+| Producing Units | 67 | search |
+| Space Combat | 78 | search |
+| Ground Combat | 42 | search |
+| Agenda Phase | 8 | search |
+| Status Phase | 81 | search |
+
+When brainstorming a feature, include a "Rules basis" subsection in the design doc citing the specific LRR clauses that govern the behaviour being implemented.
+
+---
+
 ## Feature Specs
 
 All spec files live in `ti4-companion-web/docs/superpowers/plans/main_plan/`.
