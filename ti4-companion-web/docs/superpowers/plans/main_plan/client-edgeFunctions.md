@@ -48,6 +48,11 @@ export const assignHits = (gameId, combatId, casualties) =>
   callFunction('game-assign-hits', { game_id: gameId, combat_id: combatId, casualties })
 ```
 
+// Phase 18 additions:
+export const moveShips = (gameId, payload) =>
+  callFunction('game-move-ships', { game_id: gameId, ...payload })
+```
+
 Note: `assignGroundHits` is not added — `assignHits` covers all assignment contexts (space, ground, AFB, bombardment, SCD).
 
 ## Tests

@@ -106,6 +106,41 @@ PANEL(lg):
     "Done with Bombardment" btn → onAdvance(systemKey)
 ```
 
+### Phase 18 — Move Ships Button
+
+```pseudocode
+import MoveShipsModal
+
+props: add moveShips (from useGalaxy)
+
+// After activation, before combat: show Move Ships button for active player
+activationDone = myActivations.has(activeSystemKey)  // system activated this turn
+movementStep = isActivePlayer && activationDone && !combatActive
+
+{movementStep && !showMoveModal && (
+  <button className="btn-primary" onClick={() => setShowMoveModal(true)}>Move Ships</button>
+)}
+// OR if no eligible ships:
+{movementStep && noEligibleShips && (
+  <button className="btn-ghost" onClick={() => setShowMoveModal(false)}>Skip Movement</button>
+)}
+
+{showMoveModal && (
+  <MoveShipsModal
+    gameId={gameId}
+    game={game}
+    activeSystemKey={activeSystemKey}
+    tileData={tileData}
+    mapTiles={mapTiles}
+    systemUnits={systemUnits}
+    myPlayerId={myPlayerId}
+    myTokenSystems={myTokenSystems}
+    unitDefs={unitDefs}
+    onClose={() => setShowMoveModal(false)}
+  />
+)}
+```
+
 ## Tests
 
 No new test file. Existing GalaxyTab tests must still pass. Add smoke cases:
