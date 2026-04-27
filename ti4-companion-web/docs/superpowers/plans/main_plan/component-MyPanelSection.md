@@ -28,6 +28,33 @@ props: { ..existing.., allPlayers, activePay, onPlayPrimary }
 />
 ```
 
+### Phase 17 — Exploration Notification + Relic Panels
+
+```pseudocode
+props: add exploration (from useExploration)
+
+// Unexplored planets notification row
+if exploration.unexploredPlanets.length > 0:
+  section:
+    LABEL("Explore Planets")
+    for each unexplored planet:
+      row: planet name + "Explore" btn → open ExplorationModal
+
+// Relic fragment panel
+<RelicFragmentPanel
+  relicFragments={exploration.relicFragments}
+  isActivePlayer={exploration.isActivePlayer}
+  onUseRelicFragment={exploration.useRelicFragment}
+/>
+
+// Relic panel
+<RelicPanel
+  relics={exploration.relics}
+  isActivePlayer={exploration.isActivePlayer}
+  onUseRelic={exploration.useRelic}
+/>
+```
+
 ## Tests
 
 ```pseudocode

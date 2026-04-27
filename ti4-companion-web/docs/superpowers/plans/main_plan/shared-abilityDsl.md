@@ -68,6 +68,71 @@ case 'draw_secret_objective':
   update game_player_secret_objectives SET state = 'held', held_by_player_id = playerId
 ```
 
+### Phase 17 — Exploration & Relic ops
+
+```pseudocode
+case 'gain_commodities':
+  amount = op.amount === 'max' ? faction.commodities_max : op.amount
+  fetch player faction commodities_max
+  update game_players SET commodities = MIN(commodities + amount, commodities_max)
+
+case 'gain_relic_fragment':
+  update game_exploration_decks SET state='held', resolved_by_player_id=playerId
+         WHERE id=context.card_id
+  // keep_card=true (Enigmatic Device): state stays 'held' permanently
+
+case 'attach_to_planet':
+  attachmentRow = select attachments where name=op.attachment
+  ERR 409 'Attachment not found' if !attachmentRow
+  update game_player_planets SET attachments = array_append(attachments, attachmentRow.id)
+         WHERE game_id + player_id + planet_name=context.planet_name
+
+case 'place_map_token':
+  if op.token_type = 'gamma_wormhole':
+    update game_system_state SET wormholes = array_append(wormholes, 'gamma')
+           WHERE game_id + system_key=context.system_key
+  if op.token_type = 'ion_storm':
+    update game_system_state SET ion_storm = true
+           WHERE game_id + system_key=context.system_key (upsert)
+
+case 'place_mirage':
+  // Insert Mirage as a new planet in the explored system
+  tileId = TILE_ID(context.system_key, game)
+  insert game_player_planets { game_id, player_id, planet_name:'Mirage', tile_id: tileId,
+                                exhausted:false, explored:true }
+
+case 'gain_relic':
+  relicRow = select game_relic_deck where game_id + state='deck'
+             ORDER BY deck_position ASC LIMIT 1
+  ERR 409 'Relic deck empty' if !relicRow
+  update game_relic_deck SET state='held', held_by_player_id=playerId WHERE id=relicRow.id
+
+case 'explore_planet':
+  // Delegates to the same draw+resolve logic as game-explore-planet/game-resolve-exploration-card
+  // Used by Crown of Emphidia exhaust ability
+  target planet = context.selections.planet_name
+  [internal call: drawExplorationCard(gameId, playerId, target) → resolveExplorationCard(...)]
+
+case 'choice':
+  selectedOps = op.options[context.choice ?? 0]
+  applyAbility(selectedOps, context, db)
+
+case 'conditional_mech_or_infantry':
+  hasMech = query game_player_units where game_id + player_id + on_planet=context.planet_name
+            AND unit_type='mech' AND count > 0
+  if hasMech:
+    applyAbility(op.effect, context, db)
+  elif context.remove_infantry:
+    // Remove 1 infantry from planet
+    infantryRow = select game_player_units where game_id + player_id + on_planet=context.planet_name
+                  AND unit_type='infantry' AND count > 0
+    ERR 409 'No infantry to remove' if !infantryRow
+    update game_player_units SET count = count - 1 WHERE id=infantryRow.id
+    delete if count becomes 0
+    applyAbility(op.effect, context, db)
+  // else: neither condition met, skip effect
+```
+
 ## Tests
 
-No standalone test file — covered through `game-resolve-ability` tests for each new op.
+No standalone test file — covered through `game-resolve-ability` and exploration function tests for each new op.

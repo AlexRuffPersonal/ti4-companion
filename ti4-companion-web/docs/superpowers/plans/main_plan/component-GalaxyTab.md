@@ -106,6 +106,38 @@ PANEL(lg):
     "Done with Bombardment" btn → onAdvance(systemKey)
 ```
 
+### Phase 17 — Exploration Badge
+
+```pseudocode
+props: add exploration (from useExploration)
+
+// Planet tiles: show explore badge for unexplored planets owned by any player
+// (allPlanetState contains explored flag for all players' planets)
+for each rendered planet tile:
+  planetState = exploration.allPlanetState.find(p => p.planet_name === planet.name && p.player_id === myPlayerId)
+  if planetState && !planetState.explored && canExplore(planet):
+    render "Explore" badge/button on planet tile
+    onClick → open ExplorationModal for this planet
+
+// Frontier tokens: show explore option when active player has Dark Energy Tap
+if isActivePlayer && playerHasDarkEnergyTap && system has frontier token:
+  render "Explore Frontier" button
+  onClick → open ExplorationModal with isFrontier=true, systemKey
+
+{showExplorationModal && (
+  <ExplorationModal
+    planet={selectedPlanet}
+    systemKey={activeSystemKey}
+    traits={selectedPlanet.traits}
+    isFrontier={exploringFrontier}
+    onExplorePlanet={exploration.explorePlanet}
+    onResolveCard={exploration.resolveExplorationCard}
+    onExploreFrontier={exploration.exploreFrontier}
+    onClose={() => setShowExplorationModal(false)}
+  />
+)}
+```
+
 ### Phase 18 — Move Ships Button
 
 ```pseudocode

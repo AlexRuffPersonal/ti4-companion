@@ -48,6 +48,22 @@ export const assignHits = (gameId, combatId, casualties) =>
   callFunction('game-assign-hits', { game_id: gameId, combat_id: combatId, casualties })
 ```
 
+// Phase 17 additions:
+export const explorePlanet = (gameId, playerId, planetName, deckType) =>
+  callFunction('game-explore-planet', { game_id: gameId, player_id: playerId, planet_name: planetName, deck_type: deckType })
+
+export const resolveExplorationCard = (gameId, playerId, cardId, opts = {}) =>
+  callFunction('game-resolve-exploration-card', { game_id: gameId, player_id: playerId, card_id: cardId, ...opts })
+
+export const exploreFrontier = (gameId, playerId, systemKey) =>
+  callFunction('game-explore-frontier', { game_id: gameId, player_id: playerId, system_key: systemKey })
+
+export const useRelicFragment = (gameId, playerId, fragmentIds) =>
+  callFunction('game-use-relic-fragment', { game_id: gameId, player_id: playerId, fragment_ids: fragmentIds })
+
+export const useRelic = (gameId, playerId, relicId, choice) =>
+  callFunction('game-use-relic', { game_id: gameId, player_id: playerId, relic_id: relicId, choice })
+
 // Phase 18 additions:
 export const moveShips = (gameId, payload) =>
   callFunction('game-move-ships', { game_id: gameId, ...payload })
