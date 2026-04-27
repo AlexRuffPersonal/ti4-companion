@@ -44,6 +44,13 @@ See [_standards.md](_standards.md) for shorthand used in all spec files.
 | [hook-useCombat](hook-useCombat.md) | `src/hooks/useCombat.js` | 11 / 13 / 14 | Ground Combat / AFB / Full Invasion | in-progress | client-edgeFunctions |
 | [component-GroundCombatModal](component-GroundCombatModal.md) | `src/components/game/GroundCombatModal.jsx` | 11 / 14 | Ground Combat / Full Invasion | in-progress | hook-useCombat |
 | [component-GalaxyTab](component-GalaxyTab.md) | `src/components/game/GalaxyTab.jsx` | 11 / 14 | Ground Combat / Full Invasion | in-progress | component-GroundCombatModal |
+| [migration-032-promissory-effects](migration-032-promissory-effects.md) | `supabase/migrations/032_promissory_effects.sql` | 15 | Promissory Note Effects | planned | — |
+| [shared-promissoryEnforcement](shared-promissoryEnforcement.md) | `supabase/functions/_shared/promissoryEnforcement.ts` | 15 | Promissory Note Effects | planned | migration-032-promissory-effects |
+| [fn-game-play-promissory-note](fn-game-play-promissory-note.md) | `supabase/functions/game-play-promissory-note/index.ts` | 15 | Promissory Note Effects | planned | shared-promissoryEnforcement, shared-abilityDsl |
+| [fn-game-confirm-transaction-p15](fn-game-confirm-transaction-p15.md) | `supabase/functions/game-confirm-transaction/index.ts` | 15 | Promissory Note Effects | planned | migration-032-promissory-effects |
+| [hook-usePromissoryNotes](hook-usePromissoryNotes.md) | `src/hooks/usePromissoryNotes.js` | 15 | Promissory Note Effects | planned | client-edgeFunctions |
+| [component-PlayPromissoryNoteModal](component-PlayPromissoryNoteModal.md) | `src/components/game/PlayPromissoryNoteModal.jsx` | 15 | Promissory Note Effects | planned | hook-usePromissoryNotes |
+| [component-InPlayNotesPanel](component-InPlayNotesPanel.md) | `src/components/game/InPlayNotesPanel.jsx` | 15 | Promissory Note Effects | planned | hook-usePromissoryNotes |
 
 ---
 
@@ -53,7 +60,6 @@ Phases 15+ are listed in suggested implementation order.
 
 | Phase | Feature Area | Priority | Notes |
 |-------|-------------|----------|-------|
-| 15 | Promissory Note Effects | high | `game-play-promissory-note` currently only transitions state; encode + apply each note's effect DSL-style like `game-resolve-ability` |
 | 16 | Leaders & Mechs | high | Agent/Commander/Hero exhaust/unlock/purge; Mech deploy via production; data model exists in `game_players.leaders` JSONB |
 | 17 | Planet Exploration, Attachments & Relics | medium | Capture unclaimed planet → draw exploration card; apply attachments to `game_system_state`; apply relic effects; Frontier Tokens (PoK: draw when entering empty space) |
 | 18 | Unit Transport | medium | Fleet carrying capacity; carry infantry/fighters between systems |
