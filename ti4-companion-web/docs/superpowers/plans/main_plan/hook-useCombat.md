@@ -2,7 +2,7 @@
 
 **File:** `src/hooks/useCombat.js`
 **Status:** Modify
-**Prereqs:** client-edgeFunctions
+**Prereqs:** client-edgeFunctions, fn-game-play-combat-action-card, fn-game-pass-action-window
 
 ## Changes
 
@@ -53,6 +53,28 @@ Derive and expose `hasScdUnits` boolean:
 - `hasScdUnits = planetUnits.some(u => u.player_id===combat?.defender_player_id && unitDefs.get(u.unit_type)?.space_cannon != null)`
 - Where `planetUnits = systemUnits.filter(u => u.on_planet === combat?.planet_name)`
 
+### Phase 20 (Space Combat Action Cards)
+
+Import `playCombatActionCard`, `passActionWindow` from `edgeFunctions.js`.
+
+Add to returned object:
+
+```js
+playActionCard: (cardId, targets) => playCombatActionCard(gameId, combat.id, cardId, targets),
+passActionWindow: () => passActionWindowFn(gameId, combat.id),
+```
+
+Add derived state:
+
+```js
+isWindowPhase: combat?.phase?.startsWith('window_') ?? false,
+windowCards: hand.filter(card => isCardValidForPhase(card, combat?.phase)),
+windowPasses: combat?.window_passes ?? { attacker: false, defender: false },
+localPlayerPassed: combat?.window_passes?.[mySide] ?? false,
+```
+
+`isCardValidForPhase(card, phase)` maps each card name to its valid window phase(s) — a local lookup table keyed by card name.
+
 ## Tests
 
-None — covered by SpaceCombatModal and GroundCombatModal tests.
+None — covered by SpaceCombatModal and ActionCardWindowPanel tests.

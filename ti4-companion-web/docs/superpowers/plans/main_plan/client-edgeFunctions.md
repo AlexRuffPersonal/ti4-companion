@@ -2,7 +2,7 @@
 
 **File:** `src/lib/edgeFunctions.js`
 **Status:** Modify
-**Prereqs:** fn-game-roll-ground-combat-dice, fn-game-play-strategy-card, fn-game-use-strategy-secondary, fn-game-pass-strategy-secondary, fn-game-produce-units, fn-game-fire-anti-fighter-barrage, fn-game-advance-barrage, fn-game-fire-bombardment, fn-game-advance-bombardment, fn-game-commit-ground-forces, fn-game-fire-space-cannon-defense
+**Prereqs:** fn-game-roll-ground-combat-dice, fn-game-play-strategy-card, fn-game-use-strategy-secondary, fn-game-pass-strategy-secondary, fn-game-produce-units, fn-game-fire-anti-fighter-barrage, fn-game-advance-barrage, fn-game-fire-bombardment, fn-game-advance-bombardment, fn-game-commit-ground-forces, fn-game-fire-space-cannon-defense, fn-game-play-combat-action-card, fn-game-pass-action-window
 
 ## Changes
 
@@ -67,6 +67,13 @@ export const useRelic = (gameId, playerId, relicId, choice) =>
 // Phase 18 additions:
 export const moveShips = (gameId, payload) =>
   callFunction('game-move-ships', { game_id: gameId, ...payload })
+
+// Phase 20 additions:
+export const playCombatActionCard = (gameId, combatId, cardId, targets) =>
+  callFunction('game-play-combat-action-card', { game_id: gameId, combat_id: combatId, card_id: cardId, targets })
+
+export const passActionWindow = (gameId, combatId) =>
+  callFunction('game-pass-action-window', { game_id: gameId, combat_id: combatId })
 ```
 
 Note: `assignGroundHits` is not added — `assignHits` covers all assignment contexts (space, ground, AFB, bombardment, SCD).

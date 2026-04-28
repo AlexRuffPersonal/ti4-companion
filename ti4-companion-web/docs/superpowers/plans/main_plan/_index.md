@@ -30,18 +30,18 @@ See [_standards.md](_standards.md) for shorthand used in all spec files.
 | [component-GameScreen](component-GameScreen.md) | `src/components/game/GameScreen.jsx` | 12 | Strategy Cards & Production | planned | hook-useStrategyCards, component-StrategyCardModal |
 | [migration-030-afb](migration-030-afb.md) | `supabase/migrations/030_afb.sql` | 13 | Anti-Fighter Barrage | planned | — |
 | [fn-game-fire-space-cannon](fn-game-fire-space-cannon.md) | `supabase/functions/game-fire-space-cannon/index.ts` | 13 | Anti-Fighter Barrage | planned | migration-030-afb |
-| [fn-game-roll-combat-dice](fn-game-roll-combat-dice.md) | `supabase/functions/game-roll-combat-dice/index.ts` | 13 | Anti-Fighter Barrage | planned | fn-game-fire-anti-fighter-barrage |
+| [fn-game-roll-combat-dice](fn-game-roll-combat-dice.md) | `supabase/functions/game-roll-combat-dice/index.ts` | 13 / 20 | Anti-Fighter Barrage / Space Combat Action Cards | planned | fn-game-fire-anti-fighter-barrage, migration-036-combat-action-cards |
 | [fn-game-fire-anti-fighter-barrage](fn-game-fire-anti-fighter-barrage.md) | `supabase/functions/game-fire-anti-fighter-barrage/index.ts` | 13 / 14 | AFB / Full Invasion | planned | migration-030-afb, migration-031-invasion |
 | [fn-game-advance-barrage](fn-game-advance-barrage.md) | `supabase/functions/game-advance-barrage/index.ts` | 13 | Anti-Fighter Barrage | planned | migration-030-afb |
-| [component-SpaceCombatModal](component-SpaceCombatModal.md) | `src/components/game/SpaceCombatModal.jsx` | 13 / 14 | AFB / Full Invasion | planned | hook-useCombat |
+| [component-SpaceCombatModal](component-SpaceCombatModal.md) | `src/components/game/SpaceCombatModal.jsx` | 13 / 14 / 20 | AFB / Full Invasion / Space Combat Action Cards | planned | hook-useCombat, component-ActionCardWindowPanel |
 | [migration-031-invasion](migration-031-invasion.md) | `supabase/migrations/031_invasion.sql` | 14 | Full Invasion | planned | migration-030-afb |
-| [fn-game-assign-hits](fn-game-assign-hits.md) | `supabase/functions/game-assign-hits/index.ts` | 14 | Full Invasion | planned | migration-031-invasion |
+| [fn-game-assign-hits](fn-game-assign-hits.md) | `supabase/functions/game-assign-hits/index.ts` | 14 / 20 | Full Invasion / Space Combat Action Cards | planned | migration-031-invasion, migration-036-combat-action-cards |
 | [fn-game-fire-bombardment](fn-game-fire-bombardment.md) | `supabase/functions/game-fire-bombardment/index.ts` | 14 | Full Invasion | planned | migration-031-invasion |
 | [fn-game-advance-bombardment](fn-game-advance-bombardment.md) | `supabase/functions/game-advance-bombardment/index.ts` | 14 | Full Invasion | planned | migration-031-invasion |
 | [fn-game-commit-ground-forces](fn-game-commit-ground-forces.md) | `supabase/functions/game-commit-ground-forces/index.ts` | 11 / 14 | Ground Combat / Full Invasion | planned | migration-028, migration-031-invasion |
 | [fn-game-fire-space-cannon-defense](fn-game-fire-space-cannon-defense.md) | `supabase/functions/game-fire-space-cannon-defense/index.ts` | 14 | Full Invasion | planned | fn-game-commit-ground-forces |
-| [client-edgeFunctions](client-edgeFunctions.md) | `src/lib/edgeFunctions.js` | 11 / 13 / 14 | Ground Combat / AFB / Full Invasion | in-progress | fn-game-commit-ground-forces, fn-game-fire-bombardment, fn-game-advance-bombardment, fn-game-fire-space-cannon-defense |
-| [hook-useCombat](hook-useCombat.md) | `src/hooks/useCombat.js` | 11 / 13 / 14 | Ground Combat / AFB / Full Invasion | in-progress | client-edgeFunctions |
+| [client-edgeFunctions](client-edgeFunctions.md) | `src/lib/edgeFunctions.js` | 11 / 13 / 14 / 20 | Ground Combat / AFB / Full Invasion / Space Combat Action Cards | in-progress | fn-game-commit-ground-forces, fn-game-fire-bombardment, fn-game-advance-bombardment, fn-game-fire-space-cannon-defense, fn-game-play-combat-action-card, fn-game-pass-action-window |
+| [hook-useCombat](hook-useCombat.md) | `src/hooks/useCombat.js` | 11 / 13 / 14 / 20 | Ground Combat / AFB / Full Invasion / Space Combat Action Cards | in-progress | client-edgeFunctions, fn-game-play-combat-action-card, fn-game-pass-action-window |
 | [component-GroundCombatModal](component-GroundCombatModal.md) | `src/components/game/GroundCombatModal.jsx` | 11 / 14 | Ground Combat / Full Invasion | in-progress | hook-useCombat |
 | [component-GalaxyTab](component-GalaxyTab.md) | `src/components/game/GalaxyTab.jsx` | 11 / 14 | Ground Combat / Full Invasion | in-progress | component-GroundCombatModal |
 | [migration-032-promissory-effects](migration-032-promissory-effects.md) | `supabase/migrations/032_promissory_effects.sql` | 15 | Promissory Note Effects | planned | — |
@@ -96,6 +96,13 @@ See [_standards.md](_standards.md) for shorthand used in all spec files.
 | [fn-game-cast-votes](fn-game-cast-votes.md) | `supabase/functions/game-cast-votes/index.ts` | 19 | Ability DSL Completions | planned | migration-035-ability-dsl-completions |
 | [fn-game-advance-phase](fn-game-advance-phase.md) | `supabase/functions/game-advance-phase/index.ts` | 19 | Ability DSL Completions | planned | migration-035-ability-dsl-completions |
 
+| [migration-036-combat-action-cards](migration-036-combat-action-cards.md) | `supabase/migrations/036_combat_action_cards.sql` | 20 | Space Combat Action Cards | planned | — |
+| [fn-game-activate-system-p20](fn-game-activate-system-p20.md) | `supabase/functions/game-activate-system/index.ts` | 20 | Space Combat Action Cards | planned | migration-036-combat-action-cards |
+| [fn-game-declare-retreat-p20](fn-game-declare-retreat-p20.md) | `supabase/functions/game-declare-retreat/index.ts` | 20 | Space Combat Action Cards | planned | migration-036-combat-action-cards |
+| [fn-game-play-combat-action-card](fn-game-play-combat-action-card.md) | `supabase/functions/game-play-combat-action-card/index.ts` | 20 | Space Combat Action Cards | planned | migration-036-combat-action-cards |
+| [fn-game-pass-action-window](fn-game-pass-action-window.md) | `supabase/functions/game-pass-action-window/index.ts` | 20 | Space Combat Action Cards | planned | migration-036-combat-action-cards |
+| [component-ActionCardWindowPanel](component-ActionCardWindowPanel.md) | `src/components/game/ActionCardWindowPanel.jsx` | 20 | Space Combat Action Cards | planned | fn-game-play-combat-action-card, fn-game-pass-action-window |
+
 ---
 
 ## Planned Feature Areas (specs to be added)
@@ -107,7 +114,7 @@ Phases 17+ are listed in suggested implementation order.
 | 17 | Planet Exploration, Attachments & Relics | medium | Capture unclaimed planet → draw exploration card; apply attachments to `game_system_state`; apply relic effects; Frontier Tokens (PoK: draw when entering empty space) |
 | 18 | Unit Transport | medium | Fleet carrying capacity; carry infantry/fighters between systems |
 | 19 | Ability DSL Completions | medium | Wire up 10 no-op ops in `abilityDsl.ts`: `modify_roll`, `add_die`, `cancel_hit`, `cast_votes`, `prevent_vote`, `place_units`, `destroy_units`, `convert_commodities`, `gain_command_tokens`, `ignore_prerequisite`, `take_from_discard`, `gain_technology` |
-| 20 | Space Combat Action Cards | medium | Per-unit hit tracking (prereq for Direct Hit) → Direct Hit, Maneuvering Jets, Skilled Retreat, Dark Energy Tap |
+| 20 | Space Combat Action Cards | medium | Spec files created. 14 cards: Shields Holding, Maneuvering Jets, Direct Hit, Emergency Repairs, Courageous To The End, Morale Boost, Fighter Prototype, Waylay, Skilled Retreat, Rout, Intercept, Salvage, Experimental Battlestation, In The Silence Of Space; + Dark Energy Tap technology retreat range. |
 | 21 | Legendary Planets & Wormhole Nexus | low | PoK: legendary planets with persistent abilities; rotating Wormhole Nexus tile |
 | 22 | Map Builder | low | Paste map string in lobby; parse into `games.map_tiles` |
 | 23 | Admin: Read Views + Editing | low | Browse imported records per table; individual record editing; selective re-import (upsert) |

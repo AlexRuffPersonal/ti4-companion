@@ -2,7 +2,7 @@
 
 **File:** `supabase/functions/game-assign-hits/index.ts`
 **Status:** Modify
-**Prereqs:** migration-031-invasion
+**Prereqs:** migration-031-invasion, migration-036-combat-action-cards
 
 ## Changes
 
@@ -120,4 +120,43 @@ GIVEN phase='scd_assign', scd_hits=1, attacker has 2 infantry on planet
   EXPECT phase='attacker_roll'
 
 T409('not the attacker') — caller=defender on scd_assign
+```
+
+### Phase 20 Changes
+
+Before processing any casualties, read `shields_holding_{side}` from `pending_effects` and reduce the hit count by that amount (minimum 0). Clear that key from `pending_effects` before continuing.
+
+Forced hits from Courageous To The End arrive with `sustain_allowed: false` in the request body. Reject any `sustain` assignment for those hits: ERR('Sustain not allowed for forced hits', 409).
+
+After processing the full casualties list:
+- Each `sustain` action: append `{player_id, unit_id, unit_type}` to `combat.sustained_this_phase`
+- Each `destroy` action: append `{player_id, unit_id, unit_type, combat_value}` to `combat.destroyed_this_phase`
+
+After processing:
+```pseudocode
+if combat.sustained_this_phase non-empty:
+  UPDATE game_combats SET phase='window_post_sustain'
+else if combat.destroyed_this_phase non-empty:
+  UPDATE game_combats SET phase='window_post_destroy'
+else:
+  advance to next main phase as before
+```
+
+```pseudocode
+// Phase 20 tests (extend existing test file)
+
+GIVEN shields_holding_defender=2 in pending_effects, attacker_hits=3
+  EXPECT effective hits = 1 (3-2); player assigns 1 casualty
+  EXPECT shields_holding_defender cleared from pending_effects
+
+GIVEN sustain chosen, unit_id='u1', unit_type='dreadnought'
+  EXPECT sustained_this_phase=[{player_id, unit_id:'u1', unit_type:'dreadnought'}]
+  EXPECT phase='window_post_sustain'
+
+GIVEN destroy chosen AND no sustains
+  EXPECT destroyed_this_phase=[{..., combat_value:5}]
+  EXPECT phase='window_post_destroy'
+
+GIVEN forced hit with sustain_allowed=false, player chooses sustain
+  EXPECT 409
 ```

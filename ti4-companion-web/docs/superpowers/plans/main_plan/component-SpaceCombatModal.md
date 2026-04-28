@@ -2,7 +2,7 @@
 
 **File:** `src/components/game/SpaceCombatModal.jsx`
 **Status:** Modify
-**Prereqs:** hook-useCombat
+**Prereqs:** hook-useCombat, component-ActionCardWindowPanel
 **Also modified in:** Phase 14 (Full Invasion — AFB assign branches)
 
 ## Changes
@@ -115,4 +115,35 @@ Extend `tests/components/game/SpaceCombatModal.test.jsx` (or equivalent existing
 
 // afb_defender_assign, isDefender=false
   renders waiting message
+```
+
+### Phase 20 (Space Combat Action Cards)
+
+Render `ActionCardWindowPanel` above `FleetDisplay` whenever `isWindowPhase` is true:
+
+```pseudocode
+IF isWindowPhase:
+  <ActionCardWindowPanel
+    combat={combat}
+    myPlayerId={myPlayerId}
+    windowCards={windowCards}
+    onPlayCard={playActionCard}
+    onPass={passActionWindow}
+  />
+// FleetDisplay and other phase-specific panels render below as usual
+```
+
+```pseudocode
+// Phase 20 tests
+
+// window_pre_assign_defender, player has Shields Holding
+  renders ActionCardWindowPanel above FleetDisplay
+  ActionCardWindowPanel receives windowCards containing Shields Holding
+  FleetDisplay still visible below
+
+// window_post_sustain, player has Direct Hit
+  ActionCardWindowPanel renders with Direct Hit chip
+
+// non-window phase (attacker_roll)
+  ActionCardWindowPanel not rendered
 ```
