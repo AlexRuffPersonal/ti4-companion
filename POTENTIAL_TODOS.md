@@ -42,6 +42,7 @@ Features and improvements that were deliberately deferred. Review this list when
 ## Map Configuration (Phase 9+)
 
 - **Map builder in lobby** — Phase 9 hardcodes a standard 37-tile map. A future phase should let the host configure the map during lobby setup. Two options: (1) a drag-and-drop hex tile placement UI, or (2) paste a standard Milty/TI4 map string (space-separated tile numbers in spiral order) that gets parsed into `games.map_tiles` JSONB keyed by axial `"q,r"` coordinates. Option 2 is simpler and interops with existing TI4 map tools.
+- **In-app map draft** — The TI4 rules include a structured tile-drafting process where players take turns picking system tiles and placing them on the map during setup. A future phase could implement this as an interactive lobby mode: tiles are presented face-down in balanced sets, players draft picks in turn order, and the result populates `games.map_tiles`. This is a significant UI undertaking and requires the map builder (Phase 22) as a prerequisite.
 
 ---
 
