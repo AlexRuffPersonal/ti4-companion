@@ -142,6 +142,13 @@ See [_standards.md](_standards.md) for shorthand used in all spec files.
 | [component-GameHeader-p24](component-GameHeader-p24.md) | `src/components/game/GameHeader.jsx` | 24 | Rule Lookup | planned | component-RulesModal |
 | [component-GameScreen-p24](component-GameScreen-p24.md) | `src/components/game/GameScreen.jsx` | 24 | Rule Lookup | planned | component-RulesModal, component-GameHeader-p24 |
 
+| [migration-039-elimination](migration-039-elimination.md) | `supabase/migrations/039_elimination.sql` | 26 | Player Elimination | planned | — |
+| [shared-eliminationHandler](shared-eliminationHandler.md) | `supabase/functions/_shared/eliminationHandler.ts` | 26 | Player Elimination | planned | migration-039-elimination |
+| [fn-game-assign-hits-p26](fn-game-assign-hits-p26.md) | `supabase/functions/game-assign-hits/index.ts` | 26 | Player Elimination | planned | shared-eliminationHandler |
+| [fn-game-land-troops-p26](fn-game-land-troops-p26.md) | `supabase/functions/game-land-troops/index.ts` | 26 | Player Elimination | planned | shared-eliminationHandler |
+| [hook-useGame-p26](hook-useGame-p26.md) | `src/hooks/useGame.js` | 26 | Player Elimination | planned | migration-039-elimination |
+| [component-GameScreen-p26](component-GameScreen-p26.md) | `src/components/game/GameScreen.jsx` | 26 | Player Elimination | planned | hook-useGame-p26 |
+
 ---
 
 ## Planned Feature Areas (specs to be added)
@@ -150,5 +157,4 @@ Phases 24+ are listed in suggested implementation order. Phases 17–23 have spe
 
 | Phase | Feature Area | Priority | Notes |
 |-------|-------------|----------|-------|
-| 26 | Player Elimination | low | Mid-game elimination: remove player, redistribute components, handle VP/objectives |
 | 27 | Tech Debt | low | Concurrent draw race in `game-draw-action-card`; N+1 queries in `game-start` player initialisation |
