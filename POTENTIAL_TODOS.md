@@ -53,6 +53,12 @@ Features and improvements that were deliberately deferred. Review this list when
 
 ---
 
+## Titans of Ul / Codex III (TE expansion — deferred)
+
+- **TE legendary planets** — Ang and Elysium were omitted from Phase 21 (PoK-only scope). A future phase should add their legendary planet ability cards, grant/exhaust/purge mechanics, and any DSL ops needed for their effects.
+
+---
+
 ## Ground Combat (Phase 11)
 
 - **Bombardment** — ships with a `bombardment` stat can fire on defending ground forces before the active player lands troops; not yet implemented; requires `bombardment` stat in the `units` reference table and a new step in `game-land-troops` (or a dedicated `game-bombard` Edge Function) that fires dice and destroys defending infantry/mechs before spawning ground combat
