@@ -89,6 +89,13 @@ See [_standards.md](_standards.md) for shorthand used in all spec files.
 | [component-MoveShipsModal](component-MoveShipsModal.md) | `src/components/game/MoveShipsModal.jsx` | 18 | Unit Transport | planned | hook-useMovement |
 | [component-GalaxyTab](component-GalaxyTab.md) | `src/components/game/GalaxyTab.jsx` | 18 | Unit Transport | planned | hook-useMovement, component-MoveShipsModal |
 
+| [migration-035-ability-dsl-completions](migration-035-ability-dsl-completions.md) | `supabase/migrations/035_ability_dsl_completions.sql` | 19 | Ability DSL Completions | planned | — |
+| [shared-abilityDsl](shared-abilityDsl.md) | `supabase/functions/_shared/abilityDsl.ts` | 19 | Ability DSL Completions | planned | migration-035-ability-dsl-completions |
+| [fn-game-roll-combat-dice](fn-game-roll-combat-dice.md) | `supabase/functions/game-roll-combat-dice/index.ts` | 19 | Ability DSL Completions | planned | — |
+| [fn-game-resolve-ability](fn-game-resolve-ability.md) | `supabase/functions/game-resolve-ability/index.ts` | 19 | Ability DSL Completions | planned | shared-abilityDsl |
+| [fn-game-cast-votes](fn-game-cast-votes.md) | `supabase/functions/game-cast-votes/index.ts` | 19 | Ability DSL Completions | planned | migration-035-ability-dsl-completions |
+| [fn-game-advance-phase](fn-game-advance-phase.md) | `supabase/functions/game-advance-phase/index.ts` | 19 | Ability DSL Completions | planned | migration-035-ability-dsl-completions |
+
 ---
 
 ## Planned Feature Areas (specs to be added)

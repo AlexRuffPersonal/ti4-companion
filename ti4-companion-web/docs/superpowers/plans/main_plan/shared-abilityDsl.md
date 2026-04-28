@@ -133,6 +133,89 @@ case 'conditional_mech_or_infantry':
   // else: neither condition met, skip effect
 ```
 
+## Phase 19 — DSL Completions
+
+Add `CombatResolveContext` extending `ResolveContext` with `combatId`, `systemKey`, `side`.
+Add `ignorePrerequisite?: boolean` to `ResolveContext` (set in-memory only, never from request).
+
+Wire up the 12 remaining no-op stubs:
+
+```pseudocode
+case 'draw_secret_objective':
+  fetch top game_player_secret_objectives WHERE state='deck' ORDER BY deck_position ASC
+  ERR 409 'Secret objective deck is empty' if none
+  update SET state='held', held_by_player_id=activatingPlayerId
+
+case 'convert_commodities':
+  ERR 409 'Insufficient commodities' if player.commodities < op.amount
+  update game_players SET commodities -= op.amount, trade_goods += op.amount
+
+case 'gain_command_tokens':
+  bucket = op.bucket  // 'tactic_total' | 'fleet' | 'strategy'
+  tokens = { ...player.command_tokens }; tokens[bucket] += op.amount ?? 1
+  update game_players SET command_tokens = tokens
+  // DB CHECK constraint enforces tactic_total + fleet + strategy <= 16
+
+case 'take_from_discard':
+  cardId = context.selections.card_id
+  fetch game_action_card_deck WHERE id=cardId AND state='discard'
+  ERR 409 'Card not found in discard' if not found
+  update SET state='held', held_by_player_id=activatingPlayerId, deck_position=null
+  update game_players SET action_card_count += 1
+
+case 'ignore_prerequisite':
+  context.ignorePrerequisite = true  // in-memory flag, no DB write
+
+case 'gain_technology':
+  techName = context.selections.technology_name
+  fetch technologies WHERE name=techName (get technology_type + prerequisites)
+  ERR 409 'Technology already researched' if techName in player.technologies
+  if !context.ignorePrerequisite:
+    fetch all technologies to count player held techs by technology_type colour
+    prereqs = tech.prerequisites as Record<colour, count_needed>
+    ERR 409 'Prerequisites not met' if any colour deficit > 0
+  update game_players SET technologies = array_append(technologies, techName)
+
+case 'cast_votes':
+  fetch games WHERE id=gameId to get agenda_current_card_id
+  voteCount = op.amount ?? context.selections.vote_count
+  outcome = context.selections.vote_outcome
+  upsert game_agenda_votes { game_id, game_player_id, agenda_id, vote_count, choice:outcome }
+    ON CONFLICT (game_id, game_player_id, agenda_id)
+
+case 'prevent_vote':
+  targetId = op.target === 'self' ? activatingPlayerId : context.targetPlayerId
+  update game_players SET vote_prevented = true WHERE id = targetId
+
+// Combat ops — require CombatResolveContext (combatId, systemKey, side)
+case 'cancel_hit':
+  load game_combats row by combatId
+  targetSide = op.target === 'self' ? side : opposite(side)
+  hitsCol = targetSide === 'attacker' ? 'attacker_hits' : 'defender_hits'
+  update game_combats SET <hitsCol> = GREATEST(0, <hitsCol> - 1)
+
+case 'add_die':
+  roll 1d10 server-side; hit = roll >= op.hit_on
+  load game_combats row; append {unit_type:'__ability__', roll, hit_on:op.hit_on, hit} to side's dice
+  if hit: increment side's hits
+
+case 'modify_roll':
+  load game_combats row; for each die in side's dice array:
+    newRoll = die.roll + op.modifier; recompute hit = newRoll >= die.hit_on
+  recount hits; update game_combats with updated dice + hits
+
+case 'place_units':
+  systemKey = context.selections.system_key ?? context.systemKey
+  onPlanet = context.selections.planet_name ?? null
+  upsert game_player_units { game_id, player_id, system_key, unit_type:op.unit_type, on_planet, count:op.count??1 }
+    ON CONFLICT increment count
+
+case 'destroy_units':
+  fetch game_player_units row matching game_id, player_id, system_key, unit_type, on_planet
+  ERR 409 'No units to destroy' if not found or count < requested
+  decrement count; delete row if count reaches 0
+```
+
 ## Tests
 
-No standalone test file — covered through `game-resolve-ability` and exploration function tests for each new op.
+No standalone test file — covered through `game-resolve-ability` and `tests/lib/abilityDsl.test.js` for each new op.

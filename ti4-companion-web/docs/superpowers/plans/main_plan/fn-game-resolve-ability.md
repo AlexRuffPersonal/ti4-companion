@@ -65,3 +65,18 @@ describe('draw_secret_objective'):
   T409('deck empty')
   EXPECT top secret objective moved to held
 ```
+
+### Phase 19 Changes
+
+Accept optional combat context fields in the request body (`combat_id`, `system_key`, `side`).
+When all three are present, build a `CombatResolveContext` instead of the base `ResolveContext`.
+Also populate `context.selections` from `body.selections` so DSL ops can read `technology_name`, `card_id`, etc.
+
+```pseudocode
+hasCombatContext = body.combat_id AND body.system_key AND body.side
+context = hasCombatContext
+  ? CombatResolveContext { ...base fields, combatId, systemKey, side, selections }
+  : ResolveContext { ...base fields, selections }
+```
+
+No new tests needed beyond the `CombatResolveContext` threading test in `game-resolve-ability.test.js`.

@@ -27,3 +27,21 @@ T409('combat is not a roll phase') — mock phase='barrage'   // barrage now rej
 // Remove: all 'barrage phase' test cases
 // Regression: attacker_roll and defender_roll cases unchanged
 ```
+
+### Phase 19 Changes
+
+Add `hit_on` to `DieResult` so `modify_roll` (in `abilityDsl.ts`) can recompute hit flags after adjusting values:
+
+```ts
+// Change:
+type DieResult = { unit_type: string; roll: number; hit: boolean }
+// To:
+type DieResult = { unit_type: string; roll: number; hit_on: number; hit: boolean }
+
+// In rollDice(), change:
+results.push({ unit_type: unit.unit_type, roll, hit })
+// To:
+results.push({ unit_type: unit.unit_type, roll, hit_on: value, hit })
+```
+
+Update existing tests to assert `hit_on` is present in each returned die entry.
