@@ -126,16 +126,10 @@ See [_standards.md](_standards.md) for shorthand used in all spec files.
 
 ## Planned Feature Areas (specs to be added)
 
-Phases 17+ are listed in suggested implementation order.
+Phases 23+ are listed in suggested implementation order. Phases 17–22 have spec files in the main table above.
 
 | Phase | Feature Area | Priority | Notes |
 |-------|-------------|----------|-------|
-| 17 | Planet Exploration, Attachments & Relics | medium | Capture unclaimed planet → draw exploration card; apply attachments to `game_system_state`; apply relic effects; Frontier Tokens (PoK: draw when entering empty space) |
-| 18 | Unit Transport | medium | Fleet carrying capacity; carry infantry/fighters between systems |
-| 19 | Ability DSL Completions | medium | Wire up 10 no-op ops in `abilityDsl.ts`: `modify_roll`, `add_die`, `cancel_hit`, `cast_votes`, `prevent_vote`, `place_units`, `destroy_units`, `convert_commodities`, `gain_command_tokens`, `ignore_prerequisite`, `take_from_discard`, `gain_technology` |
-| 20 | Space Combat Action Cards | medium | Spec files created. 14 cards: Shields Holding, Maneuvering Jets, Direct Hit, Emergency Repairs, Courageous To The End, Morale Boost, Fighter Prototype, Waylay, Skilled Retreat, Rout, Intercept, Salvage, Experimental Battlestation, In The Silence Of Space; + Dark Energy Tap technology retreat range. |
-| 21 | Legendary Planets & Wormhole Nexus | low | ~~PoK: legendary planets with persistent abilities; rotating Wormhole Nexus tile~~ — **spec files added** |
-| 22 | Map Builder | low | Paste map string in lobby; parse into `games.map_tiles` — **spec files added** |
 | 23 | Admin: Read Views + Editing | low | Browse imported records per table; individual record editing; selective re-import (upsert) |
 | 24 | Rule Lookup | low | In-app LRR search via `ti4-lrr.md`; client-side fuzzy search by keyword |
 | 25 | Gravity Rift | low | Anomaly: units moving through roll 1 die; destroyed on a 1 |
