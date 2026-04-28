@@ -116,6 +116,14 @@ See [_standards.md](_standards.md) for shorthand used in all spec files.
 | [component-GalaxyTab](component-GalaxyTab.md) | `src/components/game/GalaxyTab.jsx` | 21 | Legendary Planets & Wormhole Nexus | planned | migration-037-legendary-planets |
 | [component-MyPanelSection](component-MyPanelSection.md) | `src/components/game/MyPanelSection.jsx` | 21 | Legendary Planets & Wormhole Nexus | planned | hook-useLegendaryCards, component-LegendaryCardPanel |
 
+| [migration-038-gravity-rift](migration-038-gravity-rift.md) | `supabase/migrations/038_gravity_rift.sql` | 25 | Gravity Rift | planned | — |
+| [fn-game-move-ships-p25](fn-game-move-ships-p25.md) | `supabase/functions/game-move-ships/index.ts` | 25 | Gravity Rift | planned | migration-038-gravity-rift, fn-game-move-ships |
+| [fn-game-roll-rift-dice](fn-game-roll-rift-dice.md) | `supabase/functions/game-roll-rift-dice/index.ts` | 25 | Gravity Rift | planned | migration-038-gravity-rift |
+| [client-edgeFunctions-p25](client-edgeFunctions-p25.md) | `src/lib/edgeFunctions.js` | 25 | Gravity Rift | planned | fn-game-roll-rift-dice |
+| [hook-useRiftTransit](hook-useRiftTransit.md) | `src/hooks/useRiftTransit.js` | 25 | Gravity Rift | planned | client-edgeFunctions-p25 |
+| [component-RiftTransitModal](component-RiftTransitModal.md) | `src/components/game/RiftTransitModal.jsx` | 25 | Gravity Rift | planned | hook-useRiftTransit |
+| [component-GameScreen-p25](component-GameScreen-p25.md) | `src/components/game/GameScreen.jsx` | 25 | Gravity Rift | planned | hook-useRiftTransit, component-RiftTransitModal |
+
 | [lib-mapParser](lib-mapParser.md) | `src/lib/mapParser.js` | 22 | Map Builder | planned | — |
 | [component-MapPreviewSection](component-MapPreviewSection.md) | `src/components/game/MapPreviewSection.jsx` | 22 | Map Builder | planned | lib-mapParser |
 | [component-LobbyScreen-p22](component-LobbyScreen-p22.md) | `src/components/game/LobbyScreen.jsx` | 22 | Map Builder | planned | lib-mapParser, component-MapPreviewSection, fn-game-update-settings-p22 |
@@ -142,6 +150,5 @@ Phases 24+ are listed in suggested implementation order. Phases 17–23 have spe
 
 | Phase | Feature Area | Priority | Notes |
 |-------|-------------|----------|-------|
-| 25 | Gravity Rift | low | Anomaly: units moving through roll 1 die; destroyed on a 1 |
 | 26 | Player Elimination | low | Mid-game elimination: remove player, redistribute components, handle VP/objectives |
 | 27 | Tech Debt | low | Concurrent draw race in `game-draw-action-card`; N+1 queries in `game-start` player initialisation |
