@@ -129,6 +129,11 @@ See [_standards.md](_standards.md) for shorthand used in all spec files.
 | [component-AdminBrowsePage](component-AdminBrowsePage.md) | `src/components/admin/AdminBrowsePage.jsx` | 23 | Admin: Read Views + Editing | planned | lib-importSchemas-p23, client-edgeFunctions-p23 |
 | [component-AdminRecordModal](component-AdminRecordModal.md) | `src/components/admin/AdminRecordModal.jsx` | 23 | Admin: Read Views + Editing | planned | client-edgeFunctions-p23, lib-importSchemas-p23 |
 
+| [script-parse-lrr](script-parse-lrr.md) | `ti4-companion-web/scripts/parse-lrr.js` | 24 | Rule Lookup | planned | — |
+| [component-RulesModal](component-RulesModal.md) | `src/components/game/RulesModal.jsx` | 24 | Rule Lookup | planned | script-parse-lrr |
+| [component-GameHeader-p24](component-GameHeader-p24.md) | `src/components/game/GameHeader.jsx` | 24 | Rule Lookup | planned | component-RulesModal |
+| [component-GameScreen-p24](component-GameScreen-p24.md) | `src/components/game/GameScreen.jsx` | 24 | Rule Lookup | planned | component-RulesModal, component-GameHeader-p24 |
+
 ---
 
 ## Planned Feature Areas (specs to be added)
@@ -137,7 +142,6 @@ Phases 24+ are listed in suggested implementation order. Phases 17–23 have spe
 
 | Phase | Feature Area | Priority | Notes |
 |-------|-------------|----------|-------|
-| 24 | Rule Lookup | low | In-app LRR search via `ti4-lrr.md`; client-side fuzzy search by keyword |
 | 25 | Gravity Rift | low | Anomaly: units moving through roll 1 die; destroyed on a 1 |
 | 26 | Player Elimination | low | Mid-game elimination: remove player, redistribute components, handle VP/objectives |
 | 27 | Tech Debt | low | Concurrent draw race in `game-draw-action-card`; N+1 queries in `game-start` player initialisation |
