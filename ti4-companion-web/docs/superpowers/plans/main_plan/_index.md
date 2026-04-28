@@ -143,6 +143,9 @@ See [_standards.md](_standards.md) for shorthand used in all spec files.
 | [component-GameScreen-p24](component-GameScreen-p24.md) | `src/components/game/GameScreen.jsx` | 24 | Rule Lookup | planned | component-RulesModal, component-GameHeader-p24 |
 
 | [migration-039-elimination](migration-039-elimination.md) | `supabase/migrations/039_elimination.sql` | 26 | Player Elimination | planned | — |
+| [migration-040-draw-action-card-fn](migration-040-draw-action-card-fn.md) | `supabase/migrations/040_draw_action_card_fn.sql` | 27 | Tech Debt | planned | — |
+| [fn-game-draw-action-card-p27](fn-game-draw-action-card-p27.md) | `supabase/functions/game-draw-action-card/index.ts` | 27 | Tech Debt | planned | migration-040-draw-action-card-fn |
+| [fn-game-start-p27](fn-game-start-p27.md) | `supabase/functions/game-start/index.ts` | 27 | Tech Debt | planned | — |
 | [shared-eliminationHandler](shared-eliminationHandler.md) | `supabase/functions/_shared/eliminationHandler.ts` | 26 | Player Elimination | planned | migration-039-elimination |
 | [fn-game-assign-hits-p26](fn-game-assign-hits-p26.md) | `supabase/functions/game-assign-hits/index.ts` | 26 | Player Elimination | planned | shared-eliminationHandler |
 | [fn-game-land-troops-p26](fn-game-land-troops-p26.md) | `supabase/functions/game-land-troops/index.ts` | 26 | Player Elimination | planned | shared-eliminationHandler |
@@ -157,4 +160,3 @@ Phases 24+ are listed in suggested implementation order. Phases 17–23 have spe
 
 | Phase | Feature Area | Priority | Notes |
 |-------|-------------|----------|-------|
-| 27 | Tech Debt | low | Concurrent draw race in `game-draw-action-card`; N+1 queries in `game-start` player initialisation |
