@@ -59,3 +59,23 @@ it("applies choice branch for Prophet's Tears") — choice=0 → ignore_prerequi
 it('applies gain_technology for Enigmatic Device with resource spend')
 it('allows reactive relic use without active player gate') — Scepter, Prophet's Tears
 ```
+
+## Phase 21 Changes
+
+Stellar Converter purges a planet. After applying its ops, DELETE any `game_player_legendary_cards` row for `context.planet_name`:
+
+```pseudocode
+// After applyAbility for Stellar Converter:
+DELETE FROM game_player_legendary_cards
+  WHERE game_id=gameId AND planet_name=context.planet_name
+```
+
+### Phase 21 Tests
+
+```pseudocode
+GIVEN relic=Stellar Converter, planet_name='primor' has a legendary card row
+  EXPECT game_player_legendary_cards.delete called for planet_name='primor'
+
+GIVEN relic=Stellar Converter, planet_name='standard_planet' (no legendary card row)
+  EXPECT no error — DELETE is a no-op if row doesn't exist
+```

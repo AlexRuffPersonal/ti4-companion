@@ -80,3 +80,41 @@ context = hasCombatContext
 ```
 
 No new tests needed beyond the `CombatResolveContext` threading test in `game-resolve-ability.test.js`.
+
+### Phase 21 Changes
+
+Add `legendary_card` as a valid `source_type`. When `source_type === 'legendary_card'`:
+- `ACTIVE_PLAYER` (caller must be `games.active_player_id`)
+- Fetch `game_player_legendary_cards` WHERE `game_id + planet_name=source_id + player_id=player.id`
+- ERR 404 if not found
+- ERR 409 'Card already exhausted' if `status === 'exhausted'`
+- Apply DSL ops via `applyAbility` using ability definition from `LEGENDARY_CARD_ABILITIES[source_id]` (hardcoded lookup in `abilityDsl.ts`)
+- UPDATE `game_player_legendary_cards SET status='exhausted'`
+
+```pseudocode
+LEGENDARY_CARD_ABILITIES: Record<planet_name, Op[]> = {
+  primor:    [{ op:'place_units', unit_type:'infantry', count:2, target:'any_controlled_planet' }],
+  hopes_end: [{ op:'choice', options:[ [{op:'place_units',unit_type:'mech',count:1,target:'any_controlled_planet'}], [{op:'draw_action_card',count:1}] ] }],
+  mallice:   [{ op:'choice', options:[ [{op:'gain_trade_goods',amount:2}], [{op:'convert_commodities',amount:'all'}] ] }],
+  mirage:    [{ op:'place_units', unit_type:'fighter', count:2, target:'any_system_with_ships' }],
+}
+```
+
+### Phase 21 Tests
+
+```pseudocode
+describe('legendary_card source'):
+  T409_ACTIVE — source_type='legendary_card', caller is not active player
+  T409('Card already exhausted') — status='exhausted'
+  T404 — planet_name not in player's legendary cards
+
+  GIVEN source_id='primor', card readied
+    EXPECT place_units op applied
+    EXPECT game_player_legendary_cards.status set to 'exhausted'
+
+  GIVEN source_id='mallice', choice=0
+    EXPECT gain_trade_goods op applied (amount:2)
+
+  GIVEN source_id='hopes_end', choice=1
+    EXPECT draw_action_card op applied
+```

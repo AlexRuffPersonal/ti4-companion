@@ -76,6 +76,15 @@ export const passActionWindow = (gameId, combatId) =>
   callFunction('game-pass-action-window', { game_id: gameId, combat_id: combatId })
 ```
 
+// Phase 21 additions:
+export const exhaustLegendaryCard = (gameId, playerId, planetName, choice) =>
+  callFunction('game-resolve-ability', {
+    game_id: gameId,
+    source_type: 'legendary_card',
+    source_id: planetName,
+    selections: { choice },
+  })
+
 Note: `assignGroundHits` is not added — `assignHits` covers all assignment contexts (space, ground, AFB, bombardment, SCD).
 
 ## Tests

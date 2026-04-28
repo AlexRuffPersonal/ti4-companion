@@ -26,6 +26,7 @@ Shorthand tokens used in all spec files. Read this before reading any individual
 | `APPLY_CASUALTIES(casualties, unitMap, defMap)` | validate sustain eligibility; apply sustain (`damaged=true`); batch destroy (decrement count or delete row) |
 | `CLAIM_PLANET(gameId, playerId, planetName, tileId)` | upsert `game_player_planets` `{game_id, player_id, planet_name, tile_id, exhausted:true}` onConflict `game_id,planet_name`; delete prior owner's row |
 | `CUSTODIANS(gameId, playerId, systemKey, game)` | if `systemKey==='0,0'` and `!game.custodians_claimed`: update games `{custodians_claimed:true, agenda_unlocked:true}`; increment player VP by 1 |
+| `GRANT_LEGENDARY_CARD(gameId, playerId, planetName)` | Phase 21+. `LEGENDARY_PLANETS = ['primor','hopes_end','mallice','mirage']`. If `planetName NOT IN LEGENDARY_PLANETS`: no-op. Else: fetch existing `game_player_legendary_cards` row for `(gameId, planetName)`; if exists → UPDATE `player_id=playerId` (preserve `status`); else → INSERT `{game_id:gameId, player_id:playerId, planet_name:planetName, status:'readied'}`. If `planetName==='mallice'` → UPDATE `games SET wormhole_nexus_active=true WHERE id=gameId`. |
 
 ## Test Tokens
 

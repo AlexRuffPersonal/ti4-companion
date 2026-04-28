@@ -103,6 +103,19 @@ See [_standards.md](_standards.md) for shorthand used in all spec files.
 | [fn-game-pass-action-window](fn-game-pass-action-window.md) | `supabase/functions/game-pass-action-window/index.ts` | 20 | Space Combat Action Cards | planned | migration-036-combat-action-cards |
 | [component-ActionCardWindowPanel](component-ActionCardWindowPanel.md) | `src/components/game/ActionCardWindowPanel.jsx` | 20 | Space Combat Action Cards | planned | fn-game-play-combat-action-card, fn-game-pass-action-window |
 
+| [migration-037-legendary-planets](migration-037-legendary-planets.md) | `supabase/migrations/037_legendary_planets.sql` | 21 | Legendary Planets & Wormhole Nexus | planned | — |
+| [shared-abilityDsl](shared-abilityDsl.md) | `supabase/functions/_shared/abilityDsl.ts` | 21 | Legendary Planets & Wormhole Nexus | planned | migration-037-legendary-planets |
+| [fn-game-resolve-ability](fn-game-resolve-ability.md) | `supabase/functions/game-resolve-ability/index.ts` | 21 | Legendary Planets & Wormhole Nexus | planned | migration-037-legendary-planets |
+| [fn-game-commit-ground-forces](fn-game-commit-ground-forces.md) | `supabase/functions/game-commit-ground-forces/index.ts` | 21 | Legendary Planets & Wormhole Nexus | planned | migration-037-legendary-planets |
+| [fn-game-advance-phase](fn-game-advance-phase.md) | `supabase/functions/game-advance-phase/index.ts` | 21 | Legendary Planets & Wormhole Nexus | planned | migration-037-legendary-planets |
+| [fn-game-use-relic](fn-game-use-relic.md) | `supabase/functions/game-use-relic/index.ts` | 21 | Legendary Planets & Wormhole Nexus | planned | migration-037-legendary-planets |
+| [client-edgeFunctions](client-edgeFunctions.md) | `src/lib/edgeFunctions.js` | 21 | Legendary Planets & Wormhole Nexus | planned | migration-037-legendary-planets |
+| [hook-useLegendaryCards](hook-useLegendaryCards.md) | `src/hooks/useLegendaryCards.js` | 21 | Legendary Planets & Wormhole Nexus | planned | migration-037-legendary-planets, client-edgeFunctions |
+| [component-LegendaryCardPanel](component-LegendaryCardPanel.md) | `src/components/game/LegendaryCardPanel.jsx` | 21 | Legendary Planets & Wormhole Nexus | planned | hook-useLegendaryCards |
+| [component-EndTurnDialog](component-EndTurnDialog.md) | `src/components/game/EndTurnDialog.jsx` | 21 | Legendary Planets & Wormhole Nexus | planned | hook-useLegendaryCards, component-LegendaryCardPanel |
+| [component-GalaxyTab](component-GalaxyTab.md) | `src/components/game/GalaxyTab.jsx` | 21 | Legendary Planets & Wormhole Nexus | planned | migration-037-legendary-planets |
+| [component-MyPanelSection](component-MyPanelSection.md) | `src/components/game/MyPanelSection.jsx` | 21 | Legendary Planets & Wormhole Nexus | planned | hook-useLegendaryCards, component-LegendaryCardPanel |
+
 ---
 
 ## Planned Feature Areas (specs to be added)
@@ -115,7 +128,7 @@ Phases 17+ are listed in suggested implementation order.
 | 18 | Unit Transport | medium | Fleet carrying capacity; carry infantry/fighters between systems |
 | 19 | Ability DSL Completions | medium | Wire up 10 no-op ops in `abilityDsl.ts`: `modify_roll`, `add_die`, `cancel_hit`, `cast_votes`, `prevent_vote`, `place_units`, `destroy_units`, `convert_commodities`, `gain_command_tokens`, `ignore_prerequisite`, `take_from_discard`, `gain_technology` |
 | 20 | Space Combat Action Cards | medium | Spec files created. 14 cards: Shields Holding, Maneuvering Jets, Direct Hit, Emergency Repairs, Courageous To The End, Morale Boost, Fighter Prototype, Waylay, Skilled Retreat, Rout, Intercept, Salvage, Experimental Battlestation, In The Silence Of Space; + Dark Energy Tap technology retreat range. |
-| 21 | Legendary Planets & Wormhole Nexus | low | PoK: legendary planets with persistent abilities; rotating Wormhole Nexus tile |
+| 21 | Legendary Planets & Wormhole Nexus | low | ~~PoK: legendary planets with persistent abilities; rotating Wormhole Nexus tile~~ — **spec files added** |
 | 22 | Map Builder | low | Paste map string in lobby; parse into `games.map_tiles` |
 | 23 | Admin: Read Views + Editing | low | Browse imported records per table; individual record editing; selective re-import (upsert) |
 | 24 | Rule Lookup | low | In-app LRR search via `ti4-lrr.md`; client-side fuzzy search by keyword |

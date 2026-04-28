@@ -216,6 +216,30 @@ case 'destroy_units':
   decrement count; delete row if count reaches 0
 ```
 
+## Phase 21 — Legendary Planet Abilities
+
+Extend `place_mirage` op to also grant the Mirage legendary card:
+
+```pseudocode
+case 'place_mirage':
+  tileId = TILE_ID(context.system_key, game)
+  insert game_player_planets { game_id, player_id, planet_name:'mirage', tile_id: tileId,
+                                exhausted:false, explored:true }
+  // Phase 21 addition:
+  GRANT_LEGENDARY_CARD(gameId, playerId, 'mirage')
+```
+
+Add `LEGENDARY_CARD_ABILITIES` lookup object (consumed by `game-resolve-ability`):
+
+```pseudocode
+export const LEGENDARY_CARD_ABILITIES: Record<string, Op[]> = {
+  primor:    [{ op:'place_units', unit_type:'infantry', count:2, target:'any_controlled_planet' }],
+  hopes_end: [{ op:'choice', options:[ [{op:'place_units',unit_type:'mech',count:1,target:'any_controlled_planet'}], [{op:'draw_action_card',count:1}] ] }],
+  mallice:   [{ op:'choice', options:[ [{op:'gain_trade_goods',amount:2}], [{op:'convert_commodities',amount:'all'}] ] }],
+  mirage:    [{ op:'place_units', unit_type:'fighter', count:2, target:'any_system_with_ships' }],
+}
+```
+
 ## Tests
 
 No standalone test file — covered through `game-resolve-ability` and `tests/lib/abilityDsl.test.js` for each new op.

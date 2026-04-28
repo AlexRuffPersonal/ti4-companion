@@ -26,10 +26,19 @@ if nextPhase === 'agenda':
   UPDATE game_players SET vote_prevented = false WHERE game_id = gameId
 ```
 
+## Phase 21 Changes
+
+During Status Phase processing (when `game.phase === 'status'`), after readying planet cards, also ready all legendary cards:
+
+```pseudocode
+UPDATE game_player_legendary_cards SET status='readied' WHERE game_id=gameId
+```
+
 ## Tests
 
 Extend `tests/functions/game-advance-phase.test.js`:
 
 ```pseudocode
 T: status → agenda (agenda_unlocked=true): game_players.update called with { vote_prevented: false }
+T: status phase: game_player_legendary_cards.update called with { status:'readied' }
 ```

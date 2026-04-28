@@ -55,10 +55,22 @@ if exploration.unexploredPlanets.length > 0:
 />
 ```
 
+### Phase 21 — Legendary Card Panel
+
+```pseudocode
+props: add legendaryCards (myCards from useLegendaryCards)
+
+import LegendaryCardPanel from './LegendaryCardPanel.jsx'
+
+// Add below Leader/Relic panels:
+<LegendaryCardPanel myCards={legendaryCards} />
+```
+
 ## Tests
 
 ```pseudocode
 it('renders StrategyCardPanel with correct props')
 it('passes activePay through to StrategyCardPanel')
+it('renders LegendaryCardPanel with myCards prop')
 // Existing MyPanelSection tests should still pass (regression)
 ```

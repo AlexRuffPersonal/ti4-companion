@@ -173,6 +173,23 @@ movementStep = isActivePlayer && activationDone && !combatActive
 )}
 ```
 
+### Phase 21 — Wormhole Nexus State
+
+```pseudocode
+props: add game (for game.wormhole_nexus_active)
+
+// Nexus tile rendering: find the nexus tile in mapTiles
+// The wormhole nexus tile is identifiable by its tile number or a 'nexus' marker
+nexusTile = mapTiles.find(t => t.is_nexus)  // or keyed by known tile number
+
+if nexusTile:
+  render nexus tile with wormhole indicators:
+    if game.wormhole_nexus_active:
+      show alpha + beta + gamma wormhole badges
+    else:
+      show gamma wormhole badge only
+```
+
 ## Tests
 
 No new test file. Existing GalaxyTab tests must still pass. Add smoke cases:

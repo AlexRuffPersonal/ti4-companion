@@ -89,3 +89,27 @@ GIVEN system_key='0,0', custodians_claimed=false, no defenders
 GIVEN system_key='0,0', defenders present
   EXPECT custodians NOT awarded
 ```
+
+## Phase 21 Changes
+
+After `CLAIM_PLANET`, call `GRANT_LEGENDARY_CARD(gameId, player.id, planet_name)`.
+
+Also extend the ground combat conclusion path in `game-assign-hits` (when all defenders eliminated):
+after `CLAIM_PLANET` is called there, also call `GRANT_LEGENDARY_CARD`.
+
+### Phase 21 Tests
+
+```pseudocode
+GIVEN no defenders, planet_name='primor'
+  EXPECT game_player_legendary_cards.insert called with { planet_name:'primor', status:'readied' }
+
+GIVEN no defenders, planet_name='mallice'
+  EXPECT game_player_legendary_cards.insert called
+  EXPECT games.update called with { wormhole_nexus_active: true }
+
+GIVEN no defenders, planet_name='standard_planet' (non-legendary)
+  EXPECT game_player_legendary_cards NOT touched
+
+GIVEN prior owner held 'primor' as exhausted
+  EXPECT game_player_legendary_cards.update player_id, status remains 'exhausted'
+```
