@@ -122,15 +122,21 @@ See [_standards.md](_standards.md) for shorthand used in all spec files.
 | [fn-game-update-settings-p22](fn-game-update-settings-p22.md) | `supabase/functions/game-update-settings/index.ts` | 22 | Map Builder | planned | — |
 | [fn-game-start-p22](fn-game-start-p22.md) | `supabase/functions/game-start/index.ts` | 22 | Map Builder | planned | fn-game-update-settings-p22 |
 
+| [fn-admin-update-record](fn-admin-update-record.md) | `supabase/functions/admin-update-record/index.ts` | 23 | Admin: Read Views + Editing | planned | — |
+| [lib-importSchemas-p23](lib-importSchemas-p23.md) | `src/lib/importSchemas.js` | 23 | Admin: Read Views + Editing | planned | — |
+| [client-edgeFunctions-p23](client-edgeFunctions-p23.md) | `src/lib/edgeFunctions.js` | 23 | Admin: Read Views + Editing | planned | fn-admin-update-record |
+| [component-AdminDashboard-p23](component-AdminDashboard-p23.md) | `src/components/admin/AdminDashboard.jsx` | 23 | Admin: Read Views + Editing | planned | lib-importSchemas-p23 |
+| [component-AdminBrowsePage](component-AdminBrowsePage.md) | `src/components/admin/AdminBrowsePage.jsx` | 23 | Admin: Read Views + Editing | planned | lib-importSchemas-p23, client-edgeFunctions-p23 |
+| [component-AdminRecordModal](component-AdminRecordModal.md) | `src/components/admin/AdminRecordModal.jsx` | 23 | Admin: Read Views + Editing | planned | client-edgeFunctions-p23, lib-importSchemas-p23 |
+
 ---
 
 ## Planned Feature Areas (specs to be added)
 
-Phases 23+ are listed in suggested implementation order. Phases 17–22 have spec files in the main table above.
+Phases 24+ are listed in suggested implementation order. Phases 17–23 have spec files in the main table above.
 
 | Phase | Feature Area | Priority | Notes |
 |-------|-------------|----------|-------|
-| 23 | Admin: Read Views + Editing | low | Browse imported records per table; individual record editing; selective re-import (upsert) |
 | 24 | Rule Lookup | low | In-app LRR search via `ti4-lrr.md`; client-side fuzzy search by keyword |
 | 25 | Gravity Rift | low | Anomaly: units moving through roll 1 die; destroyed on a 1 |
 | 26 | Player Elimination | low | Mid-game elimination: remove player, redistribute components, handle VP/objectives |
