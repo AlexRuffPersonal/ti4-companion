@@ -25,7 +25,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [migration-028-ground-combat](migration-028-ground-combat.md) | `supabase/migrations/028_ground_combat.sql` | 11 | Ground Combat | done | — |
 | [fn-game-roll-ground-combat-dice](fn-game-roll-ground-combat-dice.md) | `supabase/functions/game-roll-ground-combat-dice/index.ts` | 11 | Ground Combat | done | migration-028 |
 | [fn-game-assign-ground-hits](fn-game-assign-ground-hits.md) | ~~`supabase/functions/game-assign-ground-hits/index.ts`~~ | 11 | Ground Combat | deferred | Superseded by fn-game-assign-hits |
-| [migration-029-strategy-production](migration-029-strategy-production.md) | `supabase/migrations/029_strategy_production.sql` | 12 | Strategy Cards & Production | planned | — |
+| [migration-029-strategy-production](migration-029-strategy-production.md) | `supabase/migrations/029_strategy_production.sql` | 12 | Strategy Cards & Production | done | — |
 | [shared-abilityDsl](shared-abilityDsl.md) | `supabase/functions/_shared/abilityDsl.ts` | 12 | Strategy Cards & Production | planned | migration-029-strategy-production |
 | [fn-game-resolve-ability](fn-game-resolve-ability.md) | `supabase/functions/game-resolve-ability/index.ts` | 12 | Strategy Cards & Production | planned | shared-abilityDsl |
 | [fn-game-play-strategy-card](fn-game-play-strategy-card.md) | `supabase/functions/game-play-strategy-card/index.ts` | 12 | Strategy Cards & Production | planned | migration-029-strategy-production, fn-game-resolve-ability |
@@ -40,7 +40,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-SystemActionModal](component-SystemActionModal.md) | `src/components/game/SystemActionModal.jsx` | 12 | Strategy Cards & Production | planned | component-ProductionModal |
 | [component-MyPanelSection](component-MyPanelSection.md) | `src/components/game/MyPanelSection.jsx` | 12 | Strategy Cards & Production | planned | component-StrategyCardPanel |
 | [component-GameScreen](component-GameScreen.md) | `src/components/game/GameScreen.jsx` | 12 | Strategy Cards & Production | planned | hook-useStrategyCards, component-StrategyCardModal |
-| [migration-030-afb](migration-030-afb.md) | `supabase/migrations/030_afb.sql` | 13 | Anti-Fighter Barrage | planned | — |
+| [migration-030-afb](migration-030-afb.md) | `supabase/migrations/030_afb.sql` | 13 | Anti-Fighter Barrage | done | — |
 | [fn-game-fire-space-cannon](fn-game-fire-space-cannon.md) | `supabase/functions/game-fire-space-cannon/index.ts` | 13 | Anti-Fighter Barrage | planned | migration-030-afb |
 | [fn-game-roll-combat-dice](fn-game-roll-combat-dice.md) | `supabase/functions/game-roll-combat-dice/index.ts` | 13 / 20 | Anti-Fighter Barrage / Space Combat Action Cards | planned | fn-game-fire-anti-fighter-barrage, migration-036-combat-action-cards |
 | [fn-game-fire-anti-fighter-barrage](fn-game-fire-anti-fighter-barrage.md) | `supabase/functions/game-fire-anti-fighter-barrage/index.ts` | 13 / 14 | AFB / Full Invasion | planned | migration-030-afb, migration-031-invasion |
