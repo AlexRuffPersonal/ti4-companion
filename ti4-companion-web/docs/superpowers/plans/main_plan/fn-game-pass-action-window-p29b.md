@@ -1,7 +1,7 @@
 # fn-game-pass-action-window-p29b
 **File:** `supabase/functions/game-pass-action-window/index.ts`
-**Status:** Modify
-**Prereqs:** migration-042-action-window, fn-game-pass-action-window
+**Status:** Create
+**Prereqs:** migration-042-action-window
 
 ## Changes
 

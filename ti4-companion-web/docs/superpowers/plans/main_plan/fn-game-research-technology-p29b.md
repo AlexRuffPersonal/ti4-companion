@@ -5,6 +5,8 @@
 
 ## Changes
 
+**Note:** `game-research-technology/index.ts` currently uses the anonymous `Deno.serve(async (req) => {...})` pattern. Before adding window logic, refactor to `export async function handler(req: Request): Promise<Response>` + `if (typeof Deno !== 'undefined') Deno.serve(handler)` at the end so it is testable.
+
 After the technology is appended to the player's list and before returning `OK(...)`, open the `after_technology_researched` window if any other player holds a matching card.
 
 ```pseudocode
