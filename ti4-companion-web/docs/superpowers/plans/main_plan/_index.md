@@ -198,6 +198,13 @@ See [_standards.md](_standards.md) for shorthand used in all spec files.
 | [component-TechCard-p30](component-TechCard-p30.md) | `src/components/game/TechCard.jsx` | 30 | Technology Effect Enforcement | planned | component-TechCard-p28, hook-useTechnologies, lib-techConstants |
 | [component-MyPanelSection-p30](component-MyPanelSection-p30.md) | `src/components/game/MyPanelSection.jsx` | 30 | Technology Effect Enforcement | planned | component-MyPanelSection (p21), hook-useTechnologies, component-TechCard-p30 |
 
+| [hook-useGalaxy-p31](hook-useGalaxy-p31.md) | `src/hooks/useGalaxy.js` | 31 | System Tile & Planet Detail View | planned | — |
+| [component-SystemInfoModal](component-SystemInfoModal.md) | `src/components/game/SystemInfoModal.jsx` | 31 | System Tile & Planet Detail View | planned | hook-useGalaxy-p31 |
+| [component-SystemActionModal-p31](component-SystemActionModal-p31.md) | `src/components/game/SystemActionModal.jsx` | 31 | System Tile & Planet Detail View | planned | — |
+| [component-MyPanelSection-p31](component-MyPanelSection-p31.md) | `src/components/game/MyPanelSection.jsx` | 31 | System Tile & Planet Detail View | planned | hook-useGalaxy-p31 |
+| [component-GalaxyTab-p31](component-GalaxyTab-p31.md) | `src/components/game/GalaxyTab.jsx` | 31 | System Tile & Planet Detail View | planned | hook-useGalaxy-p31, component-SystemInfoModal, component-SystemActionModal-p31 |
+| [component-GameScreen-p31](component-GameScreen-p31.md) | `src/components/game/GameScreen.jsx` | 31 | System Tile & Planet Detail View | planned | hook-useGalaxy-p31, component-MyPanelSection-p31 |
+
 ---
 
 ## Planned Feature Areas (specs to be added)
@@ -207,4 +214,4 @@ Phases 24+ are listed in suggested implementation order. Phases 17–23 have spe
 | Phase | Feature Area | Priority | Notes |
 |-------|-------------|----------|-------|
 | 30 | Technology Effect Enforcement | Medium | Spec files added to main table above. |
-| 31 | System Tile & Planet Detail View | Low | Tap-to-detail overlay for system tiles showing full info: all planets with resources/influence/traits/tech-specialties, anomaly type, wormhole type. Also a dedicated planet card view rendering the same data for the planet cards section. |
+| 31 | System Tile & Planet Detail View | Low | Spec files added to main table above. |

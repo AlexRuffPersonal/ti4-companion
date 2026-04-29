@@ -843,136 +843,136 @@ All physical components for Twilight Imperium 4th Edition (Base Game), Prophecy 
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Mecatol Rex (tile 18) | System Tile — Special | Base Game | General | 1 | [x] | [ ] |
+| Mecatol Rex (tile 18) | System Tile — Special | Base Game | General | 1 | [x] | [p31] |
 
 ### Base Game Home Systems (Tile Back: Green)
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Arborec Home System (tile 05) | System Tile — Home | Base Game | Arborec | 1 | [x] | [ ] |
-| Letnev Home System (tile 10) | System Tile — Home | Base Game | Barony of Letnev | 1 | [x] | [ ] |
-| Clan of Saar Home System (tile 06) | System Tile — Home | Base Game | Clan of Saar | 1 | [x] | [ ] |
-| Embers of Muaat Home System (tile 11) | System Tile — Home | Base Game | Embers of Muaat | 1 | [x] | [ ] |
-| Emirates of Hacan Home System (tile 07) | System Tile — Home | Base Game | Emirates of Hacan | 1 | [x] | [ ] |
-| Federation of Sol Home System (tile 01) | System Tile — Home | Base Game | Federation of Sol | 1 | [x] | [ ] |
-| Ghosts of Creuss Gate (tile 17) | System Tile — Home | Base Game | Ghosts of Creuss | 1 | [x] | [ ] |
-| Ghosts of Creuss Home System (tile 03) | System Tile — Home | Base Game | Ghosts of Creuss | 1 | [x] | [ ] |
-| L1Z1X Mindnet Home System (tile 08) | System Tile — Home | Base Game | L1Z1X Mindnet | 1 | [x] | [ ] |
-| Mentak Coalition Home System (tile 04) | System Tile — Home | Base Game | Mentak Coalition | 1 | [x] | [ ] |
-| Naalu Collective Home System (tile 09) | System Tile — Home | Base Game | Naalu Collective | 1 | [x] | [ ] |
-| Nekro Virus Home System (tile 12) | System Tile — Home | Base Game | Nekro Virus | 1 | [x] | [ ] |
-| Sardakk N'orr Home System (tile 15) | System Tile — Home | Base Game | Sardakk N'orr | 1 | [x] | [ ] |
-| Jol-Nar Home System (tile 14) | System Tile — Home | Base Game | Universities of Jol-Nar | 1 | [x] | [ ] |
-| Winnu Home System (tile 16) | System Tile — Home | Base Game | Winnu | 1 | [x] | [ ] |
-| Xxcha Kingdom Home System (tile 02) | System Tile — Home | Base Game | Xxcha Kingdom | 1 | [x] | [ ] |
-| Yin Brotherhood Home System (tile 13) | System Tile — Home | Base Game | Yin Brotherhood | 1 | [x] | [ ] |
-| Yssaril Tribes Home System (tile 16b) | System Tile — Home | Base Game | Yssaril Tribes | 1 | [x] | [ ] |
+| Arborec Home System (tile 05) | System Tile — Home | Base Game | Arborec | 1 | [x] | [p31] |
+| Letnev Home System (tile 10) | System Tile — Home | Base Game | Barony of Letnev | 1 | [x] | [p31] |
+| Clan of Saar Home System (tile 06) | System Tile — Home | Base Game | Clan of Saar | 1 | [x] | [p31] |
+| Embers of Muaat Home System (tile 11) | System Tile — Home | Base Game | Embers of Muaat | 1 | [x] | [p31] |
+| Emirates of Hacan Home System (tile 07) | System Tile — Home | Base Game | Emirates of Hacan | 1 | [x] | [p31] |
+| Federation of Sol Home System (tile 01) | System Tile — Home | Base Game | Federation of Sol | 1 | [x] | [p31] |
+| Ghosts of Creuss Gate (tile 17) | System Tile — Home | Base Game | Ghosts of Creuss | 1 | [x] | [p31] |
+| Ghosts of Creuss Home System (tile 03) | System Tile — Home | Base Game | Ghosts of Creuss | 1 | [x] | [p31] |
+| L1Z1X Mindnet Home System (tile 08) | System Tile — Home | Base Game | L1Z1X Mindnet | 1 | [x] | [p31] |
+| Mentak Coalition Home System (tile 04) | System Tile — Home | Base Game | Mentak Coalition | 1 | [x] | [p31] |
+| Naalu Collective Home System (tile 09) | System Tile — Home | Base Game | Naalu Collective | 1 | [x] | [p31] |
+| Nekro Virus Home System (tile 12) | System Tile — Home | Base Game | Nekro Virus | 1 | [x] | [p31] |
+| Sardakk N'orr Home System (tile 15) | System Tile — Home | Base Game | Sardakk N'orr | 1 | [x] | [p31] |
+| Jol-Nar Home System (tile 14) | System Tile — Home | Base Game | Universities of Jol-Nar | 1 | [x] | [p31] |
+| Winnu Home System (tile 16) | System Tile — Home | Base Game | Winnu | 1 | [x] | [p31] |
+| Xxcha Kingdom Home System (tile 02) | System Tile — Home | Base Game | Xxcha Kingdom | 1 | [x] | [p31] |
+| Yin Brotherhood Home System (tile 13) | System Tile — Home | Base Game | Yin Brotherhood | 1 | [x] | [p31] |
+| Yssaril Tribes Home System (tile 16b) | System Tile — Home | Base Game | Yssaril Tribes | 1 | [x] | [p31] |
 
 ### PoK Home Systems
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Argent Flight Home System (tile 58) | System Tile — Home | PoK | Argent Flight | 1 | [x] | [ ] |
-| Empyrean Home System (tile 56) | System Tile — Home | PoK | Empyrean | 1 | [x] | [ ] |
-| Mahact Home System (tile 52) | System Tile — Home | PoK | Mahact Gene-Sorcerers | 1 | [x] | [ ] |
-| Naaz-Rokha Home System (tile 57) | System Tile — Home | PoK | Naaz-Rokha Alliance | 1 | [x] | [ ] |
-| Nomad Home System (tile 55) | System Tile — Home | PoK | Nomad | 1 | [x] | [ ] |
-| Titans of Ul Home System (tile 53) | System Tile — Home | PoK | Titans of Ul | 1 | [x] | [ ] |
-| Vuil'raith Cabal Home System (tile 54) | System Tile — Home | PoK | Vuil'raith Cabal | 1 | [x] | [ ] |
+| Argent Flight Home System (tile 58) | System Tile — Home | PoK | Argent Flight | 1 | [x] | [p31] |
+| Empyrean Home System (tile 56) | System Tile — Home | PoK | Empyrean | 1 | [x] | [p31] |
+| Mahact Home System (tile 52) | System Tile — Home | PoK | Mahact Gene-Sorcerers | 1 | [x] | [p31] |
+| Naaz-Rokha Home System (tile 57) | System Tile — Home | PoK | Naaz-Rokha Alliance | 1 | [x] | [p31] |
+| Nomad Home System (tile 55) | System Tile — Home | PoK | Nomad | 1 | [x] | [p31] |
+| Titans of Ul Home System (tile 53) | System Tile — Home | PoK | Titans of Ul | 1 | [x] | [p31] |
+| Vuil'raith Cabal Home System (tile 54) | System Tile — Home | PoK | Vuil'raith Cabal | 1 | [x] | [p31] |
 
 ### Non-Home Blue-Back System Tiles (Base Game)
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Tile 19 (Welfor/Abyz) | System Tile — Blue | Base Game | General | 1 | [x] | [ ] |
-| Tile 20 (Thibah/Xxxcha) | System Tile — Blue | Base Game | General | 1 | [x] | [ ] |
-| Tile 21 (Quann/Lodor) | System Tile — Blue | Base Game | General | 1 | [x] | [ ] |
-| Tile 22 (Mehar Xull/Harrugh Gefhara) | System Tile — Blue | Base Game | General | 1 | [x] | [ ] |
-| Tile 23 (Lazar/Sakulag) | System Tile — Blue | Base Game | General | 1 | [x] | [ ] |
-| Tile 24 (Dal Bootha/Xxehan) | System Tile — Blue | Base Game | General | 1 | [x] | [ ] |
-| Tile 25 (Corneeq/Resculon) | System Tile — Blue | Base Game | General | 1 | [x] | [ ] |
-| Tile 26 (Centauri/Gral) | System Tile — Blue | Base Game | General | 1 | [x] | [ ] |
-| Tile 27 (Bereg/Lirta IV) | System Tile — Blue | Base Game | General | 1 | [x] | [ ] |
-| Tile 28 (Arnor/Lor) | System Tile — Blue | Base Game | General | 1 | [x] | [ ] |
-| Tile 29 (Mellon/Zohbat) | System Tile — Blue | Base Game | General | 1 | [x] | [ ] |
-| Tile 30 (New Albion/Starpoint) | System Tile — Blue | Base Game | General | 1 | [x] | [ ] |
-| Tile 31 (Torkan/Qucen'n/Rarron) | System Tile — Blue | Base Game | General | 1 | [x] | [ ] |
-| Tile 32 (Saudor/Nar/Trenlak) | System Tile — Blue | Base Game | General | 1 | [x] | [ ] |
-| Tile 33 (Welfor/Abyz, alt) | System Tile — Blue | Base Game | General | 1 | [x] | [ ] |
-| Tile 34 (Vefut II) | System Tile — Blue | Base Game | General | 1 | [x] | [ ] |
-| Tile 35 (Tar-Mann/Qucen'n) | System Tile — Blue | Base Game | General | 1 | [x] | [ ] |
-| Tile 36 (Atlas/Primor) | System Tile — Blue | Base Game | General | 1 | [x] | [ ] |
-| Tile 37 (Hope's End/Kraag) | System Tile — Blue | Base Game | General | 1 | [x] | [ ] |
-| Tile 38 (Tequran/Torkan) | System Tile — Blue | Base Game | General | 1 | [x] | [ ] |
-| Tile 39 (Saudor) | System Tile — Blue | Base Game | General | 1 | [x] | [ ] |
-| Tile 40 (Nar/Trenlak) | System Tile — Blue | Base Game | General | 1 | [x] | [ ] |
-| Tile 41 (Valk/Avar/Ylir, Creuss Wormhole) | System Tile — Blue | Base Game | Ghosts of Creuss | 1 | [x] | [ ] |
+| Tile 19 (Welfor/Abyz) | System Tile — Blue | Base Game | General | 1 | [x] | [p31] |
+| Tile 20 (Thibah/Xxxcha) | System Tile — Blue | Base Game | General | 1 | [x] | [p31] |
+| Tile 21 (Quann/Lodor) | System Tile — Blue | Base Game | General | 1 | [x] | [p31] |
+| Tile 22 (Mehar Xull/Harrugh Gefhara) | System Tile — Blue | Base Game | General | 1 | [x] | [p31] |
+| Tile 23 (Lazar/Sakulag) | System Tile — Blue | Base Game | General | 1 | [x] | [p31] |
+| Tile 24 (Dal Bootha/Xxehan) | System Tile — Blue | Base Game | General | 1 | [x] | [p31] |
+| Tile 25 (Corneeq/Resculon) | System Tile — Blue | Base Game | General | 1 | [x] | [p31] |
+| Tile 26 (Centauri/Gral) | System Tile — Blue | Base Game | General | 1 | [x] | [p31] |
+| Tile 27 (Bereg/Lirta IV) | System Tile — Blue | Base Game | General | 1 | [x] | [p31] |
+| Tile 28 (Arnor/Lor) | System Tile — Blue | Base Game | General | 1 | [x] | [p31] |
+| Tile 29 (Mellon/Zohbat) | System Tile — Blue | Base Game | General | 1 | [x] | [p31] |
+| Tile 30 (New Albion/Starpoint) | System Tile — Blue | Base Game | General | 1 | [x] | [p31] |
+| Tile 31 (Torkan/Qucen'n/Rarron) | System Tile — Blue | Base Game | General | 1 | [x] | [p31] |
+| Tile 32 (Saudor/Nar/Trenlak) | System Tile — Blue | Base Game | General | 1 | [x] | [p31] |
+| Tile 33 (Welfor/Abyz, alt) | System Tile — Blue | Base Game | General | 1 | [x] | [p31] |
+| Tile 34 (Vefut II) | System Tile — Blue | Base Game | General | 1 | [x] | [p31] |
+| Tile 35 (Tar-Mann/Qucen'n) | System Tile — Blue | Base Game | General | 1 | [x] | [p31] |
+| Tile 36 (Atlas/Primor) | System Tile — Blue | Base Game | General | 1 | [x] | [p31] |
+| Tile 37 (Hope's End/Kraag) | System Tile — Blue | Base Game | General | 1 | [x] | [p31] |
+| Tile 38 (Tequran/Torkan) | System Tile — Blue | Base Game | General | 1 | [x] | [p31] |
+| Tile 39 (Saudor) | System Tile — Blue | Base Game | General | 1 | [x] | [p31] |
+| Tile 40 (Nar/Trenlak) | System Tile — Blue | Base Game | General | 1 | [x] | [p31] |
+| Tile 41 (Valk/Avar/Ylir, Creuss Wormhole) | System Tile — Blue | Base Game | Ghosts of Creuss | 1 | [x] | [p31] |
 
 ### Non-Home Red-Back System Tiles (Base Game — Anomalies, Empty)
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Tile 42 (Muaat Supernova) | System Tile — Red | Base Game | General | 1 | [x] | [ ] |
-| Tile 43 (Asteroid Field) | System Tile — Red | Base Game | General | 1 | [x] | [ ] |
-| Tile 44 (Supernova) | System Tile — Red | Base Game | General | 1 | [x] | [ ] |
-| Tile 45 (Gravity Rift) | System Tile — Red | Base Game | General | 1 | [x] | [ ] |
-| Tile 46 (Nebula) | System Tile — Red | Base Game | General | 1 | [x] | [ ] |
-| Tile 47 (Gravity Rift with Planet) | System Tile — Red | Base Game | General | 1 | [x] | [ ] |
-| Tile 48 (Alpha Wormhole) | System Tile — Red | Base Game | General | 1 | [x] | [ ] |
-| Tile 49 (Beta Wormhole) | System Tile — Red | Base Game | General | 1 | [x] | [ ] |
-| Tile 50 (Empty) | System Tile — Red | Base Game | General | 1 | [x] | [ ] |
+| Tile 42 (Muaat Supernova) | System Tile — Red | Base Game | General | 1 | [x] | [p31] |
+| Tile 43 (Asteroid Field) | System Tile — Red | Base Game | General | 1 | [x] | [p31] |
+| Tile 44 (Supernova) | System Tile — Red | Base Game | General | 1 | [x] | [p31] |
+| Tile 45 (Gravity Rift) | System Tile — Red | Base Game | General | 1 | [x] | [p31] |
+| Tile 46 (Nebula) | System Tile — Red | Base Game | General | 1 | [x] | [p31] |
+| Tile 47 (Gravity Rift with Planet) | System Tile — Red | Base Game | General | 1 | [x] | [p31] |
+| Tile 48 (Alpha Wormhole) | System Tile — Red | Base Game | General | 1 | [x] | [p31] |
+| Tile 49 (Beta Wormhole) | System Tile — Red | Base Game | General | 1 | [x] | [p31] |
+| Tile 50 (Empty) | System Tile — Red | Base Game | General | 1 | [x] | [p31] |
 
 ### PoK System Tiles (Blue-Back)
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Tile 59 (Archon Vail) | System Tile — Blue | PoK | General | 1 | [x] | [ ] |
-| Tile 60 (Perimeter) | System Tile — Blue | PoK | General | 1 | [x] | [ ] |
-| Tile 61 (Alio Prima) | System Tile — Blue | PoK | General | 1 | [x] | [ ] |
-| Tile 62 (Sem-Leth/Vorhal) | System Tile — Blue | PoK | General | 1 | [x] | [ ] |
-| Tile 63 (Atlas) | System Tile — Blue | PoK | General | 1 | [x] | [ ] |
-| Tile 64 (Rigel I/Rigel II/Rigel III) | System Tile — Blue | PoK | General | 1 | [x] | [ ] |
-| Tile 65 (Abaddon/Ashtroth/Loki) | System Tile — Blue | PoK | General | 1 | [x] | [ ] |
-| Tile 66 (Naazir/Rokha) | System Tile — Blue | PoK | Naaz-Rokha Alliance | 1 | [x] | [ ] |
-| Tile 67 (Vega Major/Vega Minor) | System Tile — Blue | PoK | General | 1 | [x] | [ ] |
-| Tile 68 (Ixth) | System Tile — Blue | PoK | General | 1 | [x] | [ ] |
-| Tile 69 (Accoen/Jeol Ir) | System Tile — Blue | PoK | General | 1 | [x] | [ ] |
-| Tile 70 (Kraag/Siig) | System Tile — Blue | PoK | General | 1 | [x] | [ ] |
-| Tile 71 (Ba'kal) | System Tile — Blue | PoK | General | 1 | [x] | [ ] |
-| Tile 72 (Alio Prima/Lisis II) | System Tile — Blue | PoK | General | 1 | [x] | [ ] |
-| Tile 73 (Ang/Seufert) | System Tile — Blue | PoK | General | 1 | [x] | [ ] |
-| Tile 74 (Inan/Abyz) | System Tile — Blue | PoK | General | 1 | [x] | [ ] |
-| Tile 75 (Wren/Pax) | System Tile — Blue | PoK | General | 1 | [x] | [ ] |
-| Tile 76 (Saudor/Lodor) | System Tile — Blue | PoK | General | 1 | [x] | [ ] |
+| Tile 59 (Archon Vail) | System Tile — Blue | PoK | General | 1 | [x] | [p31] |
+| Tile 60 (Perimeter) | System Tile — Blue | PoK | General | 1 | [x] | [p31] |
+| Tile 61 (Alio Prima) | System Tile — Blue | PoK | General | 1 | [x] | [p31] |
+| Tile 62 (Sem-Leth/Vorhal) | System Tile — Blue | PoK | General | 1 | [x] | [p31] |
+| Tile 63 (Atlas) | System Tile — Blue | PoK | General | 1 | [x] | [p31] |
+| Tile 64 (Rigel I/Rigel II/Rigel III) | System Tile — Blue | PoK | General | 1 | [x] | [p31] |
+| Tile 65 (Abaddon/Ashtroth/Loki) | System Tile — Blue | PoK | General | 1 | [x] | [p31] |
+| Tile 66 (Naazir/Rokha) | System Tile — Blue | PoK | Naaz-Rokha Alliance | 1 | [x] | [p31] |
+| Tile 67 (Vega Major/Vega Minor) | System Tile — Blue | PoK | General | 1 | [x] | [p31] |
+| Tile 68 (Ixth) | System Tile — Blue | PoK | General | 1 | [x] | [p31] |
+| Tile 69 (Accoen/Jeol Ir) | System Tile — Blue | PoK | General | 1 | [x] | [p31] |
+| Tile 70 (Kraag/Siig) | System Tile — Blue | PoK | General | 1 | [x] | [p31] |
+| Tile 71 (Ba'kal) | System Tile — Blue | PoK | General | 1 | [x] | [p31] |
+| Tile 72 (Alio Prima/Lisis II) | System Tile — Blue | PoK | General | 1 | [x] | [p31] |
+| Tile 73 (Ang/Seufert) | System Tile — Blue | PoK | General | 1 | [x] | [p31] |
+| Tile 74 (Inan/Abyz) | System Tile — Blue | PoK | General | 1 | [x] | [p31] |
+| Tile 75 (Wren/Pax) | System Tile — Blue | PoK | General | 1 | [x] | [p31] |
+| Tile 76 (Saudor/Lodor) | System Tile — Blue | PoK | General | 1 | [x] | [p31] |
 
 ### PoK System Tiles (Red-Back)
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Tile 77 (Cormund/Everra) | System Tile — Red | PoK | General | 1 | [x] | [ ] |
-| Tile 78 (Asteroid Field variant) | System Tile — Red | PoK | General | 1 | [x] | [ ] |
-| Tile 79 (Supernova/Empty) | System Tile — Red | PoK | General | 1 | [x] | [ ] |
-| Tile 80 (Gravity Rift/Empty) | System Tile — Red | PoK | General | 1 | [x] | [ ] |
-| Tile 81 (Muaat System) | System Tile — Red | PoK | General | 1 | [x] | [ ] |
-| Tile 82 (Wormhole Nexus) | System Tile — Special | PoK | General | 1 | [x] | [ ] |
+| Tile 77 (Cormund/Everra) | System Tile — Red | PoK | General | 1 | [x] | [p31] |
+| Tile 78 (Asteroid Field variant) | System Tile — Red | PoK | General | 1 | [x] | [p31] |
+| Tile 79 (Supernova/Empty) | System Tile — Red | PoK | General | 1 | [x] | [p31] |
+| Tile 80 (Gravity Rift/Empty) | System Tile — Red | PoK | General | 1 | [x] | [p31] |
+| Tile 81 (Muaat System) | System Tile — Red | PoK | General | 1 | [x] | [p31] |
+| Tile 82 (Wormhole Nexus) | System Tile — Special | PoK | General | 1 | [x] | [p31] |
 
 ### Hyperlane Tiles (PoK)
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Hyperlane Tile 83A | Hyperlane Tile | PoK | General | 1 | [x] | [ ] |
-| Hyperlane Tile 83B | Hyperlane Tile | PoK | General | 1 | [x] | [ ] |
-| Hyperlane Tile 84A | Hyperlane Tile | PoK | General | 1 | [x] | [ ] |
-| Hyperlane Tile 84B | Hyperlane Tile | PoK | General | 1 | [x] | [ ] |
-| Hyperlane Tile 85A | Hyperlane Tile | PoK | General | 1 | [x] | [ ] |
-| Hyperlane Tile 85B | Hyperlane Tile | PoK | General | 1 | [x] | [ ] |
-| Hyperlane Tile 86A | Hyperlane Tile | PoK | General | 1 | [x] | [ ] |
-| Hyperlane Tile 86B | Hyperlane Tile | PoK | General | 1 | [x] | [ ] |
-| Hyperlane Tile 87A | Hyperlane Tile | PoK | General | 1 | [x] | [ ] |
-| Hyperlane Tile 88A | Hyperlane Tile | PoK | General | 1 | [x] | [ ] |
-| Hyperlane Tile 88B | Hyperlane Tile | PoK | General | 1 | [x] | [ ] |
-| Hyperlane Tile 89B | Hyperlane Tile | PoK | General | 1 | [x] | [ ] |
-| Hyperlane Tile 90B | Hyperlane Tile | PoK | General | 1 | [x] | [ ] |
+| Hyperlane Tile 83A | Hyperlane Tile | PoK | General | 1 | [x] | [p31] |
+| Hyperlane Tile 83B | Hyperlane Tile | PoK | General | 1 | [x] | [p31] |
+| Hyperlane Tile 84A | Hyperlane Tile | PoK | General | 1 | [x] | [p31] |
+| Hyperlane Tile 84B | Hyperlane Tile | PoK | General | 1 | [x] | [p31] |
+| Hyperlane Tile 85A | Hyperlane Tile | PoK | General | 1 | [x] | [p31] |
+| Hyperlane Tile 85B | Hyperlane Tile | PoK | General | 1 | [x] | [p31] |
+| Hyperlane Tile 86A | Hyperlane Tile | PoK | General | 1 | [x] | [p31] |
+| Hyperlane Tile 86B | Hyperlane Tile | PoK | General | 1 | [x] | [p31] |
+| Hyperlane Tile 87A | Hyperlane Tile | PoK | General | 1 | [x] | [p31] |
+| Hyperlane Tile 88A | Hyperlane Tile | PoK | General | 1 | [x] | [p31] |
+| Hyperlane Tile 88B | Hyperlane Tile | PoK | General | 1 | [x] | [p31] |
+| Hyperlane Tile 89B | Hyperlane Tile | PoK | General | 1 | [x] | [p31] |
+| Hyperlane Tile 90B | Hyperlane Tile | PoK | General | 1 | [x] | [p31] |
 
 ---
 
@@ -1037,106 +1037,106 @@ All physical components for Twilight Imperium 4th Edition (Base Game), Prophecy 
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Mecatol Rex | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Welfor | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Abyz | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Thibah | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Quann | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Lodor | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Mehar Xull | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Harrugh Gefhara | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Lazar | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Sakulag | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Dal Bootha | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Xxehan | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Corneeq | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Resculon | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Centauri | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Gral | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Bereg | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Lirta IV | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Arnor | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Lor | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Mellon | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Zohbat | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| New Albion | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Starpoint | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Torkan | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Qucen'n | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Rarron | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Saudor | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Nar | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Trenlak | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Vefut II | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Tar-Mann | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Atlas | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Primor | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Hope's End | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Kraag | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Tequran | Planet Card | Base Game | General | 1 | [x] | [ ] |
-| Valk | Planet Card | Base Game | Ghosts of Creuss | 1 | [x] | [ ] |
-| Avar | Planet Card | Base Game | Ghosts of Creuss | 1 | [x] | [ ] |
-| Ylir | Planet Card | Base Game | Ghosts of Creuss | 1 | [x] | [ ] |
-| Jol | Planet Card | Base Game | Universities of Jol-Nar | 1 | [x] | [ ] |
-| Nar (Jol-Nar) | Planet Card | Base Game | Universities of Jol-Nar | 1 | [x] | [ ] |
-| Moll Primus | Planet Card | Base Game | Arborec | 1 | [x] | [ ] |
-| Darien | Planet Card | Base Game | Clan of Saar | 1 | [x] | [ ] |
-| Muaat | Planet Card | Base Game | Embers of Muaat | 1 | [x] | [ ] |
-| Arretze | Planet Card | Base Game | Emirates of Hacan | 1 | [x] | [ ] |
-| Kamdorn | Planet Card | Base Game | Emirates of Hacan | 1 | [x] | [ ] |
-| Hercant | Planet Card | Base Game | Emirates of Hacan | 1 | [x] | [ ] |
-| Jord | Planet Card | Base Game | Federation of Sol | 1 | [x] | [ ] |
-| Creuss | Planet Card | Base Game | Ghosts of Creuss | 1 | [x] | [ ] |
-| [0.0.0] | Planet Card | Base Game | L1Z1X Mindnet | 1 | [x] | [ ] |
-| Maaluuk | Planet Card | Base Game | Mentak Coalition | 1 | [x] | [ ] |
-| Druaa | Planet Card | Base Game | Mentak Coalition | 1 | [x] | [ ] |
-| Naalu | Planet Card | Base Game | Naalu Collective | 1 | [x] | [ ] |
-| Nar (Nekro) | Planet Card | Base Game | Nekro Virus | 1 | [x] | [ ] |
-| Mordai II | Planet Card | Base Game | Nekro Virus | 1 | [x] | [ ] |
-| Quinarra | Planet Card | Base Game | Sardakk N'orr | 1 | [x] | [ ] |
-| Tren'lak | Planet Card | Base Game | Sardakk N'orr | 1 | [x] | [ ] |
-| Winnu (planet) | Planet Card | Base Game | Winnu | 1 | [x] | [ ] |
-| Archon Ren | Planet Card | Base Game | Xxcha Kingdom | 1 | [x] | [ ] |
-| Archon Tau | Planet Card | Base Game | Xxcha Kingdom | 1 | [x] | [ ] |
-| Yin (planet) | Planet Card | Base Game | Yin Brotherhood | 1 | [x] | [ ] |
-| Industrex | Planet Card | Base Game | Yin Brotherhood | 1 | [x] | [ ] |
-| Retillion | Planet Card | Base Game | Yssaril Tribes | 1 | [x] | [ ] |
-| Shalloq | Planet Card | Base Game | Yssaril Tribes | 1 | [x] | [ ] |
-| Letnev (Wren) | Planet Card | Base Game | Barony of Letnev | 1 | [x] | [ ] |
-| Arc Prime | Planet Card | Base Game | Barony of Letnev | 1 | [x] | [ ] |
-| Wren Prime | Planet Card | Base Game | Barony of Letnev | 1 | [x] | [ ] |
-| Archon Vail | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Perimeter | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Alio Prima | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Sem-Leth | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Vorhal | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Rigel I | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Rigel II | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Rigel III | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Abaddon | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Ashtroth | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Loki | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Naazir (planet) | Planet Card | PoK | Naaz-Rokha Alliance | 1 | [x] | [ ] |
-| Rokha (planet) | Planet Card | PoK | Naaz-Rokha Alliance | 1 | [x] | [ ] |
-| Vega Major | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Vega Minor | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Ixth | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Accoen | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Jeol Ir | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Siig | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Ba'kal | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Lisis II | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Ang | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Seufert | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Inan | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Wren (PoK) | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Pax | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Cormund | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Everra | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Mirage | Planet Card | PoK | General | 1 | [x] | [ ] |
-| Elysium | Planet Card | PoK | Empyrean | 1 | [x] | [ ] |
-| Mallice | Planet Card | PoK | Vuil'raith Cabal | 1 | [x] | [ ] |
-| Acheron | Planet Card | PoK | Mahact Gene-Sorcerers | 1 | [x] | [ ] |
-| Tur | Planet Card | PoK | Argent Flight | 1 | [x] | [ ] |
-| Ul | Planet Card | PoK | Titans of Ul | 1 | [x] | [ ] |
-| Nokk | Planet Card | PoK | Nomad | 1 | [x] | [ ] |
+| Mecatol Rex | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Welfor | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Abyz | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Thibah | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Quann | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Lodor | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Mehar Xull | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Harrugh Gefhara | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Lazar | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Sakulag | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Dal Bootha | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Xxehan | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Corneeq | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Resculon | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Centauri | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Gral | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Bereg | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Lirta IV | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Arnor | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Lor | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Mellon | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Zohbat | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| New Albion | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Starpoint | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Torkan | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Qucen'n | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Rarron | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Saudor | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Nar | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Trenlak | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Vefut II | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Tar-Mann | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Atlas | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Primor | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Hope's End | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Kraag | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Tequran | Planet Card | Base Game | General | 1 | [x] | [p31] |
+| Valk | Planet Card | Base Game | Ghosts of Creuss | 1 | [x] | [p31] |
+| Avar | Planet Card | Base Game | Ghosts of Creuss | 1 | [x] | [p31] |
+| Ylir | Planet Card | Base Game | Ghosts of Creuss | 1 | [x] | [p31] |
+| Jol | Planet Card | Base Game | Universities of Jol-Nar | 1 | [x] | [p31] |
+| Nar (Jol-Nar) | Planet Card | Base Game | Universities of Jol-Nar | 1 | [x] | [p31] |
+| Moll Primus | Planet Card | Base Game | Arborec | 1 | [x] | [p31] |
+| Darien | Planet Card | Base Game | Clan of Saar | 1 | [x] | [p31] |
+| Muaat | Planet Card | Base Game | Embers of Muaat | 1 | [x] | [p31] |
+| Arretze | Planet Card | Base Game | Emirates of Hacan | 1 | [x] | [p31] |
+| Kamdorn | Planet Card | Base Game | Emirates of Hacan | 1 | [x] | [p31] |
+| Hercant | Planet Card | Base Game | Emirates of Hacan | 1 | [x] | [p31] |
+| Jord | Planet Card | Base Game | Federation of Sol | 1 | [x] | [p31] |
+| Creuss | Planet Card | Base Game | Ghosts of Creuss | 1 | [x] | [p31] |
+| [0.0.0] | Planet Card | Base Game | L1Z1X Mindnet | 1 | [x] | [p31] |
+| Maaluuk | Planet Card | Base Game | Mentak Coalition | 1 | [x] | [p31] |
+| Druaa | Planet Card | Base Game | Mentak Coalition | 1 | [x] | [p31] |
+| Naalu | Planet Card | Base Game | Naalu Collective | 1 | [x] | [p31] |
+| Nar (Nekro) | Planet Card | Base Game | Nekro Virus | 1 | [x] | [p31] |
+| Mordai II | Planet Card | Base Game | Nekro Virus | 1 | [x] | [p31] |
+| Quinarra | Planet Card | Base Game | Sardakk N'orr | 1 | [x] | [p31] |
+| Tren'lak | Planet Card | Base Game | Sardakk N'orr | 1 | [x] | [p31] |
+| Winnu (planet) | Planet Card | Base Game | Winnu | 1 | [x] | [p31] |
+| Archon Ren | Planet Card | Base Game | Xxcha Kingdom | 1 | [x] | [p31] |
+| Archon Tau | Planet Card | Base Game | Xxcha Kingdom | 1 | [x] | [p31] |
+| Yin (planet) | Planet Card | Base Game | Yin Brotherhood | 1 | [x] | [p31] |
+| Industrex | Planet Card | Base Game | Yin Brotherhood | 1 | [x] | [p31] |
+| Retillion | Planet Card | Base Game | Yssaril Tribes | 1 | [x] | [p31] |
+| Shalloq | Planet Card | Base Game | Yssaril Tribes | 1 | [x] | [p31] |
+| Letnev (Wren) | Planet Card | Base Game | Barony of Letnev | 1 | [x] | [p31] |
+| Arc Prime | Planet Card | Base Game | Barony of Letnev | 1 | [x] | [p31] |
+| Wren Prime | Planet Card | Base Game | Barony of Letnev | 1 | [x] | [p31] |
+| Archon Vail | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Perimeter | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Alio Prima | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Sem-Leth | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Vorhal | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Rigel I | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Rigel II | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Rigel III | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Abaddon | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Ashtroth | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Loki | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Naazir (planet) | Planet Card | PoK | Naaz-Rokha Alliance | 1 | [x] | [p31] |
+| Rokha (planet) | Planet Card | PoK | Naaz-Rokha Alliance | 1 | [x] | [p31] |
+| Vega Major | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Vega Minor | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Ixth | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Accoen | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Jeol Ir | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Siig | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Ba'kal | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Lisis II | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Ang | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Seufert | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Inan | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Wren (PoK) | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Pax | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Cormund | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Everra | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Mirage | Planet Card | PoK | General | 1 | [x] | [p31] |
+| Elysium | Planet Card | PoK | Empyrean | 1 | [x] | [p31] |
+| Mallice | Planet Card | PoK | Vuil'raith Cabal | 1 | [x] | [p31] |
+| Acheron | Planet Card | PoK | Mahact Gene-Sorcerers | 1 | [x] | [p31] |
+| Tur | Planet Card | PoK | Argent Flight | 1 | [x] | [p31] |
+| Ul | Planet Card | PoK | Titans of Ul | 1 | [x] | [p31] |
+| Nokk | Planet Card | PoK | Nomad | 1 | [x] | [p31] |
