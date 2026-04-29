@@ -27,103 +27,104 @@ All physical components for Twilight Imperium 4th Edition (Base Game), Prophecy 
 ## Action Cards
 
 > 80 base game cards + 13 PoK additions = 93 unique named cards total.  
-> Cards where the site listed x1 may appear as x1 in the deck; cards listed x4 appear 4 times.
+> Cards where the site listed x1 may appear as x1 in the deck; cards listed x4 appear 4 times.  
+> Implementation: `[p20]` = Phase 20 (combat-timing), `[p29]` = Phase 29 (all other timings).
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Ancient Burial Sites | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Archaeological Expedition | Action Card | PoK | General | 1 | [ ] | [x] |
-| Assassinate Representative | Action Card | PoK | General | 1 | [ ] | [x] |
-| Blitz | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Bribery | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Bunker | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Confounding Legal Text | Action Card | PoK | General | 1 | [ ] | [x] |
-| Confusing Legal Text | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Construction Rider | Action Card | PoK | General | 1 | [ ] | [x] |
-| Counterstroke | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Coup d'Etat | Action Card | PoK | General | 1 | [ ] | [x] |
-| Courageous to the End | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Cripple Defenses | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Deadly Plot | Action Card | PoK | General | 1 | [ ] | [x] |
-| Decoy Operation | Action Card | PoK | General | 1 | [ ] | [x] |
-| Diplomacy Rider | Action Card | PoK | General | 1 | [ ] | [x] |
-| Diplomatic Pressure | Action Card | Base Game | General | 4 | [ ] | [x] |
-| Direct Hit | Action Card | Base Game | General | 4 | [ ] | [x] |
-| Disable | Action Card | PoK | General | 1 | [ ] | [x] |
-| Distinguished Councilor | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Divert Funding | Action Card | PoK | General | 1 | [ ] | [x] |
-| Economic Initiative | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Emergency Repairs | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Experimental Battlestation | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Exploration Probe | Action Card | PoK | General | 1 | [ ] | [x] |
-| Fighter Conscription | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Fighter Prototype | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Fire Team | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Flank Speed | Action Card | Base Game | General | 4 | [ ] | [x] |
-| Focused Research | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Forward Supply Base | Action Card | PoK | General | 1 | [ ] | [x] |
-| Frontline Deployment | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Ghost Ship | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Ghost Squad | Action Card | PoK | General | 1 | [ ] | [x] |
-| Hack Election | Action Card | PoK | General | 1 | [ ] | [x] |
-| Harness Energy | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Imperial Rider | Action Card | PoK | General | 1 | [ ] | [x] |
-| Impersonation | Action Card | Base Game | General | 1 | [ ] | [x] |
-| In The Silence Of Space | Action Card | PoK | General | 1 | [ ] | [x] |
-| Industrial Initiative | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Infiltrate | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Insider Information | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Insubordination | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Intercept | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Leadership Rider | Action Card | PoK | General | 1 | [ ] | [x] |
-| Lost Star Chart | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Lucky Shot | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Maneuvering Jets | Action Card | Base Game | General | 4 | [ ] | [x] |
-| Manipulate Investments | Action Card | PoK | General | 1 | [ ] | [x] |
-| Master Plan | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Mining Initiative | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Morale Boost | Action Card | Base Game | General | 4 | [ ] | [x] |
-| Nav Suite | Action Card | PoK | General | 1 | [ ] | [x] |
-| Parley | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Plagiarize | Action Card | PoK | General | 1 | [ ] | [x] |
-| Plague | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Political Stability | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Politics Rider | Action Card | PoK | General | 1 | [ ] | [x] |
-| Public Disgrace | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Rally | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Reactor Meltdown | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Refit Troops | Action Card | PoK | General | 1 | [ ] | [x] |
-| Reflective Shielding | Action Card | PoK | General | 1 | [ ] | [x] |
-| Reparations | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Repeal Law | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Reveal Prototype | Action Card | PoK | General | 1 | [ ] | [x] |
-| Reverse Engineer | Action Card | PoK | General | 1 | [ ] | [x] |
-| Rise of a Messiah | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Rout | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Sabotage | Action Card | Base Game | General | 4 | [ ] | [x] |
-| Salvage | Action Card | PoK | General | 1 | [ ] | [x] |
-| Sanction | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Scramble Frequency | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Scuttle | Action Card | PoK | General | 1 | [ ] | [x] |
-| Seize Artifact | Action Card | PoK | General | 1 | [ ] | [x] |
-| Shields Holding | Action Card | Base Game | General | 4 | [ ] | [x] |
-| Signal Jamming | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Skilled Retreat | Action Card | Base Game | General | 4 | [ ] | [x] |
-| Solar Flare | Action Card | PoK | General | 1 | [ ] | [x] |
-| Spy | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Summit | Action Card | PoK | General | 1 | [ ] | [x] |
-| Tactical Bombardment | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Technology Rider | Action Card | PoK | General | 1 | [ ] | [x] |
-| Trade Rider | Action Card | PoK | General | 1 | [ ] | [x] |
-| Unexpected Action | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Unstable Planet | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Upgrade | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Uprising | Action Card | Base Game | General | 1 | [ ] | [x] |
-| Veto | Action Card | Base Game | General | 1 | [ ] | [x] |
-| War Effort | Action Card | Base Game | General | 1 | [ ] | [x] |
-| War Machine | Action Card | Base Game | General | 4 | [ ] | [x] |
-| Warfare Rider | Action Card | PoK | General | 1 | [ ] | [x] |
-| Waylay | Action Card | Base Game | General | 1 | [ ] | [x] |
+| Ancient Burial Sites | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Archaeological Expedition | Action Card | PoK | General | 1 | [p29] | [x] |
+| Assassinate Representative | Action Card | PoK | General | 1 | [p29] | [x] |
+| Blitz | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Bribery | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Bunker | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Confounding Legal Text | Action Card | PoK | General | 1 | [p29] | [x] |
+| Confusing Legal Text | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Construction Rider | Action Card | PoK | General | 1 | [p29] | [x] |
+| Counterstroke | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Coup d'Etat | Action Card | PoK | General | 1 | [p29] | [x] |
+| Courageous to the End | Action Card | Base Game | General | 1 | [p20] | [x] |
+| Cripple Defenses | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Deadly Plot | Action Card | PoK | General | 1 | [p29] | [x] |
+| Decoy Operation | Action Card | PoK | General | 1 | [p29] | [x] |
+| Diplomacy Rider | Action Card | PoK | General | 1 | [p29] | [x] |
+| Diplomatic Pressure | Action Card | Base Game | General | 4 | [p29] | [x] |
+| Direct Hit | Action Card | Base Game | General | 4 | [p20] | [x] |
+| Disable | Action Card | PoK | General | 1 | [p29] | [x] |
+| Distinguished Councilor | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Divert Funding | Action Card | PoK | General | 1 | [p29] | [x] |
+| Economic Initiative | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Emergency Repairs | Action Card | Base Game | General | 1 | [p20] | [x] |
+| Experimental Battlestation | Action Card | Base Game | General | 1 | [p20] | [x] |
+| Exploration Probe | Action Card | PoK | General | 1 | [p29] | [x] |
+| Fighter Conscription | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Fighter Prototype | Action Card | Base Game | General | 1 | [p20] | [x] |
+| Fire Team | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Flank Speed | Action Card | Base Game | General | 4 | [p29] | [x] |
+| Focused Research | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Forward Supply Base | Action Card | PoK | General | 1 | [p29] | [x] |
+| Frontline Deployment | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Ghost Ship | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Ghost Squad | Action Card | PoK | General | 1 | [p29] | [x] |
+| Hack Election | Action Card | PoK | General | 1 | [p29] | [x] |
+| Harness Energy | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Imperial Rider | Action Card | PoK | General | 1 | [p29] | [x] |
+| Impersonation | Action Card | Base Game | General | 1 | [p29] | [x] |
+| In The Silence Of Space | Action Card | PoK | General | 1 | [p20] | [x] |
+| Industrial Initiative | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Infiltrate | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Insider Information | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Insubordination | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Intercept | Action Card | Base Game | General | 1 | [p20] | [x] |
+| Leadership Rider | Action Card | PoK | General | 1 | [p29] | [x] |
+| Lost Star Chart | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Lucky Shot | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Maneuvering Jets | Action Card | Base Game | General | 4 | [p20] | [x] |
+| Manipulate Investments | Action Card | PoK | General | 1 | [p29] | [x] |
+| Master Plan | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Mining Initiative | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Morale Boost | Action Card | Base Game | General | 4 | [p20] | [x] |
+| Nav Suite | Action Card | PoK | General | 1 | [p29] | [x] |
+| Parley | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Plagiarize | Action Card | PoK | General | 1 | [p29] | [x] |
+| Plague | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Political Stability | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Politics Rider | Action Card | PoK | General | 1 | [p29] | [x] |
+| Public Disgrace | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Rally | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Reactor Meltdown | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Refit Troops | Action Card | PoK | General | 1 | [p29] | [x] |
+| Reflective Shielding | Action Card | PoK | General | 1 | [p29] | [x] |
+| Reparations | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Repeal Law | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Reveal Prototype | Action Card | PoK | General | 1 | [p29] | [x] |
+| Reverse Engineer | Action Card | PoK | General | 1 | [p29] | [x] |
+| Rise of a Messiah | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Rout | Action Card | Base Game | General | 1 | [p20] | [x] |
+| Sabotage | Action Card | Base Game | General | 4 | [p29] | [x] |
+| Salvage | Action Card | PoK | General | 1 | [p20] | [x] |
+| Sanction | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Scramble Frequency | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Scuttle | Action Card | PoK | General | 1 | [p29] | [x] |
+| Seize Artifact | Action Card | PoK | General | 1 | [p29] | [x] |
+| Shields Holding | Action Card | Base Game | General | 4 | [p20] | [x] |
+| Signal Jamming | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Skilled Retreat | Action Card | Base Game | General | 4 | [p20] | [x] |
+| Solar Flare | Action Card | PoK | General | 1 | [p29] | [x] |
+| Spy | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Summit | Action Card | PoK | General | 1 | [p29] | [x] |
+| Tactical Bombardment | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Technology Rider | Action Card | PoK | General | 1 | [p29] | [x] |
+| Trade Rider | Action Card | PoK | General | 1 | [p29] | [x] |
+| Unexpected Action | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Unstable Planet | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Upgrade | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Uprising | Action Card | Base Game | General | 1 | [p29] | [x] |
+| Veto | Action Card | Base Game | General | 1 | [p29] | [x] |
+| War Effort | Action Card | Base Game | General | 1 | [p29] | [x] |
+| War Machine | Action Card | Base Game | General | 4 | [p29] | [x] |
+| Warfare Rider | Action Card | PoK | General | 1 | [p29] | [x] |
+| Waylay | Action Card | Base Game | General | 1 | [p20] | [x] |
 
 ---
 

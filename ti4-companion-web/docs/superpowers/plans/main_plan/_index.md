@@ -157,6 +157,22 @@ See [_standards.md](_standards.md) for shorthand used in all spec files.
 | [component-VotingPanel-p28](component-VotingPanel-p28.md) | `src/components/game/VotingPanel.jsx` | 28 | Card Text Visualization | planned | — |
 | [component-AgendaResolutionModal-p28](component-AgendaResolutionModal-p28.md) | `src/components/game/AgendaResolutionModal.jsx` | 28 | Card Text Visualization | planned | — |
 
+| [migration-041-action-card-effects](migration-041-action-card-effects.md) | `supabase/migrations/041_action_card_effects.sql` | 29a | Action Card Effect Enforcement | planned | — |
+| [shared-abilityDsl-p29a](shared-abilityDsl-p29a.md) | `supabase/functions/_shared/abilityDsl.ts` | 29a | Action Card Effect Enforcement | planned | migration-041-action-card-effects |
+| [fn-game-play-action-card-p29a](fn-game-play-action-card-p29a.md) | `supabase/functions/game-play-action-card/index.ts` | 29a | Action Card Effect Enforcement | planned | shared-abilityDsl-p29a |
+| [lib-importSchemas-p29a](lib-importSchemas-p29a.md) | `src/lib/importSchemas.js` | 29a | Action Card Effect Enforcement | planned | migration-041-action-card-effects |
+| [client-edgeFunctions-p29a](client-edgeFunctions-p29a.md) | `src/lib/edgeFunctions.js` | 29a | Action Card Effect Enforcement | planned | fn-game-play-action-card-p29a, fn-game-pass-action-window-p29b |
+| [component-ActionCardModal-p29a](component-ActionCardModal-p29a.md) | `src/components/game/ActionCardModal.jsx` | 29a | Action Card Effect Enforcement | planned | client-edgeFunctions-p29a |
+
+| [migration-042-action-window](migration-042-action-window.md) | `supabase/migrations/042_action_window.sql` | 29b | Action Card Effect Enforcement | planned | — |
+| [shared-abilityDsl-p29b](shared-abilityDsl-p29b.md) | `supabase/functions/_shared/abilityDsl.ts` | 29b | Action Card Effect Enforcement | planned | migration-042-action-window |
+| [fn-game-play-action-card-p29b](fn-game-play-action-card-p29b.md) | `supabase/functions/game-play-action-card/index.ts` | 29b | Action Card Effect Enforcement | planned | fn-game-play-action-card-p29a, shared-abilityDsl-p29b |
+| [fn-game-pass-action-window-p29b](fn-game-pass-action-window-p29b.md) | `supabase/functions/game-pass-action-window/index.ts` | 29b | Action Card Effect Enforcement | planned | migration-042-action-window, fn-game-pass-action-window |
+| [fn-game-draw-agenda-p29b](fn-game-draw-agenda-p29b.md) | `supabase/functions/game-draw-agenda/index.ts` | 29b | Action Card Effect Enforcement | planned | migration-042-action-window |
+| [fn-game-cast-votes-p29b](fn-game-cast-votes-p29b.md) | `supabase/functions/game-cast-votes/index.ts` | 29b | Action Card Effect Enforcement | planned | migration-042-action-window |
+| [fn-game-research-technology-p29b](fn-game-research-technology-p29b.md) | `supabase/functions/game-research-technology/index.ts` | 29b | Action Card Effect Enforcement | planned | migration-042-action-window |
+| [component-ActionWindowBanner](component-ActionWindowBanner.md) | `src/components/game/ActionWindowBanner.jsx` | 29b | Action Card Effect Enforcement | planned | client-edgeFunctions-p29a |
+
 ---
 
 ## Planned Feature Areas (specs to be added)
@@ -165,6 +181,5 @@ Phases 24+ are listed in suggested implementation order. Phases 17–23 have spe
 
 | Phase | Feature Area | Priority | Notes |
 |-------|-------------|----------|-------|
-| 29 | Action Card Effect Enforcement | Medium | Implement per-card effect logic for all 93 action cards via abilityDSL. Requires mapping each card to DSL primitives (draw/discard, stat modifiers, vote modifiers, unit destruction, etc.). Largest single card-effects phase. |
 | 30 | Technology Effect Enforcement | Medium | Enforce passive/active effects of all shared and faction technologies: unit-upgrade stat deltas applied at combat/production time; passive techs (Neural Motivator, Sarween Tools, etc.) modifying phase mechanics. Requires abilityDSL primitives for each tech type. |
 | 31 | System Tile & Planet Detail View | Low | Tap-to-detail overlay for system tiles showing full info: all planets with resources/influence/traits/tech-specialties, anomaly type, wormhole type. Also a dedicated planet card view rendering the same data for the planet cards section. |
