@@ -283,39 +283,39 @@ All physical components for Twilight Imperium 4th Edition (Base Game), Prophecy 
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Neural Motivator | Technology — Green | Base Game | General | 1 | [ ] | [x] |
-| Psychoarchaeology | Technology — Green | Base Game | General | 1 | [ ] | [x] |
-| Bio-Stims | Technology — Green | Base Game | General | 1 | [ ] | [x] |
-| Dacxive Animators | Technology — Green | Base Game | General | 1 | [ ] | [x] |
-| X-89 Bacterial Weapon | Technology — Green | Base Game | General | 1 | [ ] | [x] |
-| Spec Ops II | Technology — Unit Upgrade (Green) | Base Game | General | 1 | [ ] | [x] |
-| Infantry II | Technology — Unit Upgrade (Green) | Base Game | General | 1 | [ ] | [x] |
-| Fighter II | Technology — Unit Upgrade (Green) | Base Game | General | 1 | [ ] | [x] |
-| Sling Relay | Technology — Green | PoK | General | 1 | [ ] | [x] |
-| Antimass Deflectors | Technology — Blue | Base Game | General | 1 | [ ] | [x] |
-| Sarween Tools | Technology — Blue | Base Game | General | 1 | [ ] | [x] |
-| Gravity Drive | Technology — Blue | Base Game | General | 1 | [ ] | [x] |
-| Fleet Logistics | Technology — Blue | Base Game | General | 1 | [ ] | [x] |
-| Light/Wave Deflector | Technology — Blue | Base Game | General | 1 | [ ] | [x] |
-| Carrier II | Technology — Unit Upgrade (Blue) | Base Game | General | 1 | [ ] | [x] |
-| Cruiser II | Technology — Unit Upgrade (Blue) | Base Game | General | 1 | [ ] | [x] |
-| Scanlink Drone Network | Technology — Blue | PoK | General | 1 | [ ] | [x] |
-| Predictive Intelligence | Technology — Yellow | Base Game | General | 1 | [ ] | [x] |
-| Transit Diodes | Technology — Yellow | Base Game | General | 1 | [ ] | [x] |
-| Integrated Economy | Technology — Yellow | Base Game | General | 1 | [ ] | [x] |
-| Magen Defense Grid | Technology — Yellow | Base Game | General | 1 | [ ] | [x] |
-| Graviton Laser System | Technology — Yellow | Base Game | General | 1 | [ ] | [x] |
-| PDS II | Technology — Unit Upgrade (Yellow) | Base Game | General | 1 | [ ] | [x] |
-| Space Dock II | Technology — Unit Upgrade (Yellow) | Base Game | General | 1 | [ ] | [x] |
-| AI Development Algorithm | Technology — Yellow | PoK | General | 1 | [ ] | [x] |
-| Plasma Scoring | Technology — Red | Base Game | General | 1 | [ ] | [x] |
-| Magen Defense Grid Ω | Technology — Red | Base Game | General | 1 | [ ] | [x] |
-| Duranium Armor | Technology — Red | Base Game | General | 1 | [ ] | [x] |
-| Assault Cannon | Technology — Red | Base Game | General | 1 | [ ] | [x] |
-| Dreadnought II | Technology — Unit Upgrade (Red) | Base Game | General | 1 | [ ] | [x] |
-| Destroyer II | Technology — Unit Upgrade (Red) | Base Game | General | 1 | [ ] | [x] |
-| War Sun | Technology — Unit Upgrade (Red) | Base Game | General | 1 | [ ] | [x] |
-| Magmus Reactor | Technology — Red | PoK | General | 1 | [ ] | [x] |
+| Neural Motivator | Technology — Green | Base Game | General | 1 | [p30] | [x] |
+| Psychoarchaeology | Technology — Green | Base Game | General | 1 | [p30] | [x] |
+| Bio-Stims | Technology — Green | Base Game | General | 1 | [p30] | [x] |
+| Dacxive Animators | Technology — Green | Base Game | General | 1 | [p30] | [x] |
+| X-89 Bacterial Weapon | Technology — Green | Base Game | General | 1 | [p30] | [x] |
+| Spec Ops II | Technology — Unit Upgrade (Green) | Base Game | General | 1 | [p30] | [x] |
+| Infantry II | Technology — Unit Upgrade (Green) | Base Game | General | 1 | [p30] | [x] |
+| Fighter II | Technology — Unit Upgrade (Green) | Base Game | General | 1 | [p30] | [x] |
+| Sling Relay | Technology — Green | PoK | General | 1 | [p30] | [x] |
+| Antimass Deflectors | Technology — Blue | Base Game | General | 1 | [p30] | [x] |
+| Sarween Tools | Technology — Blue | Base Game | General | 1 | [p30] | [x] |
+| Gravity Drive | Technology — Blue | Base Game | General | 1 | [p30] | [x] |
+| Fleet Logistics | Technology — Blue | Base Game | General | 1 | [p30] | [x] |
+| Light/Wave Deflector | Technology — Blue | Base Game | General | 1 | [p30] | [x] |
+| Carrier II | Technology — Unit Upgrade (Blue) | Base Game | General | 1 | [p30] | [x] |
+| Cruiser II | Technology — Unit Upgrade (Blue) | Base Game | General | 1 | [p30] | [x] |
+| Scanlink Drone Network | Technology — Blue | PoK | General | 1 | [p30] | [x] |
+| Predictive Intelligence | Technology — Yellow | Base Game | General | 1 | [p30] | [x] |
+| Transit Diodes | Technology — Yellow | Base Game | General | 1 | [p30] | [x] |
+| Integrated Economy | Technology — Yellow | Base Game | General | 1 | [p30] | [x] |
+| Magen Defense Grid | Technology — Yellow | Base Game | General | 1 | [p30] | [x] |
+| Graviton Laser System | Technology — Yellow | Base Game | General | 1 | [p30] | [x] |
+| PDS II | Technology — Unit Upgrade (Yellow) | Base Game | General | 1 | [p30] | [x] |
+| Space Dock II | Technology — Unit Upgrade (Yellow) | Base Game | General | 1 | [p30] | [x] |
+| AI Development Algorithm | Technology — Yellow | PoK | General | 1 | [p30] | [x] |
+| Plasma Scoring | Technology — Red | Base Game | General | 1 | [p30] | [x] |
+| Magen Defense Grid Ω | Technology — Red | Base Game | General | 1 | [p30] | [x] |
+| Duranium Armor | Technology — Red | Base Game | General | 1 | [p30] | [x] |
+| Assault Cannon | Technology — Red | Base Game | General | 1 | [p30] | [x] |
+| Dreadnought II | Technology — Unit Upgrade (Red) | Base Game | General | 1 | [p30] | [x] |
+| Destroyer II | Technology — Unit Upgrade (Red) | Base Game | General | 1 | [p30] | [x] |
+| War Sun | Technology — Unit Upgrade (Red) | Base Game | General | 1 | [p30] | [x] |
+| Magmus Reactor | Technology — Red | PoK | General | 1 | [p30] | [x] |
 
 ---
 
@@ -325,187 +325,187 @@ All physical components for Twilight Imperium 4th Edition (Base Game), Prophecy 
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Letani Warrior II | Technology — Unit Upgrade (Green) | Base Game | Arborec | 1 | [ ] | [x] |
-| Bioplasmosis | Technology — Green | Base Game | Arborec | 1 | [ ] | [x] |
+| Letani Warrior II | Technology — Unit Upgrade (Green) | Base Game | Arborec | 1 | [p30] | [x] |
+| Bioplasmosis | Technology — Green | Base Game | Arborec | 1 | [p30] | [x] |
 | Arborec Mech | Mech Unit Card | PoK | Arborec | 1 | [ ] | [ ] |
 
 ### Clan of Saar
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Chaos Mapping | Technology — Blue | Base Game | Clan of Saar | 1 | [ ] | [x] |
-| Vortex | Technology — Red | Base Game | Clan of Saar | 1 | [ ] | [x] |
+| Chaos Mapping | Technology — Blue | Base Game | Clan of Saar | 1 | [p30] | [x] |
+| Vortex | Technology — Red | Base Game | Clan of Saar | 1 | [p30] | [x] |
 | Clan of Saar Mech | Mech Unit Card | PoK | Clan of Saar | 1 | [ ] | [ ] |
 
 ### Embers of Muaat
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Magmus Reactor II | Technology — Unit Upgrade (Red) | Base Game | Embers of Muaat | 1 | [ ] | [x] |
-| Supercharge | Technology — Red | Base Game | Embers of Muaat | 1 | [ ] | [x] |
+| Magmus Reactor II | Technology — Unit Upgrade (Red) | Base Game | Embers of Muaat | 1 | [p30] | [x] |
+| Supercharge | Technology — Red | Base Game | Embers of Muaat | 1 | [p30] | [x] |
 | Embers of Muaat Mech | Mech Unit Card | PoK | Embers of Muaat | 1 | [ ] | [ ] |
 
 ### Emirates of Hacan
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Quantum Datahub Node | Technology — Yellow | Base Game | Emirates of Hacan | 1 | [ ] | [x] |
-| Production Biomes | Technology — Green | Base Game | Emirates of Hacan | 1 | [ ] | [x] |
+| Quantum Datahub Node | Technology — Yellow | Base Game | Emirates of Hacan | 1 | [p30] | [x] |
+| Production Biomes | Technology — Green | Base Game | Emirates of Hacan | 1 | [p30] | [x] |
 | Hacan Mech | Mech Unit Card | PoK | Emirates of Hacan | 1 | [ ] | [ ] |
 
 ### Federation of Sol
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Advanced Carrier II | Technology — Unit Upgrade (Blue) | Base Game | Federation of Sol | 1 | [ ] | [x] |
-| Spec Ops II (Sol) | Technology — Unit Upgrade (Green) | Base Game | Federation of Sol | 1 | [ ] | [x] |
-| Aerie Hololattice | Technology — Yellow | Base Game | Federation of Sol | 1 | [ ] | [x] |
+| Advanced Carrier II | Technology — Unit Upgrade (Blue) | Base Game | Federation of Sol | 1 | [p30] | [x] |
+| Spec Ops II (Sol) | Technology — Unit Upgrade (Green) | Base Game | Federation of Sol | 1 | [p30] | [x] |
+| Aerie Hololattice | Technology — Yellow | Base Game | Federation of Sol | 1 | [p30] | [x] |
 | Federation of Sol Mech | Mech Unit Card | PoK | Federation of Sol | 1 | [ ] | [ ] |
 
 ### Ghosts of Creuss
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Wormhole Generator | Technology — Blue | Base Game | Ghosts of Creuss | 1 | [ ] | [x] |
-| Quantum Entanglement | Technology — Yellow | Base Game | Ghosts of Creuss | 1 | [ ] | [x] |
+| Wormhole Generator | Technology — Blue | Base Game | Ghosts of Creuss | 1 | [p30] | [x] |
+| Quantum Entanglement | Technology — Yellow | Base Game | Ghosts of Creuss | 1 | [p30] | [x] |
 | Ghosts of Creuss Mech | Mech Unit Card | PoK | Ghosts of Creuss | 1 | [ ] | [ ] |
 
 ### L1Z1X Mindnet
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Super-Dreadnought II | Technology — Unit Upgrade (Red) | Base Game | L1Z1X Mindnet | 1 | [ ] | [x] |
-| Inheritance Systems | Technology — Yellow | Base Game | L1Z1X Mindnet | 1 | [ ] | [x] |
+| Super-Dreadnought II | Technology — Unit Upgrade (Red) | Base Game | L1Z1X Mindnet | 1 | [p30] | [x] |
+| Inheritance Systems | Technology — Yellow | Base Game | L1Z1X Mindnet | 1 | [p30] | [x] |
 | L1Z1X Mech | Mech Unit Card | PoK | L1Z1X Mindnet | 1 | [ ] | [ ] |
 
 ### Mentak Coalition
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Mirror Computing | Technology — Yellow | Base Game | Mentak Coalition | 1 | [ ] | [x] |
-| Salvage Operations | Technology — Yellow | Base Game | Mentak Coalition | 1 | [ ] | [x] |
+| Mirror Computing | Technology — Yellow | Base Game | Mentak Coalition | 1 | [p30] | [x] |
+| Salvage Operations | Technology — Yellow | Base Game | Mentak Coalition | 1 | [p30] | [x] |
 | Mentak Mech | Mech Unit Card | PoK | Mentak Coalition | 1 | [ ] | [ ] |
 
 ### Naalu Collective
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Neuroglaive | Technology — Green | Base Game | Naalu Collective | 1 | [ ] | [x] |
-| Pre-Fab Arcologies | Technology — Yellow | Base Game | Naalu Collective | 1 | [ ] | [x] |
+| Neuroglaive | Technology — Green | Base Game | Naalu Collective | 1 | [p30] | [x] |
+| Pre-Fab Arcologies | Technology — Yellow | Base Game | Naalu Collective | 1 | [p30] | [x] |
 | Naalu Mech | Mech Unit Card | PoK | Naalu Collective | 1 | [ ] | [ ] |
 
 ### Nekro Virus
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Valefar Assimilator X | Technology — Red | Base Game | Nekro Virus | 1 | [ ] | [x] |
-| Valefar Assimilator Y | Technology — Red | Base Game | Nekro Virus | 1 | [ ] | [x] |
+| Valefar Assimilator X | Technology — Red | Base Game | Nekro Virus | 1 | [p30] | [x] |
+| Valefar Assimilator Y | Technology — Red | Base Game | Nekro Virus | 1 | [p30] | [x] |
 | Nekro Mech | Mech Unit Card | PoK | Nekro Virus | 1 | [ ] | [ ] |
 
 ### Sardakk N'orr
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Exotrireme II | Technology — Unit Upgrade (Red) | Base Game | Sardakk N'orr | 1 | [ ] | [x] |
-| Valefar Assimilator X (copy) | Technology — Red | Base Game | Sardakk N'orr | 1 | [ ] | [x] |
+| Exotrireme II | Technology — Unit Upgrade (Red) | Base Game | Sardakk N'orr | 1 | [p30] | [x] |
+| Valefar Assimilator X (copy) | Technology — Red | Base Game | Sardakk N'orr | 1 | [p30] | [x] |
 | Sardakk Mech | Mech Unit Card | PoK | Sardakk N'orr | 1 | [ ] | [ ] |
 
 ### Universities of Jol-Nar
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| E-Res Siphons | Technology — Yellow | Base Game | Universities of Jol-Nar | 1 | [ ] | [x] |
-| Spacial Conduit Cylinder | Technology — Blue | Base Game | Universities of Jol-Nar | 1 | [ ] | [x] |
+| E-Res Siphons | Technology — Yellow | Base Game | Universities of Jol-Nar | 1 | [p30] | [x] |
+| Spacial Conduit Cylinder | Technology — Blue | Base Game | Universities of Jol-Nar | 1 | [p30] | [x] |
 | Jol-Nar Mech | Mech Unit Card | PoK | Universities of Jol-Nar | 1 | [ ] | [ ] |
 
 ### Winnu
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Hegemonic Trade Policy | Technology — Yellow | Base Game | Winnu | 1 | [ ] | [x] |
-| Reclamation Thrusters | Technology — Blue | Base Game | Winnu | 1 | [ ] | [x] |
+| Hegemonic Trade Policy | Technology — Yellow | Base Game | Winnu | 1 | [p30] | [x] |
+| Reclamation Thrusters | Technology — Blue | Base Game | Winnu | 1 | [p30] | [x] |
 | Winnu Mech | Mech Unit Card | PoK | Winnu | 1 | [ ] | [ ] |
 
 ### Xxcha Kingdom
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Instinct Training | Technology — Yellow | Base Game | Xxcha Kingdom | 1 | [ ] | [x] |
-| Nullification Field | Technology — Yellow | Base Game | Xxcha Kingdom | 1 | [ ] | [x] |
+| Instinct Training | Technology — Yellow | Base Game | Xxcha Kingdom | 1 | [p30] | [x] |
+| Nullification Field | Technology — Yellow | Base Game | Xxcha Kingdom | 1 | [p30] | [x] |
 | Xxcha Mech | Mech Unit Card | PoK | Xxcha Kingdom | 1 | [ ] | [ ] |
 
 ### Yin Brotherhood
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Impulse Core | Technology — Blue | Base Game | Yin Brotherhood | 1 | [ ] | [x] |
-| Yin Spinner | Technology — Green | Base Game | Yin Brotherhood | 1 | [ ] | [x] |
+| Impulse Core | Technology — Blue | Base Game | Yin Brotherhood | 1 | [p30] | [x] |
+| Yin Spinner | Technology — Green | Base Game | Yin Brotherhood | 1 | [p30] | [x] |
 | Yin Mech | Mech Unit Card | PoK | Yin Brotherhood | 1 | [ ] | [ ] |
 
 ### Yssaril Tribes
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Transparasteel Plating | Technology — Yellow | Base Game | Yssaril Tribes | 1 | [ ] | [x] |
-| Mageon Implants | Technology — Green | Base Game | Yssaril Tribes | 1 | [ ] | [x] |
+| Transparasteel Plating | Technology — Yellow | Base Game | Yssaril Tribes | 1 | [p30] | [x] |
+| Mageon Implants | Technology — Green | Base Game | Yssaril Tribes | 1 | [p30] | [x] |
 | Yssaril Mech | Mech Unit Card | PoK | Yssaril Tribes | 1 | [ ] | [ ] |
 
 ### Argent Flight (PoK)
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Vortex (Argent) | Technology — Red | PoK | Argent Flight | 1 | [ ] | [x] |
-| Pre-Fab Arcologies (Argent) | Technology — Yellow | PoK | Argent Flight | 1 | [ ] | [x] |
-| Strike Wing Alpha II | Technology — Unit Upgrade (Red) | PoK | Argent Flight | 1 | [ ] | [x] |
+| Vortex (Argent) | Technology — Red | PoK | Argent Flight | 1 | [p30] | [x] |
+| Pre-Fab Arcologies (Argent) | Technology — Yellow | PoK | Argent Flight | 1 | [p30] | [x] |
+| Strike Wing Alpha II | Technology — Unit Upgrade (Red) | PoK | Argent Flight | 1 | [p30] | [x] |
 | Argent Flight Mech | Mech Unit Card | PoK | Argent Flight | 1 | [ ] | [ ] |
 
 ### Empyrean (PoK)
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Aetherpassage | Technology — Blue | PoK | Empyrean | 1 | [ ] | [x] |
-| Voidwatch | Technology — Green | PoK | Empyrean | 1 | [ ] | [x] |
+| Aetherpassage | Technology — Blue | PoK | Empyrean | 1 | [p30] | [x] |
+| Voidwatch | Technology — Green | PoK | Empyrean | 1 | [p30] | [x] |
 | Empyrean Mech | Mech Unit Card | PoK | Empyrean | 1 | [ ] | [ ] |
 
 ### Mahact Gene-Sorcerers (PoK)
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Bio-Stims (Mahact) | Technology — Green | PoK | Mahact Gene-Sorcerers | 1 | [ ] | [x] |
-| Genetic Recombination | Technology — Green | PoK | Mahact Gene-Sorcerers | 1 | [ ] | [x] |
-| Impulsion Core | Technology — Blue | PoK | Mahact Gene-Sorcerers | 1 | [ ] | [x] |
+| Bio-Stims (Mahact) | Technology — Green | PoK | Mahact Gene-Sorcerers | 1 | [p30] | [x] |
+| Genetic Recombination | Technology — Green | PoK | Mahact Gene-Sorcerers | 1 | [p30] | [x] |
+| Impulsion Core | Technology — Blue | PoK | Mahact Gene-Sorcerers | 1 | [p30] | [x] |
 | Mahact Mech | Mech Unit Card | PoK | Mahact Gene-Sorcerers | 1 | [ ] | [ ] |
 
 ### Naaz-Rokha Alliance (PoK)
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Supercharge (Naaz) | Technology — Red | PoK | Naaz-Rokha Alliance | 1 | [ ] | [x] |
-| Pre-Fab Arcologies (Naaz) | Technology — Yellow | PoK | Naaz-Rokha Alliance | 1 | [ ] | [x] |
+| Supercharge (Naaz) | Technology — Red | PoK | Naaz-Rokha Alliance | 1 | [p30] | [x] |
+| Pre-Fab Arcologies (Naaz) | Technology — Yellow | PoK | Naaz-Rokha Alliance | 1 | [p30] | [x] |
 | Naaz-Rokha Mech | Mech Unit Card | PoK | Naaz-Rokha Alliance | 1 | [ ] | [ ] |
 
 ### Nomad (PoK)
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Memoria II | Technology — Unit Upgrade (Blue) | PoK | Nomad | 1 | [ ] | [x] |
-| Temporal Command Suite | Technology — Yellow | PoK | Nomad | 1 | [ ] | [x] |
+| Memoria II | Technology — Unit Upgrade (Blue) | PoK | Nomad | 1 | [p30] | [x] |
+| Temporal Command Suite | Technology — Yellow | PoK | Nomad | 1 | [p30] | [x] |
 | Nomad Mech | Mech Unit Card | PoK | Nomad | 1 | [ ] | [ ] |
 
 ### Titans of Ul (PoK)
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Awaken | Technology — Yellow | PoK | Titans of Ul | 1 | [ ] | [x] |
-| Ul the Progenitor | Technology — Yellow | PoK | Titans of Ul | 1 | [ ] | [x] |
+| Awaken | Technology — Yellow | PoK | Titans of Ul | 1 | [p30] | [x] |
+| Ul the Progenitor | Technology — Yellow | PoK | Titans of Ul | 1 | [p30] | [x] |
 | Titan Mech | Mech Unit Card | PoK | Titans of Ul | 1 | [ ] | [ ] |
 
 ### Vuil'raith Cabal (PoK)
 
 | Name | Type | Expansion | Faction | Count | Implementation | Visualization |
 |------|------|-----------|---------|-------|----------------|---------------|
-| Vortex (Vuil'raith) | Technology — Red | PoK | Vuil'raith Cabal | 1 | [ ] | [x] |
-| Rift Cannon | Technology — Red | PoK | Vuil'raith Cabal | 1 | [ ] | [x] |
+| Vortex (Vuil'raith) | Technology — Red | PoK | Vuil'raith Cabal | 1 | [p30] | [x] |
+| Rift Cannon | Technology — Red | PoK | Vuil'raith Cabal | 1 | [p30] | [x] |
 | Vuil'raith Mech | Mech Unit Card | PoK | Vuil'raith Cabal | 1 | [ ] | [ ] |
 
 ---

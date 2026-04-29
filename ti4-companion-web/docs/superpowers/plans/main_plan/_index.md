@@ -174,6 +174,30 @@ See [_standards.md](_standards.md) for shorthand used in all spec files.
 | [component-ActionWindowBanner](component-ActionWindowBanner.md) | `src/components/game/ActionWindowBanner.jsx` | 29b | Action Card Effect Enforcement | planned | client-edgeFunctions-p29a |
 | [component-GameScreen-p29b](component-GameScreen-p29b.md) | `src/components/game/GameScreen.jsx` | 29b | Action Card Effect Enforcement | planned | component-ActionWindowBanner, client-edgeFunctions-p29a |
 
+| [migration-043-tech-effects](migration-043-tech-effects.md) | `supabase/migrations/043_tech_effects.sql` | 30 | Technology Effect Enforcement | planned | — |
+| [shared-techEffects](shared-techEffects.md) | `supabase/functions/_shared/techEffects.ts` | 30 | Technology Effect Enforcement | planned | migration-043-tech-effects |
+| [fn-game-exhaust-technology](fn-game-exhaust-technology.md) | `supabase/functions/game-exhaust-technology/index.ts` | 30 | Technology Effect Enforcement | planned | migration-043-tech-effects, shared-techEffects |
+| [fn-game-ready-technology](fn-game-ready-technology.md) | `supabase/functions/game-ready-technology/index.ts` | 30 | Technology Effect Enforcement | planned | migration-043-tech-effects |
+| [fn-game-use-technology-action](fn-game-use-technology-action.md) | `supabase/functions/game-use-technology-action/index.ts` | 30 | Technology Effect Enforcement | planned | migration-043-tech-effects, shared-techEffects |
+| [fn-game-advance-phase-p30](fn-game-advance-phase-p30.md) | `supabase/functions/game-advance-phase/index.ts` | 30 | Technology Effect Enforcement | planned | fn-game-advance-phase (p21), migration-043-tech-effects, shared-techEffects |
+| [fn-game-produce-units-p30](fn-game-produce-units-p30.md) | `supabase/functions/game-produce-units/index.ts` | 30 | Technology Effect Enforcement | planned | fn-game-produce-units (p12), migration-043-tech-effects, shared-techEffects |
+| [fn-game-roll-combat-dice-p30](fn-game-roll-combat-dice-p30.md) | `supabase/functions/game-roll-combat-dice/index.ts` | 30 | Technology Effect Enforcement | planned | fn-game-roll-combat-dice (p13/p20), migration-043-tech-effects, shared-techEffects |
+| [fn-game-roll-ground-combat-dice-p30](fn-game-roll-ground-combat-dice-p30.md) | `supabase/functions/game-roll-ground-combat-dice/index.ts` | 30 | Technology Effect Enforcement | planned | fn-game-roll-ground-combat-dice (p11), migration-043-tech-effects, shared-techEffects |
+| [fn-game-fire-space-cannon-p30](fn-game-fire-space-cannon-p30.md) | `supabase/functions/game-fire-space-cannon/index.ts` | 30 | Technology Effect Enforcement | planned | fn-game-fire-space-cannon (p13), migration-043-tech-effects, shared-techEffects |
+| [fn-game-fire-anti-fighter-barrage-p30](fn-game-fire-anti-fighter-barrage-p30.md) | `supabase/functions/game-fire-anti-fighter-barrage/index.ts` | 30 | Technology Effect Enforcement | planned | fn-game-fire-anti-fighter-barrage (p13/p14), migration-043-tech-effects, shared-techEffects |
+| [fn-game-activate-system-p30](fn-game-activate-system-p30.md) | `supabase/functions/game-activate-system/index.ts` | 30 | Technology Effect Enforcement | planned | fn-game-activate-system-p20, migration-043-tech-effects, shared-techEffects |
+| [fn-game-play-action-card-p30](fn-game-play-action-card-p30.md) | `supabase/functions/game-play-action-card/index.ts` | 30 | Technology Effect Enforcement | planned | fn-game-play-action-card-p29a, migration-043-tech-effects, shared-techEffects |
+| [fn-game-cast-votes-p30](fn-game-cast-votes-p30.md) | `supabase/functions/game-cast-votes/index.ts` | 30 | Technology Effect Enforcement | planned | fn-game-cast-votes (p19), migration-043-tech-effects, shared-techEffects |
+| [fn-game-end-turn-p30](fn-game-end-turn-p30.md) | `supabase/functions/game-end-turn/index.ts` | 30 | Technology Effect Enforcement | planned | fn-game-end-turn (p12), migration-043-tech-effects, shared-techEffects |
+| [fn-game-research-technology-p30](fn-game-research-technology-p30.md) | `supabase/functions/game-research-technology/index.ts` | 30 | Technology Effect Enforcement | planned | fn-game-research-technology-p29b, migration-043-tech-effects, shared-techEffects |
+| [fn-game-explore-planet-p30](fn-game-explore-planet-p30.md) | `supabase/functions/game-explore-planet/index.ts` | 30 | Technology Effect Enforcement | planned | fn-game-explore-planet (p17), migration-043-tech-effects, shared-techEffects |
+| [fn-game-resolve-ability-p30](fn-game-resolve-ability-p30.md) | `supabase/functions/game-resolve-ability/index.ts` | 30 | Technology Effect Enforcement | planned | fn-game-resolve-ability (p21), migration-043-tech-effects, shared-techEffects |
+| [lib-techConstants](lib-techConstants.md) | `src/lib/techConstants.js` | 30 | Technology Effect Enforcement | planned | — |
+| [client-edgeFunctions-p30](client-edgeFunctions-p30.md) | `src/lib/edgeFunctions.js` | 30 | Technology Effect Enforcement | planned | fn-game-exhaust-technology, fn-game-ready-technology, fn-game-use-technology-action |
+| [hook-useTechnologies](hook-useTechnologies.md) | `src/hooks/useTechnologies.js` | 30 | Technology Effect Enforcement | planned | client-edgeFunctions-p30 |
+| [component-TechCard-p30](component-TechCard-p30.md) | `src/components/game/TechCard.jsx` | 30 | Technology Effect Enforcement | planned | component-TechCard-p28, hook-useTechnologies, lib-techConstants |
+| [component-MyPanelSection-p30](component-MyPanelSection-p30.md) | `src/components/game/MyPanelSection.jsx` | 30 | Technology Effect Enforcement | planned | component-MyPanelSection (p21), hook-useTechnologies, component-TechCard-p30 |
+
 ---
 
 ## Planned Feature Areas (specs to be added)
@@ -182,5 +206,5 @@ Phases 24+ are listed in suggested implementation order. Phases 17–23 have spe
 
 | Phase | Feature Area | Priority | Notes |
 |-------|-------------|----------|-------|
-| 30 | Technology Effect Enforcement | Medium | Enforce passive/active effects of all shared and faction technologies: unit-upgrade stat deltas applied at combat/production time; passive techs (Neural Motivator, Sarween Tools, etc.) modifying phase mechanics. Requires abilityDSL primitives for each tech type. |
+| 30 | Technology Effect Enforcement | Medium | Spec files added to main table above. |
 | 31 | System Tile & Planet Detail View | Low | Tap-to-detail overlay for system tiles showing full info: all planets with resources/influence/traits/tech-specialties, anomaly type, wormhole type. Also a dedicated planet card view rendering the same data for the planet cards section. |
