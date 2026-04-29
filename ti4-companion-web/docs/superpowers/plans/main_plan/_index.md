@@ -205,6 +205,24 @@ See [_standards.md](_standards.md) for shorthand used in all spec files.
 | [component-GalaxyTab-p31](component-GalaxyTab-p31.md) | `src/components/game/GalaxyTab.jsx` | 31 | System Tile & Planet Detail View | planned | hook-useGalaxy-p31, component-SystemInfoModal, component-SystemActionModal-p31 |
 | [component-GameScreen-p31](component-GameScreen-p31.md) | `src/components/game/GameScreen.jsx` | 31 | System Tile & Planet Detail View | planned | hook-useGalaxy-p31, component-MyPanelSection-p31 |
 
+| [migration-044-bot-players](migration-044-bot-players.md) | `supabase/migrations/044_bot_players.sql` | 32 | Game Event Log | planned | — |
+| [migration-045-event-log](migration-045-event-log.md) | `supabase/migrations/045_event_log.sql` | 32 | Game Event Log | planned | — |
+| [shared-gameEvents](shared-gameEvents.md) | `supabase/functions/_shared/gameEvents.ts` | 32 | Game Event Log | planned | migration-045-event-log |
+| [fn-event-logging-all](fn-event-logging-all.md) | `supabase/functions/*/index.ts` (all existing) | 32 | Game Event Log | planned | shared-gameEvents |
+
+| [shared-auth-p33](shared-auth-p33.md) | `supabase/functions/_shared/auth.ts` | 33 | Bot Players + Undo | planned | migration-044-bot-players |
+| [fn-game-add-bot](fn-game-add-bot.md) | `supabase/functions/game-add-bot/index.ts` | 33 | Bot Players + Undo | planned | migration-044-bot-players, shared-auth-p33, shared-gameEvents |
+| [fn-game-remove-bot](fn-game-remove-bot.md) | `supabase/functions/game-remove-bot/index.ts` | 33 | Bot Players + Undo | planned | migration-044-bot-players, shared-auth-p33, shared-gameEvents |
+| [shared-undoHandlers](shared-undoHandlers.md) | `supabase/functions/_shared/undoHandlers.ts` | 33 | Bot Players + Undo | planned | shared-gameEvents |
+| [fn-game-undo](fn-game-undo.md) | `supabase/functions/game-undo/index.ts` | 33 | Bot Players + Undo | planned | shared-gameEvents, shared-undoHandlers |
+| [client-edgeFunctions-p33](client-edgeFunctions-p33.md) | `src/lib/edgeFunctions.js` | 33 | Bot Players + Undo | planned | fn-game-add-bot, fn-game-remove-bot, fn-game-undo |
+| [lib-botStrategies-scripted](lib-botStrategies-scripted.md) | `src/lib/botStrategies/scripted.js` | 33 | Bot Players + Undo | planned | — |
+| [lib-botStrategies-random](lib-botStrategies-random.md) | `src/lib/botStrategies/random.js` | 33 | Bot Players + Undo | planned | — |
+| [hook-useBotPlayer](hook-useBotPlayer.md) | `src/hooks/useBotPlayer.js` | 33 | Bot Players + Undo | planned | client-edgeFunctions-p33, lib-botStrategies-scripted, lib-botStrategies-random |
+| [component-LobbyScreen-p33](component-LobbyScreen-p33.md) | `src/components/game/LobbyScreen.jsx` | 33 | Bot Players + Undo | planned | client-edgeFunctions-p33 |
+| [component-GameHeader-p33](component-GameHeader-p33.md) | `src/components/game/GameHeader.jsx` | 33 | Bot Players + Undo | planned | client-edgeFunctions-p33 |
+| [component-GameScreen-p33](component-GameScreen-p33.md) | `src/components/game/GameScreen.jsx` | 33 | Bot Players + Undo | planned | hook-useBotPlayer, component-GameHeader-p33, client-edgeFunctions-p33 |
+
 ---
 
 ## Planned Feature Areas (specs to be added)
@@ -215,3 +233,5 @@ Phases 24+ are listed in suggested implementation order. Phases 17–23 have spe
 |-------|-------------|----------|-------|
 | 30 | Technology Effect Enforcement | Medium | Spec files added to main table above. |
 | 31 | System Tile & Planet Detail View | Low | Spec files added to main table above. |
+| 32 | Game Event Log | High | Spec files added to main table above. |
+| 33 | Bot Players + Undo | High | Spec files added to main table above. |
