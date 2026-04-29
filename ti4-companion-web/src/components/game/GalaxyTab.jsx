@@ -3,6 +3,7 @@ import HexMap from './HexMap.jsx'
 import SystemActionModal from './SystemActionModal.jsx'
 import SpaceCannonModal from './SpaceCannonModal.jsx'
 import CombatModal from './CombatModal.jsx'
+import GroundCombatModal from './GroundCombatModal.jsx'
 import { useCombat } from '../../hooks/useCombat.js'
 
 export default function GalaxyTab({
@@ -15,7 +16,7 @@ export default function GalaxyTab({
   const [custodiansClaimed, setCustodiansClaimed] = useState(false)
   const [completedCombat, setCompletedCombat] = useState(null)
 
-  const { combat, fireSpaceCannon, rollDice, assignHits, declareRetreat } =
+  const { combat, fireSpaceCannon, rollDice, rollGroundDice, assignHits, declareRetreat } =
     useCombat(gameId, activeCombat?.id)
 
   // Hold complete combat state for result screen until player dismisses
@@ -53,8 +54,11 @@ export default function GalaxyTab({
     : null
 
   const combatActive = combat && combat.status === 'active'
-  const showSpaceCannon = combatActive && combat.phase === 'space_cannon'
-  const showCombat = (combatActive && combat.phase !== 'space_cannon') || completedCombat != null
+  const spaceCombatActive = combatActive && combat.combat_type === 'space'
+  const groundCombatActive = combatActive && combat.combat_type === 'ground'
+  const showSpaceCannon = spaceCombatActive && combat.phase === 'space_cannon'
+  const showSpaceCombat = (spaceCombatActive && combat.phase !== 'space_cannon') || completedCombat?.combat_type === 'space'
+  const showGroundCombat = groundCombatActive || completedCombat?.combat_type === 'ground'
   const displayCombat = completedCombat ?? combat
 
   return (
@@ -99,7 +103,7 @@ export default function GalaxyTab({
         />
       )}
 
-      {showCombat && (
+      {showSpaceCombat && (
         <CombatModal
           combat={displayCombat}
           myPlayerId={myPlayerId}
@@ -111,6 +115,19 @@ export default function GalaxyTab({
           onRollDice={rollDice}
           onAssignHits={assignHits}
           onDeclareRetreat={declareRetreat}
+          onClose={() => setCompletedCombat(null)}
+        />
+      )}
+
+      {showGroundCombat && (
+        <GroundCombatModal
+          combat={displayCombat}
+          myPlayerId={myPlayerId}
+          players={players}
+          systemUnits={systemUnits}
+          onRollGroundDice={rollGroundDice}
+          onAssignHits={assignHits}
+          onFireScd={() => {}}
           onClose={() => setCompletedCombat(null)}
         />
       )}

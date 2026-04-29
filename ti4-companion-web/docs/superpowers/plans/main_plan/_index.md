@@ -6,12 +6,24 @@ See [_standards.md](_standards.md) for shorthand used in all spec files.
 
 ---
 
+## Agent Workflow Convention
+
+When implementing tasks from this index, agents **must** follow this protocol:
+
+1. **Before starting a task:** Change its Status to `in-progress` in the table below.
+2. **After completing a task:** Change its Status to `done` in the table below.
+3. Work through tasks one at a time in dependency order — do not start a task whose prereqs are not `done`.
+
+This keeps the index accurate across multi-session implementations so future agents know exactly where to resume.
+
+---
+
 ## All Spec Files
 
 | Spec File | Actual File | Phase | Feature Area | Status | Depends On |
 |-----------|-------------|-------|-------------|--------|-----------|
-| [migration-028-ground-combat](migration-028-ground-combat.md) | `supabase/migrations/028_ground_combat.sql` | 11 | Ground Combat | in-progress | — |
-| [fn-game-roll-ground-combat-dice](fn-game-roll-ground-combat-dice.md) | `supabase/functions/game-roll-ground-combat-dice/index.ts` | 11 | Ground Combat | in-progress | migration-028 |
+| [migration-028-ground-combat](migration-028-ground-combat.md) | `supabase/migrations/028_ground_combat.sql` | 11 | Ground Combat | done | — |
+| [fn-game-roll-ground-combat-dice](fn-game-roll-ground-combat-dice.md) | `supabase/functions/game-roll-ground-combat-dice/index.ts` | 11 | Ground Combat | done | migration-028 |
 | [fn-game-assign-ground-hits](fn-game-assign-ground-hits.md) | ~~`supabase/functions/game-assign-ground-hits/index.ts`~~ | 11 | Ground Combat | deferred | Superseded by fn-game-assign-hits |
 | [migration-029-strategy-production](migration-029-strategy-production.md) | `supabase/migrations/029_strategy_production.sql` | 12 | Strategy Cards & Production | planned | — |
 | [shared-abilityDsl](shared-abilityDsl.md) | `supabase/functions/_shared/abilityDsl.ts` | 12 | Strategy Cards & Production | planned | migration-029-strategy-production |
@@ -42,7 +54,7 @@ See [_standards.md](_standards.md) for shorthand used in all spec files.
 | [fn-game-fire-space-cannon-defense](fn-game-fire-space-cannon-defense.md) | `supabase/functions/game-fire-space-cannon-defense/index.ts` | 14 | Full Invasion | planned | fn-game-commit-ground-forces |
 | [client-edgeFunctions](client-edgeFunctions.md) | `src/lib/edgeFunctions.js` | 11 / 13 / 14 / 20 | Ground Combat / AFB / Full Invasion / Space Combat Action Cards | in-progress | fn-game-commit-ground-forces, fn-game-fire-bombardment, fn-game-advance-bombardment, fn-game-fire-space-cannon-defense, fn-game-play-combat-action-card, fn-game-pass-action-window |
 | [hook-useCombat](hook-useCombat.md) | `src/hooks/useCombat.js` | 11 / 13 / 14 / 20 | Ground Combat / AFB / Full Invasion / Space Combat Action Cards | in-progress | client-edgeFunctions, fn-game-play-combat-action-card, fn-game-pass-action-window |
-| [component-GroundCombatModal](component-GroundCombatModal.md) | `src/components/game/GroundCombatModal.jsx` | 11 / 14 | Ground Combat / Full Invasion | in-progress | hook-useCombat |
+| [component-GroundCombatModal](component-GroundCombatModal.md) | `src/components/game/GroundCombatModal.jsx` | 11 / 14 | Ground Combat / Full Invasion | done | hook-useCombat |
 | [component-GalaxyTab](component-GalaxyTab.md) | `src/components/game/GalaxyTab.jsx` | 11 / 14 | Ground Combat / Full Invasion | in-progress | component-GroundCombatModal |
 | [migration-032-promissory-effects](migration-032-promissory-effects.md) | `supabase/migrations/032_promissory_effects.sql` | 15 | Promissory Note Effects | planned | — |
 | [shared-promissoryEnforcement](shared-promissoryEnforcement.md) | `supabase/functions/_shared/promissoryEnforcement.ts` | 15 | Promissory Note Effects | planned | migration-032-promissory-effects |

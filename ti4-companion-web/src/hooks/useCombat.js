@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase.js'
 import {
   fireSpaceCannon as fireSpaceCannonFn,
   rollCombatDice as rollCombatDiceFn,
+  rollGroundCombatDice as rollGroundCombatDiceFn,
   assignHits as assignHitsFn,
   declareRetreat as declareRetreatFn,
 } from '../lib/edgeFunctions.js'
@@ -52,6 +53,7 @@ export function useCombat(gameId, combatId) {
     combat,
     fireSpaceCannon: (pass) => fireSpaceCannonFn(gameId, combatId, pass),
     rollDice: () => rollCombatDiceFn(gameId, combatId),
+    rollGroundDice: () => rollGroundCombatDiceFn(gameId, combatId),
     assignHits: (casualties) => assignHitsFn(gameId, combatId, casualties),
     declareRetreat: (destination) => declareRetreatFn(gameId, combatId, destination),
   }

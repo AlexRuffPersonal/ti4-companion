@@ -150,4 +150,7 @@ export const assignHits = (gameId, combatId, casualties) =>
 export const declareRetreat = (gameId, combatId, destination) =>
   callFunction('game-declare-retreat', { game_id: gameId, combat_id: combatId, destination })
 
+export const rollGroundCombatDice = (gameId, combatId) =>
+  callFunction('game-roll-ground-combat-dice', { game_id: gameId, combat_id: combatId })
+
 export { callFunction }
