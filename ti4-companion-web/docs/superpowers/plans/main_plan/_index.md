@@ -152,6 +152,11 @@ See [_standards.md](_standards.md) for shorthand used in all spec files.
 | [hook-useGame-p26](hook-useGame-p26.md) | `src/hooks/useGame.js` | 26 | Player Elimination | planned | migration-039-elimination |
 | [component-GameScreen-p26](component-GameScreen-p26.md) | `src/components/game/GameScreen.jsx` | 26 | Player Elimination | planned | hook-useGame-p26 |
 
+| [component-TechCard-p28](component-TechCard-p28.md) | `src/components/game/TechCard.jsx` | 28 | Card Text Visualization | planned | — |
+| [component-ObjectivesSection-p28](component-ObjectivesSection-p28.md) | `src/components/game/ObjectivesSection.jsx` | 28 | Card Text Visualization | planned | — |
+| [component-VotingPanel-p28](component-VotingPanel-p28.md) | `src/components/game/VotingPanel.jsx` | 28 | Card Text Visualization | planned | — |
+| [component-AgendaResolutionModal-p28](component-AgendaResolutionModal-p28.md) | `src/components/game/AgendaResolutionModal.jsx` | 28 | Card Text Visualization | planned | — |
+
 ---
 
 ## Planned Feature Areas (specs to be added)
@@ -160,3 +165,6 @@ Phases 24+ are listed in suggested implementation order. Phases 17–23 have spe
 
 | Phase | Feature Area | Priority | Notes |
 |-------|-------------|----------|-------|
+| 29 | Action Card Effect Enforcement | Medium | Implement per-card effect logic for all 93 action cards via abilityDSL. Requires mapping each card to DSL primitives (draw/discard, stat modifiers, vote modifiers, unit destruction, etc.). Largest single card-effects phase. |
+| 30 | Technology Effect Enforcement | Medium | Enforce passive/active effects of all shared and faction technologies: unit-upgrade stat deltas applied at combat/production time; passive techs (Neural Motivator, Sarween Tools, etc.) modifying phase mechanics. Requires abilityDSL primitives for each tech type. |
+| 31 | System Tile & Planet Detail View | Low | Tap-to-detail overlay for system tiles showing full info: all planets with resources/influence/traits/tech-specialties, anomaly type, wormhole type. Also a dedicated planet card view rendering the same data for the planet cards section. |
