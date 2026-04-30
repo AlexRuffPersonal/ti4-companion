@@ -20,6 +20,8 @@ export async function handler(req: Request): Promise<Response> {
   if (!body.game_id || typeof body.game_id !== 'string') return errorResponse("'game_id' is required")
   if (!body.ability_definition_id || typeof body.ability_definition_id !== 'string') return errorResponse("'ability_definition_id' is required")
   if (!body.source_type || typeof body.source_type !== 'string') return errorResponse("'source_type' is required")
+  const VALID_SOURCE_TYPES = ['faction_ability', 'action_card', 'leader', 'relic', 'promissory_note', 'exploration_card', 'technology', 'strategy_card']
+  if (!VALID_SOURCE_TYPES.includes(body.source_type)) return errorResponse(`Invalid source_type: ${body.source_type}`)
 
   // 1. Find the activating player
   const { data: player, error: playerError } = await db
@@ -62,6 +64,7 @@ export async function handler(req: Request): Promise<Response> {
     targetPlanetName: selections.chosen_planet as string | undefined,
     chosenAmount: selections.chosen_amount as number | undefined,
     chosenOption: selections.chosen_option as number | undefined,
+    selections,
   }
 
   // 5. Execute
@@ -73,7 +76,8 @@ export async function handler(req: Request): Promise<Response> {
       await interpretEffects((ability as Record<string, unknown[]>).effects, context, db)
     }
   } catch (e: unknown) {
-    return errorResponse(`Resolution failed: ${(e as Error).message}`, 500)
+    const err = e as Error & { status?: number }
+    return errorResponse(err.message ?? 'Resolution failed', err.status === 409 ? 409 : 500)
   }
 
   // 6. Apply source side-effects

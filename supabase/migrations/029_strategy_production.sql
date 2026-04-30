@@ -28,3 +28,17 @@ ALTER TABLE public.game_player_planets
 ALTER TABLE public.game_player_planets
   DROP COLUMN has_pds,
   ADD COLUMN pds_count INTEGER NOT NULL DEFAULT 0;
+
+-- Add strategy_card as a valid ability source type and its card number column
+ALTER TABLE public.ability_sources
+  DROP CONSTRAINT ability_sources_source_type_check;
+
+ALTER TABLE public.ability_sources
+  ADD CONSTRAINT ability_sources_source_type_check
+  CHECK (source_type IN (
+    'action_card', 'leader', 'relic', 'faction_ability',
+    'promissory_note', 'exploration_card', 'technology', 'strategy_card'
+  ));
+
+ALTER TABLE public.ability_sources
+  ADD COLUMN IF NOT EXISTS strategy_card_num INTEGER;

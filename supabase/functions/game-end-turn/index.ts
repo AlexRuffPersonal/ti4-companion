@@ -2,7 +2,7 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 
-Deno.serve(async (req: Request) => {
+export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
 
   let userId: string
@@ -37,6 +37,27 @@ Deno.serve(async (req: Request) => {
   if (!callerPlayer) return errorResponse('Player not found in this game', 404)
   if (callerPlayer.id !== game.active_player_id) return errorResponse('Not your turn', 403)
 
+  // Auto-pass any pending secondary responses for the caller's active strategy card play
+  const { data: activePay } = await db
+    .from('game_strategy_card_plays')
+    .select('id')
+    .eq('game_id', body.game_id)
+    .eq('played_by_player_id', callerPlayer.id)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  if (activePay) {
+    await db
+      .from('game_strategy_card_responses')
+      .update({ status: 'passed', responded_at: new Date().toISOString() })
+      .eq('play_id', (activePay as Record<string, string>).id)
+      .eq('status', 'pending')
+    await db
+      .from('game_strategy_card_plays')
+      .update({ status: 'complete' })
+      .eq('id', (activePay as Record<string, string>).id)
+  }
+
   const { data: players, error: playersError } = await db
     .from('game_players')
     .select('id, strategy_card, passed')
@@ -60,4 +81,6 @@ Deno.serve(async (req: Request) => {
   if (updateError) return errorResponse(`Update failed: ${updateError.message}`, 500)
 
   return okResponse({ advanced: true })
-})
+}
+
+if (typeof Deno !== 'undefined') Deno.serve(handler)
