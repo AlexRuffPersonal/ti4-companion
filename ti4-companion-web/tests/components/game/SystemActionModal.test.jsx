@@ -85,4 +85,73 @@ describe('SystemActionModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /close/i }))
     expect(onClose).toHaveBeenCalled()
   })
+
+  it('renders PRODUCE UNITS button when system activated by caller and has space dock', () => {
+    const myPlanets = [
+      { planet_name: 'Wellon', space_dock_unit_id: 'spacedock-1' }
+    ]
+    const onOpenProduction = vi.fn()
+    render(
+      <SystemActionModal
+        {...BASE_PROPS}
+        isActivePlayer={true}
+        myActivations={new Set(['1,-1'])}
+        myPlanets={myPlanets}
+        onOpenProduction={onOpenProduction}
+      />
+    )
+    expect(screen.getByRole('button', { name: /produce units/i })).toBeInTheDocument()
+  })
+
+  it('does not render PRODUCE UNITS when system not activated', () => {
+    const myPlanets = [
+      { planet_name: 'Wellon', space_dock_unit_id: 'spacedock-1' }
+    ]
+    const onOpenProduction = vi.fn()
+    render(
+      <SystemActionModal
+        {...BASE_PROPS}
+        isActivePlayer={true}
+        myActivations={new Set()}
+        myPlanets={myPlanets}
+        onOpenProduction={onOpenProduction}
+      />
+    )
+    expect(screen.queryByRole('button', { name: /produce units/i })).not.toBeInTheDocument()
+  })
+
+  it('does not render PRODUCE UNITS when caller has no space dock in system', () => {
+    const myPlanets = [
+      { planet_name: 'Wellon', space_dock_unit_id: null }
+    ]
+    const onOpenProduction = vi.fn()
+    render(
+      <SystemActionModal
+        {...BASE_PROPS}
+        isActivePlayer={true}
+        myActivations={new Set(['1,-1'])}
+        myPlanets={myPlanets}
+        onOpenProduction={onOpenProduction}
+      />
+    )
+    expect(screen.queryByRole('button', { name: /produce units/i })).not.toBeInTheDocument()
+  })
+
+  it('calls onOpenProduction with systemKey when PRODUCE UNITS clicked', () => {
+    const myPlanets = [
+      { planet_name: 'Wellon', space_dock_unit_id: 'spacedock-1' }
+    ]
+    const onOpenProduction = vi.fn()
+    render(
+      <SystemActionModal
+        {...BASE_PROPS}
+        isActivePlayer={true}
+        myActivations={new Set(['1,-1'])}
+        myPlanets={myPlanets}
+        onOpenProduction={onOpenProduction}
+      />
+    )
+    fireEvent.click(screen.getByRole('button', { name: /produce units/i }))
+    expect(onOpenProduction).toHaveBeenCalledWith('1,-1')
+  })
 })

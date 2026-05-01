@@ -2,9 +2,17 @@ export default function SystemActionModal({
   systemKey, tileInfo, activations, planetOwnership, players,
   currentPlayer, isActivePlayer, hasAvailableTacticTokens,
   myActivations, onActivate, onLandTroops, onClose, custodiansClaimed,
+  myPlanets, systemUnits, unitDefs, onOpenProduction,
 }) {
   const systemActivatedByMe = myActivations.has(systemKey)
   const planets = tileInfo?.planets ?? []
+
+  // Derive: does this system have a caller-owned space dock?
+  const systemPlanets = planets.map(p => p.name)
+  const myPlanetsInSystem = (myPlanets ?? []).filter(p =>
+    systemPlanets.some(sp => sp === p.planet_name)
+  )
+  const hasSpaceDock = myPlanetsInSystem.some(p => p.space_dock_unit_id != null)
 
   return (
     <div
@@ -29,6 +37,12 @@ export default function SystemActionModal({
             LAND ON {planet.name.toUpperCase()}
           </button>
         ))}
+
+        {systemActivatedByMe && hasSpaceDock && isActivePlayer && (
+          <button className="btn-ghost w-full mb-2" onClick={() => onOpenProduction(systemKey)}>
+            PRODUCE UNITS
+          </button>
+        )}
 
         {custodiansClaimed && (
           <div className="panel-inset mb-4">
