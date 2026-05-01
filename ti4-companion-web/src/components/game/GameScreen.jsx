@@ -54,6 +54,11 @@ export default function GameScreen({ userId }) {
     playPrimary, useSecondary, passSecondary,
   } = useStrategyCards(game?.id, currentPlayer?.id)
 
+  // Reset dismissed state when a new play becomes active
+  useEffect(() => {
+    if (activePay) setStrategyModalDismissed(false)
+  }, [activePay?.id])  // eslint-disable-line react-hooks/exhaustive-deps -- only reset on new play, not on status updates
+
   const [allTechnologies, setAllTechnologies] = useState([])
   const [allAbilityDefinitions, setAllAbilityDefinitions] = useState([])
   const [viewingTechPlayerId, setViewingTechPlayerId] = useState(null)
@@ -67,6 +72,7 @@ export default function GameScreen({ userId }) {
   const [activeTab, setActiveTab] = useState('my-panel') // 'my-panel' | 'scoreboard' | 'galaxy'
   const [productionSystemKey, setProductionSystemKey] = useState(null)
   const [unitDefs, setUnitDefs] = useState({})
+  const [strategyModalDismissed, setStrategyModalDismissed] = useState(false)
 
   useEffect(() => {
     supabase
@@ -469,7 +475,7 @@ export default function GameScreen({ userId }) {
         />
       )}
 
-      {activePay && (
+      {activePay && !strategyModalDismissed && (
         <StrategyCardModal
           activePay={activePay}
           responses={responses}
@@ -479,7 +485,7 @@ export default function GameScreen({ userId }) {
           isMyTurnToRespond={isMyTurnToRespond}
           onUseSecondary={(abilityId, selections) => useSecondary(abilityId, selections)}
           onPassSecondary={passSecondary}
-          onClose={() => {}}
+          onClose={() => setStrategyModalDismissed(true)}
         />
       )}
 

@@ -54,6 +54,7 @@ export default function StrategyCardModal({
             <div className="flex gap-2">
               <button
                 className="btn-primary text-xs flex-1"
+                disabled={!secondaryAbility}
                 onClick={() => onUseSecondary(secondaryAbility?.id)}
               >
                 USE SECONDARY

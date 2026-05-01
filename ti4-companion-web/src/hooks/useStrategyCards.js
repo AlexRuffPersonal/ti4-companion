@@ -58,7 +58,7 @@ export function useStrategyCards(gameId, myPlayerId) {
       mounted = false
       supabase.removeChannel(channel)
     }
-  }, [activePay?.id])  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activePay?.id])  // eslint-disable-line react-hooks/exhaustive-deps -- only resubscribe when play ID changes, not on status updates to the same play row
 
   const myResponse = responses.find((r) => r.player_id === myPlayerId)
   const pendingResponses = responses.filter((r) => r.status === 'pending')
