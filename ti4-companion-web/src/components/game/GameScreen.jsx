@@ -26,6 +26,10 @@ import TradeOfferBanner from './TradeOfferBanner.jsx'
 import TransactionLogModal from './TransactionLogModal.jsx'
 import { useGalaxy } from '../../hooks/useGalaxy.js'
 import GalaxyTab from './GalaxyTab.jsx'
+import { useStrategyCards } from '../../hooks/useStrategyCards.js'
+import StrategyCardModal from './StrategyCardModal.jsx'
+import ProductionModal from './ProductionModal.jsx'
+import { produceUnits } from '../../lib/edgeFunctions.js'
 
 export default function GameScreen({ userId }) {
   const { code } = useParams()
@@ -45,6 +49,11 @@ export default function GameScreen({ userId }) {
 
   const galaxyState = useGalaxy(code, userId)
 
+  const {
+    activePay, responses, isMyTurnToRespond,
+    playPrimary, useSecondary, passSecondary,
+  } = useStrategyCards(game?.id, currentPlayer?.id)
+
   const [allTechnologies, setAllTechnologies] = useState([])
   const [allAbilityDefinitions, setAllAbilityDefinitions] = useState([])
   const [viewingTechPlayerId, setViewingTechPlayerId] = useState(null)
@@ -56,6 +65,8 @@ export default function GameScreen({ userId }) {
   const [tradeLogModalOpen, setTradeLogModalOpen] = useState(false)
   const [initialTradeNoteId, setInitialTradeNoteId] = useState(null)
   const [activeTab, setActiveTab] = useState('my-panel') // 'my-panel' | 'scoreboard' | 'galaxy'
+  const [productionSystemKey, setProductionSystemKey] = useState(null)
+  const [unitDefs, setUnitDefs] = useState({})
 
   useEffect(() => {
     supabase
@@ -69,6 +80,19 @@ export default function GameScreen({ userId }) {
       .from('ability_definitions')
       .select('*, ability_sources(*)')
       .then(({ data }) => { if (data) setAllAbilityDefinitions(data) })
+  }, [])
+
+  useEffect(() => {
+    supabase
+      .from('units')
+      .select('*')
+      .then(({ data }) => {
+        if (data) {
+          const map = {}
+          data.forEach(u => { map[u.unit_type] = u })
+          setUnitDefs(map)
+        }
+      })
   }, [])
 
   const { currentEvent } = useGameEvents(game, players, currentPlayer)
@@ -299,6 +323,18 @@ export default function GameScreen({ userId }) {
           onOpenNotes={handleOpenNotes}
           noteCount={myNotes?.filter(n => n.state === 'held').length ?? 0}
           onOpenTrade={handleOpenTrade}
+          allPlayers={players}
+          activePay={activePay}
+          onPlayPrimary={() => {
+            const primaryAbility = allAbilityDefinitions.find(a =>
+              a.ability_sources?.some(s =>
+                s.source_type === 'strategy_card' &&
+                s.source_id === String(currentPlayer?.strategy_card) &&
+                s.role === 'primary'
+              )
+            )
+            if (primaryAbility) handlePlayAbility(primaryAbility, String(currentPlayer?.strategy_card), 'strategy_card')
+          }}
         />
         <button
           className={`btn-ghost text-xs ${activeTab === 'galaxy' ? 'text-bright' : 'text-muted'}`}
@@ -398,7 +434,7 @@ export default function GameScreen({ userId }) {
 
       {tradeLogModalOpen && (
         <TransactionLogModal
-          transactions={/* all confirmed transactions for this game */}
+          transactions={[]}
           players={players}
           onClose={() => setTradeLogModalOpen(false)}
         />
@@ -429,6 +465,37 @@ export default function GameScreen({ userId }) {
           players={players}
           currentPlayer={currentPlayer}
           game={game}
+          onOpenProduction={setProductionSystemKey}
+        />
+      )}
+
+      {activePay && (
+        <StrategyCardModal
+          activePay={activePay}
+          responses={responses}
+          myPlayerId={currentPlayer?.id}
+          players={players}
+          abilityDefs={allAbilityDefinitions}
+          isMyTurnToRespond={isMyTurnToRespond}
+          onUseSecondary={(abilityId, selections) => useSecondary(abilityId, selections)}
+          onPassSecondary={passSecondary}
+          onClose={() => {}}
+        />
+      )}
+
+      {productionSystemKey && (
+        <ProductionModal
+          gameId={game?.id}
+          systemKey={productionSystemKey}
+          systemUnits={galaxyState.systemUnits ?? []}
+          myPlayerId={currentPlayer?.id}
+          myPlanets={myPlanets}
+          unitDefs={unitDefs}
+          onProduce={async (payload) => {
+            await produceUnits(game.id, payload.systemKey, payload.units, payload.planet_exhausts)
+            setProductionSystemKey(null)
+          }}
+          onClose={() => setProductionSystemKey(null)}
         />
       )}
     </div>
