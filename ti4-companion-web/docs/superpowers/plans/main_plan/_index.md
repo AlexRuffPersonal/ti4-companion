@@ -33,13 +33,13 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-pass-strategy-secondary](fn-game-pass-strategy-secondary.md) | `supabase/functions/game-pass-strategy-secondary/index.ts` | 12 | Strategy Cards & Production | done | fn-game-play-strategy-card |
 | [fn-game-produce-units](fn-game-produce-units.md) | `supabase/functions/game-produce-units/index.ts` | 12 | Strategy Cards & Production | done | migration-029-strategy-production |
 | [fn-game-end-turn](fn-game-end-turn.md) | `supabase/functions/game-end-turn/index.ts` | 12 | Strategy Cards & Production | done | fn-game-play-strategy-card |
-| [hook-useStrategyCards](hook-useStrategyCards.md) | `src/hooks/useStrategyCards.js` | 12 | Strategy Cards & Production | planned | client-edgeFunctions |
-| [component-StrategyCardPanel](component-StrategyCardPanel.md) | `src/components/game/StrategyCardPanel.jsx` | 12 | Strategy Cards & Production | planned | hook-useStrategyCards |
-| [component-StrategyCardModal](component-StrategyCardModal.md) | `src/components/game/StrategyCardModal.jsx` | 12 | Strategy Cards & Production | planned | hook-useStrategyCards |
-| [component-ProductionModal](component-ProductionModal.md) | `src/components/game/ProductionModal.jsx` | 12 | Strategy Cards & Production | planned | client-edgeFunctions |
-| [component-SystemActionModal](component-SystemActionModal.md) | `src/components/game/SystemActionModal.jsx` | 12 | Strategy Cards & Production | planned | component-ProductionModal |
-| [component-MyPanelSection](component-MyPanelSection.md) | `src/components/game/MyPanelSection.jsx` | 12 | Strategy Cards & Production | planned | component-StrategyCardPanel |
-| [component-GameScreen](component-GameScreen.md) | `src/components/game/GameScreen.jsx` | 12 | Strategy Cards & Production | planned | hook-useStrategyCards, component-StrategyCardModal |
+| [hook-useStrategyCards](hook-useStrategyCards.md) | `src/hooks/useStrategyCards.js` | 12 | Strategy Cards & Production | done | client-edgeFunctions |
+| [component-StrategyCardPanel](component-StrategyCardPanel.md) | `src/components/game/StrategyCardPanel.jsx` | 12 | Strategy Cards & Production | done | hook-useStrategyCards |
+| [component-StrategyCardModal](component-StrategyCardModal.md) | `src/components/game/StrategyCardModal.jsx` | 12 | Strategy Cards & Production | done | hook-useStrategyCards |
+| [component-ProductionModal](component-ProductionModal.md) | `src/components/game/ProductionModal.jsx` | 12 | Strategy Cards & Production | done | client-edgeFunctions |
+| [component-SystemActionModal](component-SystemActionModal.md) | `src/components/game/SystemActionModal.jsx` | 12 | Strategy Cards & Production | done | component-ProductionModal |
+| [component-MyPanelSection](component-MyPanelSection.md) | `src/components/game/MyPanelSection.jsx` | 12 | Strategy Cards & Production | done | component-StrategyCardPanel |
+| [component-GameScreen](component-GameScreen.md) | `src/components/game/GameScreen.jsx` | 12 | Strategy Cards & Production | done | hook-useStrategyCards, component-StrategyCardModal |
 | [migration-030-afb](migration-030-afb.md) | `supabase/migrations/030_afb.sql` | 13 | Anti-Fighter Barrage | done | — |
 | [fn-game-fire-space-cannon](fn-game-fire-space-cannon.md) | `supabase/functions/game-fire-space-cannon/index.ts` | 13 | Anti-Fighter Barrage | planned | migration-030-afb |
 | [fn-game-roll-combat-dice](fn-game-roll-combat-dice.md) | `supabase/functions/game-roll-combat-dice/index.ts` | 13 / 20 | Anti-Fighter Barrage / Space Combat Action Cards | planned | fn-game-fire-anti-fighter-barrage, migration-036-combat-action-cards |
