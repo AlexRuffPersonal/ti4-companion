@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import StrategyCardPanel from './StrategyCardPanel.jsx'
 
 export default function MyPanelSection({
   player, planets, isActive, game,
@@ -13,7 +14,10 @@ export default function MyPanelSection({
   onUnlockCommander,
   onOpenSecrets,
   secretCount = 0,
-  onOpenNotes, noteCount = 0, onOpenTrade
+  onOpenNotes, noteCount = 0, onOpenTrade,
+  allPlayers = [],
+  activePay = null,
+  onPlayPrimary = () => {}
 }) {
   const tokens = player?.command_tokens ?? { tactic_total: 0, fleet: 0, strategy: 0 }
   const [draftTokens, setDraftTokens] = useState(tokens)
@@ -103,6 +107,17 @@ export default function MyPanelSection({
           </button>
         </div>
       )}
+
+      {/* Strategy Card */}
+      <StrategyCardPanel
+        player={player}
+        game={game}
+        allPlayers={allPlayers}
+        activePay={activePay}
+        isActive={isActive}
+        onPickStrategyCard={onPickStrategyCard}
+        onPlayPrimary={onPlayPrimary}
+      />
 
       {/* Planets */}
       {planets.length > 0 && (

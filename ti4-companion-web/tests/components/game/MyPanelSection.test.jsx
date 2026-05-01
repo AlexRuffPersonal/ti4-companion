@@ -2,6 +2,15 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import MyPanelSection from '../../../src/components/game/MyPanelSection.jsx'
 
+vi.mock('../../../src/components/game/StrategyCardPanel.jsx', () => ({
+  default: ({ activePay, player }) => (
+    <div data-testid="strategy-card-panel">
+      {activePay && <span>active-pay</span>}
+      {player?.strategy_card && <span>card-{player.strategy_card}</span>}
+    </div>
+  )
+}))
+
 const PLAYER = {
   id: 'p1', display_name: 'Alice', faction: 'Arborec', colour: 'green',
   strategy_card: null, passed: false, vp: 5,
@@ -367,5 +376,27 @@ describe('MyPanelSection', () => {
   it('does not render planets section when empty', () => {
     renderPanel({ planets: [] })
     expect(screen.queryByText(/planets/i)).not.toBeInTheDocument()
+  })
+
+  it('renders StrategyCardPanel with correct props', () => {
+    const allPlayers = [PLAYER]
+    const onPlayPrimary = vi.fn()
+    renderPanel({
+      allPlayers,
+      onPlayPrimary
+    })
+    expect(screen.getByTestId('strategy-card-panel')).toBeInTheDocument()
+  })
+
+  it('passes activePay through to StrategyCardPanel', () => {
+    const allPlayers = [PLAYER]
+    const activePay = { amount: 5 }
+    const onPlayPrimary = vi.fn()
+    renderPanel({
+      allPlayers,
+      activePay,
+      onPlayPrimary
+    })
+    expect(screen.getByText('active-pay')).toBeInTheDocument()
   })
 })
