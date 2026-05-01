@@ -153,4 +153,16 @@ export const declareRetreat = (gameId, combatId, destination) =>
 export const rollGroundCombatDice = (gameId, combatId) =>
   callFunction('game-roll-ground-combat-dice', { game_id: gameId, combat_id: combatId })
 
+export const playStrategyCard = (gameId, abilityDefinitionId, selections) =>
+  callFunction('game-play-strategy-card', { game_id: gameId, ability_definition_id: abilityDefinitionId, selections })
+
+export const useStrategySecondary = (gameId, playId, abilityDefinitionId, selections) =>
+  callFunction('game-use-strategy-secondary', { game_id: gameId, play_id: playId, ability_definition_id: abilityDefinitionId, selections })
+
+export const passStrategySecondary = (gameId, playId) =>
+  callFunction('game-pass-strategy-secondary', { game_id: gameId, play_id: playId })
+
+export const produceUnits = (gameId, systemKey, units, planetExhausts) =>
+  callFunction('game-produce-units', { game_id: gameId, system_key: systemKey, units, planet_exhausts: planetExhausts })
+
 export { callFunction }
