@@ -1,6 +1,7 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { checkAndEliminate } from '../_shared/eliminationHandler.ts'
 
 type Casualty = { unit_type: string; player_unit_id: string; action: 'destroy' | 'sustain' }
 type UnitRow = { id: string; player_id: string; unit_type: string; count: number; damaged: boolean; system_key: string }
@@ -98,7 +99,8 @@ export async function handler(req: Request): Promise<Response> {
   // If this was defender_assign, advance to defender_roll
   if (isDefenderAssign) {
     await db.from('game_combats').update({ phase: 'defender_roll' }).eq('id', body.combat_id)
-    return okResponse({ phase: 'defender_roll' })
+    const eliminatedPlayerIds = await checkAndEliminate(db, body.game_id as string)
+    return okResponse({ phase: 'defender_roll', eliminatedPlayerIds })
   }
 
   // attacker_assign — check end-of-round conditions
@@ -132,7 +134,8 @@ export async function handler(req: Request): Promise<Response> {
       winner_player_id: winnerId,
     }).eq('id', body.combat_id)
 
-    return okResponse({ status: 'complete', winner_player_id: winnerId })
+    const eliminatedPlayerIds = await checkAndEliminate(db, body.game_id as string)
+    return okResponse({ status: 'complete', winner_player_id: winnerId, eliminatedPlayerIds })
   }
 
   // Check for 0 ships on either side
@@ -161,7 +164,8 @@ export async function handler(req: Request): Promise<Response> {
       status: 'complete',
       winner_player_id: winnerId,
     }).eq('id', body.combat_id)
-    return okResponse({ status: 'complete', winner_player_id: winnerId })
+    const eliminatedPlayerIds = await checkAndEliminate(db, body.game_id as string)
+    return okResponse({ status: 'complete', winner_player_id: winnerId, eliminatedPlayerIds })
   }
 
   // Continue to next round
@@ -175,7 +179,8 @@ export async function handler(req: Request): Promise<Response> {
     defender_hits: 0,
   }).eq('id', body.combat_id)
 
-  return okResponse({ phase: 'attacker_roll', round: nextRound })
+  const eliminatedPlayerIds = await checkAndEliminate(db, body.game_id as string)
+  return okResponse({ phase: 'attacker_roll', round: nextRound, eliminatedPlayerIds })
 }
 
 if (typeof Deno !== 'undefined') Deno.serve(handler)

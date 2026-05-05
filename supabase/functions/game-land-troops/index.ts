@@ -1,6 +1,7 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { checkAndEliminate } from '../_shared/eliminationHandler.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -128,7 +129,8 @@ export async function handler(req: Request): Promise<Response> {
     custodiansAwarded = true
   }
 
-  return okResponse({ claimed: true, ...(custodiansAwarded && { custodians_claimed: true }) })
+  const eliminatedPlayerIds = await checkAndEliminate(db, body.game_id as string)
+  return okResponse({ claimed: true, ...(custodiansAwarded && { custodians_claimed: true }), eliminatedPlayerIds })
 }
 
 if (typeof Deno !== 'undefined') Deno.serve(handler)

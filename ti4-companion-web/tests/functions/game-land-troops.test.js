@@ -11,8 +11,13 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
   db: { from: vi.fn() },
 }))
 
+vi.mock('../../../supabase/functions/_shared/eliminationHandler.ts', () => ({
+  checkAndEliminate: vi.fn().mockResolvedValue([])
+}))
+
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
+import { checkAndEliminate } from '../../../supabase/functions/_shared/eliminationHandler.ts'
 import { handler } from '../../../supabase/functions/game-land-troops/index.ts'
 
 const USER_ID = 'user-uuid'
@@ -152,6 +157,7 @@ function mockDb({
 
 beforeEach(() => {
   vi.clearAllMocks()
+  checkAndEliminate.mockResolvedValue([])
   mockDb()
   requireAuth.mockResolvedValue(USER_ID)
 })
@@ -231,6 +237,22 @@ describe('game-land-troops', () => {
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.custodians_claimed).toBeUndefined()
+  })
+
+  it('includes eliminatedPlayerIds in response', async () => {
+    checkAndEliminate.mockResolvedValue(['pid'])
+    const res = await handler(makeRequest({ game_id: GAME_ID, system_key: '1,-1', planet_name: 'Wellon', troop_count: 1 }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.eliminatedPlayerIds).toEqual(['pid'])
+  })
+
+  it('empty eliminatedPlayerIds when no elimination', async () => {
+    checkAndEliminate.mockResolvedValue([])
+    const res = await handler(makeRequest({ game_id: GAME_ID, system_key: '1,-1', planet_name: 'Wellon', troop_count: 1 }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.eliminatedPlayerIds).toEqual([])
   })
 
   it('handles CORS preflight', async () => {
