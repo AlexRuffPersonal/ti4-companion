@@ -44,7 +44,7 @@ export function useGalaxy(gameCode, userId) {
       if (tileIds.length > 0) {
         const { data: tiles } = await supabase
           .from('tiles')
-          .select('id, tile_number, planets, type, wormhole')
+          .select('id, tile_number, planets, type, wormholes, anomalies')
           .in('id', tileIds)
         if (!mounted) return
         const indexed = {}
@@ -177,6 +177,18 @@ export function useGalaxy(gameCode, userId) {
     allPlanets.map(p => [p.planet_name, { player_id: p.player_id, exhausted: p.exhausted }])
   )
 
+  const planetStaticMap = {}
+  for (const tile of Object.values(tileData)) {
+    for (const p of tile.planets ?? []) {
+      planetStaticMap[p.name] = {
+        resources:      p.resources,
+        influence:      p.influence,
+        tech_specialty: p.tech_specialty ?? null,
+        traits:         p.type ?? [],
+      }
+    }
+  }
+
   return {
     gameId,
     mapTiles,
@@ -187,6 +199,7 @@ export function useGalaxy(gameCode, userId) {
     activatedSystems,
     myActivations,
     planetOwnership,
+    planetStaticMap,
     activeCombat,
     myPlayerId,
     loading,
