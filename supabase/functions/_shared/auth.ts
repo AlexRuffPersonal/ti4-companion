@@ -2,9 +2,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { db } from './db.ts'
 
 export class AuthError extends Error {
-  constructor(message: string) {
+  status: number
+  constructor(message: string, status = 401) {
     super(message)
     this.name = 'AuthError'
+    this.status = status
   }
 }
 
@@ -53,6 +55,24 @@ export async function requireServiceRole(req: Request): Promise<void> {
   if (error) {
     throw new AuthError('Forbidden: invalid service key')
   }
+}
+
+/**
+ * Verifies the caller is allowed to act on the active player's turn.
+ * Normal case: caller is the active player.
+ * Bot delegation: host may act on behalf of a bot player.
+ * Throws AuthError(403) otherwise.
+ */
+export function requireTurnAuth(
+  game: { active_player_id: string; host_player_id: string },
+  callerPlayer: { id: string },
+  activePlayer: { id: string; is_bot: boolean }
+): void {
+  // Normal human turn: caller is the active player
+  if (callerPlayer.id === game.active_player_id) return
+  // Host acting for a bot player
+  if (activePlayer.is_bot && callerPlayer.id === game.host_player_id) return
+  throw new AuthError('Not your turn', 403)
 }
 
 /**
