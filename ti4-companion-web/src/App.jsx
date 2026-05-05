@@ -7,6 +7,7 @@ import ProtectedRoute from './components/shared/ProtectedRoute.jsx'
 import AdminRoute from './components/admin/AdminRoute.jsx'
 import AdminDashboard from './components/admin/AdminDashboard.jsx'
 import AdminImportPage from './components/admin/AdminImportPage.jsx'
+import AdminBrowsePage from './components/admin/AdminBrowsePage.jsx'
 import SetupScreen from './components/game/SetupScreen.jsx'
 import LobbyScreen from './components/game/LobbyScreen.jsx'
 import GameScreen from './components/game/GameScreen.jsx'
@@ -102,6 +103,7 @@ export default function App() {
 
       <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/admin/import/:table" element={<AdminRoute><AdminImportPage /></AdminRoute>} />
+      <Route path="/admin/browse/:table" element={<AdminRoute><AdminBrowsePage /></AdminRoute>} />
 
       {/*
         Guard on `loading` — do NOT redirect while auth is still resolving.

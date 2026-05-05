@@ -55,13 +55,21 @@ export default function AdminDashboard() {
             <div className="label mb-3">{label}</div>
             <div className="flex flex-wrap gap-3">
               {tables.map(({ name, key }) => (
-                <button
-                  key={key}
-                  className="btn-ghost"
-                  onClick={() => navigate(`/admin/import/${key}`)}
-                >
-                  {name}
-                </button>
+                <div key={key} className="flex gap-2 items-center">
+                  <span className="label">{name}</span>
+                  <button
+                    className="btn-ghost"
+                    onClick={() => navigate(`/admin/import/${key}`)}
+                  >
+                    Import
+                  </button>
+                  <button
+                    className="btn-ghost"
+                    onClick={() => navigate(`/admin/browse/${key}`)}
+                  >
+                    Browse
+                  </button>
+                </div>
               ))}
             </div>
           </div>
