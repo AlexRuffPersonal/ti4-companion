@@ -18,8 +18,10 @@ import { handler } from '../../../supabase/functions/game-play-promissory-note/i
 const USER_ID = 'user-uuid'
 const GAME_ID = 'game-uuid'
 const PLAYER_ID = 'player-uuid'
+const ORIGIN_PLAYER_ID = 'origin-player-uuid'
 const NOTE_INSTANCE_ID = 'note-instance-uuid'
 const NOTE_ID = 'note-uuid'
+const ABILITY_DEF_ID = 'ability-def-uuid'
 
 function makeRequest(body) {
   return new Request('http://localhost/game-play-promissory-note', {
@@ -32,9 +34,17 @@ function makeRequest(body) {
 function mockDb({
   player = { id: PLAYER_ID },
   playerError = null,
-  noteRow = { id: NOTE_INSTANCE_ID, state: 'held', held_by_player_id: PLAYER_ID, note_id: NOTE_ID },
+  noteRow = {
+    id: NOTE_INSTANCE_ID,
+    state: 'held',
+    held_by_player_id: PLAYER_ID,
+    note_id: NOTE_ID,
+    origin_player_id: ORIGIN_PLAYER_ID,
+  },
   noteRowError = null,
-  noteRef = { purge_on_use: false },
+  abilitySource = { ability_definition_id: ABILITY_DEF_ID, ability_definitions: { id: ABILITY_DEF_ID, handler_key: 'test_handler', effects: [] } },
+  abilitySourceError = null,
+  noteRef = { purge_on_use: false, into_play_area: false },
   noteRefError = null,
   updateError = null,
 } = {}) {
@@ -51,14 +61,26 @@ function mockDb({
       }
     }
     if (table === 'game_player_promissory_notes') {
+      const updateMock = vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: updateError }),
+      })
       return {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             maybeSingle: vi.fn().mockResolvedValue({ data: noteRow, error: noteRowError }),
           }),
         }),
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: updateError }),
+        update: updateMock,
+      }
+    }
+    if (table === 'ability_sources') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: abilitySource, error: abilitySourceError }),
+            }),
+          }),
         }),
       }
     }
@@ -81,7 +103,7 @@ beforeEach(() => {
 })
 
 describe('game-play-promissory-note', () => {
-  it('returns 401 for unauthenticated requests', async () => {
+  it('T401: returns 401 for unauthenticated requests', async () => {
     requireAuth.mockRejectedValue(new AuthError('Unauthorized'))
     const res = await handler(makeRequest({
       game_id: GAME_ID,
@@ -90,14 +112,14 @@ describe('game-play-promissory-note', () => {
     expect(res.status).toBe(401)
   })
 
-  it('returns 400 when game_id is missing', async () => {
+  it('T400(game_id): returns 400 when game_id is missing', async () => {
     const res = await handler(makeRequest({
       note_instance_id: NOTE_INSTANCE_ID,
     }))
     expect(res.status).toBe(400)
   })
 
-  it('returns 400 when note_instance_id is missing', async () => {
+  it('T400(note_instance_id): returns 400 when note_instance_id is missing', async () => {
     const res = await handler(makeRequest({
       game_id: GAME_ID,
     }))
@@ -120,7 +142,7 @@ describe('game-play-promissory-note', () => {
     expect(res.status).toBe(400)
   })
 
-  it('returns 404 when player not found in game', async () => {
+  it('T404_PLAYER: returns 404 when player not found in game', async () => {
     mockDb({ player: null })
     const res = await handler(makeRequest({
       game_id: GAME_ID,
@@ -129,7 +151,7 @@ describe('game-play-promissory-note', () => {
     expect(res.status).toBe(404)
   })
 
-  it('returns 404 when note instance not found', async () => {
+  it('T404: returns 404 when note instance not found', async () => {
     mockDb({ noteRow: null })
     const res = await handler(makeRequest({
       game_id: GAME_ID,
@@ -145,6 +167,7 @@ describe('game-play-promissory-note', () => {
         state: 'held',
         held_by_player_id: 'other-player-uuid',
         note_id: NOTE_ID,
+        origin_player_id: ORIGIN_PLAYER_ID,
       },
     })
     const res = await handler(makeRequest({
@@ -161,6 +184,7 @@ describe('game-play-promissory-note', () => {
         state: 'played',
         held_by_player_id: PLAYER_ID,
         note_id: NOTE_ID,
+        origin_player_id: ORIGIN_PLAYER_ID,
       },
     })
     const res = await handler(makeRequest({
@@ -177,6 +201,7 @@ describe('game-play-promissory-note', () => {
         state: 'discarded',
         held_by_player_id: PLAYER_ID,
         note_id: NOTE_ID,
+        origin_player_id: ORIGIN_PLAYER_ID,
       },
     })
     const res = await handler(makeRequest({
@@ -186,59 +211,19 @@ describe('game-play-promissory-note', () => {
     expect(res.status).toBe(409)
   })
 
-  it('sets note state to discarded when purge_on_use=true', async () => {
-    const updateMock = vi.fn().mockResolvedValue({ error: null })
-    mockDb({ noteRef: { purge_on_use: true } })
-    db.from.mockImplementation((table) => {
-      if (table === 'game_players') {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: vi.fn().mockResolvedValue({ data: { id: PLAYER_ID }, error: null }),
-              }),
-            }),
-          }),
-        }
-      }
-      if (table === 'game_player_promissory_notes') {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({
-                data: { id: NOTE_INSTANCE_ID, state: 'held', held_by_player_id: PLAYER_ID, note_id: NOTE_ID },
-                error: null,
-              }),
-            }),
-          }),
-          update: updateMock.mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: null }),
-          }),
-        }
-      }
-      if (table === 'promissory_notes') {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: { purge_on_use: true }, error: null }),
-            }),
-          }),
-        }
-      }
-    })
+  it('T404: returns 404 when no ability_definition for note', async () => {
+    mockDb({ abilitySource: null })
     const res = await handler(makeRequest({
       game_id: GAME_ID,
       note_instance_id: NOTE_INSTANCE_ID,
     }))
-    expect(res.status).toBe(200)
-    expect(updateMock).toHaveBeenCalledOnce()
-    const updateCall = updateMock.mock.calls[0][0]
-    expect(updateCall.state).toBe('discarded')
+    expect(res.status).toBe(404)
+    const body = await res.json()
+    expect(body.error).toMatch(/No ability definition/)
   })
 
-  it('sets note state to played when purge_on_use=false', async () => {
-    const updateMock = vi.fn().mockResolvedValue({ error: null })
-    mockDb({ noteRef: { purge_on_use: false } })
+  it('GIVEN into_play_area=true → state="in_play"', async () => {
+    let capturedUpdate
     db.from.mockImplementation((table) => {
       if (table === 'game_players') {
         return {
@@ -252,17 +237,33 @@ describe('game-play-promissory-note', () => {
         }
       }
       if (table === 'game_player_promissory_notes') {
+        const updateMock = vi.fn().mockImplementation((data) => {
+          capturedUpdate = data
+          return { eq: vi.fn().mockResolvedValue({ error: null }) }
+        })
         return {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
               maybeSingle: vi.fn().mockResolvedValue({
-                data: { id: NOTE_INSTANCE_ID, state: 'held', held_by_player_id: PLAYER_ID, note_id: NOTE_ID },
+                data: { id: NOTE_INSTANCE_ID, state: 'held', held_by_player_id: PLAYER_ID, note_id: NOTE_ID, origin_player_id: ORIGIN_PLAYER_ID },
                 error: null,
               }),
             }),
           }),
-          update: updateMock.mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: null }),
+          update: updateMock,
+        }
+      }
+      if (table === 'ability_sources') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { ability_definition_id: ABILITY_DEF_ID, ability_definitions: { id: ABILITY_DEF_ID, handler_key: 'test', effects: [] } },
+                  error: null,
+                }),
+              }),
+            }),
           }),
         }
       }
@@ -270,20 +271,138 @@ describe('game-play-promissory-note', () => {
         return {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: { purge_on_use: false }, error: null }),
+              maybeSingle: vi.fn().mockResolvedValue({ data: { purge_on_use: false, into_play_area: true }, error: null }),
             }),
           }),
         }
       }
     })
-    const res = await handler(makeRequest({
-      game_id: GAME_ID,
-      note_instance_id: NOTE_INSTANCE_ID,
-    }))
+    const res = await handler(makeRequest({ game_id: GAME_ID, note_instance_id: NOTE_INSTANCE_ID }))
     expect(res.status).toBe(200)
-    expect(updateMock).toHaveBeenCalledOnce()
-    const updateCall = updateMock.mock.calls[0][0]
-    expect(updateCall.state).toBe('played')
+    expect(capturedUpdate.state).toBe('in_play')
+  })
+
+  it('GIVEN purge_on_use=true → state="discarded"', async () => {
+    let capturedUpdate
+    db.from.mockImplementation((table) => {
+      if (table === 'game_players') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: { id: PLAYER_ID }, error: null }),
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'game_player_promissory_notes') {
+        const updateMock = vi.fn().mockImplementation((data) => {
+          capturedUpdate = data
+          return { eq: vi.fn().mockResolvedValue({ error: null }) }
+        })
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: NOTE_INSTANCE_ID, state: 'held', held_by_player_id: PLAYER_ID, note_id: NOTE_ID, origin_player_id: ORIGIN_PLAYER_ID },
+                error: null,
+              }),
+            }),
+          }),
+          update: updateMock,
+        }
+      }
+      if (table === 'ability_sources') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { ability_definition_id: ABILITY_DEF_ID, ability_definitions: { id: ABILITY_DEF_ID, handler_key: 'test', effects: [] } },
+                  error: null,
+                }),
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'promissory_notes') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: { purge_on_use: true, into_play_area: false }, error: null }),
+            }),
+          }),
+        }
+      }
+    })
+    const res = await handler(makeRequest({ game_id: GAME_ID, note_instance_id: NOTE_INSTANCE_ID }))
+    expect(res.status).toBe(200)
+    expect(capturedUpdate.state).toBe('discarded')
+  })
+
+  it('GIVEN into_play_area=false, purge_on_use=false → state="held", held_by=origin_player_id', async () => {
+    let capturedUpdate
+    db.from.mockImplementation((table) => {
+      if (table === 'game_players') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: { id: PLAYER_ID }, error: null }),
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'game_player_promissory_notes') {
+        const updateMock = vi.fn().mockImplementation((data) => {
+          capturedUpdate = data
+          return { eq: vi.fn().mockResolvedValue({ error: null }) }
+        })
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: NOTE_INSTANCE_ID, state: 'held', held_by_player_id: PLAYER_ID, note_id: NOTE_ID, origin_player_id: ORIGIN_PLAYER_ID },
+                error: null,
+              }),
+            }),
+          }),
+          update: updateMock,
+        }
+      }
+      if (table === 'ability_sources') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { ability_definition_id: ABILITY_DEF_ID, ability_definitions: { id: ABILITY_DEF_ID, handler_key: 'test', effects: [] } },
+                  error: null,
+                }),
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'promissory_notes') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: { purge_on_use: false, into_play_area: false }, error: null }),
+            }),
+          }),
+        }
+      }
+    })
+    const res = await handler(makeRequest({ game_id: GAME_ID, note_instance_id: NOTE_INSTANCE_ID }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.played).toBe(true)
+    expect(capturedUpdate.state).toBe('held')
+    expect(capturedUpdate.held_by_player_id).toBe(ORIGIN_PLAYER_ID)
   })
 
   it('returns 200 and { played: true } on success', async () => {
@@ -330,5 +449,14 @@ describe('game-play-promissory-note', () => {
       note_instance_id: NOTE_INSTANCE_ID,
     }))
     expect(res.status).toBe(500)
+  })
+
+  it('accepts optional selections field in request body', async () => {
+    const res = await handler(makeRequest({
+      game_id: GAME_ID,
+      note_instance_id: NOTE_INSTANCE_ID,
+      selections: { target_player_id: 'some-player' },
+    }))
+    expect(res.status).toBe(200)
   })
 })
