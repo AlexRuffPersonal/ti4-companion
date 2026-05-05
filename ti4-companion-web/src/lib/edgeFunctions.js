@@ -165,4 +165,23 @@ export const passStrategySecondary = (gameId, playId) =>
 export const produceUnits = (gameId, systemKey, units, planetExhausts) =>
   callFunction('game-produce-units', { game_id: gameId, system_key: systemKey, units, planet_exhausts: planetExhausts })
 
+// Phase 18
+export const moveShips = (gameId, payload) =>
+  callFunction('game-move-ships', { game_id: gameId, ...payload })
+
+// Phase 23
+export const updateRecord = (table, record) =>
+  callFunction('admin-update-record', { table, record })
+
+// Phase 25
+export const rollRiftDice = (transitId, rollAll, unitId) =>
+  callFunction('game-roll-rift-dice', { transit_id: transitId, roll_all: rollAll, unit_id: unitId })
+
+// Phase 29a
+export const playActionCard = (gameId, cardId, selections) =>
+  callFunction('game-play-action-card', { game_id: gameId, card_id: cardId, selections })
+
+export const passActionWindow = (gameId) =>
+  callFunction('game-pass-action-window', { game_id: gameId })
+
 export { callFunction }

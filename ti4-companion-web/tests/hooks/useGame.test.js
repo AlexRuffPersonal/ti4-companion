@@ -144,4 +144,33 @@ describe('useGame', () => {
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.error).toMatch(/not found/i)
   })
+
+  it('isEliminated is true when currentPlayer.eliminated is true', async () => {
+    const players = [
+      { id: 'p1', user_id: 'host-uuid', display_name: 'Alice', faction: null, colour: null, eliminated: true },
+      { id: 'p2', user_id: 'other-uuid', display_name: 'Bob', faction: null, colour: null },
+    ]
+    mockSupabaseLoad({ players })
+    const { result } = renderHook(() => useGame('ABC123', 'host-uuid'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.isEliminated).toBe(true)
+  })
+
+  it('isEliminated is false when currentPlayer.eliminated is false', async () => {
+    const players = [
+      { id: 'p1', user_id: 'host-uuid', display_name: 'Alice', faction: null, colour: null, eliminated: false },
+      { id: 'p2', user_id: 'other-uuid', display_name: 'Bob', faction: null, colour: null },
+    ]
+    mockSupabaseLoad({ players })
+    const { result } = renderHook(() => useGame('ABC123', 'host-uuid'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.isEliminated).toBe(false)
+  })
+
+  it('isEliminated is false when currentPlayer is null', async () => {
+    mockSupabaseLoad({ players: [] })
+    const { result } = renderHook(() => useGame('ABC123', 'stranger-uuid'))
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalled())
+    expect(result.current.isEliminated).toBe(false)
+  })
 })

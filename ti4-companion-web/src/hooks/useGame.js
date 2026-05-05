@@ -403,6 +403,7 @@ export function useGame(code, userId) {
     myNotes,
     pendingIncomingTrades,
     currentPlayer,
+    isEliminated: currentPlayer?.eliminated ?? false,
     isHost,
     loading,
     error,
