@@ -20,7 +20,7 @@ export async function handler(req: Request): Promise<Response> {
     return errorResponse('Internal server error', 500)
   }
 
-  let body: { game_id?: unknown; system_key?: unknown; units?: unknown; planet_exhausts?: unknown }
+  let body: { game_id?: unknown; system_key?: unknown; units?: unknown; planet_exhausts?: unknown; selections?: unknown; trade_goods_spend?: unknown }
   try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
   if (!body.game_id || typeof body.game_id !== 'string') return errorResponse("'game_id' is required")
   if (!body.system_key || typeof body.system_key !== 'string') return errorResponse("'system_key' is required")
@@ -28,7 +28,7 @@ export async function handler(req: Request): Promise<Response> {
 
   const { data: player, error: playerError } = await db
     .from('game_players')
-    .select('id')
+    .select('id, technologies, exhausted_technologies, trade_goods')
     .eq('game_id', body.game_id)
     .eq('user_id', userId)
     .maybeSingle()
@@ -51,7 +51,7 @@ export async function handler(req: Request): Promise<Response> {
     .from('game_system_activations')
     .select('id')
     .eq('game_id', body.game_id)
-    .eq('player_id', (player as Record<string, string>).id)
+    .eq('player_id', (player as Record<string, unknown>).id)
     .eq('system_key', body.system_key)
     .eq('round', game.round)
     .maybeSingle()
@@ -88,7 +88,7 @@ export async function handler(req: Request): Promise<Response> {
     .select('unit_type, count')
     .eq('game_id', body.game_id)
     .eq('system_key', body.system_key)
-    .eq('player_id', (player as Record<string, string>).id)
+    .eq('player_id', (player as Record<string, unknown>).id)
   if (callerUnitsError) return errorResponse('Database error', 500)
 
   // Fetch defs for units in the system (may differ from units being produced)
@@ -106,6 +106,25 @@ export async function handler(req: Request): Promise<Response> {
     const def = systemDefMap.get((unit as { unit_type: string }).unit_type)
     if (def?.production) totalCapacity += parseStat(def.production)
   }
+
+  // Aerie Hololattice: +1 capacity per planet with structures in this system
+  const heldTechs = (player.technologies ?? []) as string[]
+  const exhaustedTechs = (player.exhausted_technologies ?? []) as string[]
+  const hasAerieHololattice = heldTechs.includes('Aerie Hololattice')
+  if (hasAerieHololattice) {
+    const { data: structureUnits } = await db
+      .from('game_player_units')
+      .select('on_planet, unit_type')
+      .eq('game_id', body.game_id)
+      .eq('system_key', body.system_key)
+      .eq('player_id', (player as Record<string, unknown>).id)
+      .in('unit_type', ['space dock', 'pds'])
+    const structurePlanets = new Set(((structureUnits ?? []) as Array<{ on_planet: string | null }>)
+      .filter(u => u.on_planet != null)
+      .map(u => u.on_planet as string))
+    totalCapacity += structurePlanets.size
+  }
+
   if (totalCapacity === 0) return errorResponse('No production-capable units in system', 409)
 
   const totalToProduce = unitOrders.reduce((sum, u) => sum + u.count, 0)
@@ -130,7 +149,7 @@ export async function handler(req: Request): Promise<Response> {
       .from('game_player_planets')
       .select('planet_name')
       .eq('game_id', body.game_id)
-      .eq('player_id', (player as Record<string, string>).id)
+      .eq('player_id', (player as Record<string, unknown>).id)
       .in('planet_name', planetExhausts)
     if (ownedError) return errorResponse('Database error', 500)
     const ownedSet = new Set(((ownedPlanets ?? []) as Array<{ planet_name: string }>).map(p => p.planet_name))
@@ -145,7 +164,41 @@ export async function handler(req: Request): Promise<Response> {
     if (!def) return errorResponse(`Unknown unit type: ${order.unit_type}`, 409)
     totalCost += (def.cost ?? 0) * order.count
   }
-  if (totalResources < totalCost) return errorResponse('Insufficient resources', 409)
+
+  // Tech effects on cost
+  let effectiveCost = totalCost
+
+  // Sarween Tools: reduce cost by 1 (min 0)
+  if (heldTechs.includes('Sarween Tools')) {
+    effectiveCost = Math.max(0, effectiveCost - 1)
+  }
+
+  // AI Development Algorithm (exhausted): reduce by count of unit_upgrade techs
+  if (heldTechs.includes('AI Development Algorithm') && exhaustedTechs.includes('AI Development Algorithm')) {
+    const { data: upgradeTechs } = await db
+      .from('technologies')
+      .select('name')
+      .in('name', heldTechs)
+      .eq('technology_type', 'unit_upgrade')
+    const upgradeCount = (upgradeTechs ?? []).length
+    effectiveCost = Math.max(0, effectiveCost - upgradeCount)
+  }
+
+  // Mirror Computing: each TG spent counts as 2 resources
+  const hasMirrorComputing = heldTechs.includes('Mirror Computing')
+  const tgSpend = typeof body.trade_goods_spend === 'number' ? body.trade_goods_spend : 0
+  const tgContribution = hasMirrorComputing ? tgSpend * 2 : tgSpend
+  totalResources += tgContribution
+
+  if (totalResources < effectiveCost) return errorResponse('Insufficient resources', 409)
+
+  // Deduct trade goods if spent
+  if (tgSpend > 0) {
+    await db
+      .from('game_players')
+      .update({ trade_goods: ((player as Record<string, unknown>).trade_goods as number) - tgSpend })
+      .eq('id', (player as Record<string, unknown>).id)
+  }
 
   // Validate no ships produced in enemy-occupied system
   const shipOrders = unitOrders.filter(u => {
@@ -158,7 +211,7 @@ export async function handler(req: Request): Promise<Response> {
       .select('id')
       .eq('game_id', body.game_id)
       .eq('system_key', body.system_key)
-      .neq('player_id', (player as Record<string, string>).id)
+      .neq('player_id', (player as Record<string, unknown>).id)
       .limit(1)
     if (enemyError) return errorResponse('Database error', 500)
     if ((enemyUnits ?? []).length > 0) return errorResponse('Cannot produce ships in enemy-occupied system', 409)
@@ -178,7 +231,7 @@ export async function handler(req: Request): Promise<Response> {
       .from('game_player_planets')
       .update({ exhausted: true })
       .eq('game_id', body.game_id)
-      .eq('player_id', (player as Record<string, string>).id)
+      .eq('player_id', (player as Record<string, unknown>).id)
       .in('planet_name', planetExhausts)
     if (exhaustError) return errorResponse(`Failed to exhaust planets: ${exhaustError.message}`, 500)
   }
@@ -190,7 +243,7 @@ export async function handler(req: Request): Promise<Response> {
       .from('game_player_units')
       .select('id, count')
       .eq('game_id', body.game_id)
-      .eq('player_id', (player as Record<string, string>).id)
+      .eq('player_id', (player as Record<string, unknown>).id)
       .eq('system_key', body.system_key)
       .eq('unit_type', order.unit_type)
       .is('on_planet', onPlanet)
@@ -207,13 +260,104 @@ export async function handler(req: Request): Promise<Response> {
         .from('game_player_units')
         .insert({
           game_id: body.game_id,
-          player_id: (player as Record<string, string>).id,
+          player_id: (player as Record<string, unknown>).id,
           system_key: body.system_key,
           unit_type: order.unit_type,
           count: order.count,
           on_planet: onPlanet,
         })
       if (insertError) return errorResponse(`Failed to insert units: ${insertError.message}`, 500)
+    }
+  }
+
+  const selections = (body.selections ?? {}) as Record<string, unknown>
+
+  // Yin Spinner: place 1 infantry on a controlled planet in this system
+  if (heldTechs.includes('Yin Spinner') && typeof selections.yin_spinner_planet === 'string' && selections.yin_spinner_planet) {
+    const yinPlanet = selections.yin_spinner_planet as string
+    const { data: existingInf } = await db
+      .from('game_player_units')
+      .select('id, count')
+      .eq('game_id', body.game_id)
+      .eq('player_id', (player as Record<string, unknown>).id)
+      .eq('system_key', body.system_key)
+      .eq('unit_type', 'infantry')
+      .eq('on_planet', yinPlanet)
+      .maybeSingle()
+    if (existingInf) {
+      await db
+        .from('game_player_units')
+        .update({ count: (existingInf as { count: number }).count + 1 })
+        .eq('id', (existingInf as { id: string }).id)
+    } else {
+      await db
+        .from('game_player_units')
+        .insert({
+          game_id: body.game_id,
+          player_id: (player as Record<string, unknown>).id,
+          system_key: body.system_key,
+          unit_type: 'infantry',
+          count: 1,
+          on_planet: yinPlanet,
+        })
+    }
+  }
+
+  // Self-Assembly Routines: place 1 mech and exhaust the tech
+  if (
+    heldTechs.includes('Self-Assembly Routines') &&
+    !exhaustedTechs.includes('Self-Assembly Routines') &&
+    selections.self_assembly_exhaust === true
+  ) {
+    if (typeof selections.self_assembly_planet === 'string') {
+      const sarPlanet = selections.self_assembly_planet as string
+      const { data: existingMech } = await db
+        .from('game_player_units')
+        .select('id, count')
+        .eq('game_id', body.game_id)
+        .eq('player_id', (player as Record<string, unknown>).id)
+        .eq('system_key', body.system_key)
+        .eq('unit_type', 'mech')
+        .eq('on_planet', sarPlanet)
+        .maybeSingle()
+      if (existingMech) {
+        await db
+          .from('game_player_units')
+          .update({ count: (existingMech as { count: number }).count + 1 })
+          .eq('id', (existingMech as { id: string }).id)
+      } else {
+        await db
+          .from('game_player_units')
+          .insert({
+            game_id: body.game_id,
+            player_id: (player as Record<string, unknown>).id,
+            system_key: body.system_key,
+            unit_type: 'mech',
+            count: 1,
+            on_planet: sarPlanet,
+          })
+      }
+    }
+    await db
+      .from('game_players')
+      .update({ exhausted_technologies: [...exhaustedTechs, 'Self-Assembly Routines'] })
+      .eq('id', (player as Record<string, unknown>).id)
+  }
+
+  // Magmus Reactor: +1 TG if system has a war sun owned by this player
+  if (heldTechs.includes('Magmus Reactor')) {
+    const { data: warSuns } = await db
+      .from('game_player_units')
+      .select('id')
+      .eq('game_id', body.game_id)
+      .eq('system_key', body.system_key)
+      .eq('player_id', (player as Record<string, unknown>).id)
+      .eq('unit_type', 'war sun')
+    if ((warSuns ?? []).length > 0) {
+      await db
+        .from('game_players')
+        .update({ trade_goods: ((player as Record<string, unknown>).trade_goods as number) + 1 })
+        .eq('id', (player as Record<string, unknown>).id)
     }
   }
 
