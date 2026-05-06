@@ -78,14 +78,17 @@ function mockDb({
         }),
       }),
       update: (payload) => {
-        // Window update: pending_action_window — needs .eq('id') only, resolved directly
+        updateGameMock(payload)
+        // Window update: pending_action_window — only one .eq() then awaited
         if (payload && payload.pending_action_window !== undefined) {
-          return {
-            eq: vi.fn().mockResolvedValue({ error: updateWindowError ?? null }),
-          }
+          return { eq: vi.fn().mockResolvedValue({ error: updateWindowError ?? null }) }
         }
-        // Voter advance update: agenda_vote_current_player_id
-        return updateGameMock(payload)
+        // Voter advance: two .eq() then awaited
+        return {
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: updateGameError }),
+          }),
+        }
       },
     }
     if (table === 'game_players') {

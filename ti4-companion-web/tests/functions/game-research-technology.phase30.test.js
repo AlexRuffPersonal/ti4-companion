@@ -67,6 +67,21 @@ function mockDb({ player, tech = UNIT_UPGRADE_TECH, allTechs = [UNIT_UPGRADE_TEC
         update: vi.fn().mockReturnValue({ in: vi.fn().mockResolvedValue({ error: null }) }),
       }
     }
+    if (table === 'game_action_card_deck') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              neq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  not: vi.fn().mockResolvedValue({ data: [], error: null }),
+                }),
+              }),
+            }),
+          }),
+        }),
+      }
+    }
     return {}
   })
 }
@@ -88,7 +103,7 @@ describe('game-research-technology Phase 30', () => {
     mockDb({ player, tech: UNIT_UPGRADE_TECH })
     db.from.mockImplementation((table) => {
       if (table === 'games') {
-        return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: BASE_GAME, error: null }) }) }) }
+        return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: BASE_GAME, error: null }) }) }), update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }) }
       }
       if (table === 'technologies') {
         return {
@@ -115,6 +130,9 @@ describe('game-research-technology Phase 30', () => {
           update: vi.fn().mockReturnValue({ in: vi.fn().mockResolvedValue({ error: null }) }),
         }
       }
+      if (table === 'game_action_card_deck') {
+        return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ neq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ not: vi.fn().mockResolvedValue({ data: [], error: null }) }) }) }) }) }) }
+      }
       return {}
     })
 
@@ -134,7 +152,7 @@ describe('game-research-technology Phase 30', () => {
     }
     db.from.mockImplementation((table) => {
       if (table === 'games') {
-        return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: BASE_GAME, error: null }) }) }) }
+        return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: BASE_GAME, error: null }) }) }), update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }) }
       }
       if (table === 'technologies') {
         return {
@@ -160,6 +178,9 @@ describe('game-research-technology Phase 30', () => {
           select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: [], error: null }) }) }),
           update: vi.fn().mockReturnValue({ in: vi.fn().mockResolvedValue({ error: null }) }),
         }
+      }
+      if (table === 'game_action_card_deck') {
+        return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ neq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ not: vi.fn().mockResolvedValue({ data: [], error: null }) }) }) }) }) }) }
       }
       return {}
     })

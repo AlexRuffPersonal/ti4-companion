@@ -17,6 +17,7 @@ import { handler } from '../../../supabase/functions/game-research-technology/in
 const USER_ID = 'user-uuid'
 const GAME_ID = 'game-uuid'
 const PLAYER_ID = 'player-uuid'
+const OTHER_PLAYER_ID = 'other-player-uuid'
 
 function makeRequest(body) {
   return new Request('http://localhost/game-research-technology', {
@@ -26,7 +27,6 @@ function makeRequest(body) {
   })
 }
 
-<<<<<<< HEAD
 const BASE_GAME = { status: 'active', expansions: { base: true } }
 const BASE_TECH = { name: 'Neural Motivator', technology_type: 'green', prerequisites: {}, expansion: 'base' }
 const BASE_UNIT_UPGRADE = { name: 'Dreadnought II', technology_type: 'unit_upgrade', prerequisites: { blue: 2 }, expansion: 'base' }
@@ -37,10 +37,18 @@ const BASE_PLAYER = {
   trade_goods: 5,
 }
 
-function mockDb({ game = BASE_GAME, tech = BASE_TECH, player = BASE_PLAYER, allTechs = [BASE_TECH, BASE_UNIT_UPGRADE], planets = [], updateError = null } = {}) {
+let updatePlayerMock, updateGameMock
+
+function mockDb({ game = BASE_GAME, tech = BASE_TECH, player = BASE_PLAYER, allTechs = [BASE_TECH, BASE_UNIT_UPGRADE], planets = [], updateError = null, eligibleCardRows = [] } = {}) {
+  updatePlayerMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: updateError }) })
+  updateGameMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+
   db.from.mockImplementation((table) => {
     if (table === 'games') {
-      return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: game, error: null }) }) }) }
+      return {
+        select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: game, error: null }) }) }),
+        update: updateGameMock,
+      }
     }
     if (table === 'technologies') {
       return {
@@ -48,7 +56,6 @@ function mockDb({ game = BASE_GAME, tech = BASE_TECH, player = BASE_PLAYER, allT
           if (cols.includes('prerequisites')) {
             return { eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: tech, error: null }) }) }
           }
-          // allTechs query
           return { then: (cb) => Promise.resolve({ data: allTechs, error: null }).then(cb) }
         }),
       }
@@ -56,7 +63,7 @@ function mockDb({ game = BASE_GAME, tech = BASE_TECH, player = BASE_PLAYER, allT
     if (table === 'game_players') {
       return {
         select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }) }) }) }),
-        update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: updateError }) }),
+        update: updatePlayerMock,
       }
     }
     if (table === 'game_player_planets') {
@@ -64,75 +71,26 @@ function mockDb({ game = BASE_GAME, tech = BASE_TECH, player = BASE_PLAYER, allT
         select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: planets, error: null }) }) }),
         update: vi.fn().mockReturnValue({ in: vi.fn().mockResolvedValue({ error: null }) }),
       }
-=======
-let updatePlayerMock, updateGameMock
-
-function mockDb({
-  game = { status: 'active', expansions: { base: true } },
-  tech = { name: TECH_NAME, technology_type: 'green', prerequisites: {}, expansion: 'base' },
-  player = { id: PLAYER_ID, technologies: [] },
-  allTechs = [{ name: TECH_NAME, technology_type: 'green' }],
-  eligibleCardRows = [],
-} = {}) {
-  updatePlayerMock = vi.fn().mockReturnValue({
-    eq: vi.fn().mockResolvedValue({ error: null }),
-  })
-  updateGameMock = vi.fn().mockReturnValue({
-    eq: vi.fn().mockResolvedValue({ error: null }),
-  })
-
-  db.from.mockImplementation((table) => {
-    if (table === 'games') return {
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          maybeSingle: vi.fn().mockResolvedValue({ data: game, error: null }),
-        }),
-      }),
-      update: updateGameMock,
     }
-    if (table === 'technologies') return {
-      select: vi.fn().mockImplementation((fields) => {
-        // Single tech lookup (name, technology_type, prerequisites, expansion)
-        if (fields.includes('prerequisites')) {
-          return {
+    if (table === 'game_action_card_deck') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: tech, error: null }),
-            }),
-          }
-        }
-        // All techs lookup (for prerequisite validation)
-        return Promise.resolve({ data: allTechs, error: null })
-      }),
-    }
-    if (table === 'game_players') return {
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }),
-          }),
-        }),
-      }),
-      update: updatePlayerMock,
-    }
-    if (table === 'game_action_card_deck') return {
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            neq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                not: vi.fn().mockResolvedValue({ data: eligibleCardRows, error: null }),
+              neq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  not: vi.fn().mockResolvedValue({ data: eligibleCardRows, error: null }),
+                }),
               }),
             }),
           }),
         }),
-      }),
->>>>>>> feature/phases-unblocked
+      }
     }
     return {}
   })
 }
 
-<<<<<<< HEAD
 describe('game-research-technology', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -140,38 +98,19 @@ describe('game-research-technology', () => {
     requireAuth.mockResolvedValue(USER_ID)
   })
 
-=======
-beforeEach(() => {
-  vi.clearAllMocks()
-  mockDb()
-  requireAuth.mockResolvedValue(USER_ID)
-})
-
-describe('game-research-technology', () => {
->>>>>>> feature/phases-unblocked
   it('returns 204 for CORS preflight', async () => {
     const res = await handler(new Request('http://localhost', { method: 'OPTIONS' }))
     expect(res.status).toBe(204)
   })
 
-<<<<<<< HEAD
   it('returns 401 when not authenticated', async () => {
     requireAuth.mockRejectedValue(new AuthError('Unauthorized'))
     const res = await handler(makeRequest({ game_id: GAME_ID, tech_name: 'Neural Motivator' }))
-=======
-  it('returns 401 for unauthenticated requests', async () => {
-    requireAuth.mockRejectedValue(new AuthError('Unauthorized'))
-    const res = await handler(makeRequest({ game_id: GAME_ID, tech_name: TECH_NAME }))
->>>>>>> feature/phases-unblocked
     expect(res.status).toBe(401)
   })
 
   it('returns 400 when game_id is missing', async () => {
-<<<<<<< HEAD
     const res = await handler(makeRequest({ tech_name: 'Neural Motivator' }))
-=======
-    const res = await handler(makeRequest({ tech_name: TECH_NAME }))
->>>>>>> feature/phases-unblocked
     expect(res.status).toBe(400)
   })
 
@@ -180,7 +119,6 @@ describe('game-research-technology', () => {
     expect(res.status).toBe(400)
   })
 
-<<<<<<< HEAD
   it('returns 200 when tech with no prereqs is researched successfully', async () => {
     const res = await handler(makeRequest({ game_id: GAME_ID, tech_name: 'Neural Motivator' }))
     expect(res.status).toBe(200)
@@ -212,7 +150,7 @@ describe('game-research-technology', () => {
       let capturedUpdate = null
       db.from.mockImplementation((table) => {
         if (table === 'games') {
-          return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: BASE_GAME }) }) }) }
+          return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: BASE_GAME }) }) }), update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }) }
         }
         if (table === 'technologies') {
           return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: BASE_UNIT_UPGRADE }) }) }) }
@@ -222,6 +160,9 @@ describe('game-research-technology', () => {
             select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: { ...BASE_PLAYER, technologies: ['AI Development Algorithm'], exhausted_technologies: [] } }) }) }) }),
             update: vi.fn().mockImplementation((data) => { capturedUpdate = data; return { eq: vi.fn().mockResolvedValue({ error: null }) } }),
           }
+        }
+        if (table === 'game_action_card_deck') {
+          return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ neq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ not: vi.fn().mockResolvedValue({ data: [], error: null }) }) }) }) }) }) }
         }
         return {}
       })
@@ -279,7 +220,7 @@ describe('game-research-technology', () => {
       let capturedUpdate = null
       db.from.mockImplementation((table) => {
         if (table === 'games') {
-          return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: BASE_GAME }) }) }) }
+          return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: BASE_GAME }) }) }), update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }) }
         }
         if (table === 'technologies') {
           return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: BASE_UNIT_UPGRADE }) }) }) }
@@ -293,64 +234,48 @@ describe('game-research-technology', () => {
         if (table === 'game_player_planets') {
           return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: [], error: null }) }) }) }
         }
+        if (table === 'game_action_card_deck') {
+          return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ neq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ not: vi.fn().mockResolvedValue({ data: [], error: null }) }) }) }) }) }) }
+        }
         return {}
       })
       await handler(makeRequest({ game_id: GAME_ID, tech_name: 'Dreadnought II', selections: { use_inheritance: true } }))
       expect(capturedUpdate?.exhausted_technologies).toContain('Inheritance Systems')
     })
-=======
-  it('returns 404 when tech not found', async () => {
-    mockDb({ tech: null })
-    const res = await handler(makeRequest({ game_id: GAME_ID, tech_name: TECH_NAME }))
-    expect(res.status).toBe(404)
   })
 
-  it('returns 409 when tech already researched', async () => {
-    mockDb({ player: { id: PLAYER_ID, technologies: [TECH_NAME] } })
-    const res = await handler(makeRequest({ game_id: GAME_ID, tech_name: TECH_NAME }))
-    expect(res.status).toBe(409)
-    const body = await res.json()
-    expect(body.error).toMatch(/already researched/i)
-  })
-
-  it('appends tech to player technologies on success', async () => {
-    const res = await handler(makeRequest({ game_id: GAME_ID, tech_name: TECH_NAME }))
-    expect(res.status).toBe(200)
-    expect(updatePlayerMock).toHaveBeenCalledWith({ technologies: [TECH_NAME] })
-  })
-
-  it('GIVEN another player holds After-tech-researched card — sets pending_action_window', async () => {
-    mockDb({ eligibleCardRows: [{ held_by_player_id: OTHER_PLAYER_ID }] })
-    const res = await handler(makeRequest({ game_id: GAME_ID, tech_name: TECH_NAME }))
-    expect(res.status).toBe(200)
-    const windowCall = updateGameMock.mock.calls.find(
-      ([arg]) => arg && arg.pending_action_window !== undefined
-    )
-    expect(windowCall).toBeDefined()
-    expect(windowCall[0].pending_action_window).toMatchObject({
-      type: 'after_technology_researched',
-      eligible_player_ids: [OTHER_PLAYER_ID],
-      context: { technology_name: TECH_NAME },
+  describe('after_technology_researched action window', () => {
+    it('GIVEN another player holds After-tech-researched card — sets pending_action_window', async () => {
+      mockDb({ eligibleCardRows: [{ held_by_player_id: OTHER_PLAYER_ID }] })
+      const res = await handler(makeRequest({ game_id: GAME_ID, tech_name: 'Neural Motivator' }))
+      expect(res.status).toBe(200)
+      const windowCall = updateGameMock.mock.calls.find(
+        ([arg]) => arg && arg.pending_action_window !== undefined
+      )
+      expect(windowCall).toBeDefined()
+      expect(windowCall[0].pending_action_window).toMatchObject({
+        type: 'after_technology_researched',
+        eligible_player_ids: [OTHER_PLAYER_ID],
+        context: { technology_name: 'Neural Motivator' },
+      })
     })
-  })
 
-  it('GIVEN only the researching player holds such a card — no window opened', async () => {
-    // Eligible rows exclude the researcher (neq filter), so empty result
-    mockDb({ eligibleCardRows: [] })
-    await handler(makeRequest({ game_id: GAME_ID, tech_name: TECH_NAME }))
-    const windowCall = updateGameMock.mock.calls.find(
-      ([arg]) => arg && arg.pending_action_window !== undefined
-    )
-    expect(windowCall).toBeUndefined()
-  })
+    it('GIVEN only the researching player holds such a card — no window opened', async () => {
+      mockDb({ eligibleCardRows: [] })
+      await handler(makeRequest({ game_id: GAME_ID, tech_name: 'Neural Motivator' }))
+      const windowCall = updateGameMock.mock.calls.find(
+        ([arg]) => arg && arg.pending_action_window !== undefined
+      )
+      expect(windowCall).toBeUndefined()
+    })
 
-  it('GIVEN no player holds such a card — no window opened', async () => {
-    mockDb({ eligibleCardRows: [] })
-    await handler(makeRequest({ game_id: GAME_ID, tech_name: TECH_NAME }))
-    const windowCall = updateGameMock.mock.calls.find(
-      ([arg]) => arg && arg.pending_action_window !== undefined
-    )
-    expect(windowCall).toBeUndefined()
->>>>>>> feature/phases-unblocked
+    it('GIVEN no player holds such a card — no window opened', async () => {
+      mockDb({ eligibleCardRows: [] })
+      await handler(makeRequest({ game_id: GAME_ID, tech_name: 'Neural Motivator' }))
+      const windowCall = updateGameMock.mock.calls.find(
+        ([arg]) => arg && arg.pending_action_window !== undefined
+      )
+      expect(windowCall).toBeUndefined()
+    })
   })
 })

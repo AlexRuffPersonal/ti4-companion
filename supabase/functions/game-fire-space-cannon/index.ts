@@ -10,6 +10,17 @@ function parseCombatValue(text: string): number {
   return m ? parseInt(m[1]) : 6
 }
 
+async function hasDestroyer(gameId: string, systemKey: string, playerId: string): Promise<boolean> {
+  const { data: units } = await db
+    .from('game_player_units')
+    .select('unit_type')
+    .eq('game_id', gameId)
+    .eq('system_key', systemKey)
+    .eq('player_id', playerId)
+    .is('on_planet', null)
+  return (units ?? []).some((u: { unit_type: string }) => u.unit_type === 'destroyer')
+}
+
 async function applyHits(gameId: string, systemKey: string, targetPlayerId: string, hits: number): Promise<void> {
   if (hits <= 0) return
   const { data: units } = await db
