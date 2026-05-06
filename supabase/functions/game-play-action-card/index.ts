@@ -27,7 +27,7 @@ export async function handler(req: Request): Promise<Response> {
 
   const { data: player, error: playerError } = await db
     .from('game_players')
-    .select('id, action_card_count')
+    .select('id, action_card_count, passed, technologies')
     .eq('game_id', body.game_id)
     .eq('user_id', userId)
     .maybeSingle()
@@ -82,12 +82,46 @@ export async function handler(req: Request): Promise<Response> {
   }
   // ... existing Action: branch continues below
 
+  // Load all players for tech-effect checks
+  const { data: allPlayers, error: allPlayersError } = await db
+    .from('game_players')
+    .select('id, technologies, exhausted_technologies, command_tokens')
+    .eq('game_id', body.game_id)
+  if (allPlayersError) return errorResponse('Database error', 500)
+  const otherPlayers = (allPlayers ?? []).filter((p: { id: string }) => p.id !== player.id)
+
+  // Transparasteel Plating: passed players cannot play action cards during Yssaril's turn
+  const yssarilPlayer = (allPlayers ?? []).find((p: { technologies: string[] }) =>
+    (p.technologies ?? []).includes('Transparasteel Plating')
+  )
+  if (yssarilPlayer && game.active_player_id === yssarilPlayer.id && (player as { passed: boolean }).passed) {
+    return errorResponse('Cannot play action cards during Yssaril turn after passing', 409)
+  }
+
   if (game.active_player_id !== player.id) return errorResponse('Not your turn', 409)
   if (game.phase !== 'action') return errorResponse('Not in action phase', 409)
 
   // Discard the card
   await db.from('game_action_card_deck').update({ state: 'discard', held_by_player_id: null }).eq('id', body.card_id)
   await db.from('game_players').update({ action_card_count: Math.max(0, (player.action_card_count as number) - 1) }).eq('id', player.id)
+
+  // Instinct Training: open a window for Xxcha player after an Action: card is played
+  const instinctPlayer = otherPlayers.find((p: { technologies: string[]; exhausted_technologies: string[]; command_tokens: { strategy: number } }) =>
+    (p.technologies ?? []).includes('Instinct Training') &&
+    !(p.exhausted_technologies ?? []).includes('Instinct Training') &&
+    ((p.command_tokens as { strategy: number })?.strategy ?? 0) >= 1
+  )
+  if (instinctPlayer) {
+    await db.from('games').update({
+      pending_action_window: {
+        type: 'when_action_card_played',
+        eligible_player_ids: [instinctPlayer.id],
+        passed_player_ids: [],
+        context: { card_id: body.card_id, playing_player_id: player.id },
+      },
+    }).eq('id', body.game_id)
+    return okResponse({ discarded: body.card_id, result: null, instinct_training_window: true })
+  }
 
   return okResponse({ discarded: body.card_id, result: null })
 }
