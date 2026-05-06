@@ -168,4 +168,200 @@ describe('game-activate-system', () => {
     const res = await handler(new Request('http://localhost', { method: 'OPTIONS' }))
     expect(res.status).toBe(204)
   })
+
+  it('GIVEN ships moved in from another system, EXPECT combat.ships_moved_in=true and phase=\'window_pre_space_cannon\'', async () => {
+    const combatInsertSpy = vi.fn().mockReturnValue({
+      select: vi.fn().mockResolvedValue({ data: [{ id: 'combat-uuid' }], error: null }),
+    })
+    db.from.mockImplementation((table) => {
+      if (table === 'game_players') {
+        return {
+          select: vi.fn().mockImplementation((fields) => {
+            // allGamePlayers fetch: does NOT include 'command_tokens', resolves with single .eq()
+            if (fields && !fields.includes('command_tokens')) {
+              return {
+                eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+              }
+            }
+            // single player fetch: includes 'command_tokens', chains .eq().eq().maybeSingle()
+            return {
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({
+                    data: { id: PLAYER_ID, command_tokens: { tactic_total: 3, fleet: 2, strategy: 1 } },
+                    error: null,
+                  }),
+                }),
+              }),
+            }
+          }),
+          update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        }
+      }
+      if (table === 'games') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: GAME_ID, active_player_id: PLAYER_ID, round: 2, map_tiles: {} },
+                error: null,
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'game_system_activations') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+              }),
+            }),
+          }),
+          insert: insertMock,
+        }
+      }
+      if (table === 'tiles') {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        }
+      }
+      if (table === 'game_player_units') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              is: vi.fn().mockResolvedValue({
+                data: [{ player_id: 'enemy-uuid', unit_type: 'cruiser', count: 2, system_key: '1,-1' }],
+                error: null,
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'units') {
+        return {
+          select: vi.fn().mockReturnValue({
+            not: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        }
+      }
+      if (table === 'game_combats') {
+        return { insert: combatInsertSpy }
+      }
+    })
+
+    const res = await handler(makeRequest({
+      game_id: GAME_ID,
+      system_key: '1,-1',
+      movement_payload: [{ origin_system_key: '2,-1' }],
+    }))
+    expect(res.status).toBe(200)
+    expect(combatInsertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ships_moved_in: true,
+        phase: 'window_pre_space_cannon',
+      })
+    )
+  })
+
+  it('GIVEN no ships moved in (same-system origin), EXPECT combat.ships_moved_in=false', async () => {
+    const combatInsertSpy = vi.fn().mockReturnValue({
+      select: vi.fn().mockResolvedValue({ data: [{ id: 'combat-uuid' }], error: null }),
+    })
+    db.from.mockImplementation((table) => {
+      if (table === 'game_players') {
+        return {
+          select: vi.fn().mockImplementation((fields) => {
+            // allGamePlayers fetch: does NOT include 'command_tokens', resolves with single .eq()
+            if (fields && !fields.includes('command_tokens')) {
+              return {
+                eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+              }
+            }
+            // single player fetch: includes 'command_tokens', chains .eq().eq().maybeSingle()
+            return {
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({
+                    data: { id: PLAYER_ID, command_tokens: { tactic_total: 3, fleet: 2, strategy: 1 } },
+                    error: null,
+                  }),
+                }),
+              }),
+            }
+          }),
+          update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        }
+      }
+      if (table === 'games') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: GAME_ID, active_player_id: PLAYER_ID, round: 2, map_tiles: {} },
+                error: null,
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'game_system_activations') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+              }),
+            }),
+          }),
+          insert: insertMock,
+        }
+      }
+      if (table === 'tiles') {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        }
+      }
+      if (table === 'game_player_units') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              is: vi.fn().mockResolvedValue({
+                data: [{ player_id: 'enemy-uuid', unit_type: 'cruiser', count: 2, system_key: '1,-1' }],
+                error: null,
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'units') {
+        return {
+          select: vi.fn().mockReturnValue({
+            not: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        }
+      }
+      if (table === 'game_combats') {
+        return { insert: combatInsertSpy }
+      }
+    })
+
+    const res = await handler(makeRequest({
+      game_id: GAME_ID,
+      system_key: '1,-1',
+      movement_payload: [{ origin_system_key: '1,-1' }],
+    }))
+    expect(res.status).toBe(200)
+    expect(combatInsertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ships_moved_in: false,
+        phase: 'window_pre_space_cannon',
+      })
+    )
+  })
 })
