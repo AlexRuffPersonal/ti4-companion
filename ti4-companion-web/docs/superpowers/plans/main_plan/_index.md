@@ -108,11 +108,11 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-cast-votes](fn-game-cast-votes.md) | `supabase/functions/game-cast-votes/index.ts` | 19 | Ability DSL Completions | planned | migration-035-ability-dsl-completions |
 | [fn-game-advance-phase](fn-game-advance-phase.md) | `supabase/functions/game-advance-phase/index.ts` | 19 | Ability DSL Completions | planned | migration-035-ability-dsl-completions |
 
-| [migration-036-combat-action-cards](migration-036-combat-action-cards.md) | `supabase/migrations/036_combat_action_cards.sql` | 20 | Space Combat Action Cards | planned | — |
-| [fn-game-activate-system-p20](fn-game-activate-system-p20.md) | `supabase/functions/game-activate-system/index.ts` | 20 | Space Combat Action Cards | planned | migration-036-combat-action-cards |
-| [fn-game-declare-retreat-p20](fn-game-declare-retreat-p20.md) | `supabase/functions/game-declare-retreat/index.ts` | 20 | Space Combat Action Cards | planned | migration-036-combat-action-cards |
-| [fn-game-play-combat-action-card](fn-game-play-combat-action-card.md) | `supabase/functions/game-play-combat-action-card/index.ts` | 20 | Space Combat Action Cards | planned | migration-036-combat-action-cards |
-| [fn-game-pass-action-window](fn-game-pass-action-window.md) | `supabase/functions/game-pass-action-window/index.ts` | 20 | Space Combat Action Cards | planned | migration-036-combat-action-cards |
+| [migration-036-combat-action-cards](migration-036-combat-action-cards.md) | `supabase/migrations/036_combat_action_cards.sql` | 20 | Space Combat Action Cards | done | — |
+| [fn-game-activate-system-p20](fn-game-activate-system-p20.md) | `supabase/functions/game-activate-system/index.ts` | 20 | Space Combat Action Cards | done | migration-036-combat-action-cards |
+| [fn-game-declare-retreat-p20](fn-game-declare-retreat-p20.md) | `supabase/functions/game-declare-retreat/index.ts` | 20 | Space Combat Action Cards | done | migration-036-combat-action-cards |
+| [fn-game-play-combat-action-card](fn-game-play-combat-action-card.md) | `supabase/functions/game-play-combat-action-card/index.ts` | 20 | Space Combat Action Cards | done | migration-036-combat-action-cards |
+| [fn-game-pass-action-window](fn-game-pass-action-window.md) | `supabase/functions/game-pass-action-window/index.ts` | 20 | Space Combat Action Cards | done | migration-036-combat-action-cards |
 | [component-ActionCardWindowPanel](component-ActionCardWindowPanel.md) | `src/components/game/ActionCardWindowPanel.jsx` | 20 | Space Combat Action Cards | planned | fn-game-play-combat-action-card, fn-game-pass-action-window |
 
 | [migration-037-legendary-planets](migration-037-legendary-planets.md) | `supabase/migrations/037_legendary_planets.sql` | 21 | Legendary Planets & Wormhole Nexus | planned | — |
@@ -169,10 +169,10 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-VotingPanel-p28](component-VotingPanel-p28.md) | `src/components/game/VotingPanel.jsx` | 28 | Card Text Visualization | done | — |
 | [component-AgendaResolutionModal-p28](component-AgendaResolutionModal-p28.md) | `src/components/game/AgendaResolutionModal.jsx` | 28 | Card Text Visualization | done | — |
 
-| [migration-041-action-card-effects](migration-041-action-card-effects.md) | `supabase/migrations/041_action_card_effects.sql` | 29a | Action Card Effect Enforcement | planned | — |
-| [shared-abilityDsl-p29a](shared-abilityDsl-p29a.md) | `supabase/functions/_shared/abilityDsl.ts` | 29a | Action Card Effect Enforcement | planned | migration-041-action-card-effects |
-| [fn-game-play-action-card-p29a](fn-game-play-action-card-p29a.md) | `supabase/functions/game-play-action-card/index.ts` | 29a | Action Card Effect Enforcement | planned | shared-abilityDsl-p29a |
-| [lib-importSchemas-p29a](lib-importSchemas-p29a.md) | `src/lib/importSchemas.js` | 29a | Action Card Effect Enforcement | planned | migration-041-action-card-effects |
+| [migration-041-action-card-effects](migration-041-action-card-effects.md) | `supabase/migrations/041_action_card_effects.sql` | 29a | Action Card Effect Enforcement | done | — |
+| [shared-abilityDsl-p29a](shared-abilityDsl-p29a.md) | `supabase/functions/_shared/abilityDsl.ts` | 29a | Action Card Effect Enforcement | done | migration-041-action-card-effects |
+| [fn-game-play-action-card-p29a](fn-game-play-action-card-p29a.md) | `supabase/functions/game-play-action-card/index.ts` | 29a | Action Card Effect Enforcement | done | shared-abilityDsl-p29a |
+| [lib-importSchemas-p29a](lib-importSchemas-p29a.md) | `src/lib/importSchemas.js` | 29a | Action Card Effect Enforcement | done | migration-041-action-card-effects |
 | [client-edgeFunctions-p29a](client-edgeFunctions-p29a.md) | `src/lib/edgeFunctions.js` | 29a | Action Card Effect Enforcement | done | fn-game-play-action-card-p29a, fn-game-pass-action-window-p29b |
 | [component-ActionCardModal-p29a](component-ActionCardModal-p29a.md) | `src/components/game/ActionCardModal.jsx` | 29a | Action Card Effect Enforcement | done | client-edgeFunctions-p29a |
 
