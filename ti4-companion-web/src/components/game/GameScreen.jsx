@@ -29,7 +29,8 @@ import GalaxyTab from './GalaxyTab.jsx'
 import { useStrategyCards } from '../../hooks/useStrategyCards.js'
 import StrategyCardModal from './StrategyCardModal.jsx'
 import ProductionModal from './ProductionModal.jsx'
-import { produceUnits } from '../../lib/edgeFunctions.js'
+import { produceUnits, passActionWindow, playActionCard } from '../../lib/edgeFunctions.js'
+import ActionWindowBanner from './ActionWindowBanner.jsx'
 
 export default function GameScreen({ userId }) {
   const { code } = useParams()
@@ -62,6 +63,7 @@ export default function GameScreen({ userId }) {
   const [allTechnologies, setAllTechnologies] = useState([])
   const [allAbilityDefinitions, setAllAbilityDefinitions] = useState([])
   const [viewingTechPlayerId, setViewingTechPlayerId] = useState(null)
+  const [windowLoading, setWindowLoading] = useState(false)
   const [actionCardModalOpen, setActionCardModalOpen] = useState(false)
   const [activatingAbility, setActivatingAbility] = useState(null)
   const [secretsModalOpen, setSecretsModalOpen] = useState(false)
@@ -195,6 +197,18 @@ export default function GameScreen({ userId }) {
   async function endAgendaPhase() {
     if (!game) return
     await supabase.from('games').update({ agenda_phase_step: 'inactive' }).eq('id', game.id)
+  }
+
+  async function handlePassWindow() {
+    setWindowLoading(true)
+    await passActionWindow(game?.id)
+    setWindowLoading(false)
+  }
+
+  async function handlePlayWindowCard(cardId) {
+    setWindowLoading(true)
+    await playActionCard(game?.id, { card_id: cardId })
+    setWindowLoading(false)
   }
 
   if (loading) {
@@ -384,6 +398,15 @@ export default function GameScreen({ userId }) {
         />
       </div>
 
+      <ActionWindowBanner
+        window={game?.pending_action_window ?? null}
+        currentPlayerId={currentPlayer?.id}
+        myCards={myCards}
+        onPlayCard={handlePlayWindowCard}
+        onPass={handlePassWindow}
+        loading={windowLoading}
+      />
+
       {actionCardModalOpen && (
         <ActionCardModal
           cards={myCards}
@@ -392,6 +415,8 @@ export default function GameScreen({ userId }) {
           onClose={() => setActionCardModalOpen(false)}
           triggerableByActionCardId={triggerableByActionCardId}
           onPlay={(card, ability) => handlePlayAbility(ability, card.id, 'action_card')}
+          onPlayCard={(cardId, params) => playActionCard(game?.id, { card_id: cardId, ...params })}
+          isMyTurn={activePlayer?.id === currentPlayer?.id}
         />
       )}
 

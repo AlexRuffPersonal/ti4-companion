@@ -24,6 +24,11 @@ export default function ObjectivesSection({ objectives, players, game, currentPl
                   <span className="text-dim text-xs ml-2">
                     Stage {ref?.stage} · {ref?.points ?? 1} VP
                   </span>
+                  {ref?.condition && (
+                    <p data-testid="objective-condition" className="text-dim text-xs mt-0.5">
+                      {ref.condition}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <div className="text-xs text-success">

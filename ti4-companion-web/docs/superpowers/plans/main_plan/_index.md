@@ -164,17 +164,17 @@ This keeps the index accurate across multi-session implementations so future age
 | [hook-useGame-p26](hook-useGame-p26.md) | `src/hooks/useGame.js` | 26 | Player Elimination | planned | migration-039-elimination |
 | [component-GameScreen-p26](component-GameScreen-p26.md) | `src/components/game/GameScreen.jsx` | 26 | Player Elimination | planned | hook-useGame-p26 |
 
-| [component-TechCard-p28](component-TechCard-p28.md) | `src/components/game/TechCard.jsx` | 28 | Card Text Visualization | planned | — |
-| [component-ObjectivesSection-p28](component-ObjectivesSection-p28.md) | `src/components/game/ObjectivesSection.jsx` | 28 | Card Text Visualization | planned | — |
-| [component-VotingPanel-p28](component-VotingPanel-p28.md) | `src/components/game/VotingPanel.jsx` | 28 | Card Text Visualization | planned | — |
-| [component-AgendaResolutionModal-p28](component-AgendaResolutionModal-p28.md) | `src/components/game/AgendaResolutionModal.jsx` | 28 | Card Text Visualization | planned | — |
+| [component-TechCard-p28](component-TechCard-p28.md) | `src/components/game/TechCard.jsx` | 28 | Card Text Visualization | done | — |
+| [component-ObjectivesSection-p28](component-ObjectivesSection-p28.md) | `src/components/game/ObjectivesSection.jsx` | 28 | Card Text Visualization | done | — |
+| [component-VotingPanel-p28](component-VotingPanel-p28.md) | `src/components/game/VotingPanel.jsx` | 28 | Card Text Visualization | done | — |
+| [component-AgendaResolutionModal-p28](component-AgendaResolutionModal-p28.md) | `src/components/game/AgendaResolutionModal.jsx` | 28 | Card Text Visualization | done | — |
 
 | [migration-041-action-card-effects](migration-041-action-card-effects.md) | `supabase/migrations/041_action_card_effects.sql` | 29a | Action Card Effect Enforcement | planned | — |
 | [shared-abilityDsl-p29a](shared-abilityDsl-p29a.md) | `supabase/functions/_shared/abilityDsl.ts` | 29a | Action Card Effect Enforcement | planned | migration-041-action-card-effects |
 | [fn-game-play-action-card-p29a](fn-game-play-action-card-p29a.md) | `supabase/functions/game-play-action-card/index.ts` | 29a | Action Card Effect Enforcement | planned | shared-abilityDsl-p29a |
 | [lib-importSchemas-p29a](lib-importSchemas-p29a.md) | `src/lib/importSchemas.js` | 29a | Action Card Effect Enforcement | planned | migration-041-action-card-effects |
-| [client-edgeFunctions-p29a](client-edgeFunctions-p29a.md) | `src/lib/edgeFunctions.js` | 29a | Action Card Effect Enforcement | planned | fn-game-play-action-card-p29a, fn-game-pass-action-window-p29b |
-| [component-ActionCardModal-p29a](component-ActionCardModal-p29a.md) | `src/components/game/ActionCardModal.jsx` | 29a | Action Card Effect Enforcement | planned | client-edgeFunctions-p29a |
+| [client-edgeFunctions-p29a](client-edgeFunctions-p29a.md) | `src/lib/edgeFunctions.js` | 29a | Action Card Effect Enforcement | done | fn-game-play-action-card-p29a, fn-game-pass-action-window-p29b |
+| [component-ActionCardModal-p29a](component-ActionCardModal-p29a.md) | `src/components/game/ActionCardModal.jsx` | 29a | Action Card Effect Enforcement | done | client-edgeFunctions-p29a |
 
 | [migration-042-action-window](migration-042-action-window.md) | `supabase/migrations/042_action_window.sql` | 29b | Action Card Effect Enforcement | planned | — |
 | [shared-abilityDsl-p29b](shared-abilityDsl-p29b.md) | `supabase/functions/_shared/abilityDsl.ts` | 29b | Action Card Effect Enforcement | planned | migration-042-action-window |
@@ -183,8 +183,8 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-draw-agenda-p29b](fn-game-draw-agenda-p29b.md) | `supabase/functions/game-draw-agenda/index.ts` | 29b | Action Card Effect Enforcement | planned | migration-042-action-window |
 | [fn-game-cast-votes-p29b](fn-game-cast-votes-p29b.md) | `supabase/functions/game-cast-votes/index.ts` | 29b | Action Card Effect Enforcement | planned | migration-042-action-window |
 | [fn-game-research-technology-p29b](fn-game-research-technology-p29b.md) | `supabase/functions/game-research-technology/index.ts` | 29b | Action Card Effect Enforcement | planned | migration-042-action-window |
-| [component-ActionWindowBanner](component-ActionWindowBanner.md) | `src/components/game/ActionWindowBanner.jsx` | 29b | Action Card Effect Enforcement | planned | client-edgeFunctions-p29a |
-| [component-GameScreen-p29b](component-GameScreen-p29b.md) | `src/components/game/GameScreen.jsx` | 29b | Action Card Effect Enforcement | planned | component-ActionWindowBanner, client-edgeFunctions-p29a |
+| [component-ActionWindowBanner](component-ActionWindowBanner.md) | `src/components/game/ActionWindowBanner.jsx` | 29b | Action Card Effect Enforcement | done | client-edgeFunctions-p29a |
+| [component-GameScreen-p29b](component-GameScreen-p29b.md) | `src/components/game/GameScreen.jsx` | 29b | Action Card Effect Enforcement | done | component-ActionWindowBanner, client-edgeFunctions-p29a |
 
 | [migration-043-tech-effects](migration-043-tech-effects.md) | `supabase/migrations/043_tech_effects.sql` | 30 | Technology Effect Enforcement | planned | — |
 | [shared-techEffects](shared-techEffects.md) | `supabase/functions/_shared/techEffects.ts` | 30 | Technology Effect Enforcement | planned | migration-043-tech-effects |

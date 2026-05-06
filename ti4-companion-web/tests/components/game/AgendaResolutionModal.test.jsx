@@ -75,4 +75,27 @@ describe('AgendaResolutionModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
     expect(onClose).toHaveBeenCalled()
   })
+
+  it('renders note for all agendas when agenda.note is non-empty', () => {
+    renderModal({ agenda: { ...DEFAULT_PROPS.agenda, note: 'Vote on whether to censure.' } })
+    expect(screen.getByTestId('agenda-note')).toBeInTheDocument()
+    expect(screen.getByTestId('agenda-note').textContent).toBe('Vote on whether to censure.')
+  })
+
+  it('renders HOST APPLIES MANUALLY warning only for non-tractable laws', () => {
+    renderModal({ agenda: { ...DEFAULT_PROPS.agenda, type: 'law', tractable: false, note: 'A note.' } })
+    expect(screen.getByText(/host applies manually/i)).toBeInTheDocument()
+    expect(screen.getByTestId('agenda-note')).toBeInTheDocument()
+  })
+
+  it('tractable agenda with note: note rendered, no warning', () => {
+    renderModal({ agenda: { ...DEFAULT_PROPS.agenda, type: 'law', tractable: true, note: 'A note.' } })
+    expect(screen.getByTestId('agenda-note')).toBeInTheDocument()
+    expect(screen.queryByText(/host applies manually/i)).not.toBeInTheDocument()
+  })
+
+  it('agenda with null note: no note paragraph', () => {
+    renderModal({ agenda: { ...DEFAULT_PROPS.agenda, note: null } })
+    expect(screen.queryByTestId('agenda-note')).not.toBeInTheDocument()
+  })
 })

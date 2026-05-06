@@ -62,10 +62,16 @@ export default function AgendaResolutionModal({
           )}
         </div>
 
+        {agenda?.note && (
+          <div className="panel-inset">
+            <p data-testid="agenda-note" className="text-xs text-muted">{agenda.note}</p>
+          </div>
+        )}
+
         {isNonTractable && (
           <div className="panel-inset">
             <p className="label text-xs text-warning">HOST APPLIES MANUALLY</p>
-            <p className="text-xs text-muted mt-1">{agenda?.note ?? "Apply this law's effect manually before confirming."}</p>
+            <p className="text-xs text-muted mt-1">Apply this law's effect manually before confirming.</p>
           </div>
         )}
 

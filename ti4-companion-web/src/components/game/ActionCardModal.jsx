@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { deriveHandState } from '../../lib/handState.js'
 
 const TIMING_COLOURS = {
@@ -6,10 +7,12 @@ const TIMING_COLOURS = {
   Component: 'text-success',
 }
 
-export default function ActionCardModal({ cards, onDraw, onDiscard, onClose, triggerableByActionCardId = new Map(), onPlay }) {
+export default function ActionCardModal({ cards, onDraw, onDiscard, onClose, triggerableByActionCardId = new Map(), onPlay, onPlayCard, isMyTurn }) {
+  const [playingCard, setPlayingCard] = useState(null)
   const { mustDiscard } = deriveHandState(cards)
 
   return (
+    <>
     <div className="fixed inset-0 bg-void/80 flex items-center justify-center z-50 p-4">
       <div className="panel w-full max-w-lg flex flex-col gap-4 max-h-[80vh] overflow-y-auto">
         <div className="flex items-center justify-between">
@@ -46,7 +49,19 @@ export default function ActionCardModal({ cards, onDraw, onDiscard, onClose, tri
                   </span>
                 </div>
                 <p className="text-dim text-xs font-body">{card.action_cards.text}</p>
-                <div className="flex gap-2 self-end mt-1">
+                <div className="flex gap-2 self-end mt-1 flex-wrap">
+                  {card.action_cards.ability !== null && card.action_cards.timing?.startsWith('Action:') && isMyTurn && (
+                    <button
+                      data-testid={`play-card-${card.id}`}
+                      className="btn-primary text-xs"
+                      onClick={() => setPlayingCard(card)}
+                    >
+                      Play
+                    </button>
+                  )}
+                  {(!card.action_cards.ability || !card.action_cards.timing?.startsWith('Action:')) && (
+                    <span className="text-dim text-xs">Not yet enforced</span>
+                  )}
                   {isPlayable && (
                     <button
                       className="btn-primary text-xs"
@@ -68,5 +83,25 @@ export default function ActionCardModal({ cards, onDraw, onDiscard, onClose, tri
         </div>
       </div>
     </div>
+
+    {playingCard && (
+      <div className="fixed inset-0 bg-void/80 flex items-center justify-center z-60 p-4">
+        <div className="panel w-full max-w-sm flex flex-col gap-4">
+          <p className="label">PLAY: {playingCard.action_cards.name}</p>
+          <p className="text-dim text-xs">{playingCard.action_cards.text}</p>
+          <div className="flex gap-2 justify-end">
+            <button className="btn-ghost text-xs" onClick={() => setPlayingCard(null)}>CANCEL</button>
+            <button
+              data-testid="confirm-play"
+              className="btn-primary text-xs"
+              onClick={() => { onPlayCard?.(playingCard.id, {}); setPlayingCard(null) }}
+            >
+              CONFIRM
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   )
 }

@@ -102,4 +102,41 @@ describe('ObjectivesSection', () => {
     fireEvent.click(screen.getAllByRole('button', { name: /score/i })[0])
     expect(onScore).toHaveBeenCalledWith(expect.any(String))
   })
+
+  it('renders condition text when ref.condition is non-empty', () => {
+    const objsWithCondition = [
+      {
+        id: 'go1', state: 'revealed', scored_by: [],
+        public_objectives: { name: 'Spend 8 Resources', stage: 1, points: 1, condition: 'Spend a total of 8 resources.' },
+      },
+    ]
+    render(<ObjectivesSection objectives={objsWithCondition} players={PLAYERS} />)
+    expect(screen.getByTestId('objective-condition')).toBeInTheDocument()
+    expect(screen.getByTestId('objective-condition').textContent).toBe('Spend a total of 8 resources.')
+  })
+
+  it('does not render condition paragraph when ref.condition is null', () => {
+    const objsNoCondition = [
+      {
+        id: 'go1', state: 'revealed', scored_by: [],
+        public_objectives: { name: 'Spend 8 Resources', stage: 1, points: 1, condition: null },
+      },
+    ]
+    render(<ObjectivesSection objectives={objsNoCondition} players={PLAYERS} />)
+    expect(screen.queryByTestId('objective-condition')).not.toBeInTheDocument()
+  })
+
+  it('condition text renders below name and VP line', () => {
+    const objsWithCondition = [
+      {
+        id: 'go1', state: 'revealed', scored_by: [],
+        public_objectives: { name: 'Spend 8 Resources', stage: 1, points: 1, condition: 'Spend a total of 8 resources.' },
+      },
+    ]
+    const { container } = render(<ObjectivesSection objectives={objsWithCondition} players={PLAYERS} />)
+    const nameEl = screen.getByText('Spend 8 Resources')
+    const conditionEl = screen.getByTestId('objective-condition')
+    // condition should come after the name in DOM order
+    expect(nameEl.compareDocumentPosition(conditionEl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
 })

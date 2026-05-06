@@ -74,4 +74,20 @@ describe('VotingPanel', () => {
     renderPanel()
     expect(screen.getByText(/Bob.*◀/)).toBeInTheDocument()
   })
+
+  it('renders agenda note when agenda.note is non-empty', () => {
+    renderPanel({ agenda: { ...AGENDA, note: 'This agenda is about politics.' } })
+    expect(screen.getByTestId('agenda-note')).toBeInTheDocument()
+    expect(screen.getByTestId('agenda-note').textContent).toBe('This agenda is about politics.')
+  })
+
+  it('does not render note paragraph when agenda.note is null', () => {
+    renderPanel({ agenda: { ...AGENDA, note: null } })
+    expect(screen.queryByTestId('agenda-note')).not.toBeInTheDocument()
+  })
+
+  it('does not render note paragraph when agenda.note is empty string', () => {
+    renderPanel({ agenda: { ...AGENDA, note: '' } })
+    expect(screen.queryByTestId('agenda-note')).not.toBeInTheDocument()
+  })
 })

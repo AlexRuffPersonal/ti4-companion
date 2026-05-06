@@ -42,6 +42,11 @@ export default function VotingPanel({
     <div className="panel-inset flex flex-col gap-3">
       <p className="label text-xs">AGENDA VOTE</p>
       <p className="text-text font-display text-sm">{agenda?.name}</p>
+      {agenda?.note && (
+        <p data-testid="agenda-note" className="text-dim text-xs leading-snug">
+          {agenda.note}
+        </p>
+      )}
 
       {/* Live vote totals */}
       <div className="flex gap-4">

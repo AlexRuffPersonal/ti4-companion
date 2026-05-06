@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 // Prereq dot colours are keyed by the colour strings from tech.prerequisites object keys,
 // which remain 'green'/'blue'/'yellow'/'red' regardless of the technology_type field.
 const COLOUR_DOT = {
@@ -21,6 +23,8 @@ const STATUS_BORDER = {
 // onSelect: (techId) => void
 // onConfirm: (techId) => void — only called on own tree for available/exhaust/preview techs
 export default function TechCard({ tech, isOwnTree, isSelected, onSelect, onConfirm }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const hasText = Boolean(tech.text)
   const borderClass = STATUS_BORDER[tech.status] ?? STATUS_BORDER.unavailable
   const canResearch = isOwnTree && isSelected && tech.status !== 'held' && tech.status !== 'unavailable'
 
@@ -66,9 +70,25 @@ export default function TechCard({ tech, isOwnTree, isSelected, onSelect, onConf
       )}
 
       {/* Name */}
-      <p className={`font-body text-xs font-bold leading-tight ${tech.status === 'held' ? 'text-success' : tech.status === 'unavailable' ? 'text-dim' : 'text-text'}`}>
-        {tech.name}
-      </p>
+      <div className="flex items-center justify-between gap-1">
+        <p className={`font-body text-xs font-bold leading-tight ${tech.status === 'held' ? 'text-success' : tech.status === 'unavailable' ? 'text-dim' : 'text-text'}`}>
+          {tech.name}
+        </p>
+        {hasText && (
+          <button
+            data-testid="tech-text-toggle"
+            className="text-dim text-xs shrink-0"
+            onClick={(e) => { e.stopPropagation(); setIsExpanded(prev => !prev) }}
+          >
+            {isExpanded ? '▾' : '▸'}
+          </button>
+        )}
+      </div>
+      {isExpanded && hasText && (
+        <p data-testid="tech-text" className="text-dim text-xs mt-1 leading-snug">
+          {tech.text}
+        </p>
+      )}
 
       {/* Missing prereq tooltip */}
       {tech.status === 'unavailable' && tech.missingPrereqs?.length > 0 && (
