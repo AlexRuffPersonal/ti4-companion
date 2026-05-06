@@ -176,13 +176,13 @@ This keeps the index accurate across multi-session implementations so future age
 | [client-edgeFunctions-p29a](client-edgeFunctions-p29a.md) | `src/lib/edgeFunctions.js` | 29a | Action Card Effect Enforcement | done | fn-game-play-action-card-p29a, fn-game-pass-action-window-p29b |
 | [component-ActionCardModal-p29a](component-ActionCardModal-p29a.md) | `src/components/game/ActionCardModal.jsx` | 29a | Action Card Effect Enforcement | done | client-edgeFunctions-p29a |
 
-| [migration-042-action-window](migration-042-action-window.md) | `supabase/migrations/042_action_window.sql` | 29b | Action Card Effect Enforcement | planned | — |
-| [shared-abilityDsl-p29b](shared-abilityDsl-p29b.md) | `supabase/functions/_shared/abilityDsl.ts` | 29b | Action Card Effect Enforcement | planned | migration-042-action-window |
-| [fn-game-play-action-card-p29b](fn-game-play-action-card-p29b.md) | `supabase/functions/game-play-action-card/index.ts` | 29b | Action Card Effect Enforcement | planned | fn-game-play-action-card-p29a, shared-abilityDsl-p29b |
-| [fn-game-pass-action-window-p29b](fn-game-pass-action-window-p29b.md) | `supabase/functions/game-pass-action-window/index.ts` | 29b | Action Card Effect Enforcement | planned | migration-042-action-window |
-| [fn-game-draw-agenda-p29b](fn-game-draw-agenda-p29b.md) | `supabase/functions/game-draw-agenda/index.ts` | 29b | Action Card Effect Enforcement | planned | migration-042-action-window |
-| [fn-game-cast-votes-p29b](fn-game-cast-votes-p29b.md) | `supabase/functions/game-cast-votes/index.ts` | 29b | Action Card Effect Enforcement | planned | migration-042-action-window |
-| [fn-game-research-technology-p29b](fn-game-research-technology-p29b.md) | `supabase/functions/game-research-technology/index.ts` | 29b | Action Card Effect Enforcement | planned | migration-042-action-window |
+| [migration-042-action-window](migration-042-action-window.md) | `supabase/migrations/042_action_window.sql` | 29b | Action Card Effect Enforcement | done | — |
+| [shared-abilityDsl-p29b](shared-abilityDsl-p29b.md) | `supabase/functions/_shared/abilityDsl.ts` | 29b | Action Card Effect Enforcement | done | migration-042-action-window |
+| [fn-game-play-action-card-p29b](fn-game-play-action-card-p29b.md) | `supabase/functions/game-play-action-card/index.ts` | 29b | Action Card Effect Enforcement | done | fn-game-play-action-card-p29a, shared-abilityDsl-p29b |
+| [fn-game-pass-action-window-p29b](fn-game-pass-action-window-p29b.md) | `supabase/functions/game-pass-action-window/index.ts` | 29b | Action Card Effect Enforcement | done | migration-042-action-window |
+| [fn-game-draw-agenda-p29b](fn-game-draw-agenda-p29b.md) | `supabase/functions/game-draw-agenda/index.ts` | 29b | Action Card Effect Enforcement | done | migration-042-action-window |
+| [fn-game-cast-votes-p29b](fn-game-cast-votes-p29b.md) | `supabase/functions/game-cast-votes/index.ts` | 29b | Action Card Effect Enforcement | done | migration-042-action-window |
+| [fn-game-research-technology-p29b](fn-game-research-technology-p29b.md) | `supabase/functions/game-research-technology/index.ts` | 29b | Action Card Effect Enforcement | done | migration-042-action-window |
 | [component-ActionWindowBanner](component-ActionWindowBanner.md) | `src/components/game/ActionWindowBanner.jsx` | 29b | Action Card Effect Enforcement | done | client-edgeFunctions-p29a |
 | [component-GameScreen-p29b](component-GameScreen-p29b.md) | `src/components/game/GameScreen.jsx` | 29b | Action Card Effect Enforcement | done | component-ActionWindowBanner, client-edgeFunctions-p29a |
 
