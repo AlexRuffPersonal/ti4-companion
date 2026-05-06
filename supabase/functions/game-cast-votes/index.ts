@@ -14,7 +14,7 @@ export async function handler(req: Request): Promise<Response> {
     return errorResponse('Internal server error', 500)
   }
 
-  let body: { game_id?: unknown; choice?: unknown; vote_count?: unknown; abstain?: unknown }
+  let body: { game_id?: unknown; choice?: unknown; vote_count?: unknown; abstain?: unknown; selections?: unknown }
   try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
   if (!body.game_id || typeof body.game_id !== 'string') return errorResponse("'game_id' is required")
 
@@ -29,7 +29,7 @@ export async function handler(req: Request): Promise<Response> {
 
   const { data: callerPlayer } = await db
     .from('game_players')
-    .select('id')
+    .select('id, technologies, exhausted_technologies, trade_goods')
     .eq('game_id', body.game_id)
     .eq('user_id', userId)
     .maybeSingle()
@@ -37,9 +37,49 @@ export async function handler(req: Request): Promise<Response> {
     return errorResponse('It is not your turn to vote', 403)
   }
 
+  // Genetic Recombination: open action window before current player votes if an opponent
+  // has the unexhausted technology
+  const { data: allOtherPlayers } = await db
+    .from('game_players')
+    .select('id, technologies, exhausted_technologies')
+    .eq('game_id', body.game_id)
+  const opponents = (allOtherPlayers ?? []).filter(
+    (p: { id: string; technologies: string[] | null; exhausted_technologies: string[] | null }) =>
+      p.id !== callerPlayer.id,
+  )
+  const geneticRecombinationHolder = opponents.find(
+    (p: { technologies: string[] | null; exhausted_technologies: string[] | null }) => {
+      const techs = p.technologies ?? []
+      const exhausted = p.exhausted_technologies ?? []
+      return techs.includes('Genetic Recombination') && !exhausted.includes('Genetic Recombination')
+    },
+  )
+  if (geneticRecombinationHolder) {
+    const { error: windowError } = await db
+      .from('games')
+      .update({
+        pending_action_window: {
+          type: 'before_player_votes',
+          eligible_player_ids: [geneticRecombinationHolder.id],
+          passed_player_ids: [],
+          context: { voting_player_id: callerPlayer.id },
+        },
+      })
+      .eq('id', body.game_id)
+    if (windowError) return errorResponse(`Failed to open action window: ${windowError.message}`, 500)
+    return okResponse({ window_opened: true })
+  }
+
   const abstain = body.abstain === true
-  const voteCount = abstain ? 0 : (typeof body.vote_count === 'number' ? body.vote_count : 0)
+  let voteCount = abstain ? 0 : (typeof body.vote_count === 'number' ? body.vote_count : 0)
   const choice = abstain ? null : (typeof body.choice === 'string' ? body.choice : null)
+
+  // Predictive Intelligence: add 3 bonus votes when player uses the ability
+  const callerTechs: string[] = callerPlayer.technologies ?? []
+  const selections = (typeof body.selections === 'object' && body.selections !== null) ? body.selections as Record<string, unknown> : {}
+  if (!abstain && callerTechs.includes('Predictive Intelligence') && selections.use_predictive === true) {
+    voteCount += 3
+  }
 
   if (!abstain && voteCount > 0) {
     const { data: planets } = await db
@@ -47,11 +87,22 @@ export async function handler(req: Request): Promise<Response> {
       .select('exhausted, influence')
       .eq('game_id', body.game_id)
       .eq('player_id', callerPlayer.id)
-    const availableInfluence = (planets ?? [])
-      .filter((p: { exhausted: boolean; influence: number }) => !p.exhausted)
-      .reduce((sum: number, p: { influence: number }) => sum + (p.influence ?? 0), 0)
-    if (voteCount > availableInfluence) {
-      return errorResponse(`Vote count ${voteCount} exceeds available influence ${availableInfluence}`, 400)
+
+    // Mirror Computing: trade goods count as 2 influence each when voting
+    const hasMirrorComputing = callerTechs.includes('Mirror Computing')
+    const tgInfluence = (callerPlayer.trade_goods ?? 0) * (hasMirrorComputing ? 2 : 1)
+
+    const availableInfluence =
+      (planets ?? [])
+        .filter((p: { exhausted: boolean; influence: number }) => !p.exhausted)
+        .reduce((sum: number, p: { influence: number }) => sum + (p.influence ?? 0), 0) +
+      tgInfluence
+
+    // When Predictive Intelligence adds votes the check is against base vote_count (before +3),
+    // because the +3 are granted on top of what influence allows.
+    const baseVoteCount = abstain ? 0 : (typeof body.vote_count === 'number' ? body.vote_count : 0)
+    if (baseVoteCount > availableInfluence) {
+      return errorResponse(`Vote count ${baseVoteCount} exceeds available influence ${availableInfluence}`, 400)
     }
   }
 

@@ -41,7 +41,8 @@ function mockDb({
     agenda_current_card_id: AGENDA_ID,
     agenda_vote_current_player_id: VOTER_PLAYER_ID,
   },
-  callerPlayer = { id: VOTER_PLAYER_ID },
+  callerPlayer = { id: VOTER_PLAYER_ID, technologies: [], exhausted_technologies: [], trade_goods: 0 },
+  allPlayers = [{ id: 'p1' }, { id: 'p2' }, { id: 'p3' }],
   planets = [
     { exhausted: false, influence: 3 },
     { exhausted: false, influence: 2 },
@@ -50,6 +51,7 @@ function mockDb({
   existingVotes = [],
   upsertError = null,
   updateGameError = null,
+  updateWindowError = null,
 } = {}) {
   upsertVotesMock = vi.fn().mockResolvedValue({ error: upsertError })
   updateGameMock = vi.fn().mockReturnValue({
@@ -58,6 +60,13 @@ function mockDb({
     }),
   })
 
+  // For the Genetic Recombination window update path we need a separate update mock
+  // that returns { error } directly (no chained .eq needed beyond the id).
+  // We reuse updateGameMock but route by what arg is passed — the same mock works
+  // because the window update is: .update({pending_action_window:...}).eq('id', ...) → awaited
+  // while the voter advance is: .update({agenda_vote_current_player_id:...}).eq(...).eq(...) → awaited
+  // Both are handled by the same updateGameMock chain structure.
+
   db.from.mockImplementation((table) => {
     if (table === 'games') return {
       select: vi.fn().mockReturnValue({
@@ -65,25 +74,44 @@ function mockDb({
           maybeSingle: vi.fn().mockResolvedValue({ data: game, error: null }),
         }),
       }),
-      update: updateGameMock,
+      update: (payload) => {
+        // Window update: pending_action_window — needs .eq('id') only, resolved directly
+        if (payload && payload.pending_action_window !== undefined) {
+          return {
+            eq: vi.fn().mockResolvedValue({ error: updateWindowError ?? null }),
+          }
+        }
+        // Voter advance update: agenda_vote_current_player_id
+        return updateGameMock(payload)
+      },
     }
     if (table === 'game_players') {
-      const allPlayersData = [{ id: 'p1' }, { id: 'p2' }, { id: 'p3' }]
-      // The .eq('game_id', ...) result must be both:
-      //   - awaitable (for the total-players query: await db.from(...).select().eq('game_id', ...))
-      //   - chainable with .eq('user_id', ...) (for the caller lookup)
-      const gameIdEqResult = {
-        then: (onFulfilled, onRejected) =>
-          Promise.resolve({ data: allPlayersData, error: null }).then(onFulfilled, onRejected),
-        catch: (onRejected) =>
-          Promise.resolve({ data: allPlayersData, error: null }).catch(onRejected),
-        eq: vi.fn().mockReturnValue({
-          maybeSingle: vi.fn().mockResolvedValue({ data: callerPlayer, error: null }),
-        }),
-      }
+      // The select string determines which query path we're in:
+      // 1. 'id, technologies, exhausted_technologies, trade_goods' → caller lookup (.eq game_id .eq user_id .maybeSingle)
+      // 2. 'id, technologies, exhausted_technologies' → opponents lookup (.eq game_id, awaitable)
+      // 3. 'id' → all-players count (.eq game_id, awaitable)
       return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue(gameIdEqResult),
+        select: vi.fn().mockImplementation((selectStr) => {
+          if (selectStr === 'id, technologies, exhausted_technologies, trade_goods') {
+            // Caller lookup: chainable with .eq('user_id') then .maybeSingle()
+            return {
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({ data: callerPlayer, error: null }),
+                }),
+              }),
+            }
+          }
+          if (selectStr === 'id, technologies, exhausted_technologies') {
+            // Opponents lookup: awaitable directly after .eq('game_id')
+            return {
+              eq: vi.fn().mockResolvedValue({ data: allPlayers, error: null }),
+            }
+          }
+          // 'id' — all-players-voted count: awaitable directly after .eq('game_id')
+          return {
+            eq: vi.fn().mockResolvedValue({ data: allPlayers, error: null }),
+          }
         }),
       }
     }
@@ -119,7 +147,7 @@ describe('game-cast-votes', () => {
   })
 
   it("returns 403 when it is not the caller's turn", async () => {
-    mockDb({ callerPlayer: { id: 'p3' } }) // not the current voter
+    mockDb({ callerPlayer: { id: 'p3', technologies: [], exhausted_technologies: [], trade_goods: 0 } }) // not the current voter
     const res = await handler(makeRequest({ game_id: GAME_ID, choice: 'For', vote_count: 1 }))
     expect(res.status).toBe(403)
   })
@@ -169,5 +197,113 @@ describe('game-cast-votes', () => {
     expect(updateGameMock).toHaveBeenCalledWith(
       expect.objectContaining({ agenda_vote_current_player_id: null }),
     )
+  })
+})
+
+describe('Phase 30 tech effects', () => {
+  it('GIVEN Mirror Computing owned, 2 TGs EXPECT TGs contribute 4 to available influence', async () => {
+    // Planets give 0 influence (all exhausted), trade_goods=2, Mirror Computing → 4 influence from TGs
+    mockDb({
+      callerPlayer: {
+        id: VOTER_PLAYER_ID,
+        technologies: ['Mirror Computing'],
+        exhausted_technologies: [],
+        trade_goods: 2,
+      },
+      planets: [
+        { exhausted: true, influence: 3 },
+        { exhausted: true, influence: 2 },
+      ],
+    })
+    // vote_count: 4 should succeed (2 TGs × 2 = 4 influence)
+    const res = await handler(makeRequest({ game_id: GAME_ID, choice: 'For', vote_count: 4 }))
+    expect(res.status).toBe(200)
+    expect(upsertVotesMock).toHaveBeenCalledWith(
+      expect.objectContaining({ vote_count: 4 }),
+      expect.anything(),
+    )
+  })
+
+  it('GIVEN Predictive Intelligence owned, use_predictive=true EXPECT vote_count in upsert is original + 3', async () => {
+    mockDb({
+      callerPlayer: {
+        id: VOTER_PLAYER_ID,
+        technologies: ['Predictive Intelligence'],
+        exhausted_technologies: [],
+        trade_goods: 0,
+      },
+      planets: [
+        { exhausted: false, influence: 3 },
+        { exhausted: false, influence: 2 },
+      ],
+    })
+    // vote_count: 2, with use_predictive → upserted as 5
+    const res = await handler(makeRequest({
+      game_id: GAME_ID,
+      choice: 'For',
+      vote_count: 2,
+      selections: { use_predictive: true },
+    }))
+    expect(res.status).toBe(200)
+    expect(upsertVotesMock).toHaveBeenCalledWith(
+      expect.objectContaining({ vote_count: 5 }),
+      expect.anything(),
+    )
+  })
+
+  it('GIVEN Genetic Recombination unexhausted opponent EXPECT window opened and { window_opened: true } returned', async () => {
+    const mahactPlayerId = 'p1'
+    mockDb({
+      callerPlayer: {
+        id: VOTER_PLAYER_ID,
+        technologies: [],
+        exhausted_technologies: [],
+        trade_goods: 0,
+      },
+      allPlayers: [
+        {
+          id: mahactPlayerId,
+          technologies: ['Genetic Recombination'],
+          exhausted_technologies: [],
+        },
+        {
+          id: VOTER_PLAYER_ID,
+          technologies: [],
+          exhausted_technologies: [],
+        },
+        {
+          id: 'p3',
+          technologies: [],
+          exhausted_technologies: [],
+        },
+      ],
+    })
+    const res = await handler(makeRequest({ game_id: GAME_ID, choice: 'For', vote_count: 2 }))
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.window_opened).toBe(true)
+    // No vote should have been upserted
+    expect(upsertVotesMock).not.toHaveBeenCalled()
+  })
+
+  it('GIVEN no Genetic Recombination opponents EXPECT no window opened', async () => {
+    mockDb({
+      callerPlayer: {
+        id: VOTER_PLAYER_ID,
+        technologies: [],
+        exhausted_technologies: [],
+        trade_goods: 0,
+      },
+      allPlayers: [
+        { id: 'p1', technologies: [], exhausted_technologies: [] },
+        { id: VOTER_PLAYER_ID, technologies: [], exhausted_technologies: [] },
+        { id: 'p3', technologies: [], exhausted_technologies: [] },
+      ],
+    })
+    const res = await handler(makeRequest({ game_id: GAME_ID, choice: 'For', vote_count: 2 }))
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.window_opened).toBeUndefined()
+    expect(upsertVotesMock).toHaveBeenCalled()
   })
 })
