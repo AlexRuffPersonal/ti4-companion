@@ -1,6 +1,7 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { interpretEffects, ResolveContext } from '../_shared/abilityDsl.ts'
 
 const TIMING_MAP: Record<string, string> = {
   when_agenda_revealed:        'When an agenda is revealed:',
@@ -97,10 +98,39 @@ export async function handler(req: Request): Promise<Response> {
 
   if (game.active_player_id !== player.id) return errorResponse('Not your turn', 409)
   if (game.phase !== 'action') return errorResponse('Not in action phase', 409)
+  if (!card.ability) return errorResponse('Card effect not implemented', 409)
+
+  const context: ResolveContext = {
+    gameId: body.game_id as string,
+    activatingPlayerId: (player as Record<string, string>).id,
+    selections: (body as Record<string, unknown>).selections as Record<string, unknown> ?? {},
+  }
+  try {
+    await interpretEffects(card.ability as unknown[], context, db)
+  } catch (e: unknown) {
+    const errWithStatus = e as Error & { status?: number }
+    if (errWithStatus.status) return errorResponse(errWithStatus.message, errWithStatus.status)
+    return errorResponse('Ability resolution failed', 500)
+  }
 
   // Discard the card
   await db.from('game_action_card_deck').update({ state: 'discard', held_by_player_id: null }).eq('id', body.card_id)
   await db.from('game_players').update({ action_card_count: Math.max(0, (player.action_card_count as number) - 1) }).eq('id', player.id)
+
+  // Mark player as passed and advance active_player_id
+  await db.from('game_players').update({ passed: true }).eq('id', (player as Record<string, string>).id)
+
+  const { data: nextPlayer } = await db
+    .from('game_players')
+    .select('id')
+    .eq('game_id', body.game_id)
+    .eq('passed', false)
+    .order('initiative_order', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+
+  const nextPlayerId = (nextPlayer as Record<string, string> | null)?.id ?? null
+  await db.from('games').update({ active_player_id: nextPlayerId }).eq('id', body.game_id)
 
   // Instinct Training: open a window for Xxcha player after an Action: card is played
   const instinctPlayer = otherPlayers.find((p: { technologies: string[]; exhausted_technologies: string[]; command_tokens: { strategy: number } }) =>

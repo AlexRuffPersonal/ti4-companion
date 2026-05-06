@@ -9,6 +9,9 @@ vi.mock('../../../supabase/functions/_shared/auth.ts', () => {
 vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
   db: { from: vi.fn() },
 }))
+vi.mock('../../../supabase/functions/_shared/abilityDsl.ts', () => ({
+  interpretEffects: vi.fn().mockResolvedValue(undefined),
+}))
 
 import { requireAuth } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
@@ -42,7 +45,7 @@ const actionCard = {
   state: 'held',
   held_by_player_id: CALLER_PLAYER_ID,
   timing: 'Action:',
-  ability: null,
+  ability: [{ op: 'gain_trade_goods', amount: 1 }],
 }
 
 function buildFromMock({ callerPlayer, allPlayers, card = actionCard, game = baseGame, gamesUpdateCapture = null }) {
@@ -128,6 +131,20 @@ function setupMocks({ callerPlayer, allPlayers, card = actionCard, game = baseGa
             // allPlayers query
             return {
               eq: vi.fn().mockResolvedValue({ data: allPlayers, error: null }),
+            }
+          }
+          if (fields === 'id') {
+            // nextPlayer initiative_order query
+            return {
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  order: vi.fn().mockReturnValue({
+                    limit: vi.fn().mockReturnValue({
+                      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+                    }),
+                  }),
+                }),
+              }),
             }
           }
           // caller query

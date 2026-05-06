@@ -14,8 +14,13 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
   },
 }))
 
+vi.mock('../../../supabase/functions/_shared/abilityDsl.ts', () => ({
+  interpretEffects: vi.fn().mockResolvedValue(undefined),
+}))
+
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
+import { interpretEffects } from '../../../supabase/functions/_shared/abilityDsl.ts'
 import { handler } from '../../../supabase/functions/game-play-action-card/index.ts'
 
 const USER_ID = 'user-uuid'
@@ -55,15 +60,49 @@ function mockDb(overrides = {}) {
   const defaults = mockDbDefaults()
   const config = { ...defaults, ...overrides }
 
+  // Track how many times game_players.select has been called to distinguish query patterns:
+  // Call 0: player fetch (select + 2x eq + maybeSingle)
+  // Call 1: allPlayers fetch (select + 1x eq, returns array)
+  // Call 2: nextPlayer fetch (select + 2x eq + order + limit + maybeSingle)
+  let gamePlayersSelectCount = 0
+
   db.from.mockImplementation((table) => {
     if (table === 'game_players') {
       return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: config.player, error: null }),
-            }),
-          }),
+        select: vi.fn().mockImplementation(() => {
+          const callIndex = gamePlayersSelectCount++
+          if (callIndex === 0) {
+            // Initial player fetch
+            return {
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({ data: config.player, error: null }),
+                }),
+              }),
+            }
+          } else if (callIndex === 1) {
+            // allPlayers fetch — returns array (no maybeSingle)
+            const allPlayersData = config.player
+              ? [{ id: config.player.id, technologies: [], exhausted_technologies: [], command_tokens: { strategy: 0 } }]
+              : []
+            return {
+              eq: vi.fn().mockResolvedValue({ data: allPlayersData, error: null }),
+            }
+          } else {
+            // nextPlayer fetch (initiative_order query)
+            const nextPlayerData = config.nextPlayer !== undefined ? config.nextPlayer : null
+            return {
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  order: vi.fn().mockReturnValue({
+                    limit: vi.fn().mockReturnValue({
+                      maybeSingle: vi.fn().mockResolvedValue({ data: nextPlayerData, error: null }),
+                    }),
+                  }),
+                }),
+              }),
+            }
+          }
         }),
         update: vi.fn().mockReturnValue({
           eq: vi.fn().mockResolvedValue({ error: null }),
@@ -398,5 +437,82 @@ describe('reactive timing branch', () => {
     // Verify window was NOT nulled out
     const callArg = gamesUpdateMock.mock.calls[0][0]
     expect(callArg.pending_action_window).not.toBeNull()
+  })
+})
+
+describe('Action: card resolveAbility and turn advancement', () => {
+  const NEXT_PLAYER_ID = 'next-player-uuid'
+
+  it('409 if Action: card ability is null', async () => {
+    mockDb({
+      card: {
+        id: CARD_ID,
+        state: 'held',
+        held_by_player_id: PLAYER_ID,
+        timing: 'Action:',
+        ability: null,
+      },
+    })
+    const res = await handler(makeRequest({ game_id: GAME_ID, card_id: CARD_ID }))
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body.error).toMatch(/not implemented/i)
+  })
+
+  it('resolveAbility called and turn advances when Action: card is valid', async () => {
+    mockDb({
+      card: {
+        id: CARD_ID,
+        state: 'held',
+        held_by_player_id: PLAYER_ID,
+        timing: 'Action:',
+        ability: [{ op: 'gain_trade_goods', amount: 1 }],
+      },
+      nextPlayer: { id: NEXT_PLAYER_ID },
+    })
+
+    const gamesUpdateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    const gamePlayersUpdateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+
+    // Wrap the mockDb to capture update calls
+    const originalFrom = db.from.getMockImplementation()
+    db.from.mockImplementation((table) => {
+      const result = originalFrom(table)
+      if (table === 'games') result.update = gamesUpdateMock
+      if (table === 'game_players') result.update = gamePlayersUpdateMock
+      return result
+    })
+
+    const res = await handler(makeRequest({ game_id: GAME_ID, card_id: CARD_ID }))
+    expect(res.status).toBe(200)
+    expect(interpretEffects).toHaveBeenCalled()
+    expect(gamePlayersUpdateMock).toHaveBeenCalledWith({ passed: true })
+    expect(gamesUpdateMock).toHaveBeenCalledWith({ active_player_id: NEXT_PLAYER_ID })
+  })
+
+  it('sets active_player_id to null when all players have passed', async () => {
+    mockDb({
+      card: {
+        id: CARD_ID,
+        state: 'held',
+        held_by_player_id: PLAYER_ID,
+        timing: 'Action:',
+        ability: [{ op: 'gain_trade_goods', amount: 1 }],
+      },
+      nextPlayer: null, // no non-passed players remain
+    })
+
+    const gamesUpdateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+
+    const originalFrom = db.from.getMockImplementation()
+    db.from.mockImplementation((table) => {
+      const result = originalFrom(table)
+      if (table === 'games') result.update = gamesUpdateMock
+      return result
+    })
+
+    const res = await handler(makeRequest({ game_id: GAME_ID, card_id: CARD_ID }))
+    expect(res.status).toBe(200)
+    expect(gamesUpdateMock).toHaveBeenCalledWith({ active_player_id: null })
   })
 })
