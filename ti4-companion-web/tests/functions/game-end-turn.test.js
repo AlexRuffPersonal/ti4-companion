@@ -33,9 +33,11 @@ const ALL_PLAYERS = [
   { id: 'p2', strategy_card: 7, passed: false },
 ]
 
+const BASE_CALLER = { id: PLAYER_ID, technologies: [], exhausted_technologies: [], second_action_available: false }
+
 function mockDb({
   game = { id: GAME_ID, phase: 'action', active_player_id: PLAYER_ID },
-  callerPlayer = { id: PLAYER_ID },
+  callerPlayer = BASE_CALLER,
   activePay = null,
   players = ALL_PLAYERS,
   updateError = null,
@@ -65,7 +67,7 @@ function mockDb({
     if (table === 'game_players') {
       return {
         select: vi.fn().mockImplementation((cols) => {
-          if (cols === 'id') {
+          if (cols.includes('second_action_available')) {
             return {
               eq: vi.fn().mockReturnValue({
                 eq: vi.fn().mockReturnValue({
@@ -79,6 +81,9 @@ function mockDb({
               order: vi.fn().mockResolvedValue({ data: players, error: null }),
             }),
           }
+        }),
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: null }),
         }),
       }
     }
@@ -153,5 +158,135 @@ describe('game-end-turn', () => {
     expect(res.status).toBe(200)
     expect(updateResponsesMock).toHaveBeenCalled()
     expect(updatePlaysMock).toHaveBeenCalled()
+  })
+
+  describe('Fleet Logistics (Phase 30)', () => {
+    it('first end-turn call sets second_action_available=true and returns without advancing', async () => {
+      mockDb({ callerPlayer: { ...BASE_CALLER, technologies: ['Fleet Logistics'], second_action_available: false } })
+      const res = await handler(makeRequest({ game_id: GAME_ID }))
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.second_action_available).toBe(true)
+      expect(body.advanced).toBeUndefined()
+    })
+
+    it('second end-turn call clears flag and advances normally', async () => {
+      mockDb({ callerPlayer: { ...BASE_CALLER, technologies: ['Fleet Logistics'], second_action_available: true } })
+      const res = await handler(makeRequest({ game_id: GAME_ID }))
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.advanced).toBe(true)
+    })
+  })
+
+  describe('Bio-Stims (Phase 30)', () => {
+    it('readies target planet and exhausts Bio-Stims', async () => {
+      let planetUpdated = false
+      let bioStimsExhausted = false
+      db.from.mockImplementation((table) => {
+        if (table === 'games') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: { id: GAME_ID, phase: 'action', active_player_id: PLAYER_ID }, error: null }),
+              }),
+            }),
+            update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+          }
+        }
+        if (table === 'game_players') {
+          return {
+            select: vi.fn().mockImplementation((cols) => {
+              if (cols.includes('second_action_available')) {
+                return {
+                  eq: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockReturnValue({
+                      maybeSingle: vi.fn().mockResolvedValue({
+                        data: { ...BASE_CALLER, technologies: ['Bio-Stims'], exhausted_technologies: [] },
+                        error: null,
+                      }),
+                    }),
+                  }),
+                }
+              }
+              return { eq: vi.fn().mockReturnValue({ order: vi.fn().mockResolvedValue({ data: ALL_PLAYERS, error: null }) }) }
+            }),
+            update: vi.fn().mockImplementation((data) => {
+              if (data.exhausted_technologies?.includes('Bio-Stims')) bioStimsExhausted = true
+              return { eq: vi.fn().mockResolvedValue({ error: null }) }
+            }),
+          }
+        }
+        if (table === 'game_player_planets') {
+          return {
+            update: vi.fn().mockImplementation((data) => {
+              if (data.exhausted === false) planetUpdated = true
+              return { eq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }) }) }
+            }),
+          }
+        }
+        if (table === 'game_strategy_card_plays') {
+          return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: null }) }) }) }) }) }
+        }
+        // game_players list query (id, strategy_card, passed)
+        return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ order: vi.fn().mockResolvedValue({ data: ALL_PLAYERS, error: null }) }) }) }
+      })
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        selections: { bio_stims_target: { type: 'planet', name: 'Nestphar' } },
+      }))
+      expect(res.status).toBe(200)
+      expect(planetUpdated).toBe(true)
+      expect(bioStimsExhausted).toBe(true)
+    })
+
+    it('un-exhausts target technology and exhausts Bio-Stims', async () => {
+      let capturedExhausted = null
+      db.from.mockImplementation((table) => {
+        if (table === 'games') {
+          return {
+            select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: { id: GAME_ID, phase: 'action', active_player_id: PLAYER_ID }, error: null }) }) }),
+            update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+          }
+        }
+        if (table === 'game_players') {
+          return {
+            select: vi.fn().mockImplementation((cols) => {
+              if (cols.includes('second_action_available')) {
+                return {
+                  eq: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockReturnValue({
+                      maybeSingle: vi.fn().mockResolvedValue({
+                        data: { ...BASE_CALLER, technologies: ['Bio-Stims', 'Graviton Laser System'], exhausted_technologies: ['Graviton Laser System'] },
+                        error: null,
+                      }),
+                    }),
+                  }),
+                }
+              }
+              return { eq: vi.fn().mockReturnValue({ order: vi.fn().mockResolvedValue({ data: ALL_PLAYERS, error: null }) }) }
+            }),
+            update: vi.fn().mockImplementation((data) => {
+              if (data.exhausted_technologies) capturedExhausted = data.exhausted_technologies
+              return { eq: vi.fn().mockResolvedValue({ error: null }) }
+            }),
+          }
+        }
+        if (table === 'game_strategy_card_plays') {
+          return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: null }) }) }) }) }) }
+        }
+        return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ order: vi.fn().mockResolvedValue({ data: ALL_PLAYERS, error: null }) }) }) }
+      })
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        selections: { bio_stims_target: { type: 'technology', name: 'Graviton Laser System' } },
+      }))
+      expect(res.status).toBe(200)
+      // Graviton should be removed, Bio-Stims should be added
+      expect(capturedExhausted).not.toContain('Graviton Laser System')
+      expect(capturedExhausted).toContain('Bio-Stims')
+    })
   })
 })

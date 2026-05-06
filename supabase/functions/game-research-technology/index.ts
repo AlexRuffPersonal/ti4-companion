@@ -2,7 +2,7 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 
-Deno.serve(async (req: Request) => {
+export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
 
   let userId: string
@@ -18,6 +18,7 @@ Deno.serve(async (req: Request) => {
     tech_name?: unknown
     exhaust_planet_ids?: unknown
     bypass_prerequisites?: unknown
+    selections?: unknown
   }
   try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
   if (!body.game_id || typeof body.game_id !== 'string') return errorResponse("'game_id' is required")
@@ -54,10 +55,12 @@ Deno.serve(async (req: Request) => {
     return errorResponse('Technology is not available for this game', 400)
   }
 
+  const selections = (body.selections ?? {}) as Record<string, unknown>
+
   // Load calling player
   const { data: player, error: playerError } = await db
     .from('game_players')
-    .select('id, technologies')
+    .select('id, technologies, exhausted_technologies, trade_goods')
     .eq('game_id', body.game_id)
     .eq('user_id', userId)
     .maybeSingle()
@@ -65,10 +68,40 @@ Deno.serve(async (req: Request) => {
   if (!player) return errorResponse('Player not found in this game', 404)
 
   const heldTechs: string[] = (player.technologies as string[]) ?? []
+  const exhaustedTechs: string[] = (player.exhausted_technologies as string[]) ?? []
   if (heldTechs.includes(body.tech_name)) return errorResponse('Technology already researched', 409)
 
-  // Validate prerequisites (unless bypassed)
-  if (!bypassPrerequisites) {
+  // Phase 30: AI Development Algorithm — exhaust to skip all prereqs for unit upgrades
+  const isUnitUpgrade = (tech.technology_type as string) === 'unit_upgrade'
+  const hasAIDA30 = heldTechs.includes('AI Development Algorithm') && !exhaustedTechs.includes('AI Development Algorithm')
+  const useAiDevAlgo = selections.use_ai_dev_algo === true && isUnitUpgrade && hasAIDA30
+
+  // Phase 30: Inheritance Systems — exhaust + spend 2 resources to skip all prereqs
+  const hasInheritance = heldTechs.includes('Inheritance Systems') && !exhaustedTechs.includes('Inheritance Systems')
+  const useInheritance = selections.use_inheritance === true && hasInheritance
+
+  if (useInheritance) {
+    const tradeGoods = (player.trade_goods as number) ?? 0
+    // Load planet resources for Inheritance Systems cost check
+    const { data: playerPlanets } = await db
+      .from('game_player_planets')
+      .select('resources, exhausted')
+      .eq('game_id', body.game_id)
+      .eq('player_id', player.id)
+    const planetResources = ((playerPlanets ?? []) as Array<{ resources: number; exhausted: boolean }>)
+      .filter(p => !p.exhausted)
+      .reduce((sum, p) => sum + (p.resources ?? 0), 0)
+    if (planetResources + tradeGoods < 2) return errorResponse('Insufficient resources', 409)
+    // Spend 2 resources from TGs first
+    const tgSpend = Math.min(tradeGoods, 2)
+    if (tgSpend > 0) {
+      await db.from('game_players').update({ trade_goods: tradeGoods - tgSpend }).eq('id', player.id)
+    }
+  }
+
+  // Validate prerequisites (unless bypassed by flag, AIDA, or Inheritance Systems)
+  const skipPrereqs = bypassPrerequisites || useAiDevAlgo || useInheritance
+  if (!skipPrereqs) {
     const { data: allTechs, error: allTechsError } = await db
       .from('technologies')
       .select('name, technology_type')
@@ -135,10 +168,17 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  // Write: append tech to player's technologies
+  // Write: append tech to player's technologies and handle exhaustion
+  let newExhausted = [...exhaustedTechs]
+  if (useAiDevAlgo) newExhausted = [...newExhausted, 'AI Development Algorithm']
+  if (useInheritance) newExhausted = [...newExhausted, 'Inheritance Systems']
+
+  const playerUpdate: Record<string, unknown> = { technologies: [...heldTechs, body.tech_name] }
+  if (newExhausted.length !== exhaustedTechs.length) playerUpdate.exhausted_technologies = newExhausted
+
   const { error: updateError } = await db
     .from('game_players')
-    .update({ technologies: [...heldTechs, body.tech_name] })
+    .update(playerUpdate)
     .eq('id', player.id)
   if (updateError) return errorResponse(`Failed to research technology: ${updateError.message}`, 500)
 
@@ -152,4 +192,6 @@ Deno.serve(async (req: Request) => {
   }
 
   return okResponse({ researched: true })
-})
+}
+
+if (typeof Deno !== 'undefined') Deno.serve(handler)
