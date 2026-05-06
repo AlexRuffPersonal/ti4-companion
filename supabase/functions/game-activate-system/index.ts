@@ -4,8 +4,16 @@ import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/err
 
 type UnitRow = { player_id: string; unit_type: string; count: number; system_key: string }
 type ScDef = { name: string; space_cannon: string }
-type TileRow = { id: string; wormhole: string | null }
+type TileRow = { id: string; wormhole: string | null; anomalies?: string[] | null }
 type MapTileRef = { tile_id: string }
+type PlayerRow = {
+  id: string
+  technologies?: string[]
+  exhausted_technologies?: string[]
+  trade_goods?: number
+  promissory_notes?: unknown[]
+  command_tokens?: Record<string, number>
+}
 
 function parseDiceCount(text: string): number {
   const m = text.match(/\(x(\d+)\)/)
@@ -32,19 +40,21 @@ export async function handler(req: Request): Promise<Response> {
     return errorResponse('Internal server error', 500)
   }
 
-  let body: { game_id?: unknown; system_key?: unknown }
+  let body: { game_id?: unknown; system_key?: unknown; selections?: unknown }
   try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
   if (!body.game_id || typeof body.game_id !== 'string') return errorResponse("'game_id' is required")
   if (!body.system_key || typeof body.system_key !== 'string') return errorResponse("'system_key' is required")
 
   const { data: player, error: playerError } = await db
     .from('game_players')
-    .select('id, command_tokens')
+    .select('id, command_tokens, technologies, exhausted_technologies, trade_goods, promissory_notes')
     .eq('game_id', body.game_id)
     .eq('user_id', userId)
     .maybeSingle()
   if (playerError) return errorResponse('Database error', 500)
   if (!player) return errorResponse('Player not found in game', 404)
+
+  const technologies: string[] = (player.technologies ?? []) as string[]
 
   const { data: game, error: gameError } = await db
     .from('games')
@@ -55,7 +65,7 @@ export async function handler(req: Request): Promise<Response> {
   if (!game) return errorResponse('Game not found', 404)
   if (game.active_player_id !== player.id) return errorResponse('Not the active player', 409)
 
-  const tokens = player.command_tokens as { tactic_total: number }
+  const tokens = player.command_tokens as { tactic_total: number; fleet: number; strategy: number }
   const tacticTotal = tokens?.tactic_total ?? 0
 
   const { data: activations, error: activationError } = await db
@@ -77,10 +87,16 @@ export async function handler(req: Request): Promise<Response> {
   const tileIds = Object.values(mapTiles).map((t) => t.tile_id)
 
   // Non-critical: if tiles query fails, fall back to no wormhole connections
-  const { data: tilesData, error: _tilesError } = await db
+  const { data: tilesData } = await db
     .from('tiles')
-    .select('id, wormhole')
+    .select('id, wormhole, anomalies')
     .in('id', tileIds.length > 0 ? tileIds : ['__none__'])
+
+  const activatedTileRef = mapTiles[body.system_key]
+  const activatedTile = activatedTileRef
+    ? (tilesData ?? []).find((t: TileRow) => t.id === activatedTileRef.tile_id)
+    : null
+  const isAsteroidField = (activatedTile?.anomalies ?? []).includes('asteroid_field')
 
   const sysWormholes: Record<string, string> = {}
   for (const [sk, ref] of Object.entries(mapTiles)) {
@@ -96,13 +112,33 @@ export async function handler(req: Request): Promise<Response> {
 
   const relevantSystems = [body.system_key, ...neighborKeys, ...whConnected]
 
-  // Single fetch: all space units for this game; derive enemy detection and space-cannon sets from it
-  // Non-critical: if units query fails, fall back to treating game as having no space units
-  const { data: allSpaceUnits, error: _unitsError } = await db
+  // Load all players once — used for Chaos Mapping check and reactive tech effects
+  const { data: allGamePlayers } = await db
+    .from('game_players')
+    .select('id, technologies, exhausted_technologies, trade_goods, promissory_notes')
+    .eq('game_id', body.game_id)
+
+  // Single fetch: all space units for this game
+  const { data: allSpaceUnits } = await db
     .from('game_player_units')
     .select('player_id, unit_type, count, system_key')
     .eq('game_id', body.game_id)
     .is('on_planet', null)
+
+  // Chaos Mapping: block if Saar player has ships in an asteroid field being activated
+  if (isAsteroidField) {
+    const chaosMappingPlayer = (allGamePlayers ?? []).find(
+      (p: PlayerRow) => p.id !== player.id && (p.technologies ?? []).includes('Chaos Mapping')
+    )
+    if (chaosMappingPlayer) {
+      const hasSaarShipsHere = (allSpaceUnits ?? []).some(
+        (u: UnitRow) => u.system_key === body.system_key && u.player_id === chaosMappingPlayer.id
+      )
+      if (hasSaarShipsHere) {
+        return errorResponse('Cannot activate asteroid field containing Saar ships', 409)
+      }
+    }
+  }
 
   const enemyUnits = (allSpaceUnits ?? []).filter(
     (u: UnitRow) => u.system_key === body.system_key && u.player_id !== player.id
@@ -159,6 +195,53 @@ export async function handler(req: Request): Promise<Response> {
       .select('id')
     if (combatInsertError) return errorResponse(`Failed to create combat: ${combatInsertError.message}`, 500)
     combatId = combatRows?.[0]?.id ?? null
+
+    // Reactive tech effects for ships entering system
+    const enemyPlayerIds = new Set(enemyUnits.map((u: UnitRow) => u.player_id))
+    const enemyPlayers = (allGamePlayers ?? []).filter((p: PlayerRow) => enemyPlayerIds.has(p.id))
+
+    for (const opp of enemyPlayers) {
+      const oppTechs = (opp.technologies ?? []) as string[]
+      const oppExhausted = (opp.exhausted_technologies ?? []) as string[]
+
+      // Voidwatch (Empyrean): take 1 promissory note from activating player
+      if (oppTechs.includes('Voidwatch')) {
+        const promNotes = (player.promissory_notes ?? []) as unknown[]
+        if (promNotes.length > 0) {
+          const [note, ...rest] = promNotes
+          const oppNotes = (opp.promissory_notes ?? []) as unknown[]
+          await db.from('game_players').update({ promissory_notes: rest }).eq('id', player.id)
+          await db.from('game_players').update({ promissory_notes: [...oppNotes, note] }).eq('id', opp.id)
+        }
+      }
+
+      // Neuroglaive (Naalu): activating player loses 1 fleet token
+      if (oppTechs.includes('Neuroglaive')) {
+        const activatorTokens = player.command_tokens as { tactic_total: number; fleet: number; strategy: number }
+        const newFleet = Math.max(0, (activatorTokens?.fleet ?? 0) - 1)
+        await db.from('game_players').update({
+          command_tokens: { ...activatorTokens, fleet: newFleet },
+        }).eq('id', player.id)
+      }
+
+      // E-Res Siphons (Jol-Nar): opponent gains 4 trade goods
+      if (oppTechs.includes('E-Res Siphons')) {
+        await db.from('game_players').update({
+          trade_goods: (opp.trade_goods ?? 0) + 4,
+        }).eq('id', opp.id)
+      }
+
+      // Nullification Field: open action window (if not exhausted)
+      if (oppTechs.includes('Nullification Field') && !oppExhausted.includes('Nullification Field')) {
+        await db.from('game_players').update({
+          pending_action_window: {
+            type: 'when_ships_enter_system',
+            eligible: [opp.id],
+            context: { activating_player_id: player.id },
+          },
+        }).eq('id', opp.id)
+      }
+    }
   }
 
   const { error: insertError } = await db
