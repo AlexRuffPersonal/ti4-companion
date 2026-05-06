@@ -56,6 +56,23 @@ export async function requireServiceRole(req: Request): Promise<void> {
 }
 
 /**
+ * Verifies it is the caller's turn to act.
+ * Allows a host to act on behalf of a bot player.
+ * Throws AuthError if the caller is not the active player (or authorized host acting for a bot).
+ */
+export function requireTurnAuth(
+  game: Record<string, unknown>,
+  callerPlayer: Record<string, unknown>,
+  activePlayer: Record<string, unknown>
+): void {
+  // Normal human turn
+  if (callerPlayer.id === game.active_player_id) return
+  // Host acting for a bot
+  if (activePlayer.is_bot && callerPlayer.id === game.host_player_id) return
+  throw new AuthError('Not your turn')
+}
+
+/**
  * Like requireAuth, but also verifies profiles.is_admin === true.
  * Throws AuthError with "Forbidden:" prefix for 403 vs 401.
  */

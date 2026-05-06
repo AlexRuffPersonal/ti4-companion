@@ -17,37 +17,12 @@ Deno.serve(async (req: Request) => {
   try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
   if (!body.game_id || typeof body.game_id !== 'string') return errorResponse("'game_id' is required")
 
-  const { data: player, error: playerError } = await db
-    .from('game_players')
-    .select('id, action_card_count')
-    .eq('game_id', body.game_id)
-    .eq('user_id', userId)
-    .maybeSingle()
-  if (playerError) return errorResponse('Database error', 500)
-  if (!player) return errorResponse('Player not found in this game', 404)
-
-  const { data: topCard, error: deckError } = await db
-    .from('game_action_card_deck')
-    .select('id')
-    .eq('game_id', body.game_id)
-    .eq('state', 'deck')
-    .order('deck_position', { ascending: true })
-    .limit(1)
-    .maybeSingle()
-  if (deckError) return errorResponse('Database error', 500)
-  if (!topCard) return errorResponse('Action card deck is empty', 409)
-
-  const { error: updateCardError } = await db
-    .from('game_action_card_deck')
-    .update({ state: 'held', held_by_player_id: player.id, deck_position: null })
-    .eq('id', topCard.id)
-  if (updateCardError) return errorResponse('Database error', 500)
-
-  const { error: updatePlayerError } = await db
-    .from('game_players')
-    .update({ action_card_count: player.action_card_count + 1 })
-    .eq('id', player.id)
-  if (updatePlayerError) return errorResponse('Database error', 500)
+  const result = await db.rpc('draw_action_card', { p_game_id: body.game_id, p_user_id: userId })
+  if (result.error) {
+    if (result.error.message?.includes('player_not_found')) return errorResponse('Player not found in this game', 404)
+    if (result.error.message?.includes('deck_empty')) return errorResponse('Action card deck is empty', 409)
+    return errorResponse('Database error', 500)
+  }
 
   return okResponse({ drawn: true })
 })

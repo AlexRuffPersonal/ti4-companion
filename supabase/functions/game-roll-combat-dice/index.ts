@@ -4,7 +4,7 @@ import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/err
 
 type UnitRow = { id: string; player_id: string; unit_type: string; count: number; system_key: string }
 type UnitDef = { name: string; combat: string | null; afb: string | null; sustain_damage: boolean }
-type DieResult = { unit_type: string; roll: number; hit: boolean }
+type DieResult = { unit_type: string; roll: number; hit_on: number; hit: boolean }
 
 function parseStat(text: string): { value: number; dice: number } {
   const diceMatch = text.match(/\(x(\d+)\)/)
@@ -27,7 +27,7 @@ function rollDice(units: UnitRow[], defMap: Map<string, UnitDef>): { results: Di
       const roll = Math.ceil(Math.random() * 10)
       const hit = roll >= value
       if (hit) hits++
-      results.push({ unit_type: unit.unit_type, roll, hit })
+      results.push({ unit_type: unit.unit_type, roll, hit_on: value, hit })
     }
   }
   return { results, hits }

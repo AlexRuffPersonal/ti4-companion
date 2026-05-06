@@ -84,6 +84,29 @@ export async function handler(req: Request): Promise<Response> {
     .eq('id', body.game_id)
   if (gameUpdateError) return errorResponse(`Failed to update game: ${gameUpdateError.message}`, 500)
 
+  // Open when_agenda_revealed window if any player holds a matching action card
+  const { data: eligibleRows } = await db
+    .from('game_action_card_deck')
+    .select('held_by_player_id, action_cards!inner(timing, ability)')
+    .eq('game_id', body.game_id)
+    .eq('state', 'hand')
+    .eq('action_cards.timing', 'When an agenda is revealed:')
+    .not('action_cards.ability', 'is', null)
+  const eligibleIds = (eligibleRows ?? []).map((r: Record<string, unknown>) => r.held_by_player_id as string)
+  if (eligibleIds.length > 0) {
+    await db
+      .from('games')
+      .update({
+        pending_action_window: {
+          type: 'when_agenda_revealed',
+          eligible_player_ids: eligibleIds,
+          passed_player_ids: [],
+          context: { agenda_id: topCard.agenda_id },
+        },
+      })
+      .eq('id', body.game_id)
+  }
+
   return okResponse({ drawn: true, agenda_id: topCard.agenda_id })
 }
 

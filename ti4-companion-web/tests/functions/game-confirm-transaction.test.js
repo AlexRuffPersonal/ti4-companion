@@ -260,6 +260,362 @@ describe('game-confirm-transaction', () => {
     expect(body.confirmed).toBe(true)
   })
 
+  it('GIVEN Support For The Throne note EXPECT state=in_play and recipient vp incremented', async () => {
+    const noteId = 'note-sftt'
+    const noteRowId = 'gpn-sftt'
+    const recipientVpBefore = 3
+    const vpUpdateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    const noteUpdateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+
+    db.from.mockImplementation((table) => {
+      if (table === 'game_players') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn((field, value) => {
+              if (field === 'game_id') {
+                return {
+                  eq: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({
+                      data: { id: TO_PLAYER_ID, commodities: 3, trade_goods: 1 },
+                      error: null,
+                    }),
+                  }),
+                }
+              }
+              if (field === 'id') {
+                // May be called for fromPlayer OR recipientPlayer vp fetch
+                return {
+                  maybeSingle: vi.fn().mockResolvedValue({
+                    data: { id: value, commodities: 5, trade_goods: 2, vp: recipientVpBefore },
+                    error: null,
+                  }),
+                }
+              }
+              return { maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }) }
+            }),
+          }),
+          update: vpUpdateMock,
+        }
+      }
+      if (table === 'game_transactions') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: {
+                  id: 'tx-sftt',
+                  from_player_id: FROM_PLAYER_ID,
+                  to_player_id: TO_PLAYER_ID,
+                  status: 'pending',
+                  active_player_id: null,
+                  items: {
+                    offer: { commodities: 0, trade_goods: 0, note_ids: [noteId] },
+                    request: { commodities: 0, trade_goods: 0, note_ids: [] },
+                  },
+                },
+                error: null,
+              }),
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        }
+      }
+      if (table === 'games') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { active_player_id: ACTIVE_PLAYER_ID, phase: 'action' },
+                error: null,
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'game_player_promissory_notes') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: noteRowId, state: 'held', held_by_player_id: FROM_PLAYER_ID, note_id: 'ref-sftt' },
+                error: null,
+              }),
+            }),
+          }),
+          update: noteUpdateMock,
+        }
+      }
+      if (table === 'promissory_notes') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { name: 'Support For The Throne' },
+                error: null,
+              }),
+            }),
+          }),
+        }
+      }
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }) }),
+        }),
+        update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+      }
+    })
+
+    const res = await handler(makeRequest({ game_id: GAME_ID, transaction_id: 'tx-sftt' }))
+    expect(res.status).toBe(200)
+
+    // Note should be updated to in_play
+    const noteUpdateCall = noteUpdateMock.mock.calls.find(call => call[0]?.state === 'in_play')
+    expect(noteUpdateCall).toBeDefined()
+    expect(noteUpdateCall[0].state).toBe('in_play')
+    expect(noteUpdateCall[0].held_by_player_id).toBe(TO_PLAYER_ID)
+
+    // VP should be incremented for recipient
+    const vpCall = vpUpdateMock.mock.calls.find(call => call[0]?.vp === recipientVpBefore + 1)
+    expect(vpCall).toBeDefined()
+    expect(vpCall[0].vp).toBe(recipientVpBefore + 1)
+  })
+
+  it('GIVEN Alliance note EXPECT state=in_play', async () => {
+    const noteId = 'note-alliance'
+    const noteRowId = 'gpn-alliance'
+    const noteUpdateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+
+    db.from.mockImplementation((table) => {
+      if (table === 'game_players') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn((field) => {
+              if (field === 'game_id') {
+                return {
+                  eq: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({
+                      data: { id: TO_PLAYER_ID, commodities: 3, trade_goods: 1 },
+                      error: null,
+                    }),
+                  }),
+                }
+              }
+              return {
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { id: FROM_PLAYER_ID, commodities: 5, trade_goods: 2, vp: 2 },
+                  error: null,
+                }),
+              }
+            }),
+          }),
+          update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        }
+      }
+      if (table === 'game_transactions') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: {
+                  id: 'tx-alliance',
+                  from_player_id: FROM_PLAYER_ID,
+                  to_player_id: TO_PLAYER_ID,
+                  status: 'pending',
+                  active_player_id: null,
+                  items: {
+                    offer: { commodities: 0, trade_goods: 0, note_ids: [noteId] },
+                    request: { commodities: 0, trade_goods: 0, note_ids: [] },
+                  },
+                },
+                error: null,
+              }),
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        }
+      }
+      if (table === 'games') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { active_player_id: ACTIVE_PLAYER_ID, phase: 'action' },
+                error: null,
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'game_player_promissory_notes') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: noteRowId, state: 'held', held_by_player_id: FROM_PLAYER_ID, note_id: 'ref-alliance' },
+                error: null,
+              }),
+            }),
+          }),
+          update: noteUpdateMock,
+        }
+      }
+      if (table === 'promissory_notes') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { name: 'Alliance' },
+                error: null,
+              }),
+            }),
+          }),
+        }
+      }
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }) }),
+        }),
+        update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+      }
+    })
+
+    const res = await handler(makeRequest({ game_id: GAME_ID, transaction_id: 'tx-alliance' }))
+    expect(res.status).toBe(200)
+
+    const noteUpdateCall = noteUpdateMock.mock.calls.find(call => call[0]?.state === 'in_play')
+    expect(noteUpdateCall).toBeDefined()
+    expect(noteUpdateCall[0].state).toBe('in_play')
+  })
+
+  it('GIVEN non-auto-fire note EXPECT state=held', async () => {
+    const noteId = 'note-generic'
+    const noteRowId = 'gpn-generic'
+    const noteUpdateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+
+    db.from.mockImplementation((table) => {
+      if (table === 'game_players') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn((field) => {
+              if (field === 'game_id') {
+                return {
+                  eq: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({
+                      data: { id: TO_PLAYER_ID, commodities: 3, trade_goods: 1 },
+                      error: null,
+                    }),
+                  }),
+                }
+              }
+              return {
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { id: FROM_PLAYER_ID, commodities: 5, trade_goods: 2, vp: 2 },
+                  error: null,
+                }),
+              }
+            }),
+          }),
+          update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        }
+      }
+      if (table === 'game_transactions') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: {
+                  id: 'tx-generic',
+                  from_player_id: FROM_PLAYER_ID,
+                  to_player_id: TO_PLAYER_ID,
+                  status: 'pending',
+                  active_player_id: null,
+                  items: {
+                    offer: { commodities: 0, trade_goods: 0, note_ids: [noteId] },
+                    request: { commodities: 0, trade_goods: 0, note_ids: [] },
+                  },
+                },
+                error: null,
+              }),
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        }
+      }
+      if (table === 'games') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { active_player_id: ACTIVE_PLAYER_ID, phase: 'action' },
+                error: null,
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'game_player_promissory_notes') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: noteRowId, state: 'held', held_by_player_id: FROM_PLAYER_ID, note_id: 'ref-generic' },
+                error: null,
+              }),
+            }),
+          }),
+          update: noteUpdateMock,
+        }
+      }
+      if (table === 'promissory_notes') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { name: 'Political Favor' },
+                error: null,
+              }),
+            }),
+          }),
+        }
+      }
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }) }),
+        }),
+        update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+      }
+    })
+
+    const res = await handler(makeRequest({ game_id: GAME_ID, transaction_id: 'tx-generic' }))
+    expect(res.status).toBe(200)
+
+    const noteUpdateCall = noteUpdateMock.mock.calls.find(call => call[0]?.state === 'held')
+    expect(noteUpdateCall).toBeDefined()
+    expect(noteUpdateCall[0].state).toBe('held')
+    expect(noteUpdateCall[0].held_by_player_id).toBe(TO_PLAYER_ID)
+  })
+
   it('sets confirmed_at, active_player_id, and status=confirmed on success', async () => {
     const updateMock = vi.fn().mockResolvedValue({ error: null })
     db.from.mockImplementation((table) => {

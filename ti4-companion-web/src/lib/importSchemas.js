@@ -16,6 +16,7 @@
  */
 const importSchemas = {
   tiles: {
+    pgTable: 'tiles',
     fields: [
       {
         name: 'tile_number',
@@ -70,6 +71,7 @@ const importSchemas = {
   },
 
   factions: {
+    pgTable: 'factions',
     fields: [
       {
         name: 'name',
@@ -127,6 +129,7 @@ const importSchemas = {
   },
 
   agendas: {
+    pgTable: 'agendas',
     fields: [
       {
         name: 'name',
@@ -195,6 +198,7 @@ const importSchemas = {
   },
 
   technologies: {
+    pgTable: 'technologies',
     fields: [
       {
         name: 'name',
@@ -239,6 +243,7 @@ const importSchemas = {
   },
 
   units: {
+    pgTable: 'units',
     fields: [
       {
         name: 'name',
@@ -326,6 +331,7 @@ const importSchemas = {
   },
 
   'public-objectives': {
+    pgTable: 'public_objectives',
     fields: [
       {
         name: 'name',
@@ -356,6 +362,7 @@ const importSchemas = {
   },
 
   'secret-objectives': {
+    pgTable: 'secret_objectives',
     fields: [
       {
         name: 'name',
@@ -386,6 +393,7 @@ const importSchemas = {
   },
 
   'action-cards': {
+    pgTable: 'action_cards',
     fields: [
       {
         name: 'name',
@@ -425,10 +433,17 @@ const importSchemas = {
         default: 'base',
         description: 'Expansion this card belongs to.',
       },
+      {
+        name: 'ability',
+        required: false,
+        type: 'jsonb',
+        description: 'DSL op array for server-enforced effect resolution. null = not yet authored.',
+      },
     ],
   },
 
   relics: {
+    pgTable: 'relics',
     fields: [
       {
         name: 'name',
@@ -474,6 +489,7 @@ const importSchemas = {
   },
 
   'exploration-cards': {
+    pgTable: 'exploration_cards',
     fields: [
       {
         name: 'name',
@@ -525,6 +541,7 @@ const importSchemas = {
   },
 
   attachments: {
+    pgTable: 'attachments',
     fields: [
       {
         name: 'name',
@@ -575,6 +592,7 @@ const importSchemas = {
   },
 
   'promissory-notes': {
+    pgTable: 'promissory_notes',
     fields: [
       {
         name: 'name',
@@ -619,6 +637,7 @@ const importSchemas = {
   },
 
   'ability-definitions': {
+    pgTable: 'ability_definitions',
     fields: [
       {
         name: 'ability_key',
@@ -674,6 +693,7 @@ const importSchemas = {
   },
 
   'ability-sources': {
+    pgTable: 'ability_sources',
     fields: [
       {
         name: 'ability_key',

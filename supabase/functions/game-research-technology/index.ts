@@ -2,7 +2,7 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 
-Deno.serve(async (req: Request) => {
+export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
 
   let userId: string
@@ -151,5 +151,31 @@ Deno.serve(async (req: Request) => {
     if (exhaustError) return errorResponse(`Failed to exhaust planets: ${exhaustError.message}`, 500)
   }
 
+  // Phase 29b: open after_technology_researched window for other players holding a matching card
+  const { data: eligibleRows } = await db
+    .from('game_action_card_deck')
+    .select('held_by_player_id, action_cards!inner(timing, ability)')
+    .eq('game_id', body.game_id)
+    .eq('state', 'hand')
+    .neq('held_by_player_id', (player as Record<string, string>).id)
+    .eq('action_cards.timing', 'After a player researches a technology:')
+    .not('action_cards.ability', 'is', null)
+  const eligibleIds = (eligibleRows ?? []).map((r: Record<string, unknown>) => r.held_by_player_id as string)
+  if (eligibleIds.length > 0) {
+    await db
+      .from('games')
+      .update({
+        pending_action_window: {
+          type: 'after_technology_researched',
+          eligible_player_ids: eligibleIds,
+          passed_player_ids: [],
+          context: { technology_name: body.tech_name },
+        },
+      })
+      .eq('id', body.game_id)
+  }
+
   return okResponse({ researched: true })
-})
+}
+
+if (typeof Deno !== 'undefined') Deno.serve(handler)

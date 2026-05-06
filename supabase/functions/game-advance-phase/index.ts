@@ -83,9 +83,40 @@ export async function handler(req: Request): Promise<Response> {
     if (playersError) return errorResponse(`Failed to reset players: ${playersError.message}`, 500)
 
     
+    // Ready legendary cards at the start of the new round
+    const { error: legendaryError } = await db
+      .from('game_player_legendary_cards')
+      .update({ status: 'readied' })
+      .eq('game_id', body.game_id)
+    if (legendaryError) return errorResponse(`Failed to ready legendary cards: ${legendaryError.message}`, 500)
+
+    // Reset movement blockers and no-move flags at the start of each new round
+    if (!game.agenda_unlocked) {
+      const { error: blockedError } = await db
+        .from('games')
+        .update({ movement_blocked_systems: [] })
+        .eq('id', body.game_id)
+      if (blockedError) return errorResponse(`Failed to reset movement blocks: ${blockedError.message}`, 500)
+
+      const { error: noMoveError } = await db
+        .from('game_player_units')
+        .update({ no_move_this_round: false })
+        .eq('game_id', body.game_id)
+      if (noMoveError) return errorResponse(`Failed to reset no-move flags: ${noMoveError.message}`, 500)
+    }
+
     const nextPhase = game.agenda_unlocked ? 'agenda' : 'strategy'
     const roundUpdate = game.agenda_unlocked ? game.round : game.round + 1
-    
+
+    // Reset vote_prevented when transitioning into agenda phase
+    if (game.agenda_unlocked) {
+      const { error: votePreventedError } = await db
+        .from('game_players')
+        .update({ vote_prevented: false })
+        .eq('game_id', body.game_id)
+      if (votePreventedError) return errorResponse(`Failed to reset vote_prevented: ${votePreventedError.message}`, 500)
+    }
+
     const { error } = await db
       .from('games')
       .update({ phase: nextPhase, round: roundUpdate, active_player_id: null })

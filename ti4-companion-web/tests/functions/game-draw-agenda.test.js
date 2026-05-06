@@ -46,6 +46,7 @@ function mockDb({
   topCard = { id: CARD_ID, agenda_id: 'ag-uuid', deck_position: 0 },
   updateGameError = null,
   updateDeckError = null,
+  eligibleCardRows = [],
 } = {}) {
   updateGameMock = vi.fn().mockReturnValue({
     eq: vi.fn().mockResolvedValue({ error: updateGameError }),
@@ -84,6 +85,18 @@ function mockDb({
       }),
       update: updateDeckMock,
     }
+    if (table === 'game_action_card_deck') return {
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              not: vi.fn().mockResolvedValue({ data: eligibleCardRows, error: null }),
+            }),
+          }),
+        }),
+      }),
+    }
+    return {}
   })
 }
 
@@ -153,5 +166,30 @@ describe('game-draw-agenda', () => {
   it('returns 200 on success', async () => {
     const res = await handler(makeRequest({ game_id: GAME_ID }))
     expect(res.status).toBe(200)
+  })
+
+  it('GIVEN no player holds a When-agenda-revealed card — does NOT set pending_action_window', async () => {
+    mockDb({ eligibleCardRows: [] })
+    await handler(makeRequest({ game_id: GAME_ID }))
+    // updateGameMock should only have been called once (the main game update, not a second window update)
+    const windowCall = updateGameMock.mock.calls.find(
+      ([arg]) => arg && arg.pending_action_window !== undefined
+    )
+    expect(windowCall).toBeUndefined()
+  })
+
+  it('GIVEN player holds a When-agenda-revealed card — sets pending_action_window with eligible player', async () => {
+    const HOLDER_ID = 'player-holding-card'
+    mockDb({ eligibleCardRows: [{ held_by_player_id: HOLDER_ID }] })
+    await handler(makeRequest({ game_id: GAME_ID }))
+    const windowCall = updateGameMock.mock.calls.find(
+      ([arg]) => arg && arg.pending_action_window !== undefined
+    )
+    expect(windowCall).toBeDefined()
+    expect(windowCall[0].pending_action_window).toMatchObject({
+      type: 'when_agenda_revealed',
+      eligible_player_ids: [HOLDER_ID],
+      passed_player_ids: [],
+    })
   })
 })

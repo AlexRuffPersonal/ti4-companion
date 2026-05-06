@@ -29,11 +29,17 @@ export async function handler(req: Request): Promise<Response> {
 
   const { data: callerPlayer } = await db
     .from('game_players')
-    .select('id')
+    .select('id, vote_prevented')
     .eq('game_id', body.game_id)
     .eq('user_id', userId)
     .maybeSingle()
-  if (!callerPlayer || callerPlayer.id !== game.agenda_vote_current_player_id) {
+  if (!callerPlayer) {
+    return errorResponse('It is not your turn to vote', 403)
+  }
+  if ((callerPlayer as { vote_prevented?: boolean }).vote_prevented) {
+    return errorResponse('Your vote has been prevented', 409)
+  }
+  if (callerPlayer.id !== game.agenda_vote_current_player_id) {
     return errorResponse('It is not your turn to vote', 403)
   }
 
@@ -55,6 +61,37 @@ export async function handler(req: Request): Promise<Response> {
     }
   }
 
+  // Phase 29b Part A: When voting begins — open window on first vote for this agenda
+  const { count: existingVoteCount } = await db
+    .from('game_agenda_votes')
+    .select('*', { count: 'exact', head: true })
+    .eq('game_id', body.game_id)
+    .eq('agenda_id', game.agenda_current_card_id)
+
+  if ((existingVoteCount ?? 0) === 0) {
+    const { data: eligibleWhenVoting } = await db
+      .from('game_action_card_deck')
+      .select('held_by_player_id, action_cards!inner(timing, ability)')
+      .eq('game_id', body.game_id)
+      .eq('state', 'hand')
+      .eq('action_cards.timing', 'When voting begins:')
+      .not('action_cards.ability', 'is', null)
+
+    const eligibleIds = (eligibleWhenVoting ?? []).map((r: { held_by_player_id: string }) => r.held_by_player_id)
+    if (eligibleIds.length > 0) {
+      await db.from('games').update({
+        pending_action_window: {
+          type: 'when_voting_begins',
+          eligible_player_ids: eligibleIds,
+          passed_player_ids: [],
+          context: { agenda_id: game.agenda_current_card_id },
+        },
+      }).eq('id', game.id)
+      return okResponse({ window_opened: 'when_voting_begins' })
+      // vote not yet cast; caller re-submits after window resolves
+    }
+  }
+
   const { error: upsertError } = await db
     .from('game_agenda_votes')
     .upsert(
@@ -69,6 +106,30 @@ export async function handler(req: Request): Promise<Response> {
       { onConflict: 'game_id,game_player_id,agenda_id' },
     )
   if (upsertError) return errorResponse(`Failed to record vote: ${upsertError.message}`, 500)
+
+  // Phase 29b Part B: After the speaker votes — open window for matching cards
+  // game.speaker_player_id is a game_players.id (FK), so compare directly
+  if (game.speaker_player_id === callerPlayer.id) {
+    const { data: eligibleAfterSpeaker } = await db
+      .from('game_action_card_deck')
+      .select('held_by_player_id, action_cards!inner(timing, ability)')
+      .eq('game_id', body.game_id)
+      .eq('state', 'hand')
+      .eq('action_cards.timing', 'After the speaker votes on an agenda:')
+      .not('action_cards.ability', 'is', null)
+
+    const eligibleIds = (eligibleAfterSpeaker ?? []).map((r: { held_by_player_id: string }) => r.held_by_player_id)
+    if (eligibleIds.length > 0) {
+      await db.from('games').update({
+        pending_action_window: {
+          type: 'after_speaker_votes',
+          eligible_player_ids: eligibleIds,
+          passed_player_ids: [],
+          context: { agenda_id: game.agenda_current_card_id },
+        },
+      }).eq('id', game.id)
+    }
+  }
 
   // Check if all players have now voted
   const { data: allPlayers } = await db
