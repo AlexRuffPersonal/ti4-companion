@@ -39,16 +39,6 @@ async function applyHits(gameId: string, systemKey: string, targetPlayerId: stri
   }
 }
 
-async function hasDestroyer(gameId: string, systemKey: string, playerId: string): Promise<boolean> {
-  const { data } = await db
-    .from('game_player_units')
-    .select('id, unit_type')
-    .eq('game_id', gameId)
-    .eq('player_id', playerId)
-    .is('on_planet', null)
-  return (data ?? []).some((u: { unit_type: string }) => u.unit_type === 'destroyer')
-}
-
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
 
@@ -178,9 +168,7 @@ export async function handler(req: Request): Promise<Response> {
   const allResolved = updatedPending.every((e) => e.resolved)
   let newPhase = combat.phase as string
   if (allResolved) {
-    const atkHasDestroyer = await hasDestroyer(body.game_id, combat.system_key, combat.attacker_player_id)
-    const defHasDestroyer = await hasDestroyer(body.game_id, combat.system_key, combat.defender_player_id)
-    newPhase = (atkHasDestroyer || defHasDestroyer) ? 'barrage' : 'attacker_roll'
+    newPhase = 'barrage'
   }
 
   const { error: updateError } = await db

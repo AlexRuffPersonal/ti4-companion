@@ -8,6 +8,13 @@ export interface ResolveContext {
   chosenAmount?: number
   chosenOption?: number
   selections?: Record<string, unknown>
+  ignorePrerequisite?: boolean
+}
+
+export interface CombatResolveContext extends ResolveContext {
+  combatId: string
+  systemKey: string
+  side: 'attacker' | 'defender'
 }
 
 type PlayerRow = Record<string, unknown>
@@ -308,22 +315,387 @@ async function interpretOp(
       if (error) throw new Error(`draw_secret_objective: update failed: ${error.message}`)
       break
     }
-    // These ops are defined in the DSL spec but not yet executable — they depend on
-    // game systems (combat, voting, exploration) that will be built in future phases.
-    case 'modify_roll':
-    case 'add_die':
-    case 'cancel_hit':
-    case 'cast_votes':
-    case 'prevent_vote':
-    case 'place_units':
-    case 'destroy_units':
-    case 'explore_planet':
-    case 'convert_commodities':
-    case 'gain_command_tokens':
-    case 'ignore_prerequisite':
-    case 'take_from_discard':
-    case 'gain_technology':
-      break  // No-op until the relevant game system is implemented
+    case 'convert_commodities': {
+      const amount = op.amount as number
+      if ((player.commodities as number) < amount) throw dslError('Insufficient commodities')
+      const { error } = await db.from('game_players')
+        .update({ commodities: (player.commodities as number) - amount, trade_goods: (player.trade_goods as number) + amount })
+        .eq('id', context.activatingPlayerId)
+      if (error) throw new Error(`convert_commodities failed: ${error.message}`)
+      break
+    }
+
+    case 'gain_command_tokens': {
+      const bucket = op.bucket as string  // 'tactic_total' | 'fleet' | 'strategy'
+      const tokens = { ...(player.command_tokens ?? {}) as Record<string, number> }
+      tokens[bucket] = (tokens[bucket] ?? 0) + ((op.amount as number) ?? 1)
+      const { error } = await db.from('game_players')
+        .update({ command_tokens: tokens })
+        .eq('id', context.activatingPlayerId)
+      if (error) throw new Error(`gain_command_tokens failed: ${error.message}`)
+      break
+    }
+
+    case 'take_from_discard': {
+      const cardId = (context.selections as Record<string, unknown>)?.card_id as string
+      if (!cardId) throw dslError('card_id is required in selections')
+      const { data: card, error: findError } = await db.from('game_action_card_deck')
+        .select('id')
+        .eq('id', cardId)
+        .eq('game_id', context.gameId)
+        .eq('state', 'discard')
+        .maybeSingle()
+      if (findError) throw new Error(`take_from_discard: query failed: ${findError.message}`)
+      if (!card) throw dslError('Card not found in discard')
+      const { error } = await db.from('game_action_card_deck')
+        .update({ state: 'held', held_by_player_id: context.activatingPlayerId, deck_position: null })
+        .eq('id', cardId)
+      if (error) throw new Error(`take_from_discard: update failed: ${error.message}`)
+      const { error: countError } = await db.from('game_players')
+        .update({ action_card_count: (player.action_card_count as number ?? 0) + 1 })
+        .eq('id', context.activatingPlayerId)
+      if (countError) throw new Error(`take_from_discard: count update failed: ${countError.message}`)
+      break
+    }
+
+    case 'ignore_prerequisite': {
+      context.ignorePrerequisite = true  // in-memory flag only
+      break
+    }
+
+    case 'gain_technology': {
+      const techName = (context.selections as Record<string, unknown>)?.technology_name as string
+      if (!techName) throw dslError('technology_name is required in selections')
+      const techs = (player.technologies as string[]) ?? []
+      if (techs.includes(techName)) throw dslError('Technology already researched')
+      if (!context.ignorePrerequisite) {
+        // Fetch technology prerequisites
+        const { data: techDef, error: techError } = await db.from('technologies').select('prerequisites').eq('name', techName).maybeSingle()
+        if (techError) throw new Error(`gain_technology: tech query failed: ${techError.message}`)
+        if (techDef) {
+          const prereqs = (techDef as { prerequisites?: Record<string, number> }).prerequisites ?? {}
+          if (Object.keys(prereqs).length > 0) {
+            // Count player's techs by colour
+            const { data: allTechs } = await db.from('technologies').select('name, technology_type').in('name', techs)
+            const colourCounts: Record<string, number> = {}
+            for (const t of (allTechs ?? []) as { technology_type: string }[]) {
+              colourCounts[t.technology_type] = (colourCounts[t.technology_type] ?? 0) + 1
+            }
+            for (const [colour, needed] of Object.entries(prereqs)) {
+              if ((colourCounts[colour] ?? 0) < needed) throw dslError('Prerequisites not met')
+            }
+          }
+        }
+      }
+      const { error } = await db.from('game_players')
+        .update({ technologies: [...techs, techName] })
+        .eq('id', context.activatingPlayerId)
+      if (error) throw new Error(`gain_technology failed: ${error.message}`)
+      break
+    }
+
+    case 'cast_votes': {
+      const { data: game, error: gameError } = await db.from('games').select('agenda_current_card_id').eq('id', context.gameId).maybeSingle()
+      if (gameError || !game) throw new Error('cast_votes: failed to load game')
+      const agendaId = (game as { agenda_current_card_id: string }).agenda_current_card_id
+      const voteCount = (op.amount as number) ?? ((context.selections as Record<string, number>)?.vote_count ?? 0)
+      const outcome = (context.selections as Record<string, string>)?.vote_outcome
+      if (!outcome) throw dslError('vote_outcome is required in selections')
+      const { error } = await db.from('game_agenda_votes')
+        .upsert({ game_id: context.gameId, game_player_id: context.activatingPlayerId, agenda_id: agendaId, vote_count: voteCount, choice: outcome }, { onConflict: 'game_id,game_player_id,agenda_id' })
+      if (error) throw new Error(`cast_votes failed: ${error.message}`)
+      break
+    }
+
+    case 'prevent_vote': {
+      const targetId = op.target === 'self' ? context.activatingPlayerId : (context.targetPlayerId ?? context.activatingPlayerId)
+      const { error } = await db.from('game_players').update({ vote_prevented: true }).eq('id', targetId)
+      if (error) throw new Error(`prevent_vote failed: ${error.message}`)
+      break
+    }
+
+    // Combat ops — require CombatResolveContext
+    case 'cancel_hit': {
+      const ctx = context as CombatResolveContext
+      const { data: combat, error: combatError } = await db.from('game_combats').select('*').eq('id', ctx.combatId).maybeSingle()
+      if (combatError || !combat) throw new Error('cancel_hit: combat not found')
+      const targetSide = (op.target === 'self') ? ctx.side : (ctx.side === 'attacker' ? 'defender' : 'attacker')
+      const hitsCol = targetSide === 'attacker' ? 'attacker_hits' : 'defender_hits'
+      const currentHits = (combat as Record<string, number>)[hitsCol] ?? 0
+      const { error } = await db.from('game_combats')
+        .update({ [hitsCol]: Math.max(0, currentHits - 1) })
+        .eq('id', ctx.combatId)
+      if (error) throw new Error(`cancel_hit failed: ${error.message}`)
+      break
+    }
+
+    case 'add_die': {
+      const ctx = context as CombatResolveContext
+      const hitOn = op.hit_on as number ?? 6
+      const roll = Math.floor(Math.random() * 10) + 1
+      const hit = roll >= hitOn
+      const { data: combat, error: combatError } = await db.from('game_combats').select('*').eq('id', ctx.combatId).maybeSingle()
+      if (combatError || !combat) throw new Error('add_die: combat not found')
+      const c = combat as Record<string, unknown>
+      const diceCol = ctx.side === 'attacker' ? 'attacker_dice' : 'defender_dice'
+      const hitsCol = ctx.side === 'attacker' ? 'attacker_hits' : 'defender_hits'
+      const updatedDice = [...((c[diceCol] as unknown[]) ?? []), { unit_type: '__ability__', roll, hit_on: hitOn, hit }]
+      const { error } = await db.from('game_combats')
+        .update({ [diceCol]: updatedDice, [hitsCol]: ((c[hitsCol] as number) ?? 0) + (hit ? 1 : 0) })
+        .eq('id', ctx.combatId)
+      if (error) throw new Error(`add_die failed: ${error.message}`)
+      break
+    }
+
+    case 'modify_roll': {
+      const ctx = context as CombatResolveContext
+      const modifier = op.modifier as number
+      const { data: combat, error: combatError } = await db.from('game_combats').select('*').eq('id', ctx.combatId).maybeSingle()
+      if (combatError || !combat) throw new Error('modify_roll: combat not found')
+      const c = combat as Record<string, unknown>
+      const diceCol = ctx.side === 'attacker' ? 'attacker_dice' : 'defender_dice'
+      const hitsCol = ctx.side === 'attacker' ? 'attacker_hits' : 'defender_hits'
+      const dice = ((c[diceCol] as Array<{ roll: number; hit_on: number; hit: boolean }>) ?? []).map(die => {
+        const newRoll = die.roll + modifier
+        return { ...die, roll: newRoll, hit: newRoll >= die.hit_on }
+      })
+      const hits = dice.filter(d => d.hit).length
+      const { error } = await db.from('game_combats')
+        .update({ [diceCol]: dice, [hitsCol]: hits })
+        .eq('id', ctx.combatId)
+      if (error) throw new Error(`modify_roll failed: ${error.message}`)
+      break
+    }
+
+    case 'place_units': {
+      const sel = context.selections as Record<string, unknown>
+      const systemKey = (sel?.system_key as string) ?? (context as CombatResolveContext).systemKey
+      const onPlanet = (sel?.planet_name as string) ?? null
+      const unitType = op.unit_type as string
+      const count = (op.count as number) ?? 1
+      if (!systemKey) throw dslError('system_key is required')
+      if (!unitType) throw dslError('unit_type is required')
+      const { data: existing } = await db.from('game_player_units')
+        .select('id, count')
+        .eq('game_id', context.gameId)
+        .eq('player_id', context.activatingPlayerId)
+        .eq('system_key', systemKey)
+        .eq('unit_type', unitType)
+        .is('on_planet', onPlanet)
+        .maybeSingle()
+      if (existing) {
+        const { error } = await db.from('game_player_units').update({ count: ((existing as { count: number }).count ?? 0) + count }).eq('id', (existing as { id: string }).id)
+        if (error) throw new Error(`place_units: update failed: ${error.message}`)
+      } else {
+        const { error } = await db.from('game_player_units').insert({ game_id: context.gameId, player_id: context.activatingPlayerId, system_key: systemKey, unit_type: unitType, on_planet: onPlanet, count })
+        if (error) throw new Error(`place_units: insert failed: ${error.message}`)
+      }
+      break
+    }
+
+    case 'destroy_units': {
+      const sel = context.selections as Record<string, unknown>
+      const systemKey = (sel?.system_key as string) ?? (context as CombatResolveContext).systemKey
+      const onPlanet = (sel?.planet_name as string) ?? null
+      const unitType = op.unit_type as string
+      const count = (op.count as number) ?? 1
+      const { data: existing } = await db.from('game_player_units')
+        .select('id, count')
+        .eq('game_id', context.gameId)
+        .eq('player_id', context.activatingPlayerId)
+        .eq('system_key', systemKey)
+        .eq('unit_type', unitType)
+        .is('on_planet', onPlanet)
+        .maybeSingle()
+      if (!existing || (existing as { count: number }).count < count) throw dslError('No units to destroy')
+      const newCount = (existing as { count: number }).count - count
+      if (newCount === 0) {
+        const { error } = await db.from('game_player_units').delete().eq('id', (existing as { id: string }).id)
+        if (error) throw new Error(`destroy_units: delete failed: ${error.message}`)
+      } else {
+        const { error } = await db.from('game_player_units').update({ count: newCount }).eq('id', (existing as { id: string }).id)
+        if (error) throw new Error(`destroy_units: update failed: ${error.message}`)
+      }
+      break
+    }
+
+    case 'explore_planet': {
+      // Stub — delegates to exploration system (implemented in Phase 17)
+      break
+    }
+
+    case 'exhaust_planet': {
+      const planetName = ((context.selections as Record<string, unknown>)?.planet_name as string)
+      if (!planetName) throw dslError('planet_name is required')
+      const { data: planet, error: findError } = await db.from('game_player_planets')
+        .select('id').eq('game_id', context.gameId).eq('player_id', context.activatingPlayerId).eq('planet_name', planetName).maybeSingle()
+      if (findError) throw new Error(`exhaust_planet: query failed: ${findError.message}`)
+      if (!planet) throw dslError('Planet not owned')
+      const { error } = await db.from('game_player_planets').update({ exhausted: true }).eq('id', (planet as { id: string }).id)
+      if (error) throw new Error(`exhaust_planet failed: ${error.message}`)
+      break
+    }
+
+    case 'destroy_units_on_planet': {
+      const sel = context.selections as Record<string, unknown>
+      const planetName = sel?.planet_name as string
+      const unitType = op.unit_type as string
+      const count = op.count as number
+      const upTo = op.up_to as boolean ?? false
+      const { data: row } = await db.from('game_player_units')
+        .select('id, count').eq('game_id', context.gameId).eq('player_id', context.activatingPlayerId).eq('on_planet', planetName).eq('unit_type', unitType).maybeSingle()
+      if (!upTo && (!row || (row as { count: number }).count < count)) throw dslError('Not enough units')
+      const toDestroy = Math.min(count, (row as { count: number } | null)?.count ?? 0)
+      if (toDestroy > 0) {
+        const newCount = ((row as { count: number }).count) - toDestroy
+        if (newCount === 0) { await db.from('game_player_units').delete().eq('id', (row as { id: string }).id) }
+        else { await db.from('game_player_units').update({ count: newCount }).eq('id', (row as { id: string }).id) }
+      }
+      break
+    }
+
+    case 'roll_and_destroy_units': {
+      const sel = context.selections as Record<string, unknown>
+      const targetPlayerId = sel?.target_player_id as string
+      const planetName = sel?.planet_name as string
+      const unitType = op.unit_type as string
+      const threshold = op.threshold as number
+      const { data: row } = await db.from('game_player_units')
+        .select('id, count').eq('game_id', context.gameId).eq('player_id', targetPlayerId).eq('on_planet', planetName).eq('unit_type', unitType).maybeSingle()
+      if (!row || (row as { count: number }).count === 0) throw dslError('No units on planet')
+      let destroyed = 0
+      for (let i = 0; i < (row as { count: number }).count; i++) {
+        const roll = Math.floor(Math.random() * 10) + 1
+        if (roll <= threshold) destroyed++
+      }
+      const newCount = (row as { count: number }).count - destroyed
+      if (newCount === 0) { await db.from('game_player_units').delete().eq('id', (row as { id: string }).id) }
+      else if (destroyed > 0) { await db.from('game_player_units').update({ count: newCount }).eq('id', (row as { id: string }).id) }
+      break
+    }
+
+    case 'steal_action_card': {
+      const targetPlayerId = ((context.selections as Record<string, unknown>)?.target_player_id as string)
+      if (!targetPlayerId) throw dslError('target_player_id required')
+      const { data: card } = await db.from('game_action_card_deck')
+        .select('id').eq('game_id', context.gameId).eq('held_by_player_id', targetPlayerId).eq('state', 'hand')
+        .limit(1).maybeSingle()
+      if (!card) throw dslError('Target has no cards')
+      await db.from('game_action_card_deck').update({ held_by_player_id: context.activatingPlayerId }).eq('id', (card as { id: string }).id)
+      await db.from('game_players').update({ action_card_count: (player.action_card_count as number ?? 0) + 1 }).eq('id', context.activatingPlayerId)
+      const { data: target } = await db.from('game_players').select('action_card_count').eq('id', targetPlayerId).maybeSingle()
+      await db.from('game_players').update({ action_card_count: Math.max(0, ((target as { action_card_count: number } | null)?.action_card_count ?? 1) - 1) }).eq('id', targetPlayerId)
+      break
+    }
+
+    case 'look_at_hand': {
+      // No DB write — return cards in OK response (caller receives via response body)
+      // This is handled at the game-resolve-ability level; DSL just marks it for special handling
+      break
+    }
+
+    case 'modify_next_production': {
+      const { error } = await db.from('game_players')
+        .update({ production_bonus: ((player as Record<string, unknown>).production_bonus as number ?? 0) + (op.amount as number) })
+        .eq('id', context.activatingPlayerId)
+      if (error) throw new Error(`modify_next_production failed: ${error.message}`)
+      break
+    }
+
+    case 'block_system_movement': {
+      const systemKey = ((context.selections as Record<string, unknown>)?.system_key as string)
+      if (!systemKey) throw dslError('system_key required')
+      const { data: game } = await db.from('games').select('movement_blocked_systems').eq('id', context.gameId).maybeSingle()
+      const blocked = ((game as { movement_blocked_systems?: string[] } | null)?.movement_blocked_systems ?? [])
+      const { error } = await db.from('games').update({ movement_blocked_systems: [...blocked, systemKey] }).eq('id', context.gameId)
+      if (error) throw new Error(`block_system_movement failed: ${error.message}`)
+      break
+    }
+
+    case 'place_unit_no_move': {
+      const sel = context.selections as Record<string, unknown>
+      const systemKey = sel?.system_key as string
+      const unitType = (op.unit_type as string) ?? 'destroyer'
+      if (!systemKey) throw dslError('system_key required')
+      const { data: existing } = await db.from('game_player_units')
+        .select('id, count').eq('game_id', context.gameId).eq('player_id', context.activatingPlayerId)
+        .eq('system_key', systemKey).eq('unit_type', unitType).is('on_planet', null).maybeSingle()
+      if (existing) {
+        await db.from('game_player_units').update({ count: ((existing as { count: number }).count ?? 0) + 1, no_move_this_round: true }).eq('id', (existing as { id: string }).id)
+      } else {
+        await db.from('game_player_units').insert({ game_id: context.gameId, player_id: context.activatingPlayerId, system_key: systemKey, unit_type: unitType, on_planet: null, count: 1, no_move_this_round: true })
+      }
+      break
+    }
+
+    case 'remove_tokens_from_board': {
+      const targetPlayerId = ((context.selections as Record<string, unknown>)?.target_player_id as string)
+      if (!targetPlayerId) throw dslError('target_player_id required')
+      const { data: game } = await db.from('games').select('round').eq('id', context.gameId).maybeSingle()
+      const { error } = await db.from('game_system_activations')
+        .delete().eq('game_id', context.gameId).eq('player_id', targetPlayerId).eq('round', (game as { round: number } | null)?.round ?? 1)
+      if (error) throw new Error(`remove_tokens_from_board failed: ${error.message}`)
+      break
+    }
+
+    case 'swap_strategy_cards': {
+      const targetPlayerId = ((context.selections as Record<string, unknown>)?.target_player_id as string)
+      if (!targetPlayerId) throw dslError('target_player_id required')
+      const { data: myRow } = await db.from('game_strategy_card_assignments').select('id, strategy_card_id').eq('game_id', context.gameId).eq('player_id', context.activatingPlayerId).maybeSingle()
+      const { data: theirRow } = await db.from('game_strategy_card_assignments').select('id, strategy_card_id').eq('game_id', context.gameId).eq('player_id', targetPlayerId).maybeSingle()
+      if (!myRow || !theirRow) throw dslError('Strategy card not assigned')
+      const myR = myRow as { id: string; strategy_card_id: string }
+      const theirR = theirRow as { id: string; strategy_card_id: string }
+      await db.from('game_strategy_card_assignments').update({ strategy_card_id: theirR.strategy_card_id }).eq('id', myR.id)
+      await db.from('game_strategy_card_assignments').update({ strategy_card_id: myR.strategy_card_id }).eq('id', theirR.id)
+      break
+    }
+
+    case 'replace_agenda': {
+      const { data: game, error: gameError } = await db.from('games').select('agenda_current_card_id').eq('id', context.gameId).maybeSingle()
+      if (gameError || !game) throw new Error('replace_agenda: failed to load game')
+      const currentAgendaId = (game as { agenda_current_card_id: string }).agenda_current_card_id
+      // Discard current agenda
+      await db.from('game_agenda_deck').update({ state: 'discard' }).eq('id', currentAgendaId)
+      // Draw next from deck
+      const { data: newCard, error: drawError } = await db.from('game_agenda_deck')
+        .select('id')
+        .eq('game_id', context.gameId)
+        .eq('state', 'deck')
+        .order('deck_position', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+      if (drawError) throw new Error('replace_agenda: deck query failed')
+      if (!newCard) throw dslError('Agenda deck empty')
+      await db.from('game_agenda_deck').update({ state: 'revealed' }).eq('id', (newCard as { id: string }).id)
+      await db.from('games').update({ agenda_current_card_id: (newCard as { id: string }).id }).eq('id', context.gameId)
+      break
+    }
+
+    case 'add_votes': {
+      const voteCount = (context.selections as Record<string, unknown>)?.vote_count as number
+      const outcome = (context.selections as Record<string, unknown>)?.vote_outcome as string
+      if (!outcome) throw dslError('vote_outcome required')
+      if ((player.trade_goods as number) < voteCount) throw dslError('Insufficient trade goods')
+      await db.from('game_players').update({ trade_goods: (player.trade_goods as number) - voteCount }).eq('id', context.activatingPlayerId)
+      const { data: gameForVotes } = await db.from('games').select('agenda_current_card_id').eq('id', context.gameId).maybeSingle()
+      const agendaId = (gameForVotes as { agenda_current_card_id: string } | null)?.agenda_current_card_id
+      await db.from('game_agenda_votes').upsert(
+        { game_id: context.gameId, game_player_id: context.activatingPlayerId, agenda_id: agendaId, vote_count: voteCount, choice: outcome },
+        { onConflict: 'game_id,game_player_id,agenda_id' }
+      )
+      break
+    }
+
+    case 'research_same_technology': {
+      const techName = (context as Record<string, unknown>).technology_name as string
+      if (!techName) throw dslError('technology_name required in context')
+      const techs = (player.technologies as string[]) ?? []
+      if (techs.includes(techName)) throw dslError('Technology already researched')
+      await db.from('game_players').update({ technologies: [...techs, techName] }).eq('id', context.activatingPlayerId)
+      break
+    }
+
     default:
       throw new Error(`Unknown op: ${op.op}`)
   }

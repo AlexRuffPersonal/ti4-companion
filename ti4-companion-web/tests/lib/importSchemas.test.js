@@ -196,6 +196,20 @@ describe('importSchemas promissory-notes', () => {
   })
 })
 
+// ── Action cards ─────────────────────────────────────────────────────────────
+
+describe('importSchemas action-cards', () => {
+  const schema = importSchemas['action-cards']
+  const fieldNames = schema.fields.map(f => f.name)
+
+  it('action-cards schema includes ability field with type jsonb and required=false', () => {
+    const f = schema.fields.find(f => f.name === 'ability')
+    expect(f).toBeDefined()
+    expect(f.type).toBe('jsonb')
+    expect(f.required).toBe(false)
+  })
+})
+
 // ── Public and secret objectives ─────────────────────────────────────────────
 
 describe('importSchemas objectives', () => {

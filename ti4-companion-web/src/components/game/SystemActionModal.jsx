@@ -2,7 +2,7 @@ export default function SystemActionModal({
   systemKey, tileInfo, activations, planetOwnership, players,
   currentPlayer, isActivePlayer, hasAvailableTacticTokens,
   myActivations, onActivate, onLandTroops, onClose, custodiansClaimed,
-  myPlanets, systemUnits, unitDefs, onOpenProduction,
+  myPlanets, systemUnits, unitDefs, onOpenProduction, onInfo,
 }) {
   const systemActivatedByMe = myActivations.has(systemKey)
   const planets = tileInfo?.planets ?? []
@@ -20,7 +20,10 @@ export default function SystemActionModal({
       onClick={onClose}
     >
       <div className="panel max-w-sm w-full mx-4" onClick={e => e.stopPropagation()}>
-        <p className="label mb-4">SYSTEM {systemKey}</p>
+        <div className="flex items-center justify-between mb-4">
+          <p className="label">SYSTEM {systemKey}</p>
+          <button className="btn-ghost text-xs" onClick={onInfo}>INFO</button>
+        </div>
 
         {isActivePlayer && hasAvailableTacticTokens && !systemActivatedByMe && (
           <button className="btn-primary w-full mb-4" onClick={() => onActivate(systemKey)}>

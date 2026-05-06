@@ -16,7 +16,16 @@ const INNER_POSITIONS = [
   '3,-2','3,-1','2,1','1,2','-1,3','-2,3','-3,2','-3,1','-2,-1','-1,-2','1,-3','2,-3',
 ]
 
-const HOME_POSITIONS = ['3,-3','3,0','0,3','-3,3','-3,0','0,-3']
+const HOME_POSITIONS_BY_COUNT: Record<number, string[]> = {
+  1: ['0,-3'],
+  2: ['3,-3', '0,-3'],
+  3: ['3,-3', '-3,3', '0,-3'],
+  4: ['3,-3', '3,0', '-3,3', '0,-3'],
+  5: ['3,-3', '3,0', '0,3', '-3,3', '0,-3'],
+  6: ['3,-3', '3,0', '0,3', '-3,3', '-3,0', '0,-3'],
+  7: ['3,-3', '3,0', '0,3', '-3,3', '-3,0', '0,-3', '3,-2'],
+  8: ['3,-3', '3,0', '0,3', '-3,3', '-3,0', '0,-3', '3,-2', '-3,2'],
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -35,7 +44,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: game, error: gameError } = await db
     .from('games')
-    .select('host_user_id, status, speaker_player_id, expansions')
+    .select('host_user_id, status, speaker_player_id, expansions, map_layout, map_tiles')
     .eq('id', body.game_id)
     .maybeSingle()
   if (gameError) return errorResponse('Database error', 500)
@@ -56,6 +65,9 @@ Deno.serve(async (req: Request) => {
       return errorResponse(`Player "${player.display_name}" has not picked a faction or colour`, 409)
     }
   }
+
+  const playerCount = players.length
+  if (!HOME_POSITIONS_BY_COUNT[playerCount]) return errorResponse(`Unsupported player count: ${playerCount}`, 409)
 
   // Initialise public objective decks (filtered by active expansions)
   const activeExpansions = Object.entries(game.expansions ?? {})
@@ -245,58 +257,74 @@ Deno.serve(async (req: Request) => {
     if (insertAgendasError) return errorResponse(`Failed to initialise agenda deck: ${insertAgendasError.message}`, 500)
   }
 
-  // Initialise starting technologies and home planets for each player
+  // Batch faction query (replaces per-player faction queries)
+  const { data: factionRows, error: factionBatchError } = await db
+    .from('factions')
+    .select('name, home_tile_number, starting_techs')
+    .in('name', players.map((p: { faction: string }) => p.faction))
+  if (factionBatchError) return errorResponse('Database error', 500)
+
+  const factionMap = new Map<string, { home_tile_number: string | null; starting_techs: string[] }>(
+    (factionRows ?? []).map((f: { name: string; home_tile_number: string | null; starting_techs: string[] }) => [f.name, f])
+  )
+
   for (const player of players) {
-    const { data: factionData, error: factionError } = await db
-      .from('factions')
-      .select('home_tile_number, starting_techs')
-      .eq('name', player.faction)
-      .maybeSingle()
-    if (factionError) return errorResponse('Database error', 500)
-    if (!factionData) return errorResponse(`Faction not found for player "${player.display_name}"`, 409)
-
-    // Set starting technologies
-    const startingTechs = (factionData?.starting_techs ?? []) as string[]
-    if (startingTechs.length > 0) {
-      const { error: techError } = await db
-        .from('game_players')
-        .update({ technologies: startingTechs })
-        .eq('id', player.id)
-      if (techError) return errorResponse(`Failed to set starting techs for ${player.display_name}: ${techError.message}`, 500)
+    if (!factionMap.has(player.faction)) {
+      return errorResponse(`Faction not found for player "${player.display_name}"`, 409)
     }
+  }
 
-    // Insert home-system planets with tech_specialty
-    if (factionData?.home_tile_number) {
-      const { data: tile, error: tileError } = await db
-        .from('tiles')
-        .select('planets')
-        .eq('tile_number', factionData.home_tile_number)
-        .maybeSingle()
-      if (tileError) return errorResponse('Database error', 500)
+  // Batch tile query for all home tiles
+  const homeTileNumbers = [...new Set(
+    [...factionMap.values()]
+      .map(f => f.home_tile_number)
+      .filter((n): n is string => Boolean(n))
+  )]
+  const { data: homeTileRows, error: homeTileError } = await db
+    .from('tiles')
+    .select('tile_number, planets')
+    .in('tile_number', homeTileNumbers.length > 0 ? homeTileNumbers : ['__none__'])
+  if (homeTileError) return errorResponse('Database error', 500)
 
-      const homePlanets = (tile?.planets ?? []) as Array<{
-        name: string
-        tech_specialty?: string
-        influence?: number
-        resources?: number
-      }>
+  type PlanetDef = { name: string; tech_specialty?: string; influence?: number; resources?: number }
+  const homeTileMap = new Map<string, { planets: PlanetDef[] }>(
+    (homeTileRows ?? []).map((t: { tile_number: string; planets: PlanetDef[] }) => [String(t.tile_number), t])
+  )
 
-      if (homePlanets.length > 0) {
-        const { error: planetError } = await db
-          .from('game_player_planets')
-          .insert(
-            homePlanets.map(p => ({
-              game_id: body.game_id,
-              player_id: player.id,
-              planet_name: p.name,
-              exhausted: false,
-              tech_specialty: p.tech_specialty ?? null,
-              influence: p.influence ?? 0,
-              resources: p.resources ?? 0
-            }))
-          )
-        if (planetError) return errorResponse(`Failed to insert planets for ${player.display_name}: ${planetError.message}`, 500)
-      }
+  // Build all planet rows and do a single bulk insert
+  const allPlanetRows: Array<{ game_id: string; player_id: string; planet_name: string; exhausted: boolean; tech_specialty: string | null; influence: number; resources: number }> = []
+  for (const player of players) {
+    const faction = factionMap.get(player.faction)!
+    const tile = faction.home_tile_number ? homeTileMap.get(String(faction.home_tile_number)) : null
+    for (const p of tile?.planets ?? []) {
+      allPlanetRows.push({
+        game_id: body.game_id,
+        player_id: player.id,
+        planet_name: p.name,
+        exhausted: false,
+        tech_specialty: p.tech_specialty ?? null,
+        influence: p.influence ?? 0,
+        resources: p.resources ?? 0,
+      })
+    }
+  }
+  if (allPlanetRows.length > 0) {
+    const { error: planetError } = await db.from('game_player_planets').insert(allPlanetRows)
+    if (planetError) return errorResponse(`Failed to insert planets: ${planetError.message}`, 500)
+  }
+
+  // Concurrent starting tech updates
+  const techUpdates = players
+    .filter((p: { faction: string }) => (factionMap.get(p.faction)?.starting_techs?.length ?? 0) > 0)
+    .map((p: { id: string; faction: string }) =>
+      db.from('game_players')
+        .update({ technologies: factionMap.get(p.faction)!.starting_techs })
+        .eq('id', p.id)
+    )
+  if (techUpdates.length > 0) {
+    const techResults = await Promise.all(techUpdates)
+    for (const result of techResults) {
+      if (result.error) return errorResponse(`Failed to set starting techs: ${result.error.message}`, 500)
     }
   }
 
@@ -311,29 +339,29 @@ Deno.serve(async (req: Request) => {
     tileByNumber.set(String(t.tile_number), t.id)
   }
 
-  const mapTiles: Record<string, { tile_id: string; tile_number: string }> = {}
-  for (let i = 0; i < INNER_POSITIONS.length; i++) {
-    const tileNumber = INNER_TILE_NUMBERS[i]
-    const tileId = tileByNumber.get(tileNumber)
-    if (tileId) mapTiles[INNER_POSITIONS[i]] = { tile_id: tileId, tile_number: tileNumber }
+  const homePositions = HOME_POSITIONS_BY_COUNT[playerCount]!
+
+  type MapTileEntry = { tile_id: string; tile_number: string; rotation?: number }
+  let mapTiles: Record<string, MapTileEntry>
+
+  if (game.map_layout === 'standard-6' || Object.keys((game.map_tiles as Record<string, unknown> | null) ?? {}).length === 0) {
+    mapTiles = {}
+    for (let i = 0; i < INNER_POSITIONS.length; i++) {
+      const tileNumber = INNER_TILE_NUMBERS[i]
+      const tileId = tileByNumber.get(tileNumber)
+      if (tileId) mapTiles[INNER_POSITIONS[i]] = { tile_id: tileId, tile_number: tileNumber }
+    }
+  } else {
+    mapTiles = { ...(game.map_tiles as Record<string, MapTileEntry>) }
+    for (const pos of Object.values(HOME_POSITIONS_BY_COUNT).flat()) delete mapTiles[pos]
   }
 
-  // Assign home systems to corner positions in join order
-  const homeTileNumbers: string[] = []
-  for (const player of players) {
-    const { data: fd } = await db
-      .from('factions')
-      .select('home_tile_number')
-      .eq('name', player.faction)
-      .maybeSingle()
-    homeTileNumbers.push(fd?.home_tile_number ? String(fd.home_tile_number) : '')
-  }
-
-  for (let i = 0; i < players.length && i < HOME_POSITIONS.length; i++) {
-    const homeTileNumber = homeTileNumbers[i]
+  for (let i = 0; i < players.length && i < homePositions.length; i++) {
+    const faction = factionMap.get(players[i].faction)
+    const homeTileNumber = faction?.home_tile_number ? String(faction.home_tile_number) : ''
     const homeTileId = homeTileNumber ? tileByNumber.get(homeTileNumber) : undefined
     if (homeTileId && homeTileNumber) {
-      mapTiles[HOME_POSITIONS[i]] = { tile_id: homeTileId, tile_number: homeTileNumber }
+      mapTiles[homePositions[i]] = { tile_id: homeTileId, tile_number: homeTileNumber }
     }
   }
 

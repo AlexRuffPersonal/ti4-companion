@@ -13,7 +13,7 @@ Deno.serve(async (req: Request) => {
     return errorResponse('Internal server error', 500)
   }
 
-  let body: { game_id?: unknown; vp_goal?: unknown; expansions?: unknown; permissions_mode?: unknown }
+  let body: { game_id?: unknown; vp_goal?: unknown; expansions?: unknown; permissions_mode?: unknown; map_tiles?: unknown; map_layout?: unknown }
   try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
   if (!body.game_id || typeof body.game_id !== 'string') return errorResponse("'game_id' is required")
 
@@ -46,6 +46,20 @@ Deno.serve(async (req: Request) => {
       return errorResponse("'permissions_mode' must be 'host' or 'all'")
     }
     updates.permissions_mode = body.permissions_mode
+  }
+
+  if (body.map_tiles !== undefined) {
+    if (typeof body.map_tiles !== 'object' || body.map_tiles === null || Array.isArray(body.map_tiles)) {
+      return errorResponse("'map_tiles' must be a non-null object")
+    }
+    updates.map_tiles = body.map_tiles
+  }
+
+  if (body.map_layout !== undefined) {
+    if (typeof body.map_layout !== 'string' || body.map_layout.trim() === '') {
+      return errorResponse("'map_layout' must be a non-empty string")
+    }
+    updates.map_layout = body.map_layout
   }
 
   if (Object.keys(updates).length === 0) return errorResponse('No valid fields to update')

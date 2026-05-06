@@ -62,9 +62,6 @@ export async function handler(req: Request): Promise<Response> {
     if (!eligibleIds.includes(player.id)) return errorResponse('Not eligible for this window', 409)
     if (!card.ability) return errorResponse('Card effect not implemented', 409)
 
-    // Resolve the ability using existing resolveAbility/interpretEffects infrastructure
-    // For now, call the ability resolution stub (full wiring is Phase 30)
-
     // Discard the card
     await db.from('game_action_card_deck').update({ state: 'discard', held_by_player_id: null }).eq('id', body.card_id)
     await db.from('game_players').update({ action_card_count: Math.max(0, (player.action_card_count as number) - 1) }).eq('id', player.id)

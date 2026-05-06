@@ -138,44 +138,27 @@ export async function handler(req: Request): Promise<Response> {
       if (noteRowError) return errorResponse('Database error', 500)
 
       const isOfferNote = items.offer.note_ids?.includes(noteId)
-      const newHolder = isOfferNote ? toPlayer.id : tx.from_player_id
+      const recipientId = isOfferNote ? toPlayer.id : tx.from_player_id
 
-      // Get note reference data
-      const { data: noteRef, error: noteRefError } = await db
-        .from('promissory_notes')
-        .select('into_play_area')
-        .eq('id', noteRow?.note_id)
-        .maybeSingle()
-      if (noteRefError) return errorResponse('Database error', 500)
+      // Fetch note definition to check special auto-fire names
+      const { data: noteDef } = await db.from('promissory_notes').select('name').eq('id', noteRow?.note_id).maybeSingle()
+      const noteName = (noteDef as { name: string } | null)?.name ?? ''
 
-      let newState = noteRow?.state
-      let vpChange = 0
-
-      if (noteRef?.into_play_area) {
-        newState = 'played'
-        vpChange = 1 // +1 to recipient
-        // If previous holder had state='played', remove 1 VP
-        if (noteRow?.state === 'played') {
-          const { error: vpDecError } = await db
-            .from('game_players')
-            .update({ vp: db.raw('vp - 1') })
-            .eq('id', noteRow.held_by_player_id)
-          if (vpDecError) return errorResponse('Database error', 500)
-        }
-      }
-
-      const { error: transferError } = await db
-        .from('game_player_promissory_notes')
-        .update({ held_by_player_id: newHolder, state: newState })
-        .eq('id', noteId)
-      if (transferError) return errorResponse('Database error', 500)
-
-      if (vpChange > 0) {
-        const { error: vpIncError } = await db
-          .from('game_players')
-          .update({ vp: db.raw('vp + 1') })
-          .eq('id', newHolder)
-        if (vpIncError) return errorResponse('Database error', 500)
+      if (noteName === 'Support For The Throne') {
+        // Set state='in_play' and grant recipient 1 VP
+        await db.from('game_player_promissory_notes').update({ state: 'in_play', held_by_player_id: recipientId }).eq('id', noteRow?.id)
+        // Fetch recipient VP and increment
+        const { data: recipientPlayer } = await db.from('game_players').select('vp').eq('id', recipientId).maybeSingle()
+        await db.from('game_players').update({ vp: ((recipientPlayer as { vp: number } | null)?.vp ?? 0) + 1 }).eq('id', recipientId)
+      } else if (noteName === 'Alliance') {
+        await db.from('game_player_promissory_notes').update({ state: 'in_play', held_by_player_id: recipientId }).eq('id', noteRow?.id)
+      } else {
+        // Existing behavior: state='held'
+        const { error: transferError } = await db
+          .from('game_player_promissory_notes')
+          .update({ state: 'held', held_by_player_id: recipientId })
+          .eq('id', noteId)
+        if (transferError) return errorResponse('Database error', 500)
       }
     }
   }

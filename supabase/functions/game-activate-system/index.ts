@@ -40,7 +40,7 @@ export async function handler(req: Request): Promise<Response> {
     return errorResponse('Internal server error', 500)
   }
 
-  let body: { game_id?: unknown; system_key?: unknown; selections?: unknown }
+  let body: { game_id?: unknown; system_key?: unknown; movement_payload?: unknown }
   try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
   if (!body.game_id || typeof body.game_id !== 'string') return errorResponse("'game_id' is required")
   if (!body.system_key || typeof body.system_key !== 'string') return errorResponse("'system_key' is required")
@@ -180,7 +180,9 @@ export async function handler(req: Request): Promise<Response> {
       })
     }
 
-    const initialPhase = spPending.length > 0 ? 'space_cannon' : 'attacker_roll'
+    const shipsMovedIn = (body.movement_payload as Array<{ origin_system_key?: string }> ?? []).some(
+      (ship) => ship.origin_system_key !== body.system_key
+    )
 
     const { data: combatRows, error: combatInsertError } = await db
       .from('game_combats')
@@ -189,8 +191,9 @@ export async function handler(req: Request): Promise<Response> {
         system_key: body.system_key,
         attacker_player_id: player.id,
         defender_player_id: defenderPlayerId,
-        phase: initialPhase,
+        phase: 'window_pre_space_cannon',
         space_cannon_pending: spPending,
+        ships_moved_in: shipsMovedIn,
       })
       .select('id')
     if (combatInsertError) return errorResponse(`Failed to create combat: ${combatInsertError.message}`, 500)

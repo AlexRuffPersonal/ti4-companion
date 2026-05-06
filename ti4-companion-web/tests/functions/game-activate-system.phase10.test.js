@@ -147,15 +147,15 @@ describe('game-activate-system — combat creation (Phase 10)', () => {
     )
   })
 
-  it('sets phase to attacker_roll when no space cannon units present', async () => {
+  it('sets phase to window_pre_space_cannon when no space cannon units present', async () => {
     const { combatInsertMock } = mockDb({ scUnitDefs: [] })
     await handler(makeRequest({ game_id: GAME_ID, system_key: '1,-1' }))
     const insertArg = combatInsertMock.mock.calls[0][0]
-    expect(insertArg.phase).toBe('attacker_roll')
+    expect(insertArg.phase).toBe('window_pre_space_cannon')
     expect(insertArg.space_cannon_pending).toEqual([])
   })
 
-  it('sets phase to space_cannon and populates pending when sc units exist', async () => {
+  it('sets phase to window_pre_space_cannon and populates pending when sc units exist', async () => {
     const { combatInsertMock } = mockDb({
       scUnitDefs: [{ name: 'pds', space_cannon: '5(x3)' }],
       enemyUnits: [
@@ -165,11 +165,50 @@ describe('game-activate-system — combat creation (Phase 10)', () => {
     })
     await handler(makeRequest({ game_id: GAME_ID, system_key: '1,-1' }))
     const insertArg = combatInsertMock.mock.calls[0][0]
-    expect(insertArg.phase).toBe('space_cannon')
+    expect(insertArg.phase).toBe('window_pre_space_cannon')
     expect(insertArg.space_cannon_pending).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ player_id: PLAYER_ID, unit_type: 'pds', dice_count: 3, resolved: false }),
       ])
     )
+  })
+
+  it('GIVEN ships moved from another system EXPECT ships_moved_in=true and phase=window_pre_space_cannon', async () => {
+    const { combatInsertMock } = mockDb()
+    await handler(makeRequest({
+      game_id: GAME_ID,
+      system_key: '1,-1',
+      movement_payload: [
+        { origin_system_key: '0,0' },   // different system → ships_moved_in=true
+        { origin_system_key: '1,-1' },  // same system (e.g. planet to space)
+      ],
+    }))
+    const insertArg = combatInsertMock.mock.calls[0][0]
+    expect(insertArg.ships_moved_in).toBe(true)
+    expect(insertArg.phase).toBe('window_pre_space_cannon')
+  })
+
+  it('GIVEN no movement with different origin EXPECT ships_moved_in=false', async () => {
+    const { combatInsertMock } = mockDb()
+    await handler(makeRequest({
+      game_id: GAME_ID,
+      system_key: '1,-1',
+      movement_payload: [
+        { origin_system_key: '1,-1' },  // same system only
+      ],
+    }))
+    const insertArg = combatInsertMock.mock.calls[0][0]
+    expect(insertArg.ships_moved_in).toBe(false)
+  })
+
+  it('GIVEN empty movement_payload EXPECT ships_moved_in=false', async () => {
+    const { combatInsertMock } = mockDb()
+    await handler(makeRequest({
+      game_id: GAME_ID,
+      system_key: '1,-1',
+      movement_payload: [],
+    }))
+    const insertArg = combatInsertMock.mock.calls[0][0]
+    expect(insertArg.ships_moved_in).toBe(false)
   })
 })

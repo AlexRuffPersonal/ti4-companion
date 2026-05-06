@@ -73,11 +73,18 @@ function mockDb({ agendas = AGENDAS, insertAgendaError = null, expansions = { ba
       insert: agendaInsertMock,
     }
     if (table === 'factions') return {
-      select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({
-        maybeSingle: vi.fn().mockResolvedValue({
-          data: { home_tile_number: null, starting_techs: [] }, error: null,
+      select: vi.fn().mockReturnValue({
+        in: vi.fn().mockResolvedValue({
+          data: [{ name: 'Arborec', home_tile_number: null, starting_techs: [] }],
+          error: null,
         }),
-      })}),
+      }),
+    }
+    if (table === 'tiles') return {
+      select: vi.fn().mockImplementation((cols) => {
+        if (cols === 'id, tile_number') return Promise.resolve({ data: [], error: null })
+        return { in: vi.fn().mockResolvedValue({ data: [], error: null }) }
+      }),
     }
     return { select: vi.fn().mockReturnValue({ data: [], error: null }) }
   })

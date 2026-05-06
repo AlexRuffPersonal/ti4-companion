@@ -69,7 +69,7 @@ export default function TechCard({ tech, isOwnTree, isSelected, onSelect, onConf
         </div>
       )}
 
-      {/* Name */}
+      {/* Name + expand toggle */}
       <div className="flex items-center justify-between gap-1">
         <p className={`font-body text-xs font-bold leading-tight ${tech.status === 'held' ? 'text-success' : tech.status === 'unavailable' ? 'text-dim' : 'text-text'}`}>
           {tech.name}

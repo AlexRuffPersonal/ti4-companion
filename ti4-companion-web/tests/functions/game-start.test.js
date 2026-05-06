@@ -113,18 +113,32 @@ function mockDb({
     if (table === 'factions') {
       return {
         select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: factionData, error: factionError }),
+          in: vi.fn().mockResolvedValue({
+            data: factionError ? null : (factionData ? [
+              { name: 'Arborec', home_tile_number: factionData.home_tile_number, starting_techs: factionData.starting_techs },
+              { name: 'Letnev', home_tile_number: factionData.home_tile_number, starting_techs: factionData.starting_techs },
+            ] : []),
+            error: factionError,
           }),
         }),
       }
     }
     if (table === 'tiles') {
       return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: tileData, error: tileError }),
-          }),
+        select: vi.fn().mockImplementation((cols) => {
+          if (cols === 'id, tile_number') {
+            // All-tiles query for map seeding — return minimal data
+            return Promise.resolve({ data: [{ id: 'tile-5', tile_number: '5' }], error: null })
+          }
+          // Home-tile planets query: select('tile_number, planets').in(...)
+          return {
+            in: vi.fn().mockResolvedValue({
+              data: tileError ? null : (factionData.home_tile_number
+                ? [{ tile_number: factionData.home_tile_number, planets: tileData.planets }]
+                : []),
+              error: tileError,
+            }),
+          }
         }),
       }
     }
@@ -431,6 +445,180 @@ describe('game-start', () => {
     inserted.forEach(r => {
       expect(r.origin_player_id).toBe(r.player_id)
     })
+  })
+})
+
+describe('game-start — Phase 22 custom map support', () => {
+  function mockDbWithMapLayout({ mapLayout, mapTiles, players: overridePlayers } = {}) {
+    const gameData = {
+      host_user_id: HOST_ID,
+      status: 'lobby',
+      speaker_player_id: SPEAKER_ID,
+      expansions: { base: true },
+      map_layout: mapLayout,
+      map_tiles: mapTiles ?? null,
+    }
+    const playersToUse = overridePlayers ?? READY_PLAYERS
+    mockDb({ gameData, players: playersToUse })
+  }
+
+  it('returns 409 for unsupported player count (9 players)', async () => {
+    const ninePlayers = Array.from({ length: 9 }, (_, i) => ({
+      id: `p${i + 1}`, faction: 'Arborec', colour: 'green', display_name: `Player${i + 1}`,
+    }))
+    mockDbWithMapLayout({ players: ninePlayers })
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body.error).toMatch(/unsupported player count/i)
+  })
+
+  it('uses stored map_tiles for custom map layout', async () => {
+    const customTiles = { '1,-1': { tile_id: 'custom-tile', tile_number: '99' } }
+    const updateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    mockDbWithMapLayout({ mapLayout: 'custom-6', mapTiles: customTiles })
+    const originalImpl = db.from.getMockImplementation()
+    db.from.mockImplementation((table) => {
+      if (table === 'games') {
+        const gamesResult = originalImpl(table)
+        return { ...gamesResult, update: updateMock }
+      }
+      if (table === 'tiles') {
+        return {
+          select: vi.fn((cols) => {
+            if (cols === 'id, tile_number') return Promise.resolve({ data: [], error: null })
+            return { in: vi.fn().mockResolvedValue({ data: [], error: null }) }
+          }),
+        }
+      }
+      return originalImpl(table)
+    })
+    await handler(makeRequest({ game_id: GAME_ID }))
+    const mapCall = updateMock.mock.calls.find(c => c[0]?.map_tiles !== undefined)
+    expect(mapCall).toBeDefined()
+    const resultTiles = mapCall[0].map_tiles
+    expect(resultTiles['1,-1']).toEqual({ tile_id: 'custom-tile', tile_number: '99' })
+    expect(resultTiles['0,0']).toBeUndefined()
+  })
+
+  it('uses standard seeding when map_layout is standard-6', async () => {
+    const updateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    mockDbWithMapLayout({
+      mapLayout: 'standard-6',
+      mapTiles: { '1,-1': { tile_id: 'ignored', tile_number: '0' } },
+    })
+    const originalImpl = db.from.getMockImplementation()
+    db.from.mockImplementation((table) => {
+      if (table === 'games') {
+        const gamesResult = originalImpl(table)
+        return { ...gamesResult, update: updateMock }
+      }
+      if (table === 'tiles') {
+        return {
+          select: vi.fn((cols) => {
+            if (cols === 'id, tile_number') return Promise.resolve({ data: [{ id: 'tile-18', tile_number: '18' }], error: null })
+            return { in: vi.fn().mockResolvedValue({ data: [], error: null }) }
+          }),
+        }
+      }
+      return originalImpl(table)
+    })
+    await handler(makeRequest({ game_id: GAME_ID }))
+    const mapCall = updateMock.mock.calls.find(c => c[0]?.map_tiles !== undefined)
+    const resultTiles = mapCall[0].map_tiles
+    expect(resultTiles['0,0']).toBeDefined()
+    expect(resultTiles['0,0'].tile_number).toBe('18')
+  })
+
+  it('falls back to standard seeding when map_tiles is empty', async () => {
+    const updateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    mockDbWithMapLayout({ mapLayout: 'some-other-layout', mapTiles: {} })
+    const originalImpl = db.from.getMockImplementation()
+    db.from.mockImplementation((table) => {
+      if (table === 'games') {
+        const gamesResult = originalImpl(table)
+        return { ...gamesResult, update: updateMock }
+      }
+      if (table === 'tiles') {
+        return {
+          select: vi.fn((cols) => {
+            if (cols === 'id, tile_number') return Promise.resolve({ data: [{ id: 'tile-18', tile_number: '18' }], error: null })
+            return { in: vi.fn().mockResolvedValue({ data: [], error: null }) }
+          }),
+        }
+      }
+      return originalImpl(table)
+    })
+    await handler(makeRequest({ game_id: GAME_ID }))
+    const mapCall = updateMock.mock.calls.find(c => c[0]?.map_tiles !== undefined)
+    const resultTiles = mapCall[0].map_tiles
+    expect(resultTiles['0,0']).toBeDefined()
+  })
+
+  it('places homes at player-count-appropriate positions for 4 players', async () => {
+    const players4 = [
+      { id: 'p1', faction: 'Arborec', colour: 'green', display_name: 'Alice' },
+      { id: 'p2', faction: 'Letnev', colour: 'red', display_name: 'Bob' },
+      { id: 'p3', faction: 'Hacan', colour: 'yellow', display_name: 'Carol' },
+      { id: 'p4', faction: 'Sol', colour: 'blue', display_name: 'Dave' },
+    ]
+    const customTiles = { '1,-1': { tile_id: 'some-tile', tile_number: '20' } }
+    const updateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    mockDbWithMapLayout({ mapLayout: 'custom-4', mapTiles: customTiles, players: players4 })
+    const originalImpl = db.from.getMockImplementation()
+    db.from.mockImplementation((table) => {
+      if (table === 'games') {
+        const gamesResult = originalImpl(table)
+        return { ...gamesResult, update: updateMock }
+      }
+      if (table === 'game_players') {
+        return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: players4, error: null }) }),
+          update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        }
+      }
+      if (table === 'factions') {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                { name: 'Arborec', home_tile_number: null, starting_techs: [] },
+                { name: 'Letnev', home_tile_number: null, starting_techs: [] },
+                { name: 'Hacan', home_tile_number: null, starting_techs: [] },
+                { name: 'Sol', home_tile_number: null, starting_techs: [] },
+              ],
+              error: null,
+            }),
+          }),
+        }
+      }
+      if (table === 'secret_objectives') {
+        return {
+          select: vi.fn().mockResolvedValue({ data: [
+            { id: 'so-1', expansion: 'base' }, { id: 'so-2', expansion: 'base' },
+            { id: 'so-3', expansion: 'base' }, { id: 'so-4', expansion: 'base' },
+            { id: 'so-5', expansion: 'base' }, { id: 'so-6', expansion: 'base' },
+            { id: 'so-7', expansion: 'base' }, { id: 'so-8', expansion: 'base' },
+          ], error: null }),
+        }
+      }
+      if (table === 'tiles') {
+        return {
+          select: vi.fn((cols) => {
+            if (cols === 'id, tile_number') return Promise.resolve({ data: [], error: null })
+            return { in: vi.fn().mockResolvedValue({ data: [], error: null }) }
+          }),
+        }
+      }
+      return originalImpl(table)
+    })
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    // 4 players is a supported count, so no 409
+    expect(res.status).toBe(200)
+    const mapCall = updateMock.mock.calls.find(c => c[0]?.map_tiles !== undefined)
+    expect(mapCall).toBeDefined()
+    // Custom tile at '1,-1' preserved (not a home position)
+    expect(mapCall[0].map_tiles['1,-1']).toEqual({ tile_id: 'some-tile', tile_number: '20' })
   })
 })
 

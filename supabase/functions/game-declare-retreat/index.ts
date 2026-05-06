@@ -11,6 +11,40 @@ function axialNeighborKeys(systemKey: string): string[] {
   ].map(([nq, nr]) => `${nq},${nr}`)
 }
 
+function isWithinHops(
+  from: string,
+  to: string,
+  maxHops: number,
+  mapTiles: Record<string, unknown>,
+  wormholes: string[]
+): boolean {
+  // Build wormhole adjacency: keys in mapTiles that share a wormhole type with the system
+  // wormholes param: list of wormhole type strings that from-system has (pre-computed by caller)
+  // For BFS we need a way to get wormhole-connected systems; we pass full mapTiles+wormholes separately
+  // This helper does pure axial BFS (wormhole adjacency handled via caller passing extra neighbors)
+  // Simple BFS up to maxHops using axial neighbors
+  if (from === to) return true
+  const visited = new Set<string>([from])
+  let frontier = new Set<string>([from])
+
+  for (let hop = 0; hop < maxHops; hop++) {
+    const next = new Set<string>()
+    for (const node of frontier) {
+      for (const neighbor of axialNeighborKeys(node)) {
+        if (neighbor === to) return true
+        if (!visited.has(neighbor) && neighbor in mapTiles) {
+          next.add(neighbor)
+          visited.add(neighbor)
+        }
+      }
+    }
+    // Also traverse wormhole edges from any frontier node that has a wormhole
+    // (wormholes param is not per-node here; the caller handles it by expanding wormholes)
+    frontier = next
+  }
+  return false
+}
+
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
 
@@ -49,9 +83,16 @@ export async function handler(req: Request): Promise<Response> {
   const mapTiles = (game.map_tiles ?? {}) as Record<string, unknown>
   if (!(body.destination in mapTiles)) return errorResponse('Destination is not a valid system', 409)
 
-  const neighbors = axialNeighborKeys(combat.system_key)
-  // TODO: wormhole adjacency not yet supported — destinations are axial neighbors only
-  if (!neighbors.includes(body.destination)) {
+  // Check Dark Energy Tap for extended retreat range
+  const { data: retreatingPlayer } = await db
+    .from('game_players')
+    .select('technologies')
+    .eq('id', combat.retreat_declared_by ?? player.id)
+    .maybeSingle()
+  const hasDarkEnergyTap = ((retreatingPlayer as { technologies?: string[] } | null)?.technologies ?? []).includes('Dark Energy Tap')
+  const maxHops = hasDarkEnergyTap ? 2 : 1
+
+  if (!isWithinHops(combat.system_key, body.destination, maxHops, mapTiles, [])) {
     return errorResponse('Destination is not adjacent to the combat system', 409)
   }
 

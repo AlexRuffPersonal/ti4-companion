@@ -41,7 +41,7 @@ function mockDb({
     agenda_current_card_id: AGENDA_ID,
     agenda_vote_current_player_id: VOTER_PLAYER_ID,
   },
-  callerPlayer = { id: VOTER_PLAYER_ID, technologies: [], exhausted_technologies: [], trade_goods: 0 },
+  callerPlayer = { id: VOTER_PLAYER_ID, technologies: [], exhausted_technologies: [], trade_goods: 0, vote_prevented: false },
   allPlayers = [{ id: 'p1' }, { id: 'p2' }, { id: 'p3' }],
   planets = [
     { exhausted: false, influence: 3 },
@@ -49,9 +49,12 @@ function mockDb({
     { exhausted: true,  influence: 1 },
   ],
   existingVotes = [],
+  existingVoteCount = 1, // default >0 so window logic is skipped in baseline tests
   upsertError = null,
   updateGameError = null,
   updateWindowError = null,
+  whenVotingCards = [],
+  afterSpeakerCards = [],
 } = {}) {
   upsertVotesMock = vi.fn().mockResolvedValue({ error: upsertError })
   updateGameMock = vi.fn().mockReturnValue({
@@ -87,12 +90,12 @@ function mockDb({
     }
     if (table === 'game_players') {
       // The select string determines which query path we're in:
-      // 1. 'id, technologies, exhausted_technologies, trade_goods' → caller lookup (.eq game_id .eq user_id .maybeSingle)
+      // 1. 'id, technologies, exhausted_technologies, trade_goods, vote_prevented' → caller lookup
       // 2. 'id, technologies, exhausted_technologies' → opponents lookup (.eq game_id, awaitable)
       // 3. 'id' → all-players count (.eq game_id, awaitable)
       return {
         select: vi.fn().mockImplementation((selectStr) => {
-          if (selectStr === 'id, technologies, exhausted_technologies, trade_goods') {
+          if (selectStr === 'id, technologies, exhausted_technologies, trade_goods, vote_prevented') {
             // Caller lookup: chainable with .eq('user_id') then .maybeSingle()
             return {
               eq: vi.fn().mockReturnValue({
@@ -124,11 +127,41 @@ function mockDb({
     }
     if (table === 'game_agenda_votes') return {
       upsert: upsertVotesMock,
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ data: existingVotes, error: null }),
-        }),
+      select: vi.fn().mockImplementation((_, opts) => {
+        // count query (head: true) vs normal select
+        if (opts && opts.head) {
+          return {
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ count: existingVoteCount, error: null }),
+            }),
+          }
+        }
+        return {
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: existingVotes, error: null }),
+          }),
+        }
       }),
+    }
+    if (table === 'game_action_card_deck') {
+      // Return different card sets depending on which timing filter is applied
+      // We simulate by tracking calls; simpler: use a single mock that returns
+      // combined cards and let callers filter — but since the real query filters
+      // server-side, we need to differentiate. We use a closure variable pattern:
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockImplementation((col, val) => {
+                const cards = val === 'When voting begins:' ? whenVotingCards : afterSpeakerCards
+                return {
+                  not: vi.fn().mockResolvedValue({ data: cards, error: null }),
+                }
+              }),
+            }),
+          }),
+        }),
+      }
     }
   })
 }
@@ -147,7 +180,7 @@ describe('game-cast-votes', () => {
   })
 
   it("returns 403 when it is not the caller's turn", async () => {
-    mockDb({ callerPlayer: { id: 'p3', technologies: [], exhausted_technologies: [], trade_goods: 0 } }) // not the current voter
+    mockDb({ callerPlayer: { id: 'p3', technologies: [], exhausted_technologies: [], trade_goods: 0, vote_prevented: false } }) // not the current voter
     const res = await handler(makeRequest({ game_id: GAME_ID, choice: 'For', vote_count: 1 }))
     expect(res.status).toBe(403)
   })
@@ -197,6 +230,74 @@ describe('game-cast-votes', () => {
     expect(updateGameMock).toHaveBeenCalledWith(
       expect.objectContaining({ agenda_vote_current_player_id: null }),
     )
+  })
+
+  it('GIVEN first vote + player holds When-voting-begins card — opens window and does NOT cast vote', async () => {
+    const HOLDER_ID = 'player-with-card'
+    mockDb({
+      existingVoteCount: 0,
+      whenVotingCards: [{ held_by_player_id: HOLDER_ID }],
+    })
+    const res = await handler(makeRequest({ game_id: GAME_ID, choice: 'For', vote_count: 2 }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.window_opened).toBe('when_voting_begins')
+    // Vote must NOT have been cast
+    expect(upsertVotesMock).not.toHaveBeenCalled()
+    // pending_action_window should be set
+    const windowCall = updateGameMock.mock.calls.find(
+      ([arg]) => arg && arg.pending_action_window !== undefined
+    )
+    expect(windowCall).toBeDefined()
+    expect(windowCall[0].pending_action_window).toMatchObject({
+      type: 'when_voting_begins',
+      eligible_player_ids: [HOLDER_ID],
+    })
+  })
+
+  it('GIVEN first vote + no When-voting-begins cards — casts vote normally', async () => {
+    mockDb({ existingVoteCount: 0, whenVotingCards: [] })
+    const res = await handler(makeRequest({ game_id: GAME_ID, choice: 'For', vote_count: 2 }))
+    expect(res.status).toBe(200)
+    expect(upsertVotesMock).toHaveBeenCalled()
+    // No window_opened in response
+    const body = await res.json()
+    expect(body.window_opened).toBeUndefined()
+  })
+
+  it('GIVEN speaker player casts vote + After-speaker-votes card held — opens after_speaker_votes window', async () => {
+    const HOLDER_ID = 'player-with-after-card'
+    // Set caller as speaker
+    mockDb({
+      callerPlayer: { id: SPEAKER_PLAYER_ID, vote_prevented: false },
+      game: {
+        id: GAME_ID,
+        speaker_player_id: SPEAKER_PLAYER_ID,
+        agenda_current_card_id: AGENDA_ID,
+        agenda_vote_current_player_id: SPEAKER_PLAYER_ID,
+      },
+      afterSpeakerCards: [{ held_by_player_id: HOLDER_ID }],
+    })
+    const res = await handler(makeRequest({ game_id: GAME_ID, choice: 'For', vote_count: 1 }))
+    expect(res.status).toBe(200)
+    const windowCall = updateGameMock.mock.calls.find(
+      ([arg]) => arg && arg.pending_action_window !== undefined
+    )
+    expect(windowCall).toBeDefined()
+    expect(windowCall[0].pending_action_window).toMatchObject({
+      type: 'after_speaker_votes',
+      eligible_player_ids: [HOLDER_ID],
+    })
+  })
+
+  it('GIVEN non-speaker player casts vote — no after_speaker_votes window', async () => {
+    mockDb({ afterSpeakerCards: [{ held_by_player_id: 'some-player' }] })
+    // VOTER_PLAYER_ID (p2) is not the speaker (p1)
+    await handler(makeRequest({ game_id: GAME_ID, choice: 'For', vote_count: 1 }))
+    const windowCall = updateGameMock.mock.calls.find(
+      ([arg]) => arg && arg.pending_action_window?.type === 'after_speaker_votes'
+    )
+    expect(windowCall).toBeUndefined()
   })
 })
 
