@@ -98,7 +98,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [hook-useGalaxy](hook-useGalaxy.md) | `src/hooks/useGalaxy.js` | 18 | Unit Transport | done | fn-game-move-ships, client-edgeFunctions |
 | [client-edgeFunctions](client-edgeFunctions.md) | `src/lib/edgeFunctions.js` | 18 | Unit Transport | done | fn-game-move-ships |
 | [hook-useMovement](hook-useMovement.md) | `src/hooks/useMovement.js` | 18 | Unit Transport | done | client-edgeFunctions |
-| [component-MoveShipsModal](component-MoveShipsModal.md) | `src/components/game/MoveShipsModal.jsx` | 18 | Unit Transport | planned | hook-useMovement |
+| [component-MoveShipsModal](component-MoveShipsModal.md) | `src/components/game/MoveShipsModal.jsx` | 18 | Unit Transport | done | hook-useMovement |
 | [component-GalaxyTab](component-GalaxyTab.md) | `src/components/game/GalaxyTab.jsx` | 18 | Unit Transport | planned | hook-useMovement, component-MoveShipsModal |
 
 | [migration-035-ability-dsl-completions](migration-035-ability-dsl-completions.md) | `supabase/migrations/035_ability_dsl_completions.sql` | 19 | Ability DSL Completions | done | — |
@@ -133,7 +133,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-roll-rift-dice](fn-game-roll-rift-dice.md) | `supabase/functions/game-roll-rift-dice/index.ts` | 25 | Gravity Rift | done | migration-038-gravity-rift |
 | [client-edgeFunctions-p25](client-edgeFunctions-p25.md) | `src/lib/edgeFunctions.js` | 25 | Gravity Rift | done | fn-game-roll-rift-dice |
 | [hook-useRiftTransit](hook-useRiftTransit.md) | `src/hooks/useRiftTransit.js` | 25 | Gravity Rift | done | client-edgeFunctions-p25 |
-| [component-RiftTransitModal](component-RiftTransitModal.md) | `src/components/game/RiftTransitModal.jsx` | 25 | Gravity Rift | planned | hook-useRiftTransit |
+| [component-RiftTransitModal](component-RiftTransitModal.md) | `src/components/game/RiftTransitModal.jsx` | 25 | Gravity Rift | done | hook-useRiftTransit |
 | [component-GameScreen-p25](component-GameScreen-p25.md) | `src/components/game/GameScreen.jsx` | 25 | Gravity Rift | planned | hook-useRiftTransit, component-RiftTransitModal |
 
 | [lib-mapParser](lib-mapParser.md) | `src/lib/mapParser.js` | 22 | Map Builder | done | — |
@@ -207,7 +207,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [lib-techConstants](lib-techConstants.md) | `src/lib/techConstants.js` | 30 | Technology Effect Enforcement | done | — |
 | [client-edgeFunctions-p30](client-edgeFunctions-p30.md) | `src/lib/edgeFunctions.js` | 30 | Technology Effect Enforcement | done | fn-game-exhaust-technology, fn-game-ready-technology, fn-game-use-technology-action |
 | [hook-useTechnologies](hook-useTechnologies.md) | `src/hooks/useTechnologies.js` | 30 | Technology Effect Enforcement | done | client-edgeFunctions-p30 |
-| [component-TechCard-p30](component-TechCard-p30.md) | `src/components/game/TechCard.jsx` | 30 | Technology Effect Enforcement | planned | component-TechCard-p28, hook-useTechnologies, lib-techConstants |
+| [component-TechCard-p30](component-TechCard-p30.md) | `src/components/game/TechCard.jsx` | 30 | Technology Effect Enforcement | done | component-TechCard-p28, hook-useTechnologies, lib-techConstants |
 | [component-MyPanelSection-p30](component-MyPanelSection-p30.md) | `src/components/game/MyPanelSection.jsx` | 30 | Technology Effect Enforcement | planned | component-MyPanelSection (p21), hook-useTechnologies, component-TechCard-p30 |
 
 | [hook-useGalaxy-p31](hook-useGalaxy-p31.md) | `src/hooks/useGalaxy.js` | 31 | System Tile & Planet Detail View | done | — |

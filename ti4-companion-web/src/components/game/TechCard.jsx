@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { EXHAUSTABLE_TECHS, ACTION_TECHS } from '../../lib/techConstants.js'
 
 // Prereq dot colours are keyed by the colour strings from tech.prerequisites object keys,
 // which remain 'green'/'blue'/'yellow'/'red' regardless of the technology_type field.
@@ -22,7 +23,11 @@ const STATUS_BORDER = {
 // isSelected: whether this card is the currently selected preview tech
 // onSelect: (techId) => void
 // onConfirm: (techId) => void — only called on own tree for available/exhaust/preview techs
-export default function TechCard({ tech, isOwnTree, isSelected, onSelect, onConfirm }) {
+// isExhausted: boolean — whether this tech is currently exhausted (Phase 30)
+// onExhaust: () => void — exhaust this tech
+// onReady: () => void — ready this tech
+// onUseAction: (techName) => void — use an action tech ability
+export default function TechCard({ tech, isOwnTree, isSelected, onSelect, onConfirm, isExhausted, onExhaust, onReady, onUseAction }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const hasText = Boolean(tech.text)
   const borderClass = STATUS_BORDER[tech.status] ?? STATUS_BORDER.unavailable
@@ -45,7 +50,7 @@ export default function TechCard({ tech, isOwnTree, isSelected, onSelect, onConf
   return (
     <div
       data-testid="tech-card"
-      className={`rounded-md border-2 p-2 cursor-pointer transition-all ${borderClass} ${isSelected ? 'ring-2 ring-offset-1 ring-gold' : ''}`}
+      className={`rounded-md border-2 p-2 cursor-pointer transition-all ${borderClass} ${isSelected ? 'ring-2 ring-offset-1 ring-gold' : ''} ${isExhausted ? 'opacity-50 rotate-6' : ''}`}
       onClick={() => onSelect(tech.id)}
     >
       {/* Prereq dots */}
@@ -105,6 +110,18 @@ export default function TechCard({ tech, isOwnTree, isSelected, onSelect, onConf
         >
           RESEARCH
         </button>
+      )}
+
+      {/* Exhaust / Ready button for exhaustable techs (Phase 30) */}
+      {EXHAUSTABLE_TECHS.has(tech.name) && (
+        isExhausted
+          ? <button className="btn-ghost text-xs mt-1" onClick={(e) => { e.stopPropagation(); onReady && onReady() }}>Ready</button>
+          : <button className="btn-ghost text-xs mt-1" onClick={(e) => { e.stopPropagation(); onExhaust && onExhaust() }}>Exhaust</button>
+      )}
+
+      {/* Use button for action techs (Phase 30) */}
+      {ACTION_TECHS.has(tech.name) && !isExhausted && (
+        <button className="btn-ghost text-xs mt-1" onClick={(e) => { e.stopPropagation(); onUseAction && onUseAction(tech.name) }}>Use</button>
       )}
     </div>
   )
