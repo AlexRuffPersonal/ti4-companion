@@ -1,6 +1,7 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { resolveUnitStats } from '../_shared/techEffects.ts'
 
 type UnitRow = { id: string; player_id: string; unit_type: string; count: number; system_key: string }
 type UnitDef = { name: string; combat: string | null; afb: string | null; sustain_damage: boolean }
@@ -15,15 +16,17 @@ function parseStat(text: string): { value: number; dice: number } {
   }
 }
 
-function rollDice(units: UnitRow[], defMap: Map<string, UnitDef>): { results: DieResult[]; hits: number } {
+function rollDice(units: UnitRow[], defMap: Map<string, UnitDef>, technologies: string[] = []): { results: DieResult[]; hits: number } {
   const results: DieResult[] = []
   let hits = 0
   for (const unit of units) {
     const def = defMap.get(unit.unit_type)
     if (!def?.combat) continue
-    const { value, dice } = parseStat(def.combat)
-    const rollCount = dice * unit.count
-    for (let i = 0; i < rollCount; i++) {
+    // Phase 30: resolve upgraded stats
+    const resolvedStats = resolveUnitStats(unit.unit_type, { combat: parseStat(def.combat).value, dice: parseStat(def.combat).dice, move: 0, capacity: 0, production: 0, sustain: def.sustain_damage ?? false }, technologies)
+    const value = resolvedStats.combat
+    const diceCount = resolvedStats.dice * unit.count
+    for (let i = 0; i < diceCount; i++) {
       const roll = Math.ceil(Math.random() * 10)
       const hit = roll >= value
       if (hit) hits++
@@ -71,7 +74,7 @@ export async function handler(req: Request): Promise<Response> {
 
   const { data: player } = await db
     .from('game_players')
-    .select('id')
+    .select('id, technologies, exhausted_technologies')
     .eq('game_id', body.game_id)
     .eq('user_id', userId)
     .maybeSingle()
@@ -166,8 +169,9 @@ export async function handler(req: Request): Promise<Response> {
     .select('name, combat, afb, sustain_damage')
     .in('name', unitTypes.length > 0 ? unitTypes : ['__none__'])
 
+  const technologies = ((player as Record<string, unknown>).technologies as string[]) ?? []
   const defMap = new Map((unitDefs ?? []).map((u: UnitDef) => [u.name, u]))
-  const { results, hits } = rollDice(rollerUnits ?? [], defMap)
+  const { results, hits } = rollDice(rollerUnits ?? [], defMap, technologies)
 
   const nextPhase = combat.phase === 'attacker_roll' ? 'defender_assign' : 'attacker_assign'
   const updatePayload = combat.phase === 'attacker_roll'
@@ -176,6 +180,35 @@ export async function handler(req: Request): Promise<Response> {
 
   const { error } = await db.from('game_combats').update(updatePayload).eq('id', body.combat_id)
   if (error) return errorResponse(`Update failed: ${error.message}`, 500)
+
+  // Phase 30: Assault Cannon — at start of attacker's first roll, if they have 3+ non-fighter ships
+  if (combat.phase === 'attacker_roll' && technologies.includes('Assault Cannon')) {
+    const nonFighterCount = (rollerUnits ?? [])
+      .filter((u: UnitRow) => u.unit_type !== 'fighter')
+      .reduce((s: number, u: UnitRow) => s + u.count, 0)
+    if (nonFighterCount >= 3) {
+      const opponentId = combat.defender_player_id
+      const existing = (combat.pending_effects as Record<string, unknown>) ?? {}
+      await db.from('game_combats').update({
+        pending_effects: { ...existing, assault_cannon: { must_destroy: 1, non_fighter_only: true, eligible: [opponentId] } }
+      }).eq('id', body.combat_id)
+    }
+  }
+
+  // Phase 30: Duranium Armor — after rolling, repair one damaged ship if any exist
+  if (technologies.includes('Duranium Armor')) {
+    const { data: damagedShips } = await db.from('game_player_units')
+      .select('id')
+      .eq('game_id', body.game_id)
+      .eq('system_key', combat.system_key)
+      .eq('player_id', rollingPlayerId)
+      .is('on_planet', null)
+      .eq('damaged', true)
+      .limit(1)
+    if ((damagedShips ?? []).length > 0) {
+      await db.from('game_player_units').update({ damaged: false }).eq('id', (damagedShips as Array<{id: string}>)[0].id)
+    }
+  }
 
   return okResponse({ phase: nextPhase, dice: results, hits })
 }

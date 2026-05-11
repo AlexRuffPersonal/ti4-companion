@@ -98,6 +98,39 @@ export async function handler(req: Request): Promise<Response> {
     }
   }
 
+  // Phase 30: Temporal Command Suite (Nomad) — triggers when any agent is exhausted
+  if (ab.exhausts_source && body.source_type === 'leader' && body.source_id) {
+    const { data: allPlayers } = await db.from('game_players')
+      .select('id, technologies, exhausted_technologies')
+      .eq('game_id', body.game_id)
+
+    const nomadPlayer = (allPlayers ?? []).find((p: Record<string, unknown>) => {
+      const techs = (p.technologies as string[]) ?? []
+      const exhausted = (p.exhausted_technologies as string[]) ?? []
+      return techs.includes('Temporal Command Suite') && !exhausted.includes('Temporal Command Suite')
+    })
+
+    if (nomadPlayer) {
+      const { data: leaderRow } = await db.from('game_leaders')
+        .select('player_id')
+        .eq('id', body.source_id)
+        .maybeSingle()
+
+      const agentOwnerPlayerId = (leaderRow as Record<string, string> | null)?.player_id
+
+      if (agentOwnerPlayerId) {
+        return okResponse({
+          resolved: true,
+          pending_window: {
+            type: 'agent_exhausted',
+            eligible: [(nomadPlayer as Record<string, string>).id],
+            context: { exhausted_agent_id: body.source_id, agent_owner_player_id: agentOwnerPlayerId }
+          }
+        })
+      }
+    }
+  }
+
   return okResponse({ resolved: true })
 }
 
