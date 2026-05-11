@@ -52,16 +52,14 @@ export async function handler(req: Request): Promise<Response> {
   const game_id = body.game_id
   const player_id = body.player_id
   const planet_name = body.planet_name
-  const deck_type = body.deck_type as string
+  const deck_type = body.deck_type
 
-  // Validate deck_type
   if (!(VALID_DECK_TYPES as readonly string[]).includes(deck_type)) {
     return errorResponse("'deck_type' must be one of: cultural, hazardous, industrial", 400)
   }
 
   const validDeckType = deck_type as DeckType
 
-  // Fetch game to verify it exists
   const { data: game, error: gameError } = await db
     .from('games')
     .select('phase, active_player_id, map_tiles')
@@ -70,7 +68,6 @@ export async function handler(req: Request): Promise<Response> {
   if (gameError) return errorResponse('Database error', 500)
   if (!game) return errorResponse('Game not found', 404)
 
-  // Fetch the player
   const { data: player, error: playerError } = await db
     .from('game_players')
     .select('id')
@@ -80,7 +77,6 @@ export async function handler(req: Request): Promise<Response> {
   if (playerError) return errorResponse('Database error', 500)
   if (!player) return errorResponse('Player not found in this game', 404)
 
-  // Fetch planet from game_player_planets
   const { data: planetRow, error: planetError } = await db
     .from('game_player_planets')
     .select('id, game_id, player_id, planet_name, tile_id, exhausted, explored')
@@ -94,7 +90,6 @@ export async function handler(req: Request): Promise<Response> {
   const planet = planetRow as PlanetRow
   if (planet.explored) return errorResponse('Planet already explored', 409)
 
-  // Validate deck_type matches planet traits
   const { data: tileRow, error: tileError } = await db
     .from('tiles')
     .select('id, planets')
@@ -115,11 +110,9 @@ export async function handler(req: Request): Promise<Response> {
     }
   }
 
-  // Draw top card from deck
   let card = await drawTopCard(game_id, validDeckType)
 
   if (!card) {
-    // Try reshuffling discards
     const { data: discards, error: discardFetchError } = await db
       .from('game_exploration_decks')
       .select('id')
@@ -131,27 +124,25 @@ export async function handler(req: Request): Promise<Response> {
     const discardList = (discards ?? []) as Array<{ id: string }>
     if (discardList.length === 0) return errorResponse('Exploration deck empty', 409)
 
-    // Reshuffle: assign random deck_position to each discard, set state='deck'
-    for (const discard of discardList) {
-      const { error: reshuffleError } = await db
-        .from('game_exploration_decks')
-        .update({ state: 'deck', deck_position: Math.random() * 1000 })
-        .eq('id', discard.id)
-      if (reshuffleError) return errorResponse('Database error', 500)
-    }
+    const reshuffleResults = await Promise.all(
+      discardList.map((d) =>
+        db.from('game_exploration_decks')
+          .update({ state: 'deck', deck_position: Math.random() * 1000 })
+          .eq('id', d.id)
+      )
+    )
+    if (reshuffleResults.some((r) => r.error)) return errorResponse('Database error', 500)
 
     card = await drawTopCard(game_id, validDeckType)
     if (!card) return errorResponse('Exploration deck empty', 409)
   }
 
-  // Mark card as drawn
   const { error: updateError } = await db
     .from('game_exploration_decks')
     .update({ state: 'drawn', resolved_by_player_id: player_id })
     .eq('id', card.id)
   if (updateError) return errorResponse('Database error', 500)
 
-  // Mark planet as explored
   const { error: exploreError } = await db
     .from('game_player_planets')
     .update({ explored: true })
