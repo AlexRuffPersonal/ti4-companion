@@ -48,8 +48,8 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-SpaceCombatModal](component-SpaceCombatModal.md) | `src/components/game/SpaceCombatModal.jsx` | 13 / 14 / 20 | AFB / Full Invasion / Space Combat Action Cards | planned | hook-useCombat, component-ActionCardWindowPanel |
 | [migration-031-invasion](migration-031-invasion.md) | `supabase/migrations/031_invasion.sql` | 14 | Full Invasion | done | migration-030-afb |
 | [fn-game-assign-hits](fn-game-assign-hits.md) | `supabase/functions/game-assign-hits/index.ts` | 14 / 20 | Full Invasion / Space Combat Action Cards | done | migration-031-invasion, migration-036-combat-action-cards |
-| [fn-game-fire-bombardment](fn-game-fire-bombardment.md) | `supabase/functions/game-fire-bombardment/index.ts` | 14 | Full Invasion | planned | migration-031-invasion |
-| [fn-game-advance-bombardment](fn-game-advance-bombardment.md) | `supabase/functions/game-advance-bombardment/index.ts` | 14 | Full Invasion | planned | migration-031-invasion |
+| [fn-game-fire-bombardment](fn-game-fire-bombardment.md) | `supabase/functions/game-fire-bombardment/index.ts` | 14 | Full Invasion | done | migration-031-invasion |
+| [fn-game-advance-bombardment](fn-game-advance-bombardment.md) | `supabase/functions/game-advance-bombardment/index.ts` | 14 | Full Invasion | done | migration-031-invasion |
 | [fn-game-commit-ground-forces](fn-game-commit-ground-forces.md) | `supabase/functions/game-commit-ground-forces/index.ts` | 11 / 14 | Ground Combat / Full Invasion | planned | migration-028, migration-031-invasion |
 | [fn-game-fire-space-cannon-defense](fn-game-fire-space-cannon-defense.md) | `supabase/functions/game-fire-space-cannon-defense/index.ts` | 14 | Full Invasion | planned | fn-game-commit-ground-forces |
 | [client-edgeFunctions](client-edgeFunctions.md) | `src/lib/edgeFunctions.js` | 11 / 13 / 14 / 20 | Ground Combat / AFB / Full Invasion / Space Combat Action Cards | in-progress | fn-game-commit-ground-forces, fn-game-fire-bombardment, fn-game-advance-bombardment, fn-game-fire-space-cannon-defense, fn-game-play-combat-action-card, fn-game-pass-action-window |
