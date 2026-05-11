@@ -6,6 +6,14 @@ import {
   rollGroundCombatDice as rollGroundCombatDiceFn,
   assignHits as assignHitsFn,
   declareRetreat as declareRetreatFn,
+  fireAntiFighterBarrage as fireAntiFighterBarrageFn,
+  advanceBarrage as advanceBarrageFn,
+  fireBombardment as fireBombardmentFn,
+  advanceBombardment as advanceBombardmentFn,
+  commitGroundForces as commitGroundForcesFn,
+  fireSpaceCannonDefense as fireSpaceCannonDefenseFn,
+  playCombatActionCard as playCombatActionCardFn,
+  passActionWindow as passActionWindowFn,
 } from '../lib/edgeFunctions.js'
 
 export function useCombat(gameId, combatId) {
@@ -56,5 +64,18 @@ export function useCombat(gameId, combatId) {
     rollGroundDice: () => rollGroundCombatDiceFn(gameId, combatId),
     assignHits: (casualties) => assignHitsFn(gameId, combatId, casualties),
     declareRetreat: (destination) => declareRetreatFn(gameId, combatId, destination),
+    // Phase 13: Anti-Fighter Barrage
+    fireAntiFighterBarrage: () => fireAntiFighterBarrageFn(gameId, combat?.id),
+    advanceBarrage: () => advanceBarrageFn(gameId, combat?.id),
+    // Phase 14: Full Invasion
+    fireBombardment: (systemKey, planetName) => fireBombardmentFn(gameId, systemKey, planetName),
+    advanceBombardment: (systemKey) => advanceBombardmentFn(gameId, systemKey),
+    commitGroundForces: (systemKey, planetName, troopCount) => commitGroundForcesFn(gameId, systemKey, planetName, troopCount),
+    fireSpaceCannonDefense: () => fireSpaceCannonDefenseFn(gameId, combat?.id),
+    // Phase 20: Action Windows
+    playActionCard: (cardId, targets) => playCombatActionCardFn(gameId, combat?.id, cardId, targets),
+    passActionWindow: () => passActionWindowFn(gameId, combat?.id),
+    isWindowPhase: combat?.phase?.startsWith('window_') ?? false,
+    windowPasses: combat?.window_passes ?? { attacker: false, defender: false },
   }
 }

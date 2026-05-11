@@ -184,4 +184,63 @@ export const playActionCard = (gameId, cardId, selections) =>
 export const passActionWindow = (gameId) =>
   callFunction('game-pass-action-window', { game_id: gameId })
 
+// Phase 13
+export const fireAntiFighterBarrage = (gameId, combatId) =>
+  callFunction('game-fire-anti-fighter-barrage', { game_id: gameId, combat_id: combatId })
+
+export const advanceBarrage = (gameId, combatId) =>
+  callFunction('game-advance-barrage', { game_id: gameId, combat_id: combatId })
+
+// Phase 14
+export const fireBombardment = (gameId, systemKey, planetName) =>
+  callFunction('game-fire-bombardment', { game_id: gameId, system_key: systemKey, planet_name: planetName })
+
+export const advanceBombardment = (gameId, systemKey) =>
+  callFunction('game-advance-bombardment', { game_id: gameId, system_key: systemKey })
+
+export const commitGroundForces = (gameId, systemKey, planetName, troopCount) =>
+  callFunction('game-commit-ground-forces', { game_id: gameId, system_key: systemKey, planet_name: planetName, troop_count: troopCount })
+
+export const fireSpaceCannonDefense = (gameId, combatId) =>
+  callFunction('game-fire-space-cannon-defense', { game_id: gameId, combat_id: combatId })
+
+// Phase 17
+export const explorePlanet = (gameId, playerId, planetName, deckType) =>
+  callFunction('game-explore-planet', { game_id: gameId, player_id: playerId, planet_name: planetName, deck_type: deckType })
+
+export const resolveExplorationCard = (gameId, playerId, cardId, opts = {}) =>
+  callFunction('game-resolve-exploration-card', { game_id: gameId, player_id: playerId, card_id: cardId, ...opts })
+
+export const exploreFrontier = (gameId, playerId, systemKey) =>
+  callFunction('game-explore-frontier', { game_id: gameId, player_id: playerId, system_key: systemKey })
+
+export const useRelicFragment = (gameId, playerId, fragmentIds) =>
+  callFunction('game-use-relic-fragment', { game_id: gameId, player_id: playerId, fragment_ids: fragmentIds })
+
+export const useRelic = (gameId, playerId, relicId, choice) =>
+  callFunction('game-use-relic', { game_id: gameId, player_id: playerId, relic_id: relicId, choice })
+
+// Phase 20
+export const playCombatActionCard = (gameId, combatId, cardId, targets) =>
+  callFunction('game-play-combat-action-card', { game_id: gameId, combat_id: combatId, card_id: cardId, targets })
+
+// Phase 21
+export const exhaustLegendaryCard = (gameId, planetName, choice) =>
+  callFunction('game-resolve-ability', {
+    game_id: gameId,
+    source_type: 'legendary_card',
+    source_id: planetName,
+    selections: { choice },
+  })
+
+// Phase 30
+export const exhaustTechnology = (gameId, technologyName) =>
+  callFunction('game-exhaust-technology', { game_id: gameId, technology_name: technologyName })
+
+export const readyTechnology = (gameId, technologyName) =>
+  callFunction('game-ready-technology', { game_id: gameId, technology_name: technologyName })
+
+export const useTechnologyAction = (gameId, technologyName, selections) =>
+  callFunction('game-use-technology-action', { game_id: gameId, technology_name: technologyName, selections })
+
 export { callFunction }

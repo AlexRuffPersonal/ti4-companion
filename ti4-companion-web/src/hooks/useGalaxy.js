@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase.js'
-import { activateSystem as activateSystemFn, landTroops as landTroopsFn } from '../lib/edgeFunctions.js'
+import { activateSystem as activateSystemFn, landTroops as landTroopsFn, moveShips as moveShipsFn } from '../lib/edgeFunctions.js'
 
 export function useGalaxy(gameCode, userId) {
   const [gameId, setGameId] = useState(null)
@@ -206,5 +206,6 @@ export function useGalaxy(gameCode, userId) {
     error,
     activateSystem: (systemKey) => activateSystemFn(gameId, systemKey),
     landTroops: (systemKey, planetName, troopCount) => landTroopsFn(gameId, systemKey, planetName, troopCount),
+    moveShips: (payload) => moveShipsFn(gameId, payload),
   }
 }

@@ -16,6 +16,22 @@ import {
   rollRiftDice,
   playActionCard,
   passActionWindow,
+  fireAntiFighterBarrage,
+  advanceBarrage,
+  fireBombardment,
+  advanceBombardment,
+  commitGroundForces,
+  fireSpaceCannonDefense,
+  explorePlanet,
+  resolveExplorationCard,
+  exploreFrontier,
+  useRelicFragment,
+  useRelic,
+  playCombatActionCard,
+  exhaustLegendaryCard,
+  exhaustTechnology,
+  readyTechnology,
+  useTechnologyAction,
 } from '../../src/lib/edgeFunctions.js'
 
 describe('importTable', () => {
@@ -98,6 +114,212 @@ describe('passActionWindow', () => {
     await passActionWindow('game-1')
     expect(supabase.functions.invoke).toHaveBeenCalledWith('game-pass-action-window', {
       body: { game_id: 'game-1' },
+    })
+  })
+})
+
+describe('fireAntiFighterBarrage', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('calls game-fire-anti-fighter-barrage with game_id and combat_id', async () => {
+    supabase.functions.invoke.mockResolvedValue({ data: { ok: true }, error: null })
+    await fireAntiFighterBarrage('game-1', 'combat-1')
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('game-fire-anti-fighter-barrage', {
+      body: { game_id: 'game-1', combat_id: 'combat-1' },
+    })
+  })
+})
+
+describe('advanceBarrage', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('calls game-advance-barrage with game_id and combat_id', async () => {
+    supabase.functions.invoke.mockResolvedValue({ data: { ok: true }, error: null })
+    await advanceBarrage('game-1', 'combat-1')
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('game-advance-barrage', {
+      body: { game_id: 'game-1', combat_id: 'combat-1' },
+    })
+  })
+})
+
+describe('fireBombardment', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('calls game-fire-bombardment with game_id, system_key, planet_name', async () => {
+    supabase.functions.invoke.mockResolvedValue({ data: { ok: true }, error: null })
+    await fireBombardment('game-1', '1,0', 'Mecatol Rex')
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('game-fire-bombardment', {
+      body: { game_id: 'game-1', system_key: '1,0', planet_name: 'Mecatol Rex' },
+    })
+  })
+})
+
+describe('advanceBombardment', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('calls game-advance-bombardment with game_id and system_key', async () => {
+    supabase.functions.invoke.mockResolvedValue({ data: { ok: true }, error: null })
+    await advanceBombardment('game-1', '1,0')
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('game-advance-bombardment', {
+      body: { game_id: 'game-1', system_key: '1,0' },
+    })
+  })
+})
+
+describe('commitGroundForces', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('calls game-commit-ground-forces with correct payload', async () => {
+    supabase.functions.invoke.mockResolvedValue({ data: { ok: true }, error: null })
+    await commitGroundForces('game-1', '1,0', 'Mecatol Rex', 3)
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('game-commit-ground-forces', {
+      body: { game_id: 'game-1', system_key: '1,0', planet_name: 'Mecatol Rex', troop_count: 3 },
+    })
+  })
+})
+
+describe('fireSpaceCannonDefense', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('calls game-fire-space-cannon-defense with game_id and combat_id', async () => {
+    supabase.functions.invoke.mockResolvedValue({ data: { ok: true }, error: null })
+    await fireSpaceCannonDefense('game-1', 'combat-1')
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('game-fire-space-cannon-defense', {
+      body: { game_id: 'game-1', combat_id: 'combat-1' },
+    })
+  })
+})
+
+describe('explorePlanet', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('calls game-explore-planet with correct payload', async () => {
+    supabase.functions.invoke.mockResolvedValue({ data: { ok: true }, error: null })
+    await explorePlanet('game-1', 'player-1', 'Wellon', 'cultural')
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('game-explore-planet', {
+      body: { game_id: 'game-1', player_id: 'player-1', planet_name: 'Wellon', deck_type: 'cultural' },
+    })
+  })
+})
+
+describe('resolveExplorationCard', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('calls game-resolve-exploration-card with correct payload', async () => {
+    supabase.functions.invoke.mockResolvedValue({ data: { ok: true }, error: null })
+    await resolveExplorationCard('game-1', 'player-1', 'card-1', { keep: true })
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('game-resolve-exploration-card', {
+      body: { game_id: 'game-1', player_id: 'player-1', card_id: 'card-1', keep: true },
+    })
+  })
+
+  it('spreads opts into body', async () => {
+    supabase.functions.invoke.mockResolvedValue({ data: { ok: true }, error: null })
+    await resolveExplorationCard('game-1', 'player-1', 'card-1')
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('game-resolve-exploration-card', {
+      body: { game_id: 'game-1', player_id: 'player-1', card_id: 'card-1' },
+    })
+  })
+})
+
+describe('exploreFrontier', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('calls game-explore-frontier with correct payload', async () => {
+    supabase.functions.invoke.mockResolvedValue({ data: { ok: true }, error: null })
+    await exploreFrontier('game-1', 'player-1', '2,1')
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('game-explore-frontier', {
+      body: { game_id: 'game-1', player_id: 'player-1', system_key: '2,1' },
+    })
+  })
+})
+
+describe('useRelicFragment', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('calls game-use-relic-fragment with correct payload', async () => {
+    supabase.functions.invoke.mockResolvedValue({ data: { ok: true }, error: null })
+    await useRelicFragment('game-1', 'player-1', ['frag-1', 'frag-2'])
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('game-use-relic-fragment', {
+      body: { game_id: 'game-1', player_id: 'player-1', fragment_ids: ['frag-1', 'frag-2'] },
+    })
+  })
+})
+
+describe('useRelic', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('calls game-use-relic with correct payload', async () => {
+    supabase.functions.invoke.mockResolvedValue({ data: { ok: true }, error: null })
+    await useRelic('game-1', 'player-1', 'relic-shard', 'exhaust')
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('game-use-relic', {
+      body: { game_id: 'game-1', player_id: 'player-1', relic_id: 'relic-shard', choice: 'exhaust' },
+    })
+  })
+})
+
+describe('playCombatActionCard', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('calls game-play-combat-action-card with correct payload', async () => {
+    supabase.functions.invoke.mockResolvedValue({ data: { ok: true }, error: null })
+    await playCombatActionCard('game-1', 'combat-1', 'card-1', ['unit-1'])
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('game-play-combat-action-card', {
+      body: { game_id: 'game-1', combat_id: 'combat-1', card_id: 'card-1', targets: ['unit-1'] },
+    })
+  })
+})
+
+describe('exhaustLegendaryCard', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('calls game-resolve-ability with legendary_card source_type', async () => {
+    supabase.functions.invoke.mockResolvedValue({ data: { ok: true }, error: null })
+    await exhaustLegendaryCard('game-1', 'Mecatol Rex', 'draw_card')
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('game-resolve-ability', {
+      body: {
+        game_id: 'game-1',
+        source_type: 'legendary_card',
+        source_id: 'Mecatol Rex',
+        selections: { choice: 'draw_card' },
+      },
+    })
+  })
+})
+
+describe('exhaustTechnology', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('calls game-exhaust-technology with correct payload', async () => {
+    supabase.functions.invoke.mockResolvedValue({ data: { ok: true }, error: null })
+    await exhaustTechnology('game-1', 'Graviton Laser System')
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('game-exhaust-technology', {
+      body: { game_id: 'game-1', technology_name: 'Graviton Laser System' },
+    })
+  })
+})
+
+describe('readyTechnology', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('calls game-ready-technology with correct payload', async () => {
+    supabase.functions.invoke.mockResolvedValue({ data: { ok: true }, error: null })
+    await readyTechnology('game-1', 'Bio-Stims')
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('game-ready-technology', {
+      body: { game_id: 'game-1', technology_name: 'Bio-Stims' },
+    })
+  })
+})
+
+describe('useTechnologyAction', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('calls game-use-technology-action with correct payload', async () => {
+    supabase.functions.invoke.mockResolvedValue({ data: { ok: true }, error: null })
+    const selections = { target: 'player-2' }
+    await useTechnologyAction('game-1', 'Scanlink Drone Network', selections)
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('game-use-technology-action', {
+      body: { game_id: 'game-1', technology_name: 'Scanlink Drone Network', selections },
     })
   })
 })
