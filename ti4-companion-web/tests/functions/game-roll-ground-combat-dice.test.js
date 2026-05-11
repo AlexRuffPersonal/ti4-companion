@@ -11,6 +11,11 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
   db: { from: vi.fn() },
 }))
 
+vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
+  logEvent: vi.fn().mockResolvedValue(undefined),
+  EVT_ROLL_GROUND_COMBAT_DICE: 'roll_ground_combat_dice',
+}))
+
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-roll-ground-combat-dice/index.ts'

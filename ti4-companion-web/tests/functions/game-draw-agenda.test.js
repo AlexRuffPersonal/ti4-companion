@@ -14,6 +14,11 @@ vi.mock('../../../supabase/functions/_shared/player-order.ts', () => ({
   getNextPlayer: vi.fn().mockResolvedValue('p2'),
 }))
 
+vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
+  logEvent: vi.fn().mockResolvedValue(undefined),
+  EVT_DRAW_AGENDA: 'draw_agenda',
+}))
+
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { getNextPlayer } from '../../../supabase/functions/_shared/player-order.ts'

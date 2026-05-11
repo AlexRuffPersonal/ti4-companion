@@ -10,6 +10,11 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
   db: { from: vi.fn() },
 }))
 
+vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
+  logEvent: vi.fn().mockResolvedValue(undefined),
+  EVT_FIRE_SPACE_CANNON: 'fire_space_cannon',
+}))
+
 import { requireAuth } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-fire-space-cannon/index.ts'

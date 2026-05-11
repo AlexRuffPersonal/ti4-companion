@@ -10,6 +10,11 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
   db: { from: vi.fn() },
 }))
 
+vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
+  logEvent: vi.fn().mockResolvedValue(undefined),
+  EVT_END_TURN: 'end_turn',
+}))
+
 import { requireAuth } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-end-turn/index.ts'

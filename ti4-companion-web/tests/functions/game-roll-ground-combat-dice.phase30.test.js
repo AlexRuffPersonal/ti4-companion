@@ -13,6 +13,11 @@ vi.mock('../../../supabase/functions/_shared/techEffects.ts', () => ({
   resolveUnitStats: vi.fn((unitType, baseStats) => ({ ...baseStats })),
 }))
 
+vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
+  logEvent: vi.fn().mockResolvedValue(undefined),
+  EVT_ROLL_GROUND_COMBAT_DICE: 'roll_ground_combat_dice',
+}))
+
 import { requireAuth } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { resolveUnitStats } from '../../../supabase/functions/_shared/techEffects.ts'

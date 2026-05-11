@@ -16,6 +16,11 @@ vi.mock('../../../supabase/functions/_shared/abilityHandlers.ts', () => ({
   getHandler: vi.fn(() => vi.fn().mockResolvedValue(undefined)),
 }))
 
+vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
+  logEvent: vi.fn().mockResolvedValue(undefined),
+  EVT_RESOLVE_ABILITY: 'resolve_ability',
+}))
+
 import { requireAuth } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-resolve-ability/index.ts'

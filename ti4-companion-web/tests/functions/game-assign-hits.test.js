@@ -15,6 +15,11 @@ vi.mock('../../../supabase/functions/_shared/eliminationHandler.ts', () => ({
   checkAndEliminate: vi.fn().mockResolvedValue([])
 }))
 
+vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
+  logEvent: vi.fn().mockResolvedValue(undefined),
+  EVT_ASSIGN_HITS: 'assign_hits',
+}))
+
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { checkAndEliminate } from '../../../supabase/functions/_shared/eliminationHandler.ts'
