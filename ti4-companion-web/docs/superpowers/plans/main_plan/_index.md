@@ -223,10 +223,10 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-event-logging-all](fn-event-logging-all.md) | `supabase/functions/*/index.ts` (all existing) | 32 | Game Event Log | planned | shared-gameEvents |
 
 | [shared-auth-p33](shared-auth-p33.md) | `supabase/functions/_shared/auth.ts` | 33 | Bot Players + Undo | done | migration-044-bot-players |
-| [fn-game-add-bot](fn-game-add-bot.md) | `supabase/functions/game-add-bot/index.ts` | 33 | Bot Players + Undo | planned | migration-044-bot-players, shared-auth-p33, shared-gameEvents |
-| [fn-game-remove-bot](fn-game-remove-bot.md) | `supabase/functions/game-remove-bot/index.ts` | 33 | Bot Players + Undo | planned | migration-044-bot-players, shared-auth-p33, shared-gameEvents |
+| [fn-game-add-bot](fn-game-add-bot.md) | `supabase/functions/game-add-bot/index.ts` | 33 | Bot Players + Undo | done | migration-044-bot-players, shared-auth-p33, shared-gameEvents |
+| [fn-game-remove-bot](fn-game-remove-bot.md) | `supabase/functions/game-remove-bot/index.ts` | 33 | Bot Players + Undo | done | migration-044-bot-players, shared-auth-p33, shared-gameEvents |
 | [shared-undoHandlers](shared-undoHandlers.md) | `supabase/functions/_shared/undoHandlers.ts` | 33 | Bot Players + Undo | done | shared-gameEvents |
-| [fn-game-undo](fn-game-undo.md) | `supabase/functions/game-undo/index.ts` | 33 | Bot Players + Undo | planned | shared-gameEvents, shared-undoHandlers |
+| [fn-game-undo](fn-game-undo.md) | `supabase/functions/game-undo/index.ts` | 33 | Bot Players + Undo | done | shared-gameEvents, shared-undoHandlers |
 | [client-edgeFunctions-p33](client-edgeFunctions-p33.md) | `src/lib/edgeFunctions.js` | 33 | Bot Players + Undo | planned | fn-game-add-bot, fn-game-remove-bot, fn-game-undo |
 | [lib-botStrategies-scripted](lib-botStrategies-scripted.md) | `src/lib/botStrategies/scripted.js` | 33 | Bot Players + Undo | done | — |
 | [lib-botStrategies-random](lib-botStrategies-random.md) | `src/lib/botStrategies/random.js` | 33 | Bot Players + Undo | done | — |
