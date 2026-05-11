@@ -77,13 +77,13 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-GameScreen](component-GameScreen.md) | `src/components/game/GameScreen.jsx` | 12 / 16 | Strategy Cards / Leaders & Mechs | planned | hook-useStrategyCards, hook-useLeaders, component-LeaderPanel |
 
 | [migration-034-exploration](migration-034-exploration.md) | `supabase/migrations/034_exploration.sql` | 17 | Exploration / Relics | done | — |
-| [shared-explorationEffects](shared-explorationEffects.md) | `supabase/functions/_shared/explorationEffects.ts` | 17 | Exploration / Relics | planned | migration-034-exploration, shared-abilityDsl |
-| [shared-relicEffects](shared-relicEffects.md) | `supabase/functions/_shared/relicEffects.ts` | 17 | Exploration / Relics | planned | migration-034-exploration, shared-abilityDsl |
+| [shared-explorationEffects](shared-explorationEffects.md) | `supabase/functions/_shared/explorationEffects.ts` | 17 | Exploration / Relics | done | migration-034-exploration, shared-abilityDsl |
+| [shared-relicEffects](shared-relicEffects.md) | `supabase/functions/_shared/relicEffects.ts` | 17 | Exploration / Relics | done | migration-034-exploration, shared-abilityDsl |
 | [shared-abilityDsl](shared-abilityDsl.md) | `supabase/functions/_shared/abilityDsl.ts` | 17 | Exploration / Relics | done | migration-034-exploration |
 | [fn-game-explore-planet](fn-game-explore-planet.md) | `supabase/functions/game-explore-planet/index.ts` | 17 | Exploration / Relics | planned | migration-034-exploration, shared-explorationEffects |
 | [fn-game-resolve-exploration-card](fn-game-resolve-exploration-card.md) | `supabase/functions/game-resolve-exploration-card/index.ts` | 17 | Exploration / Relics | planned | migration-034-exploration, shared-explorationEffects, shared-abilityDsl |
 | [fn-game-explore-frontier](fn-game-explore-frontier.md) | `supabase/functions/game-explore-frontier/index.ts` | 17 | Exploration / Relics | planned | migration-034-exploration, shared-explorationEffects, shared-abilityDsl |
-| [fn-game-use-relic-fragment](fn-game-use-relic-fragment.md) | `supabase/functions/game-use-relic-fragment/index.ts` | 17 | Exploration / Relics | planned | migration-034-exploration, shared-abilityDsl |
+| [fn-game-use-relic-fragment](fn-game-use-relic-fragment.md) | `supabase/functions/game-use-relic-fragment/index.ts` | 17 | Exploration / Relics | done | migration-034-exploration, shared-abilityDsl |
 | [fn-game-use-relic](fn-game-use-relic.md) | `supabase/functions/game-use-relic/index.ts` | 17 | Exploration / Relics | planned | migration-034-exploration, shared-relicEffects, shared-abilityDsl |
 | [fn-game-shuffle-exploration-deck](fn-game-shuffle-exploration-deck.md) | `supabase/functions/game-shuffle-exploration-deck/index.ts` | 17 | Exploration / Relics | done | migration-034-exploration |
 | [client-edgeFunctions](client-edgeFunctions.md) | `src/lib/edgeFunctions.js` | 17 | Exploration / Relics | planned | fn-game-explore-planet, fn-game-resolve-exploration-card, fn-game-explore-frontier, fn-game-use-relic-fragment, fn-game-use-relic |

@@ -524,6 +524,26 @@ async function interpretOp(
       break
     }
 
+    case 'gain_relic': {
+      // Draw the top relic from the relic deck and assign it to the player
+      const { data: topRelic, error: deckError } = await db
+        .from('game_relic_deck')
+        .select('id')
+        .eq('game_id', context.gameId)
+        .eq('state', 'deck')
+        .order('deck_position', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+      if (deckError) throw new Error(`gain_relic: deck query failed: ${deckError.message}`)
+      if (!topRelic) break  // Empty relic deck — silently skip
+      const { error: updateError } = await db
+        .from('game_relic_deck')
+        .update({ state: 'held', held_by_player_id: context.activatingPlayerId, deck_position: null })
+        .eq('id', (topRelic as Record<string, string>).id)
+      if (updateError) throw new Error(`gain_relic: update failed: ${updateError.message}`)
+      break
+    }
+
     case 'exhaust_planet': {
       const planetName = ((context.selections as Record<string, unknown>)?.planet_name as string)
       if (!planetName) throw dslError('planet_name is required')
@@ -704,4 +724,16 @@ async function interpretOp(
 function resolveAmount(amount: number | string, context: ResolveContext): number {
   if (amount === 'chosen_amount') return context.chosenAmount ?? 0
   return amount as number
+}
+
+/**
+ * Alias for interpretEffects — convenience wrapper used by relic/exploration handlers
+ * that pass a self-contained op array without needing a full ResolveContext.
+ */
+export async function applyAbility(
+  effects: unknown[],
+  context: ResolveContext,
+  db: SupabaseClient
+): Promise<void> {
+  return interpretEffects(effects, context, db)
 }
