@@ -154,4 +154,16 @@ describe('SystemActionModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /produce units/i }))
     expect(onOpenProduction).toHaveBeenCalledWith('1,-1')
   })
+
+  it('renders INFO button when onInfo prop is provided', () => {
+    render(<SystemActionModal {...BASE_PROPS} onInfo={vi.fn()} />)
+    expect(screen.getByRole('button', { name: /^info$/i })).toBeInTheDocument()
+  })
+
+  it('calls onInfo when INFO button is clicked', () => {
+    const onInfo = vi.fn()
+    render(<SystemActionModal {...BASE_PROPS} onInfo={onInfo} />)
+    fireEvent.click(screen.getByRole('button', { name: /^info$/i }))
+    expect(onInfo).toHaveBeenCalled()
+  })
 })

@@ -30,4 +30,16 @@ describe('GameHeader', () => {
     fireEvent.click(screen.getByText('TRADE LOG'))
     expect(onOpenTradeLog).toHaveBeenCalled()
   })
+
+  it('renders RULES button', () => {
+    render(<GameHeader game={BASE_GAME} speaker={BASE_SPEAKER} onOpenTradeLog={vi.fn()} onOpenRules={vi.fn()} />)
+    expect(screen.getByText('RULES')).toBeTruthy()
+  })
+
+  it('calls onOpenRules when RULES button is clicked', () => {
+    const onOpenRules = vi.fn()
+    render(<GameHeader game={BASE_GAME} speaker={BASE_SPEAKER} onOpenTradeLog={vi.fn()} onOpenRules={onOpenRules} />)
+    fireEvent.click(screen.getByText('RULES'))
+    expect(onOpenRules).toHaveBeenCalled()
+  })
 })

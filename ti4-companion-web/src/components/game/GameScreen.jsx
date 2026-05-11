@@ -46,6 +46,7 @@ export default function GameScreen({ userId }) {
     drawTheAgenda, castTheVotes, resolveTheAgenda,
     myNotes, pendingIncomingTrades, createTheTransaction, confirmTheTransaction,
     rejectTheTransaction, rescindTheTransaction, playTheNote,
+    isEliminated,
   } = useGame(code, userId)
 
   const galaxyState = useGalaxy(code, userId)
@@ -292,10 +293,16 @@ export default function GameScreen({ userId }) {
 
   return (
     <div className="min-h-screen bg-void">
+      {isEliminated && (
+        <div className="bg-danger/20 border border-danger/40 text-danger px-4 py-2 text-sm font-body">
+          You have been eliminated. You are spectating the remainder of the game.
+        </div>
+      )}
       <GameHeader
         game={game}
         speaker={deriveSpeaker(players, game)}
         onOpenTradeLog={() => setTradeLogModalOpen(true)}
+        onOpenRules={() => {}}
       />
       <AbilityNotificationBar
         triggerable={triggerable.filter(a =>
@@ -317,95 +324,105 @@ export default function GameScreen({ userId }) {
           currentPlayerId={currentPlayer?.id}
           onViewTech={setViewingTechPlayerId}
         />
-        <MyPanelSection
-          player={currentPlayer}
-          planets={myPlanets}
-          isActive={activePlayer?.id === currentPlayer?.id}
-          game={game}
-          onPass={passTheAction}
-          onEndTurn={endTheTurn}
-          onUpdateTokens={updateTokens}
-          onExhaustPlanet={exhaustPlanet}
-          onReadyPlanet={readyPlanet}
-          onPickStrategyCard={pickStrategyCard}
-          onUpdateCommodities={updateCommodities}
-          onUpdateTradeGoods={updateTradeGoods}
-          onCycleLeader={cycleLeader}
-          onOpenActionCards={() => setActionCardModalOpen(true)}
-          onViewTech={() => setViewingTechPlayerId(currentPlayer?.id ?? null)}
-          factionAbilities={factionAbilities}
-          triggerableAbilityIds={triggerableAbilityIds}
-          unlockableCommanderAbility={unlockableCommanderAbility}
-          onPlayAbility={a => handlePlayAbility(a)}
-          onUnlockCommander={handleUnlockCommander}
-          onOpenSecrets={() => setSecretsModalOpen(true)}
-          secretCount={mySecrets.length}
-          onOpenNotes={handleOpenNotes}
-          noteCount={myNotes?.filter(n => n.state === 'held').length ?? 0}
-          onOpenTrade={handleOpenTrade}
-          allPlayers={players}
-          activePay={activePay}
-          onPlayPrimary={() => {
-            const primaryAbility = allAbilityDefinitions.find(a =>
-              a.ability_sources?.some(s =>
-                s.source_type === 'strategy_card' &&
-                s.source_id === String(currentPlayer?.strategy_card) &&
-                s.role === 'primary'
+        {!isEliminated && (
+          <MyPanelSection
+            player={currentPlayer}
+            planets={myPlanets}
+            isActive={activePlayer?.id === currentPlayer?.id}
+            game={game}
+            onPass={passTheAction}
+            onEndTurn={endTheTurn}
+            onUpdateTokens={updateTokens}
+            onExhaustPlanet={exhaustPlanet}
+            onReadyPlanet={readyPlanet}
+            onPickStrategyCard={pickStrategyCard}
+            onUpdateCommodities={updateCommodities}
+            onUpdateTradeGoods={updateTradeGoods}
+            onCycleLeader={cycleLeader}
+            onOpenActionCards={() => setActionCardModalOpen(true)}
+            onViewTech={() => setViewingTechPlayerId(currentPlayer?.id ?? null)}
+            factionAbilities={factionAbilities}
+            triggerableAbilityIds={triggerableAbilityIds}
+            unlockableCommanderAbility={unlockableCommanderAbility}
+            onPlayAbility={a => handlePlayAbility(a)}
+            onUnlockCommander={handleUnlockCommander}
+            onOpenSecrets={() => setSecretsModalOpen(true)}
+            secretCount={mySecrets.length}
+            onOpenNotes={handleOpenNotes}
+            noteCount={myNotes?.filter(n => n.state === 'held').length ?? 0}
+            onOpenTrade={handleOpenTrade}
+            allPlayers={players}
+            activePay={activePay}
+            onPlayPrimary={() => {
+              const primaryAbility = allAbilityDefinitions.find(a =>
+                a.ability_sources?.some(s =>
+                  s.source_type === 'strategy_card' &&
+                  s.source_id === String(currentPlayer?.strategy_card) &&
+                  s.role === 'primary'
+                )
               )
-            )
-            if (primaryAbility) handlePlayAbility(primaryAbility, String(currentPlayer?.strategy_card), 'strategy_card')
-          }}
-        />
+              if (primaryAbility) handlePlayAbility(primaryAbility, String(currentPlayer?.strategy_card), 'strategy_card')
+            }}
+          />
+        )}
         <button
           className={`btn-ghost text-xs ${activeTab === 'galaxy' ? 'text-bright' : 'text-muted'}`}
           onClick={() => setActiveTab('galaxy')}
         >
           GALAXY
         </button>
-        <ObjectivesSection
-          objectives={objectives}
-          players={players}
-          game={game}
-          currentPlayerId={currentPlayer?.id}
-          onScore={(objId) => scoreAnObjective(objId, currentPlayer?.id)}
-        />
-        <AgendaSection
-          game={game}
-          agenda={currentAgenda}
-          votes={agendaVotes}
-          players={players}
-          currentPlayer={currentPlayer}
-          isSpeaker={isSpeakerFlag}
-          planets={planets.filter(p => p.player_id === currentPlayer?.id)}
-          onDrawAgenda={drawTheAgenda}
-          onCastVote={castTheVotes}
-          onResolve={resolveTheAgenda}
-        />
+        {!isEliminated && (
+          <ObjectivesSection
+            objectives={objectives}
+            players={players}
+            game={game}
+            currentPlayerId={currentPlayer?.id}
+            onScore={(objId) => scoreAnObjective(objId, currentPlayer?.id)}
+          />
+        )}
+        {!isEliminated && (
+          <AgendaSection
+            game={game}
+            agenda={currentAgenda}
+            votes={agendaVotes}
+            players={players}
+            currentPlayer={currentPlayer}
+            isSpeaker={isSpeakerFlag}
+            planets={planets.filter(p => p.player_id === currentPlayer?.id)}
+            onDrawAgenda={drawTheAgenda}
+            onCastVote={castTheVotes}
+            onResolve={resolveTheAgenda}
+          />
+        )}
         <EnactedLawsPanel laws={enactedLaws} />
-        <HostControlsSection
-          isHost={isHost}
-          game={game}
-          players={players}
-          objectives={objectives}
-          onScoreObjective={scoreAnObjective}
-          onRevealObjective={revealAnObjective}
-          onShuffleDeck={shuffleTheDeck}
-          onAdvancePhase={advanceThePhase}
-          onEndStatusPhase={endStatusPhase}
-          onEndAgendaPhase={endAgendaPhase}
-          pendingSecretPlayers={players.filter(p => !p.secrets_selected)}
-          pendingTokenPlayers={players.filter(p => !p.tokens_redistributed)}
-        />
+        {!isEliminated && (
+          <HostControlsSection
+            isHost={isHost}
+            game={game}
+            players={players}
+            objectives={objectives}
+            onScoreObjective={scoreAnObjective}
+            onRevealObjective={revealAnObjective}
+            onShuffleDeck={shuffleTheDeck}
+            onAdvancePhase={advanceThePhase}
+            onEndStatusPhase={endStatusPhase}
+            onEndAgendaPhase={endAgendaPhase}
+            pendingSecretPlayers={players.filter(p => !p.secrets_selected)}
+            pendingTokenPlayers={players.filter(p => !p.tokens_redistributed)}
+          />
+        )}
       </div>
 
-      <ActionWindowBanner
-        window={game?.pending_action_window ?? null}
-        currentPlayerId={currentPlayer?.id}
-        myCards={myCards}
-        onPlayCard={handlePlayWindowCard}
-        onPass={handlePassWindow}
-        loading={windowLoading}
-      />
+      {!isEliminated && (
+        <ActionWindowBanner
+          window={game?.pending_action_window ?? null}
+          currentPlayerId={currentPlayer?.id}
+          myCards={myCards}
+          onPlayCard={handlePlayWindowCard}
+          onPass={handlePassWindow}
+          loading={windowLoading}
+        />
+      )}
 
       {actionCardModalOpen && (
         <ActionCardModal

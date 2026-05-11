@@ -1,6 +1,6 @@
 import { phaseLabel } from '../../lib/gameUtils.js'
 
-export default function GameHeader({ game, speaker, onOpenTradeLog }) {
+export default function GameHeader({ game, speaker, onOpenTradeLog, onOpenRules }) {
   return (
     <div className="bg-hull border-b border-border px-6 py-3 flex items-center justify-between sticky top-0 z-10">
       <span className="font-display text-plasma text-xs tracking-widest">
@@ -16,6 +16,9 @@ export default function GameHeader({ game, speaker, onOpenTradeLog }) {
         </span>
         <button className="btn-ghost text-xs" onClick={onOpenTradeLog}>
           TRADE LOG
+        </button>
+        <button className="btn-ghost text-xs" onClick={onOpenRules}>
+          RULES
         </button>
       </div>
     </div>

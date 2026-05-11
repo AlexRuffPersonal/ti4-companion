@@ -145,13 +145,13 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-admin-update-record](fn-admin-update-record.md) | `supabase/functions/admin-update-record/index.ts` | 23 | Admin: Read Views + Editing | done | — |
 | [lib-importSchemas-p23](lib-importSchemas-p23.md) | `src/lib/importSchemas.js` | 23 | Admin: Read Views + Editing | done | — |
 | [client-edgeFunctions-p23](client-edgeFunctions-p23.md) | `src/lib/edgeFunctions.js` | 23 | Admin: Read Views + Editing | done | fn-admin-update-record |
-| [component-AdminDashboard-p23](component-AdminDashboard-p23.md) | `src/components/admin/AdminDashboard.jsx` | 23 | Admin: Read Views + Editing | planned | lib-importSchemas-p23 |
+| [component-AdminDashboard-p23](component-AdminDashboard-p23.md) | `src/components/admin/AdminDashboard.jsx` | 23 | Admin: Read Views + Editing | done | lib-importSchemas-p23 |
 | [component-AdminBrowsePage](component-AdminBrowsePage.md) | `src/components/admin/AdminBrowsePage.jsx` | 23 | Admin: Read Views + Editing | planned | lib-importSchemas-p23, client-edgeFunctions-p23 |
 | [component-AdminRecordModal](component-AdminRecordModal.md) | `src/components/admin/AdminRecordModal.jsx` | 23 | Admin: Read Views + Editing | planned | client-edgeFunctions-p23, lib-importSchemas-p23 |
 
 | [script-parse-lrr](script-parse-lrr.md) | `ti4-companion-web/scripts/parse-lrr.js` | 24 | Rule Lookup | done | — |
 | [component-RulesModal](component-RulesModal.md) | `src/components/game/RulesModal.jsx` | 24 | Rule Lookup | done | script-parse-lrr |
-| [component-GameHeader-p24](component-GameHeader-p24.md) | `src/components/game/GameHeader.jsx` | 24 | Rule Lookup | planned | component-RulesModal |
+| [component-GameHeader-p24](component-GameHeader-p24.md) | `src/components/game/GameHeader.jsx` | 24 | Rule Lookup | done | component-RulesModal |
 | [component-GameScreen-p24](component-GameScreen-p24.md) | `src/components/game/GameScreen.jsx` | 24 | Rule Lookup | planned | component-RulesModal, component-GameHeader-p24 |
 
 | [migration-039-elimination](migration-039-elimination.md) | `supabase/migrations/039_elimination.sql` | 26 | Player Elimination | done | — |
@@ -162,7 +162,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-assign-hits-p26](fn-game-assign-hits-p26.md) | `supabase/functions/game-assign-hits/index.ts` | 26 | Player Elimination | done | shared-eliminationHandler |
 | [fn-game-land-troops-p26](fn-game-land-troops-p26.md) | `supabase/functions/game-land-troops/index.ts` | 26 | Player Elimination | done | shared-eliminationHandler |
 | [hook-useGame-p26](hook-useGame-p26.md) | `src/hooks/useGame.js` | 26 | Player Elimination | done | migration-039-elimination |
-| [component-GameScreen-p26](component-GameScreen-p26.md) | `src/components/game/GameScreen.jsx` | 26 | Player Elimination | planned | hook-useGame-p26 |
+| [component-GameScreen-p26](component-GameScreen-p26.md) | `src/components/game/GameScreen.jsx` | 26 | Player Elimination | done | hook-useGame-p26 |
 
 | [component-TechCard-p28](component-TechCard-p28.md) | `src/components/game/TechCard.jsx` | 28 | Card Text Visualization | done | — |
 | [component-ObjectivesSection-p28](component-ObjectivesSection-p28.md) | `src/components/game/ObjectivesSection.jsx` | 28 | Card Text Visualization | done | — |
@@ -212,7 +212,7 @@ This keeps the index accurate across multi-session implementations so future age
 
 | [hook-useGalaxy-p31](hook-useGalaxy-p31.md) | `src/hooks/useGalaxy.js` | 31 | System Tile & Planet Detail View | done | — |
 | [component-SystemInfoModal](component-SystemInfoModal.md) | `src/components/game/SystemInfoModal.jsx` | 31 | System Tile & Planet Detail View | planned | hook-useGalaxy-p31 |
-| [component-SystemActionModal-p31](component-SystemActionModal-p31.md) | `src/components/game/SystemActionModal.jsx` | 31 | System Tile & Planet Detail View | planned | — |
+| [component-SystemActionModal-p31](component-SystemActionModal-p31.md) | `src/components/game/SystemActionModal.jsx` | 31 | System Tile & Planet Detail View | done | — |
 | [component-MyPanelSection-p31](component-MyPanelSection-p31.md) | `src/components/game/MyPanelSection.jsx` | 31 | System Tile & Planet Detail View | planned | hook-useGalaxy-p31 |
 | [component-GalaxyTab-p31](component-GalaxyTab-p31.md) | `src/components/game/GalaxyTab.jsx` | 31 | System Tile & Planet Detail View | planned | hook-useGalaxy-p31, component-SystemInfoModal, component-SystemActionModal-p31 |
 | [component-GameScreen-p31](component-GameScreen-p31.md) | `src/components/game/GameScreen.jsx` | 31 | System Tile & Planet Detail View | planned | hook-useGalaxy-p31, component-MyPanelSection-p31 |

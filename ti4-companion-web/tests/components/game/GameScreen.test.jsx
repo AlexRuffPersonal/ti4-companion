@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import GameScreen from '../../../src/components/game/GameScreen.jsx'
 import { useStrategyCards } from '../../../src/hooks/useStrategyCards.js'
+import { useGame } from '../../../src/hooks/useGame.js'
 
 // Mock react-router-dom
 vi.mock('react-router-dom', () => ({
@@ -48,50 +49,53 @@ const MOCK_PLAYER = {
   action_card_count: 3, secrets_selected: true, tokens_redistributed: true,
 }
 
+const BASE_USE_GAME = {
+  game: MOCK_GAME,
+  players: [MOCK_PLAYER],
+  objectives: [],
+  planets: [],
+  myCards: [],
+  currentPlayer: MOCK_PLAYER,
+  isHost: true,
+  loading: false,
+  error: null,
+  isEliminated: false,
+  endTheTurn: vi.fn(),
+  passTheAction: vi.fn(),
+  advanceThePhase: vi.fn(),
+  scoreAnObjective: vi.fn(),
+  revealAnObjective: vi.fn(),
+  shuffleTheDeck: vi.fn(),
+  updateTokens: vi.fn(),
+  exhaustPlanet: vi.fn(),
+  readyPlanet: vi.fn(),
+  pickStrategyCard: vi.fn(),
+  updateCommodities: vi.fn(),
+  updateTradeGoods: vi.fn(),
+  cycleLeader: vi.fn(),
+  drawTheActionCard: vi.fn(),
+  discardTheActionCard: vi.fn(),
+  mySecrets: [],
+  discardTheSecret: vi.fn(),
+  scoreTheSecret: vi.fn(),
+  endStatusPhase: vi.fn(),
+  agendaVotes: [],
+  enactedLaws: [],
+  currentAgenda: null,
+  drawTheAgenda: vi.fn(),
+  castTheVotes: vi.fn(),
+  resolveTheAgenda: vi.fn(),
+  myNotes: [],
+  pendingIncomingTrades: [],
+  createTheTransaction: vi.fn(),
+  confirmTheTransaction: vi.fn(),
+  rejectTheTransaction: vi.fn(),
+  rescindTheTransaction: vi.fn(),
+  playTheNote: vi.fn(),
+}
+
 vi.mock('../../../src/hooks/useGame.js', () => ({
-  useGame: vi.fn(() => ({
-    game: MOCK_GAME,
-    players: [MOCK_PLAYER],
-    objectives: [],
-    planets: [],
-    myCards: [],
-    currentPlayer: MOCK_PLAYER,
-    isHost: true,
-    loading: false,
-    error: null,
-    endTheTurn: vi.fn(),
-    passTheAction: vi.fn(),
-    advanceThePhase: vi.fn(),
-    scoreAnObjective: vi.fn(),
-    revealAnObjective: vi.fn(),
-    shuffleTheDeck: vi.fn(),
-    updateTokens: vi.fn(),
-    exhaustPlanet: vi.fn(),
-    readyPlanet: vi.fn(),
-    pickStrategyCard: vi.fn(),
-    updateCommodities: vi.fn(),
-    updateTradeGoods: vi.fn(),
-    cycleLeader: vi.fn(),
-    drawTheActionCard: vi.fn(),
-    discardTheActionCard: vi.fn(),
-    mySecrets: [],
-    discardTheSecret: vi.fn(),
-    scoreTheSecret: vi.fn(),
-    endStatusPhase: vi.fn(),
-    agendaVotes: [],
-    enactedLaws: [],
-    currentAgenda: null,
-    drawTheAgenda: vi.fn(),
-    castTheVotes: vi.fn(),
-    resolveTheAgenda: vi.fn(),
-    myNotes: [],
-    pendingIncomingTrades: [],
-    createTheTransaction: vi.fn(),
-    confirmTheTransaction: vi.fn(),
-    rejectTheTransaction: vi.fn(),
-    rescindTheTransaction: vi.fn(),
-    playTheNote: vi.fn(),
-  })),
+  useGame: vi.fn(() => BASE_USE_GAME),
 }))
 
 vi.mock('../../../src/hooks/useGameEvents.js', () => ({
@@ -211,6 +215,7 @@ vi.mock('../../../src/components/game/ProductionModal.jsx', () => ({
 
 describe('GameScreen (Phase 12)', () => {
   beforeEach(() => {
+    useGame.mockReturnValue({ ...BASE_USE_GAME })
     useStrategyCards.mockReturnValue({
       activePay: null,
       responses: [],
@@ -285,5 +290,49 @@ describe('GameScreen — ProductionModal integration', () => {
     // The key invariant: productionSystemKey state gates ProductionModal rendering.
     // This is covered by the unit tests above (modal absent by default, present when key set).
     expect(true).toBe(true)
+  })
+})
+
+describe('GameScreen — elimination', () => {
+  beforeEach(() => {
+    useGame.mockReturnValue({ ...BASE_USE_GAME })
+    useStrategyCards.mockReturnValue({
+      activePay: null,
+      responses: [],
+      isMyTurnToRespond: false,
+      playPrimary: vi.fn(),
+      useSecondary: vi.fn(),
+      passSecondary: vi.fn(),
+    })
+  })
+
+  it('renders eliminated banner when isEliminated is true', () => {
+    useGame.mockReturnValue({ ...BASE_USE_GAME, isEliminated: true })
+    render(<GameScreen userId="user-1" />)
+    expect(screen.getByText(/you have been eliminated/i)).toBeInTheDocument()
+  })
+
+  it('does not render eliminated banner when isEliminated is false', () => {
+    useGame.mockReturnValue({ ...BASE_USE_GAME, isEliminated: false })
+    render(<GameScreen userId="user-1" />)
+    expect(screen.queryByText(/you have been eliminated/i)).not.toBeInTheDocument()
+  })
+
+  it('hides MyPanelSection when isEliminated is true', () => {
+    useGame.mockReturnValue({ ...BASE_USE_GAME, isEliminated: true })
+    render(<GameScreen userId="user-1" />)
+    expect(screen.queryByTestId('my-panel-section')).not.toBeInTheDocument()
+  })
+
+  it('renders ScoreboardSection regardless of isEliminated', () => {
+    useGame.mockReturnValue({ ...BASE_USE_GAME, isEliminated: true })
+    render(<GameScreen userId="user-1" />)
+    expect(screen.getByTestId('scoreboard-section')).toBeInTheDocument()
+  })
+
+  it('shows MyPanelSection when isEliminated is false', () => {
+    useGame.mockReturnValue({ ...BASE_USE_GAME, isEliminated: false })
+    render(<GameScreen userId="user-1" />)
+    expect(screen.getByTestId('my-panel-section')).toBeInTheDocument()
   })
 })

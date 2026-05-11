@@ -30,7 +30,9 @@ export default function ScoreboardSection({ players, game, currentPlayerId, onVi
                 style={{ backgroundColor: COLOUR_HEX[player.colour] ?? '#6e7681' }}
               />
               <span className={`flex-1 font-body text-sm ${isMe ? 'text-bright' : 'text-text'}`}>
-                {player.display_name}
+                <span className={player.eliminated ? 'text-muted line-through' : ''}>
+                  {player.display_name}
+                </span>
                 {player.faction && (
                   <span className="text-dim text-xs ml-2">({player.faction})</span>
                 )}
