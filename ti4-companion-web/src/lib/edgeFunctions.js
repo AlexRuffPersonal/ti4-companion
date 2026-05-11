@@ -181,8 +181,8 @@ export const rollRiftDice = (transitId, rollAll, unitId) =>
 export const playActionCard = (gameId, cardId, selections) =>
   callFunction('game-play-action-card', { game_id: gameId, card_id: cardId, selections })
 
-export const passActionWindow = (gameId) =>
-  callFunction('game-pass-action-window', { game_id: gameId })
+export const passActionWindow = (gameId, combatId) =>
+  callFunction('game-pass-action-window', { game_id: gameId, combat_id: combatId })
 
 // Phase 13
 export const fireAntiFighterBarrage = (gameId, combatId) =>
