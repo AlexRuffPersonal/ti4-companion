@@ -4,20 +4,82 @@ import SystemActionModal from './SystemActionModal.jsx'
 import SpaceCannonModal from './SpaceCannonModal.jsx'
 import CombatModal from './CombatModal.jsx'
 import GroundCombatModal from './GroundCombatModal.jsx'
+import MoveShipsModal from './MoveShipsModal.jsx'
 import { useCombat } from '../../hooks/useCombat.js'
+
+function BombardmentPanel({ systemKey, systemUnits, unitDefs, bombardmentCombatsByPlanet, myPlayerId, players, onFireBombardment, onAssignHits, onAdvance }) {
+  const attackerUnits = (systemUnits ?? []).filter(u => u.player_id === myPlayerId && u.on_planet === null)
+  const hasBombardmentShips = attackerUnits.some(u => {
+    const def = unitDefs?.get?.(u.unit_type) ?? unitDefs?.[u.unit_type]
+    return def?.bombardment != null
+  })
+
+  const defenderGroundForces = (systemUnits ?? []).filter(u => u.player_id !== myPlayerId && u.on_planet !== null)
+  const planets = [...new Set(defenderGroundForces.map(u => u.on_planet))]
+
+  const getBc = (planet) => bombardmentCombatsByPlanet?.get?.(planet) ?? bombardmentCombatsByPlanet?.[planet]
+
+  const allResolved = planets.length > 0 && planets.every(p => getBc(p)?.phase === 'complete')
+
+  return (
+    <div className="panel mb-4" data-testid="bombardment-panel">
+      <p className="label mb-3">Bombardment</p>
+      {planets.map(planet => {
+        const bc = getBc(planet)
+        if (!bc) {
+          return (
+            <div key={planet} className="mb-3">
+              <p className="text-dim text-sm mb-1">{planet}</p>
+              {hasBombardmentShips && (
+                <button className="btn-ghost text-xs mr-2" onClick={() => onFireBombardment(systemKey, planet)}>
+                  Fire Bombardment
+                </button>
+              )}
+            </div>
+          )
+        }
+        if (bc.phase === 'bombardment_assign') {
+          return (
+            <div key={planet} className="mb-3">
+              <p className="label text-xs">{planet} — {bc.attacker_hits ?? 0} hit(s)</p>
+              {bc.defender_player_id === myPlayerId
+                ? <p className="text-dim text-xs">Assign {bc.attacker_hits} hit(s) to your units</p>
+                : <p className="text-dim text-xs">Waiting for defender to assign losses…</p>
+              }
+            </div>
+          )
+        }
+        return (
+          <div key={planet} className="mb-3">
+            <p className="text-dim text-xs">{planet} — bombardment complete ({bc.attacker_hits ?? 0} hits)</p>
+          </div>
+        )
+      })}
+      {allResolved && (
+        <button className="btn-primary text-xs" onClick={() => onAdvance(systemKey)}>
+          Done with Bombardment
+        </button>
+      )}
+    </div>
+  )
+}
 
 export default function GalaxyTab({
   gameId, mapTiles, tileData, activations, allPlanets, systemUnits,
   activatedSystems, myActivations, planetOwnership, activeCombat, myPlayerId,
-  players, currentPlayer, game,
+  players, currentPlayer, game, unitDefs, myTokenSystems,
   activateSystem, landTroops,
 }) {
   const [selectedSystemKey, setSelectedSystemKey] = useState(null)
   const [custodiansClaimed, setCustodiansClaimed] = useState(false)
   const [completedCombat, setCompletedCombat] = useState(null)
+  const [bombardmentCombats, setBombardmentCombats] = useState([])
+  const [showMoveModal, setShowMoveModal] = useState(false)
 
-  const { combat, fireSpaceCannon, rollDice, rollGroundDice, assignHits, declareRetreat } =
-    useCombat(gameId, activeCombat?.id)
+  const {
+    combat, fireSpaceCannon, rollDice, rollGroundDice, assignHits, declareRetreat,
+    fireBombardment, advanceBombardment,
+  } = useCombat(gameId, activeCombat?.id)
 
   // Hold complete combat state for result screen until player dismisses
   useEffect(() => {
@@ -29,6 +91,33 @@ export default function GalaxyTab({
   const tacticUsed = activations.filter(a => a.player_id === currentPlayer?.id).length
   const tacticTotal = currentPlayer?.command_tokens?.tactic_total ?? 0
   const hasAvailableTacticTokens = tacticTotal > tacticUsed
+
+  const combatActive = combat && combat.status === 'active'
+  const spaceCombatActive = combatActive && combat.combat_type === 'space'
+  const groundCombatActive = combatActive && combat.combat_type === 'ground'
+  const showSpaceCannon = spaceCombatActive && combat.phase === 'space_cannon'
+  const showSpaceCombat = (spaceCombatActive && combat.phase !== 'space_cannon') || completedCombat?.combat_type === 'space'
+  const showGroundCombat = groundCombatActive || completedCombat?.combat_type === 'ground'
+  const displayCombat = completedCombat ?? combat
+
+  // Derive the active system for the current player
+  const activeSystemActivation = myActivations
+    ? activations.find(a => myActivations.has?.(a.system_key) || myActivations.has(a.system_key))
+    : null
+  const activeSystemKey = activeSystemActivation?.system_key ?? null
+
+  // movementStep: active player has an activation but no combat is active
+  const activationDone = isActivePlayer && activeSystemKey !== null
+  const movementStep = activationDone && !combatActive
+
+  // Bombardment panel: active player, activation exists, space combat complete or absent, bombardment not done
+  const spaceCombatComplete = (combat?.combat_type === 'space' && combat?.status === 'complete') || (!combat && !completedCombat)
+  const bombardmentActive = isActivePlayer && activeSystemKey !== null && spaceCombatComplete && !groundCombatActive
+
+  // Build bombardmentCombatsByPlanet map
+  const bombardmentCombatsByPlanet = new Map(
+    bombardmentCombats.map(bc => [bc.planet_name, bc])
+  )
 
   async function handleActivate(systemKey) {
     try {
@@ -52,14 +141,6 @@ export default function GalaxyTab({
   const selectedTileInfo = selectedSystemKey
     ? tileData[mapTiles[selectedSystemKey]?.tile_id] ?? null
     : null
-
-  const combatActive = combat && combat.status === 'active'
-  const spaceCombatActive = combatActive && combat.combat_type === 'space'
-  const groundCombatActive = combatActive && combat.combat_type === 'ground'
-  const showSpaceCannon = spaceCombatActive && combat.phase === 'space_cannon'
-  const showSpaceCombat = (spaceCombatActive && combat.phase !== 'space_cannon') || completedCombat?.combat_type === 'space'
-  const showGroundCombat = groundCombatActive || completedCombat?.combat_type === 'ground'
-  const displayCombat = completedCombat ?? combat
 
   return (
     <div className="panel flex flex-col" style={{ height: '70vh' }}>
@@ -129,6 +210,39 @@ export default function GalaxyTab({
           onAssignHits={assignHits}
           onFireScd={() => {}}
           onClose={() => setCompletedCombat(null)}
+        />
+      )}
+
+      {bombardmentActive && (
+        <BombardmentPanel
+          systemKey={activeSystemKey}
+          systemUnits={systemUnits}
+          unitDefs={unitDefs}
+          bombardmentCombatsByPlanet={bombardmentCombatsByPlanet}
+          myPlayerId={myPlayerId}
+          players={players}
+          onFireBombardment={fireBombardment}
+          onAssignHits={assignHits}
+          onAdvance={advanceBombardment}
+        />
+      )}
+
+      {movementStep && (
+        <button className="btn-primary" onClick={() => setShowMoveModal(true)}>Move Ships</button>
+      )}
+
+      {showMoveModal && (
+        <MoveShipsModal
+          gameId={gameId}
+          game={game}
+          activeSystemKey={activeSystemKey}
+          tileData={tileData}
+          mapTiles={mapTiles}
+          systemUnits={systemUnits}
+          myPlayerId={myPlayerId}
+          myTokenSystems={myTokenSystems}
+          unitDefs={unitDefs}
+          onClose={() => setShowMoveModal(false)}
         />
       )}
     </div>

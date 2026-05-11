@@ -55,7 +55,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [client-edgeFunctions](client-edgeFunctions.md) | `src/lib/edgeFunctions.js` | 11 / 13 / 14 / 20 | Ground Combat / AFB / Full Invasion / Space Combat Action Cards | done | fn-game-commit-ground-forces, fn-game-fire-bombardment, fn-game-advance-bombardment, fn-game-fire-space-cannon-defense, fn-game-play-combat-action-card, fn-game-pass-action-window |
 | [hook-useCombat](hook-useCombat.md) | `src/hooks/useCombat.js` | 11 / 13 / 14 / 20 | Ground Combat / AFB / Full Invasion / Space Combat Action Cards | done | client-edgeFunctions, fn-game-play-combat-action-card, fn-game-pass-action-window |
 | [component-GroundCombatModal](component-GroundCombatModal.md) | `src/components/game/GroundCombatModal.jsx` | 11 / 14 | Ground Combat / Full Invasion | done | hook-useCombat |
-| [component-GalaxyTab](component-GalaxyTab.md) | `src/components/game/GalaxyTab.jsx` | 11 / 14 | Ground Combat / Full Invasion | in-progress | component-GroundCombatModal |
+| [component-GalaxyTab](component-GalaxyTab.md) | `src/components/game/GalaxyTab.jsx` | 11 / 14 | Ground Combat / Full Invasion | done | component-GroundCombatModal |
 | [migration-032-promissory-effects](migration-032-promissory-effects.md) | `supabase/migrations/032_promissory_effects.sql` | 15 | Promissory Note Effects | done | — |
 | [shared-promissoryEnforcement](shared-promissoryEnforcement.md) | `supabase/functions/_shared/promissoryEnforcement.ts` | 15 | Promissory Note Effects | done | migration-032-promissory-effects |
 | [fn-game-play-promissory-note](fn-game-play-promissory-note.md) | `supabase/functions/game-play-promissory-note/index.ts` | 15 | Promissory Note Effects | done | shared-promissoryEnforcement, shared-abilityDsl |
@@ -99,7 +99,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [client-edgeFunctions](client-edgeFunctions.md) | `src/lib/edgeFunctions.js` | 18 | Unit Transport | done | fn-game-move-ships |
 | [hook-useMovement](hook-useMovement.md) | `src/hooks/useMovement.js` | 18 | Unit Transport | done | client-edgeFunctions |
 | [component-MoveShipsModal](component-MoveShipsModal.md) | `src/components/game/MoveShipsModal.jsx` | 18 | Unit Transport | done | hook-useMovement |
-| [component-GalaxyTab](component-GalaxyTab.md) | `src/components/game/GalaxyTab.jsx` | 18 | Unit Transport | planned | hook-useMovement, component-MoveShipsModal |
+| [component-GalaxyTab](component-GalaxyTab.md) | `src/components/game/GalaxyTab.jsx` | 18 | Unit Transport | done | hook-useMovement, component-MoveShipsModal |
 
 | [migration-035-ability-dsl-completions](migration-035-ability-dsl-completions.md) | `supabase/migrations/035_ability_dsl_completions.sql` | 19 | Ability DSL Completions | done | — |
 | [shared-abilityDsl](shared-abilityDsl.md) | `supabase/functions/_shared/abilityDsl.ts` | 19 | Ability DSL Completions | done | migration-035-ability-dsl-completions |
@@ -134,7 +134,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [client-edgeFunctions-p25](client-edgeFunctions-p25.md) | `src/lib/edgeFunctions.js` | 25 | Gravity Rift | done | fn-game-roll-rift-dice |
 | [hook-useRiftTransit](hook-useRiftTransit.md) | `src/hooks/useRiftTransit.js` | 25 | Gravity Rift | done | client-edgeFunctions-p25 |
 | [component-RiftTransitModal](component-RiftTransitModal.md) | `src/components/game/RiftTransitModal.jsx` | 25 | Gravity Rift | done | hook-useRiftTransit |
-| [component-GameScreen-p25](component-GameScreen-p25.md) | `src/components/game/GameScreen.jsx` | 25 | Gravity Rift | planned | hook-useRiftTransit, component-RiftTransitModal |
+| [component-GameScreen-p25](component-GameScreen-p25.md) | `src/components/game/GameScreen.jsx` | 25 | Gravity Rift | done | hook-useRiftTransit, component-RiftTransitModal |
 
 | [lib-mapParser](lib-mapParser.md) | `src/lib/mapParser.js` | 22 | Map Builder | done | — |
 | [component-MapPreviewSection](component-MapPreviewSection.md) | `src/components/game/MapPreviewSection.jsx` | 22 | Map Builder | done | lib-mapParser |
@@ -152,7 +152,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [script-parse-lrr](script-parse-lrr.md) | `ti4-companion-web/scripts/parse-lrr.js` | 24 | Rule Lookup | done | — |
 | [component-RulesModal](component-RulesModal.md) | `src/components/game/RulesModal.jsx` | 24 | Rule Lookup | done | script-parse-lrr |
 | [component-GameHeader-p24](component-GameHeader-p24.md) | `src/components/game/GameHeader.jsx` | 24 | Rule Lookup | done | component-RulesModal |
-| [component-GameScreen-p24](component-GameScreen-p24.md) | `src/components/game/GameScreen.jsx` | 24 | Rule Lookup | planned | component-RulesModal, component-GameHeader-p24 |
+| [component-GameScreen-p24](component-GameScreen-p24.md) | `src/components/game/GameScreen.jsx` | 24 | Rule Lookup | done | component-RulesModal, component-GameHeader-p24 |
 
 | [migration-039-elimination](migration-039-elimination.md) | `supabase/migrations/039_elimination.sql` | 26 | Player Elimination | done | — |
 | [migration-040-draw-action-card-fn](migration-040-draw-action-card-fn.md) | `supabase/migrations/040_draw_action_card_fn.sql` | 27 | Tech Debt | done | — |

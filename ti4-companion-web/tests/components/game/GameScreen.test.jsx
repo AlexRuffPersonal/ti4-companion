@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import GameScreen from '../../../src/components/game/GameScreen.jsx'
 import { useStrategyCards } from '../../../src/hooks/useStrategyCards.js'
 import { useGame } from '../../../src/hooks/useGame.js'
+import { useRiftTransit } from '../../../src/hooks/useRiftTransit.js'
 
 // Mock react-router-dom
 vi.mock('react-router-dom', () => ({
@@ -146,7 +147,23 @@ vi.mock('../../../src/lib/gameUtils.js', () => ({
 
 // Mock child components to avoid deep rendering complexity
 vi.mock('../../../src/components/game/GameHeader.jsx', () => ({
-  default: () => <div data-testid="game-header" />,
+  default: ({ onOpenRules }) => (
+    <div data-testid="game-header">
+      {onOpenRules && <button data-testid="rules-btn" onClick={onOpenRules}>RULES</button>}
+    </div>
+  ),
+}))
+
+vi.mock('../../../src/hooks/useRiftTransit.js', () => ({
+  useRiftTransit: vi.fn(() => ({ activeTransit: null, rollAll: vi.fn(), rollOne: vi.fn(), loading: false, error: null })),
+}))
+
+vi.mock('../../../src/components/game/RulesModal.jsx', () => ({
+  default: ({ isOpen, onClose }) => isOpen ? <div data-testid="rules-modal"><button onClick={onClose}>close</button></div> : null,
+}))
+
+vi.mock('../../../src/components/game/RiftTransitModal.jsx', () => ({
+  default: ({ transit }) => transit ? <div data-testid="rift-transit-modal" /> : null,
 }))
 vi.mock('../../../src/components/game/ScoreboardSection.jsx', () => ({
   default: () => <div data-testid="scoreboard-section" />,
@@ -334,5 +351,65 @@ describe('GameScreen — elimination', () => {
     useGame.mockReturnValue({ ...BASE_USE_GAME, isEliminated: false })
     render(<GameScreen userId="user-1" />)
     expect(screen.getByTestId('my-panel-section')).toBeInTheDocument()
+  })
+})
+
+describe('GameScreen — RulesModal (Phase 24)', () => {
+  beforeEach(() => {
+    useGame.mockReturnValue({ ...BASE_USE_GAME })
+    useStrategyCards.mockReturnValue({
+      activePay: null, responses: [], isMyTurnToRespond: false,
+      playPrimary: vi.fn(), useSecondary: vi.fn(), passSecondary: vi.fn(),
+    })
+    useRiftTransit.mockReturnValue({ activeTransit: null, rollAll: vi.fn(), rollOne: vi.fn(), loading: false, error: null })
+  })
+
+  it('does not render RulesModal initially', () => {
+    render(<GameScreen userId="user-1" />)
+    expect(screen.queryByTestId('rules-modal')).not.toBeInTheDocument()
+  })
+
+  it('renders RulesModal when rules button is clicked', () => {
+    render(<GameScreen userId="user-1" />)
+    fireEvent.click(screen.getByTestId('rules-btn'))
+    expect(screen.getByTestId('rules-modal')).toBeInTheDocument()
+  })
+
+  it('passes onOpenRules callback (not empty stub) to GameHeader', () => {
+    render(<GameScreen userId="user-1" />)
+    // If onOpenRules was an empty stub, clicking would not open the modal
+    fireEvent.click(screen.getByTestId('rules-btn'))
+    expect(screen.getByTestId('rules-modal')).toBeInTheDocument()
+  })
+})
+
+describe('GameScreen — RiftTransitModal (Phase 25)', () => {
+  beforeEach(() => {
+    useGame.mockReturnValue({ ...BASE_USE_GAME })
+    useStrategyCards.mockReturnValue({
+      activePay: null, responses: [], isMyTurnToRespond: false,
+      playPrimary: vi.fn(), useSecondary: vi.fn(), passSecondary: vi.fn(),
+    })
+  })
+
+  it('calls useRiftTransit with the game id', () => {
+    useRiftTransit.mockReturnValue({ activeTransit: null, rollAll: vi.fn(), rollOne: vi.fn(), loading: false, error: null })
+    render(<GameScreen userId="user-1" />)
+    expect(useRiftTransit).toHaveBeenCalledWith('game-uuid')
+  })
+
+  it('does not render RiftTransitModal when activeTransit is null', () => {
+    useRiftTransit.mockReturnValue({ activeTransit: null, rollAll: vi.fn(), rollOne: vi.fn(), loading: false, error: null })
+    render(<GameScreen userId="user-1" />)
+    expect(screen.queryByTestId('rift-transit-modal')).not.toBeInTheDocument()
+  })
+
+  it('renders RiftTransitModal when activeTransit is not null', () => {
+    useRiftTransit.mockReturnValue({
+      activeTransit: { id: 'rt1', player_id: 'p1', system_key: '1,-1' },
+      rollAll: vi.fn(), rollOne: vi.fn(), loading: false, error: null,
+    })
+    render(<GameScreen userId="user-1" />)
+    expect(screen.getByTestId('rift-transit-modal')).toBeInTheDocument()
   })
 })

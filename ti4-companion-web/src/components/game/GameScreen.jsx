@@ -31,6 +31,9 @@ import StrategyCardModal from './StrategyCardModal.jsx'
 import ProductionModal from './ProductionModal.jsx'
 import { produceUnits, passActionWindow, playActionCard } from '../../lib/edgeFunctions.js'
 import ActionWindowBanner from './ActionWindowBanner.jsx'
+import RulesModal from './RulesModal.jsx'
+import RiftTransitModal from './RiftTransitModal.jsx'
+import { useRiftTransit } from '../../hooks/useRiftTransit.js'
 
 export default function GameScreen({ userId }) {
   const { code } = useParams()
@@ -50,6 +53,7 @@ export default function GameScreen({ userId }) {
   } = useGame(code, userId)
 
   const galaxyState = useGalaxy(code, userId)
+  const { activeTransit, rollAll, rollOne, loading: riftLoading, error: riftError } = useRiftTransit(game?.id)
 
   const {
     activePay, responses, isMyTurnToRespond,
@@ -74,6 +78,7 @@ export default function GameScreen({ userId }) {
   const [initialTradeNoteId, setInitialTradeNoteId] = useState(null)
   const [activeTab, setActiveTab] = useState('my-panel') // 'my-panel' | 'scoreboard' | 'galaxy'
   const [productionSystemKey, setProductionSystemKey] = useState(null)
+  const [rulesModalOpen, setRulesModalOpen] = useState(false)
   const [unitDefs, setUnitDefs] = useState({})
   const [strategyModalDismissed, setStrategyModalDismissed] = useState(false)
 
@@ -302,7 +307,7 @@ export default function GameScreen({ userId }) {
         game={game}
         speaker={deriveSpeaker(players, game)}
         onOpenTradeLog={() => setTradeLogModalOpen(true)}
-        onOpenRules={() => {}}
+        onOpenRules={() => setRulesModalOpen(true)}
       />
       <AbilityNotificationBar
         triggerable={triggerable.filter(a =>
@@ -528,6 +533,22 @@ export default function GameScreen({ userId }) {
           onUseSecondary={(abilityId, selections) => useSecondary(abilityId, selections)}
           onPassSecondary={passSecondary}
           onClose={() => setStrategyModalDismissed(true)}
+        />
+      )}
+
+      <RulesModal isOpen={rulesModalOpen} onClose={() => setRulesModalOpen(false)} />
+
+      {activeTransit && (
+        <RiftTransitModal
+          transit={activeTransit}
+          myPlayerId={currentPlayer?.id}
+          players={players}
+          tileMap={game?.map_tiles}
+          onRollAll={rollAll}
+          onRollOne={rollOne}
+          onClose={() => {}}
+          loading={riftLoading}
+          error={riftError}
         />
       )}
 
