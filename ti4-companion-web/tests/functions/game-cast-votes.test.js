@@ -13,9 +13,14 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
 vi.mock('../../../supabase/functions/_shared/player-order.ts', () => ({
   getNextPlayer: vi.fn().mockResolvedValue('p3'),
 }))
+vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
+  logEvent: vi.fn().mockResolvedValue(undefined),
+  EVT_CAST_VOTES: 'cast_votes',
+}))
 
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
+import { logEvent } from '../../../supabase/functions/_shared/gameEvents.ts'
 import { handler } from '../../../supabase/functions/game-cast-votes/index.ts'
 
 const GAME_ID = 'game-uuid'
@@ -409,5 +414,11 @@ describe('Phase 30 tech effects', () => {
     const json = await res.json()
     expect(json.window_opened).toBeUndefined()
     expect(upsertVotesMock).toHaveBeenCalled()
+  })
+
+  it('calls logEvent with correct event_type on success', async () => {
+    const res = await handler(makeRequest({ game_id: GAME_ID, choice: 'For', vote_count: 2 }))
+    expect(res.status).toBe(200)
+    expect(logEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ event_type: 'cast_votes' }))
   })
 })

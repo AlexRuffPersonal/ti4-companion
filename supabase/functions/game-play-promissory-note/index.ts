@@ -1,6 +1,7 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { logEvent, EVT_PLAY_PROMISSORY_NOTE } from '../_shared/gameEvents.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -65,6 +66,14 @@ export async function handler(req: Request): Promise<Response> {
       .update({ state: 'held', held_by_player_id: noteRow.origin_player_id })
       .eq('id', body.note_instance_id)
     if (returnError) return errorResponse('Database error', 500)
+    await logEvent(db, {
+      game_id: body.game_id,
+      player_id: player.id,
+      event_type: EVT_PLAY_PROMISSORY_NOTE,
+      payload: { player_id: player.id, note_id: body.note_instance_id, target_player_id: noteRow.origin_player_id },
+      round: 0,
+      phase: 'action',
+    })
     return okResponse({ played: true })
   }
 
@@ -74,6 +83,14 @@ export async function handler(req: Request): Promise<Response> {
     .eq('id', body.note_instance_id)
   if (updateError) return errorResponse('Database error', 500)
 
+  await logEvent(db, {
+    game_id: body.game_id,
+    player_id: player.id,
+    event_type: EVT_PLAY_PROMISSORY_NOTE,
+    payload: { player_id: player.id, note_id: body.note_instance_id, target_player_id: noteRow.origin_player_id },
+    round: 0,
+    phase: 'action',
+  })
   return okResponse({ played: true })
 }
 if (typeof Deno !== 'undefined') Deno.serve(handler)

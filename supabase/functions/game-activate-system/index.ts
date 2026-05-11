@@ -1,6 +1,7 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { logEvent, EVT_ACTIVATE_SYSTEM } from '../_shared/gameEvents.ts'
 
 type UnitRow = { player_id: string; unit_type: string; count: number; system_key: string }
 type ScDef = { name: string; space_cannon: string }
@@ -258,6 +259,14 @@ export async function handler(req: Request): Promise<Response> {
     })
   if (insertError) return errorResponse(`Failed to activate system: ${insertError.message}`, 500)
 
+  await logEvent(db, {
+    game_id: body.game_id,
+    player_id: player.id,
+    event_type: EVT_ACTIVATE_SYSTEM,
+    payload: { player_id: player.id, system_key: body.system_key },
+    round: game.round,
+    phase: 'action',
+  })
   return okResponse({ activated: true, combat_id: combatId })
 }
 

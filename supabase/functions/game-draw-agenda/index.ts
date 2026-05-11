@@ -2,6 +2,7 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { getNextPlayer } from '../_shared/player-order.ts'
+import { logEvent, EVT_DRAW_AGENDA } from '../_shared/gameEvents.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -107,6 +108,14 @@ export async function handler(req: Request): Promise<Response> {
       .eq('id', body.game_id)
   }
 
+  await logEvent(db, {
+    game_id: body.game_id,
+    player_id: null,
+    event_type: EVT_DRAW_AGENDA,
+    payload: { agenda_id: topCard.agenda_id },
+    round: 0,
+    phase: 'agenda',
+  })
   return okResponse({ drawn: true, agenda_id: topCard.agenda_id })
 }
 

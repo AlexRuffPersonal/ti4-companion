@@ -13,9 +13,14 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
     raw: (sql) => ({ _raw: sql }),
   },
 }))
+vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
+  logEvent: vi.fn().mockResolvedValue(undefined),
+  EVT_CONFIRM_TRANSACTION: 'confirm_transaction',
+}))
 
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
+import { logEvent } from '../../../supabase/functions/_shared/gameEvents.ts'
 import { handler } from '../../../supabase/functions/game-confirm-transaction/index.ts'
 
 const USER_ID = 'user-uuid'
@@ -736,5 +741,11 @@ describe('game-confirm-transaction', () => {
     expect(updateCall.status).toBe('confirmed')
     expect(updateCall.active_player_id).toBe(ACTIVE_PLAYER_ID)
     expect(updateCall.confirmed_at).toBeDefined()
+  })
+
+  it('calls logEvent with correct event_type on success', async () => {
+    const res = await handler(makeRequest({ game_id: GAME_ID, transaction_id: 'tx-1' }))
+    expect(res.status).toBe(200)
+    expect(logEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ event_type: 'confirm_transaction' }))
   })
 })

@@ -2,6 +2,7 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { checkAndEliminate } from '../_shared/eliminationHandler.ts'
+import { logEvent, EVT_LAND_TROOPS } from '../_shared/gameEvents.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -130,6 +131,14 @@ export async function handler(req: Request): Promise<Response> {
   }
 
   const eliminatedPlayerIds = await checkAndEliminate(db, body.game_id as string)
+  await logEvent(db, {
+    game_id: body.game_id,
+    player_id: player.id,
+    event_type: EVT_LAND_TROOPS,
+    payload: { player_id: player.id, system_key: body.system_key, planet_name: body.planet_name, units: body.troop_count },
+    round: game.round,
+    phase: 'action',
+  })
   return okResponse({ claimed: true, ...(custodiansAwarded && { custodians_claimed: true }), eliminatedPlayerIds })
 }
 

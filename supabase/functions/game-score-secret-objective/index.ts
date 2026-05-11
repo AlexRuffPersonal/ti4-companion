@@ -1,6 +1,7 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { logEvent, EVT_SCORE_SECRET } from '../_shared/gameEvents.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -73,6 +74,14 @@ export async function handler(req: Request): Promise<Response> {
     .eq('id', player.id)
   if (updatePlayerError) return errorResponse(`Update failed: ${updatePlayerError.message}`, 500)
 
+  await logEvent(db, {
+    game_id: body.game_id,
+    player_id: player.id,
+    event_type: EVT_SCORE_SECRET,
+    payload: { player_id: player.id, objective_id: body.objective_id, vp_before: player.vp, vp_after: player.vp + 1 },
+    round: game.round,
+    phase: game.phase,
+  })
   return okResponse({ scored: true })
 }
 

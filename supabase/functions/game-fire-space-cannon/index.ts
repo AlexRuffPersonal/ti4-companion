@@ -1,6 +1,7 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { logEvent, EVT_FIRE_SPACE_CANNON } from '../_shared/gameEvents.ts'
 
 type SpEntry = { player_id: string; system_key: string; unit_type: string; dice_count: number; resolved: boolean }
 type UnitRow = { id: string; player_id: string; unit_type: string; count: number; system_key: string }
@@ -168,6 +169,14 @@ export async function handler(req: Request): Promise<Response> {
       .eq('id', body.combat_id)
     if (updateError) return errorResponse(`Update failed: ${updateError.message}`, 500)
 
+    await logEvent(db, {
+      game_id: body.game_id,
+      player_id: player.id,
+      event_type: EVT_FIRE_SPACE_CANNON,
+      payload: { player_id: player.id, system_key: combat.system_key, dice_results: diceResults, hits },
+      round: 0,
+      phase: 'action',
+    })
     return okResponse({ phase: newPhase, dice: diceResults, hits, graviton_active: gravitonActive })
   }
 

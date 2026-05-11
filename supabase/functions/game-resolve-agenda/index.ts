@@ -1,6 +1,7 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { logEvent, EVT_RESOLVE_AGENDA } from '../_shared/gameEvents.ts'
 
 const STEP_AFTER: Record<string, string> = {
   'agenda_1_voting': 'agenda_1_resolved',
@@ -132,6 +133,14 @@ export async function handler(req: Request): Promise<Response> {
     agenda_vote_current_player_id: null,
   }).eq('id', body.game_id)
 
+  await logEvent(db, {
+    game_id: body.game_id,
+    player_id: null,
+    event_type: EVT_RESOLVE_AGENDA,
+    payload: { agenda_id: body.agenda_id, outcome: electedTarget },
+    round: game.round,
+    phase: 'agenda',
+  })
   return okResponse({ resolved: true, next_step: nextStep })
 }
 

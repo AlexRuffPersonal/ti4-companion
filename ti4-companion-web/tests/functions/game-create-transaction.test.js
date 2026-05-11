@@ -10,9 +10,14 @@ vi.mock('../../../supabase/functions/_shared/auth.ts', () => {
 vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
   db: { from: vi.fn() },
 }))
+vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
+  logEvent: vi.fn().mockResolvedValue(undefined),
+  EVT_CREATE_TRANSACTION: 'create_transaction',
+}))
 
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
+import { logEvent } from '../../../supabase/functions/_shared/gameEvents.ts'
 import { handler } from '../../../supabase/functions/game-create-transaction/index.ts'
 
 const USER_ID = 'user-uuid'
@@ -247,5 +252,11 @@ describe('game-create-transaction', () => {
     expect(row.status).toBe('pending')
     expect(row.from_player_id).toBe(FROM_PLAYER_ID)
     expect(row.to_player_id).toBe(TO_PLAYER_ID)
+  })
+
+  it('calls logEvent with correct event_type on success', async () => {
+    const res = await handler(makeRequest({ game_id: GAME_ID, to_player_id: TO_PLAYER_ID, offer: { commodities: 1, trade_goods: 0, note_ids: [] }, request: { commodities: 0, trade_goods: 1, note_ids: [] } }))
+    expect(res.status).toBe(200)
+    expect(logEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ event_type: 'create_transaction' }))
   })
 })

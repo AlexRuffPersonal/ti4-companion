@@ -1,6 +1,7 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { logEvent, EVT_DISCARD_ACTION_CARD } from '../_shared/gameEvents.ts'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -50,5 +51,13 @@ Deno.serve(async (req: Request) => {
     .eq('id', player.id)
   if (updatePlayerError) return errorResponse('Database error', 500)
 
+  await logEvent(db, {
+    game_id: body.game_id,
+    player_id: player.id,
+    event_type: EVT_DISCARD_ACTION_CARD,
+    payload: { player_id: player.id, card_id: body.card_id },
+    round: 0,
+    phase: 'action',
+  })
   return okResponse({ discarded: true })
 })

@@ -2,6 +2,7 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { EXHAUSTABLE_TECHS } from '../_shared/techEffects.ts'
+import { logEvent, EVT_END_TURN } from '../_shared/gameEvents.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -123,6 +124,14 @@ export async function handler(req: Request): Promise<Response> {
     .eq('id', body.game_id)
   if (updateError) return errorResponse(`Update failed: ${updateError.message}`, 500)
 
+  await logEvent(db, {
+    game_id: body.game_id,
+    player_id: callerPlayer.id,
+    event_type: EVT_END_TURN,
+    payload: { player_id: callerPlayer.id, next_player_id: nextPlayerId },
+    round: 0,
+    phase: game.phase,
+  })
   return okResponse({ advanced: true })
 }
 

@@ -1,6 +1,7 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { logEvent, EVT_RESEARCH_TECH } from '../_shared/gameEvents.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -215,6 +216,14 @@ export async function handler(req: Request): Promise<Response> {
       .eq('id', body.game_id)
   }
 
+  await logEvent(db, {
+    game_id: body.game_id,
+    player_id: player.id,
+    event_type: EVT_RESEARCH_TECH,
+    payload: { player_id: player.id, technology_id: body.tech_name, technologies_before: heldTechs },
+    round: 0,
+    phase: 'action',
+  })
   return okResponse({ researched: true })
 }
 

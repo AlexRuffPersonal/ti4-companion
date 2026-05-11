@@ -2,6 +2,7 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { resolveUnitStats } from '../_shared/techEffects.ts'
+import { logEvent, EVT_ROLL_GROUND_COMBAT_DICE } from '../_shared/gameEvents.ts'
 
 type UnitRow = { id: string; player_id: string; unit_type: string; count: number; system_key: string }
 type UnitDef = { name: string; combat: string | null; sustain_damage: boolean; planetary_shield?: boolean }
@@ -137,6 +138,14 @@ export async function handler(req: Request): Promise<Response> {
         const updatePayload = { attacker_dice: [], attacker_hits: 0, phase: nextPhase }
         const { error } = await db.from('game_combats').update(updatePayload).eq('id', body.combat_id)
         if (error) return errorResponse(`Update failed: ${error.message}`, 500)
+        await logEvent(db, {
+          game_id: body.game_id,
+          player_id: player.id,
+          event_type: EVT_ROLL_GROUND_COMBAT_DICE,
+          payload: { player_id: player.id, combat_id: body.combat_id, dice_results: [], hits: 0 },
+          round: 0,
+          phase: 'action',
+        })
         return okResponse({ phase: nextPhase, dice: [], hits: 0, magen_applied: true })
       }
     }
@@ -200,6 +209,14 @@ export async function handler(req: Request): Promise<Response> {
   const { error } = await db.from('game_combats').update(updatePayload).eq('id', body.combat_id)
   if (error) return errorResponse(`Update failed: ${error.message}`, 500)
 
+  await logEvent(db, {
+    game_id: body.game_id,
+    player_id: player.id,
+    event_type: EVT_ROLL_GROUND_COMBAT_DICE,
+    payload: { player_id: player.id, combat_id: body.combat_id, dice_results: results, hits },
+    round: 0,
+    phase: 'action',
+  })
   return okResponse({ phase: nextPhase, dice: results, hits })
 }
 

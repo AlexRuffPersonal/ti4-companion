@@ -1,6 +1,7 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { logEvent, EVT_UPDATE_COMMAND_TOKENS } from '../_shared/gameEvents.ts'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -28,7 +29,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: player, error: playerError } = await db
     .from('game_players')
-    .select('id')
+    .select('id, command_tokens')
     .eq('game_id', body.game_id)
     .eq('user_id', userId)
     .maybeSingle()
@@ -41,5 +42,13 @@ Deno.serve(async (req: Request) => {
     .eq('id', player.id)
   if (updateError) return errorResponse(`Update failed: ${updateError.message}`, 500)
 
+  await logEvent(db, {
+    game_id: body.game_id,
+    player_id: player.id,
+    event_type: EVT_UPDATE_COMMAND_TOKENS,
+    payload: { player_id: player.id, tokens_before: player.command_tokens, tokens_after: { tactic_total: tactic, fleet, strategy } },
+    round: 0,
+    phase: 'action',
+  })
   return okResponse({ updated: true })
 })

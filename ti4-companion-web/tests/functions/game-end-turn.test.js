@@ -10,9 +10,14 @@ vi.mock('../../../supabase/functions/_shared/auth.ts', () => {
 vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
   db: { from: vi.fn() },
 }))
+vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
+  logEvent: vi.fn().mockResolvedValue(undefined),
+  EVT_END_TURN: 'end_turn',
+}))
 
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
+import { logEvent } from '../../../supabase/functions/_shared/gameEvents.ts'
 import { handler } from '../../../supabase/functions/game-end-turn/index.ts'
 
 const USER_ID = 'user-uuid'
@@ -288,5 +293,12 @@ describe('game-end-turn', () => {
       expect(capturedExhausted).not.toContain('Graviton Laser System')
       expect(capturedExhausted).toContain('Bio-Stims')
     })
+  })
+
+  it('calls logEvent with correct event_type on success', async () => {
+    mockDb()
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    expect(res.status).toBe(200)
+    expect(logEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ event_type: 'end_turn' }))
   })
 })

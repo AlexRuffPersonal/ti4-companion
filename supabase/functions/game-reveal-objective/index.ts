@@ -1,6 +1,7 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { logEvent, EVT_REVEAL_OBJECTIVE } from '../_shared/gameEvents.ts'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -56,5 +57,13 @@ Deno.serve(async (req: Request) => {
     .eq('id', deckCard.id)
   if (updateError) return errorResponse(`Update failed: ${updateError.message}`, 500)
 
+  await logEvent(db, {
+    game_id: body.game_id,
+    player_id: null,
+    event_type: EVT_REVEAL_OBJECTIVE,
+    payload: { objective_id: deckCard.id },
+    round: game.round,
+    phase: 'status',
+  })
   return okResponse({ revealed: true })
 })

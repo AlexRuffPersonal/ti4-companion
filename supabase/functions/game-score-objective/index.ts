@@ -1,6 +1,7 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { logEvent, EVT_SCORE_OBJECTIVE } from '../_shared/gameEvents.ts'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -74,5 +75,13 @@ Deno.serve(async (req: Request) => {
     .eq('id', body.player_id)
   if (vpError) return errorResponse(`VP update failed: ${vpError.message}`, 500)
 
+  await logEvent(db, {
+    game_id: body.game_id,
+    player_id: body.player_id,
+    event_type: EVT_SCORE_OBJECTIVE,
+    payload: { player_id: body.player_id, objective_id: body.objective_id, vp_before: player.vp, vp_after: player.vp + points },
+    round: 0,
+    phase: 'status',
+  })
   return okResponse({ scored: true, vp_awarded: points })
 })

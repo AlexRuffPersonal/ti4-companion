@@ -1,6 +1,7 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { logEvent, EVT_DECLARE_RETREAT } from '../_shared/gameEvents.ts'
 
 function axialNeighborKeys(systemKey: string): string[] {
   const [q, r] = systemKey.split(',').map(Number)
@@ -128,6 +129,14 @@ export async function handler(req: Request): Promise<Response> {
     .eq('id', body.combat_id)
   if (error) return errorResponse(`Update failed: ${error.message}`, 500)
 
+  await logEvent(db, {
+    game_id: body.game_id,
+    player_id: player.id,
+    event_type: EVT_DECLARE_RETREAT,
+    payload: { player_id: player.id, combat_id: body.combat_id, retreat_to: body.destination },
+    round: 0,
+    phase: 'action',
+  })
   return okResponse({ retreat_declared_by: player.id, retreat_destination: body.destination })
 }
 

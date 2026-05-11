@@ -1,6 +1,7 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { logEvent, EVT_CONFIRM_TRANSACTION } from '../_shared/gameEvents.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -174,6 +175,14 @@ export async function handler(req: Request): Promise<Response> {
     .eq('id', body.transaction_id)
   if (finalError) return errorResponse('Database error', 500)
 
+  await logEvent(db, {
+    game_id: body.game_id,
+    player_id: toPlayer.id,
+    event_type: EVT_CONFIRM_TRANSACTION,
+    payload: { transaction_id: body.transaction_id, from_player_id: tx.from_player_id, to_player_id: toPlayer.id },
+    round: 0,
+    phase: game?.phase ?? 'action',
+  })
   return okResponse({ confirmed: true })
 }
 

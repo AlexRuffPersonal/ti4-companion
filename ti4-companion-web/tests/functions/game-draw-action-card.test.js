@@ -8,11 +8,16 @@ vi.mock('../../../supabase/functions/_shared/auth.ts', () => {
 })
 
 vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
-  db: { rpc: vi.fn() },
+  db: { rpc: vi.fn(), from: vi.fn() },
+}))
+vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
+  logEvent: vi.fn().mockResolvedValue(undefined),
+  EVT_DRAW_ACTION_CARD: 'draw_action_card',
 }))
 
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
+import { logEvent } from '../../../supabase/functions/_shared/gameEvents.ts'
 
 const USER_ID = 'user-uuid'
 const GAME_ID = 'game-uuid'
@@ -36,6 +41,16 @@ beforeEach(() => {
   vi.clearAllMocks()
   requireAuth.mockResolvedValue(USER_ID)
   db.rpc.mockResolvedValue({ data: { drawn: true }, error: null })
+  db.from.mockReturnValue({
+    select: vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'player-uuid' }, error: null }),
+        }),
+      }),
+    }),
+    insert: vi.fn().mockResolvedValue({ error: null }),
+  })
 })
 
 describe('game-draw-action-card', () => {
@@ -86,5 +101,11 @@ describe('game-draw-action-card', () => {
     db.rpc.mockResolvedValue({ data: null, error: { message: 'unexpected db failure' } })
     const res = await handler(makeRequest({ game_id: GAME_ID }))
     expect(res.status).toBe(500)
+  })
+
+  it('calls logEvent with correct event_type on success', async () => {
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    expect(res.status).toBe(200)
+    expect(logEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ event_type: 'draw_action_card' }))
   })
 })

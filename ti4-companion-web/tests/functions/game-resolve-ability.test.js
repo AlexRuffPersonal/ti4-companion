@@ -18,11 +18,16 @@ vi.mock('../../../supabase/functions/_shared/abilityDsl.ts', () => ({
 vi.mock('../../../supabase/functions/_shared/abilityHandlers.ts', () => ({
   getHandler: vi.fn().mockReturnValue(vi.fn().mockResolvedValue(undefined)),
 }))
+vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
+  logEvent: vi.fn().mockResolvedValue(undefined),
+  EVT_RESOLVE_ABILITY: 'resolve_ability',
+}))
 
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { interpretEffects } from '../../../supabase/functions/_shared/abilityDsl.ts'
 import { getHandler } from '../../../supabase/functions/_shared/abilityHandlers.ts'
+import { logEvent } from '../../../supabase/functions/_shared/gameEvents.ts'
 import { handler } from '../../../supabase/functions/game-resolve-ability/index.ts'
 
 const USER_ID = 'user-uuid'
@@ -172,5 +177,11 @@ describe('game-resolve-ability', () => {
     const res = await handler(makeRequest({ game_id: GAME_ID, ability_definition_id: ABILITY_ID, source_type: 'relic', source_id: 'relic-deck-uuid', selections: {} }))
     expect(res.status).toBe(200)
     expect(relicUpdateMock).toHaveBeenCalledWith({ state: 'exhausted' })
+  })
+
+  it('calls logEvent with correct event_type on success', async () => {
+    const res = await handler(makeRequest({ game_id: GAME_ID, ability_definition_id: ABILITY_ID, source_type: 'faction_ability' }))
+    expect(res.status).toBe(200)
+    expect(logEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ event_type: 'resolve_ability' }))
   })
 })

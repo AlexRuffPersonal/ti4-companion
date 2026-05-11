@@ -10,9 +10,14 @@ vi.mock('../../../supabase/functions/_shared/auth.ts', () => {
 vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
   db: { from: vi.fn() },
 }))
+vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
+  logEvent: vi.fn().mockResolvedValue(undefined),
+  EVT_ADVANCE_PHASE: 'advance_phase',
+}))
 
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
+import { logEvent } from '../../../supabase/functions/_shared/gameEvents.ts'
 import { handler } from '../../../supabase/functions/game-advance-phase/index.ts'
 
 const HOST_ID = 'host-uuid'
@@ -138,5 +143,12 @@ describe('game-advance-phase — agenda_unlocked patch', () => {
     const readyCall = legendaryUpdateMock.mock.calls.find(call => call[0]?.status !== undefined)
     expect(readyCall).toBeDefined()
     expect(readyCall[0].status).toBe('readied')
+  })
+
+  it('calls logEvent with correct event_type on success', async () => {
+    mockDb()
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    expect(res.status).toBe(200)
+    expect(logEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ event_type: 'advance_phase' }))
   })
 })

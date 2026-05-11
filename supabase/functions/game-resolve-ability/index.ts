@@ -3,6 +3,7 @@ import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { interpretEffects, ResolveContext } from '../_shared/abilityDsl.ts'
 import { getHandler } from '../_shared/abilityHandlers.ts'
+import { logEvent, EVT_RESOLVE_ABILITY } from '../_shared/gameEvents.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -119,6 +120,14 @@ export async function handler(req: Request): Promise<Response> {
       const agentOwnerPlayerId = (leaderRow as Record<string, string> | null)?.player_id
 
       if (agentOwnerPlayerId) {
+        await logEvent(db, {
+          game_id: body.game_id,
+          player_id: (player as Record<string, string>).id,
+          event_type: EVT_RESOLVE_ABILITY,
+          payload: { player_id: (player as Record<string, string>).id, ability_key: body.ability_definition_id, targets: body.selections },
+          round: 0,
+          phase: 'action',
+        })
         return okResponse({
           resolved: true,
           pending_window: {
@@ -131,6 +140,14 @@ export async function handler(req: Request): Promise<Response> {
     }
   }
 
+  await logEvent(db, {
+    game_id: body.game_id,
+    player_id: (player as Record<string, string>).id,
+    event_type: EVT_RESOLVE_ABILITY,
+    payload: { player_id: (player as Record<string, string>).id, ability_key: body.ability_definition_id, targets: body.selections },
+    round: 0,
+    phase: 'action',
+  })
   return okResponse({ resolved: true })
 }
 

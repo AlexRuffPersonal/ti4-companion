@@ -1,6 +1,7 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { logEvent, EVT_CREATE_TRANSACTION } from '../_shared/gameEvents.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -128,6 +129,14 @@ export async function handler(req: Request): Promise<Response> {
     })
   if (insertError) return errorResponse(`Failed to create transaction: ${insertError.message}`, 500)
 
+  await logEvent(db, {
+    game_id: body.game_id,
+    player_id: fromPlayerId,
+    event_type: EVT_CREATE_TRANSACTION,
+    payload: { from_player_id: fromPlayerId, to_player_id: body.to_player_id, offer: body.offer },
+    round: 0,
+    phase: 'action',
+  })
   return okResponse({ created: true })
 }
 

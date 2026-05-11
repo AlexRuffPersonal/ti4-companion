@@ -2,6 +2,7 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { getNextPlayer } from '../_shared/player-order.ts'
+import { logEvent, EVT_CAST_VOTES } from '../_shared/gameEvents.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -210,6 +211,14 @@ export async function handler(req: Request): Promise<Response> {
     .eq('agenda_vote_current_player_id', callerPlayer.id)
   if (updateError) return errorResponse(`Failed to advance voter: ${updateError.message}`, 500)
 
+  await logEvent(db, {
+    game_id: body.game_id,
+    player_id: callerPlayer.id,
+    event_type: EVT_CAST_VOTES,
+    payload: { player_id: callerPlayer.id, agenda_id: game.agenda_current_card_id, votes: voteCount, outcome: choice },
+    round: 0,
+    phase: 'agenda',
+  })
   return okResponse({ voted: true, all_voted: allVoted })
 }
 

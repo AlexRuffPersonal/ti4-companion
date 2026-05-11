@@ -1,6 +1,7 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { logEvent, EVT_ADVANCE_PHASE } from '../_shared/gameEvents.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -229,6 +230,18 @@ export async function handler(req: Request): Promise<Response> {
     if (error) return errorResponse(`Update failed: ${error.message}`, 500)
   }
 
+  const phaseAfter = game.phase === 'strategy' ? 'action'
+    : game.phase === 'action' ? 'status'
+    : game.agenda_unlocked ? 'agenda' : 'strategy'
+  const roundAfter = game.phase === 'status' && !game.agenda_unlocked ? game.round + 1 : game.round
+  await logEvent(db, {
+    game_id: body.game_id,
+    player_id: null,
+    event_type: EVT_ADVANCE_PHASE,
+    payload: { phase_before: game.phase, phase_after: phaseAfter, round: game.round },
+    round: roundAfter,
+    phase: phaseAfter,
+  })
   return okResponse({ advanced: true })
 }
 

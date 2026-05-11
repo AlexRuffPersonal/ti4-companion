@@ -2,6 +2,7 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { checkAndEliminate } from '../_shared/eliminationHandler.ts'
+import { logEvent, EVT_ASSIGN_HITS } from '../_shared/gameEvents.ts'
 
 type Casualty = { unit_type: string; player_unit_id: string; action: 'destroy' | 'sustain' }
 type UnitRow = { id: string; player_id: string; unit_type: string; count: number; damaged: boolean; system_key: string }
@@ -100,6 +101,14 @@ export async function handler(req: Request): Promise<Response> {
   if (isDefenderAssign) {
     await db.from('game_combats').update({ phase: 'defender_roll' }).eq('id', body.combat_id)
     const eliminatedPlayerIds = await checkAndEliminate(db, body.game_id as string)
+    await logEvent(db, {
+      game_id: body.game_id,
+      player_id: player.id,
+      event_type: EVT_ASSIGN_HITS,
+      payload: { player_id: player.id, combat_id: body.combat_id, casualties: body.casualties },
+      round: 0,
+      phase: 'action',
+    })
     return okResponse({ phase: 'defender_roll', eliminatedPlayerIds })
   }
 
@@ -135,6 +144,14 @@ export async function handler(req: Request): Promise<Response> {
     }).eq('id', body.combat_id)
 
     const eliminatedPlayerIds = await checkAndEliminate(db, body.game_id as string)
+    await logEvent(db, {
+      game_id: body.game_id,
+      player_id: player.id,
+      event_type: EVT_ASSIGN_HITS,
+      payload: { player_id: player.id, combat_id: body.combat_id, casualties: body.casualties },
+      round: 0,
+      phase: 'action',
+    })
     return okResponse({ status: 'complete', winner_player_id: winnerId, eliminatedPlayerIds })
   }
 
@@ -165,6 +182,14 @@ export async function handler(req: Request): Promise<Response> {
       winner_player_id: winnerId,
     }).eq('id', body.combat_id)
     const eliminatedPlayerIds = await checkAndEliminate(db, body.game_id as string)
+    await logEvent(db, {
+      game_id: body.game_id,
+      player_id: player.id,
+      event_type: EVT_ASSIGN_HITS,
+      payload: { player_id: player.id, combat_id: body.combat_id, casualties: body.casualties },
+      round: 0,
+      phase: 'action',
+    })
     return okResponse({ status: 'complete', winner_player_id: winnerId, eliminatedPlayerIds })
   }
 
@@ -180,6 +205,14 @@ export async function handler(req: Request): Promise<Response> {
   }).eq('id', body.combat_id)
 
   const eliminatedPlayerIds = await checkAndEliminate(db, body.game_id as string)
+  await logEvent(db, {
+    game_id: body.game_id,
+    player_id: player.id,
+    event_type: EVT_ASSIGN_HITS,
+    payload: { player_id: player.id, combat_id: body.combat_id, casualties: body.casualties },
+    round: 0,
+    phase: 'action',
+  })
   return okResponse({ phase: 'attacker_roll', round: nextRound, eliminatedPlayerIds })
 }
 

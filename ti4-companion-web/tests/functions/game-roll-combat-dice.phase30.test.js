@@ -12,10 +12,15 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
 vi.mock('../../../supabase/functions/_shared/techEffects.ts', () => ({
   resolveUnitStats: vi.fn((unitType, baseStats) => ({ ...baseStats })),
 }))
+vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
+  logEvent: vi.fn().mockResolvedValue(undefined),
+  EVT_ROLL_COMBAT_DICE: 'roll_combat_dice',
+}))
 
 import { requireAuth } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { resolveUnitStats } from '../../../supabase/functions/_shared/techEffects.ts'
+import { logEvent } from '../../../supabase/functions/_shared/gameEvents.ts'
 import { handler } from '../../../supabase/functions/game-roll-combat-dice/index.ts'
 
 const GAME_ID = 'game-uuid'
@@ -627,5 +632,11 @@ describe('game-roll-combat-dice Phase 30', () => {
     expect(res.status).toBe(200)
     const repairUpdate = unitUpdateCaptures.find(u => u.damaged === false)
     expect(repairUpdate).toBeUndefined()
+  })
+
+  it('calls logEvent with correct event_type on success', async () => {
+    const res = await handler(makeRequest({ game_id: GAME_ID, combat_id: COMBAT_ID }))
+    expect(res.status).toBe(200)
+    expect(logEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ event_type: 'roll_combat_dice' }))
   })
 })

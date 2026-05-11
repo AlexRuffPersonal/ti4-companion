@@ -1,6 +1,7 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { logEvent, EVT_PLAYER_PASS } from '../_shared/gameEvents.ts'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -68,5 +69,13 @@ Deno.serve(async (req: Request) => {
     .eq('id', body.game_id)
   if (updateError) return errorResponse(`Update failed: ${updateError.message}`, 500)
 
+  await logEvent(db, {
+    game_id: body.game_id,
+    player_id: callerPlayer.id,
+    event_type: EVT_PLAYER_PASS,
+    payload: { player_id: callerPlayer.id },
+    round: 0,
+    phase: game.phase,
+  })
   return okResponse({ passed: true })
 })
