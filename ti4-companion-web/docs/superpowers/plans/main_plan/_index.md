@@ -138,7 +138,7 @@ This keeps the index accurate across multi-session implementations so future age
 
 | [lib-mapParser](lib-mapParser.md) | `src/lib/mapParser.js` | 22 | Map Builder | done | — |
 | [component-MapPreviewSection](component-MapPreviewSection.md) | `src/components/game/MapPreviewSection.jsx` | 22 | Map Builder | done | lib-mapParser |
-| [component-LobbyScreen-p22](component-LobbyScreen-p22.md) | `src/components/game/LobbyScreen.jsx` | 22 | Map Builder | planned | lib-mapParser, component-MapPreviewSection, fn-game-update-settings-p22 |
+| [component-LobbyScreen-p22](component-LobbyScreen-p22.md) | `src/components/game/LobbyScreen.jsx` | 22 | Map Builder | done | lib-mapParser, component-MapPreviewSection, fn-game-update-settings-p22 |
 | [fn-game-update-settings-p22](fn-game-update-settings-p22.md) | `supabase/functions/game-update-settings/index.ts` | 22 | Map Builder | done | — |
 | [fn-game-start-p22](fn-game-start-p22.md) | `supabase/functions/game-start/index.ts` | 22 | Map Builder | done | fn-game-update-settings-p22 |
 
@@ -146,8 +146,8 @@ This keeps the index accurate across multi-session implementations so future age
 | [lib-importSchemas-p23](lib-importSchemas-p23.md) | `src/lib/importSchemas.js` | 23 | Admin: Read Views + Editing | done | — |
 | [client-edgeFunctions-p23](client-edgeFunctions-p23.md) | `src/lib/edgeFunctions.js` | 23 | Admin: Read Views + Editing | done | fn-admin-update-record |
 | [component-AdminDashboard-p23](component-AdminDashboard-p23.md) | `src/components/admin/AdminDashboard.jsx` | 23 | Admin: Read Views + Editing | done | lib-importSchemas-p23 |
-| [component-AdminBrowsePage](component-AdminBrowsePage.md) | `src/components/admin/AdminBrowsePage.jsx` | 23 | Admin: Read Views + Editing | planned | lib-importSchemas-p23, client-edgeFunctions-p23 |
-| [component-AdminRecordModal](component-AdminRecordModal.md) | `src/components/admin/AdminRecordModal.jsx` | 23 | Admin: Read Views + Editing | planned | client-edgeFunctions-p23, lib-importSchemas-p23 |
+| [component-AdminBrowsePage](component-AdminBrowsePage.md) | `src/components/admin/AdminBrowsePage.jsx` | 23 | Admin: Read Views + Editing | done | lib-importSchemas-p23, client-edgeFunctions-p23 |
+| [component-AdminRecordModal](component-AdminRecordModal.md) | `src/components/admin/AdminRecordModal.jsx` | 23 | Admin: Read Views + Editing | done | client-edgeFunctions-p23, lib-importSchemas-p23 |
 
 | [script-parse-lrr](script-parse-lrr.md) | `ti4-companion-web/scripts/parse-lrr.js` | 24 | Rule Lookup | done | — |
 | [component-RulesModal](component-RulesModal.md) | `src/components/game/RulesModal.jsx` | 24 | Rule Lookup | done | script-parse-lrr |

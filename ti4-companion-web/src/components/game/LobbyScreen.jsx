@@ -2,8 +2,20 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useGame } from '../../hooks/useGame.js'
 import { supabase } from '../../lib/supabase.js'
+import { updateGameSettings } from '../../lib/edgeFunctions.js'
+import MapPreviewSection from '../game/MapPreviewSection.jsx'
 
 const COLOURS = ['red', 'blue', 'yellow', 'green', 'purple', 'black', 'orange', 'pink']
+
+export const PRESET_MAPS = [
+  { label: 'Balanced 6P', playerCount: 6, mapString: '18 36 30 34 35 33 17 21 28 29 26 40 39 24 22 38 25 23 27 32 37 20 19 31 41', pok: false },
+  { label: 'PoK 6P Ring', playerCount: 6, mapString: '18 76 75 71 73 72 74 36 30 34 35 33 17 21 28 29 26 40 39 24 22 38 25 23 27 32 37 20 19 31 41', pok: true },
+  { label: 'Balanced 4P', playerCount: 4, mapString: '18 36 30 34 35 33 17 21 28 29 26 40', pok: false },
+  { label: 'Balanced 5P', playerCount: 5, mapString: '18 36 30 34 35 33 17 21 28 29 26 40 39 24 22', pok: false },
+  { label: 'Balanced 7P', playerCount: 7, mapString: '18 36 30 34 35 33 17 21 28 29 26 40 39 24 22 38 25 23 27 32 37 20 19 31 41 42 43', pok: false },
+  { label: 'Balanced 8P', playerCount: 8, mapString: '18 36 30 34 35 33 17 21 28 29 26 40 39 24 22 38 25 23 27 32 37 20 19 31 41 42 43 44 45', pok: false },
+  { label: 'Balanced 3P', playerCount: 3, mapString: '18 36 30 34 35 33 17', pok: false },
+]
 
 export default function LobbyScreen({ userId }) {
   const { code } = useParams()
@@ -19,9 +31,27 @@ export default function LobbyScreen({ userId }) {
   const [pendingFaction, setPendingFaction] = useState(null)
   const [pendingColour, setPendingColour] = useState(null)
 
+  // Map builder state (host only)
+  const [tileByNumber, setTileByNumber] = useState({})
+  const [mapPlayerCount, setMapPlayerCount] = useState(
+    players.length > 0 ? Math.max(3, Math.min(8, players.length)) : 6
+  )
+  const [selectedPreset, setSelectedPreset] = useState(null)
+  const [mapString, setMapString] = useState('')
+  const [parseError, setParseError] = useState(null)
+
   useEffect(() => {
     supabase.from('factions').select('name, expansion').order('name')
       .then(({ data }) => setFactions(data ?? []))
+  }, [])
+
+  useEffect(() => {
+    supabase.from('tiles').select('id, tile_number, wormhole')
+      .then(({ data }) => {
+        const map = {}
+        for (const t of data ?? []) map[t.tile_number] = t
+        setTileByNumber(map)
+      })
   }, [])
 
   const takenFactions = new Set(players.filter(p => p.user_id !== userId).map(p => p.faction).filter(Boolean))
@@ -212,6 +242,104 @@ export default function LobbyScreen({ userId }) {
             </select>
           </div>
 
+          {/* Map Builder */}
+          <div className="flex flex-col gap-3">
+            <h3 className="label">Map Configuration</h3>
+
+            <div className="flex flex-col gap-1">
+              <label className="label">Player Count</label>
+              <select
+                aria-label="Player count"
+                className="input"
+                value={mapPlayerCount}
+                onChange={e => {
+                  setMapPlayerCount(Number(e.target.value))
+                  setMapString('')
+                  setSelectedPreset(null)
+                }}
+              >
+                {[3, 4, 5, 6, 7, 8].map(n => (
+                  <option key={n} value={n}>{n} Players</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="label">Preset Map</label>
+              <select
+                aria-label="Preset map"
+                className="input"
+                value={selectedPreset ?? ''}
+                onChange={e => {
+                  const preset = PRESET_MAPS.find(p => p.label === e.target.value)
+                  if (!preset) return
+                  setSelectedPreset(preset.label)
+                  setMapString(preset.mapString)
+                  setParseError(null)
+                }}
+              >
+                <option value="">Select preset...</option>
+                {PRESET_MAPS.filter(p => p.playerCount === mapPlayerCount).map(p => (
+                  <option
+                    key={p.label}
+                    value={p.label}
+                    disabled={p.pok && !game?.expansions?.pok}
+                    title={p.pok && !game?.expansions?.pok ? 'Enable PoK expansion first' : undefined}
+                  >
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="label">Milty String</label>
+              <textarea
+                className="input font-mono text-xs"
+                rows={3}
+                value={mapString}
+                onChange={e => {
+                  setMapString(e.target.value)
+                  setSelectedPreset(null)
+                  const tokens = e.target.value.trim().split(/\s+/).filter(Boolean)
+                  const invalid = tokens.filter(t => isNaN(Number(t)))
+                  setParseError(invalid.length > 0 ? `Invalid tile numbers: ${invalid.join(', ')}` : null)
+                }}
+                placeholder="Paste Milty string..."
+              />
+              {parseError && <p className="text-danger text-xs mt-1">{parseError}</p>}
+            </div>
+
+            {game?.map_layout?.includes('pok') && !game?.expansions?.pok && (
+              <p className="text-warning text-xs">Saved map contains PoK tiles — enable PoK or re-save</p>
+            )}
+
+            <button
+              className="btn-primary"
+              disabled={!!parseError || !mapString.trim()}
+              onClick={async () => {
+                const tokens = mapString.trim().split(/\s+/).filter(Boolean).map(Number)
+                const mecatolEntry = { '0,0': { tile_id: tileByNumber[18]?.id ?? null, tile_number: 18 } }
+                const resolvedTiles = {}
+                tokens.forEach((num, idx) => {
+                  const tile = tileByNumber[num]
+                  if (tile) resolvedTiles[`tile_${idx}`] = { tile_id: tile.id, tile_number: num }
+                })
+                const map_tiles = { ...mecatolEntry, ...resolvedTiles }
+                try {
+                  await updateGameSettings(game.id, {
+                    map_tiles,
+                    map_layout: selectedPreset ?? `custom-${mapPlayerCount}`,
+                  })
+                } catch (e) {
+                  setParseError(e.message)
+                }
+              }}
+            >
+              Save Map
+            </button>
+          </div>
+
           {startError && <p className="text-danger text-sm font-body">{startError}</p>}
 
           <button
@@ -223,6 +351,9 @@ export default function LobbyScreen({ userId }) {
           </button>
         </div>
       )}
+
+      {/* Map Preview (all players) */}
+      <MapPreviewSection mapTiles={game?.map_tiles} tileByNumber={tileByNumber} />
     </div>
   )
 }
