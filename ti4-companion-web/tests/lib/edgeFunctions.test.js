@@ -32,6 +32,9 @@ import {
   exhaustTechnology,
   readyTechnology,
   useTechnologyAction,
+  addBot,
+  removeBot,
+  undoLastAction,
 } from '../../src/lib/edgeFunctions.js'
 
 describe('importTable', () => {
@@ -320,6 +323,42 @@ describe('useTechnologyAction', () => {
     await useTechnologyAction('game-1', 'Scanlink Drone Network', selections)
     expect(supabase.functions.invoke).toHaveBeenCalledWith('game-use-technology-action', {
       body: { game_id: 'game-1', technology_name: 'Scanlink Drone Network', selections },
+    })
+  })
+})
+
+describe('addBot', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('calls game-add-bot with correct payload', async () => {
+    supabase.functions.invoke.mockResolvedValue({ data: { ok: true }, error: null })
+    await addBot('game-1', 'Bot Alpha', 'Sol', 'blue', 'random')
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('game-add-bot', {
+      body: { game_id: 'game-1', display_name: 'Bot Alpha', faction: 'Sol', color: 'blue', bot_strategy: 'random' },
+    })
+  })
+})
+
+describe('removeBot', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('calls game-remove-bot with correct payload', async () => {
+    supabase.functions.invoke.mockResolvedValue({ data: { ok: true }, error: null })
+    await removeBot('game-1', 'bot-player-1')
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('game-remove-bot', {
+      body: { game_id: 'game-1', bot_player_id: 'bot-player-1' },
+    })
+  })
+})
+
+describe('undoLastAction', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('calls game-undo with correct payload', async () => {
+    supabase.functions.invoke.mockResolvedValue({ data: { ok: true }, error: null })
+    await undoLastAction('game-1')
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('game-undo', {
+      body: { game_id: 'game-1' },
     })
   })
 })

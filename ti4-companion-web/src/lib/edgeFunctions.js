@@ -243,4 +243,14 @@ export const readyTechnology = (gameId, technologyName) =>
 export const useTechnologyAction = (gameId, technologyName, selections) =>
   callFunction('game-use-technology-action', { game_id: gameId, technology_name: technologyName, selections })
 
+// Phase 33 additions:
+export const addBot = (gameId, displayName, faction, color, botStrategy) =>
+  callFunction('game-add-bot', { game_id: gameId, display_name: displayName, faction, color, bot_strategy: botStrategy })
+
+export const removeBot = (gameId, botPlayerId) =>
+  callFunction('game-remove-bot', { game_id: gameId, bot_player_id: botPlayerId })
+
+export const undoLastAction = (gameId) =>
+  callFunction('game-undo', { game_id: gameId })
+
 export { callFunction }
