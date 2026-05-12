@@ -14,6 +14,8 @@ vi.mock('../../../src/lib/supabase.js', () => ({
 
 vi.mock('../../../src/lib/edgeFunctions.js', () => ({
   updateGameSettings: vi.fn().mockResolvedValue({}),
+  addBot: vi.fn().mockResolvedValue({}),
+  removeBot: vi.fn().mockResolvedValue({}),
 }))
 
 // Mock MapPreviewSection so it doesn't depend on SVG/canvas
@@ -23,7 +25,7 @@ vi.mock('../../../src/components/game/MapPreviewSection.jsx', () => ({
 
 import { useGame } from '../../../src/hooks/useGame.js'
 import { supabase } from '../../../src/lib/supabase.js'
-import { updateGameSettings } from '../../../src/lib/edgeFunctions.js'
+import { updateGameSettings, addBot, removeBot } from '../../../src/lib/edgeFunctions.js'
 import LobbyScreen from '../../../src/components/game/LobbyScreen.jsx'
 
 const FACTIONS = [
@@ -280,6 +282,126 @@ describe('LobbyScreen — map builder (host only)', () => {
     if (pokOption) {
       expect(pokOption.disabled).toBe(true)
     }
+  })
+})
+
+describe('LobbyScreen — bot add/remove', () => {
+  const botPlayer = {
+    id: 'bot-1',
+    user_id: null,
+    display_name: 'Bot 1',
+    faction: 'Arborec',
+    colour: 'purple',
+    is_bot: true,
+    bot_strategy: 'scripted',
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockSupabase()
+  })
+
+  it('AddBotSection renders only for host', () => {
+    mockGame({ isHost: true })
+    renderLobby('host-uuid')
+    expect(screen.getByRole('button', { name: /add bot/i })).toBeInTheDocument()
+  })
+
+  it('AddBotSection is not rendered for non-host', () => {
+    mockGame({
+      isHost: false,
+      currentPlayer: { id: 'p2', user_id: 'other-uuid', display_name: 'Bob', faction: 'Letnev', colour: 'red' },
+    })
+    renderLobby('other-uuid')
+    expect(screen.queryByRole('button', { name: /add bot/i })).not.toBeInTheDocument()
+  })
+
+  it('AddBotSection submit calls addBot with correct args', async () => {
+    addBot.mockResolvedValue({})
+    mockGame({ isHost: true, players: [
+      { id: 'p1', user_id: 'host-uuid', display_name: 'Alice', faction: 'Arborec', colour: 'green' },
+    ] })
+    await act(async () => { renderLobby('host-uuid') })
+
+    fireEvent.click(screen.getByRole('button', { name: /add bot/i }))
+
+    const nameInput = screen.getByLabelText(/display name/i)
+    fireEvent.change(nameInput, { target: { value: 'Bot Test' } })
+
+    const factionSelect = screen.getByLabelText(/bot faction/i)
+    fireEvent.change(factionSelect, { target: { value: 'Letnev' } })
+
+    const colourBtn = screen.getByLabelText(/bot colour blue/i)
+    fireEvent.click(colourBtn)
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }))
+
+    await waitFor(() => expect(addBot).toHaveBeenCalledWith(
+      'game-uuid', 'Bot Test', 'Letnev', 'blue', 'scripted'
+    ))
+  })
+
+  it('AddBotSection shows error inline on failure', async () => {
+    addBot.mockRejectedValue(new Error('Bot limit reached'))
+    mockGame({ isHost: true })
+    await act(async () => { renderLobby('host-uuid') })
+
+    fireEvent.click(screen.getByRole('button', { name: /add bot/i }))
+
+    const nameInput = screen.getByLabelText(/display name/i)
+    fireEvent.change(nameInput, { target: { value: 'Bot X' } })
+    const factionSelect = screen.getByLabelText(/bot faction/i)
+    fireEvent.change(factionSelect, { target: { value: 'Letnev' } })
+    const colourBtn = screen.getByLabelText(/bot colour blue/i)
+    fireEvent.click(colourBtn)
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /confirm/i }))
+    })
+
+    expect(screen.getByText(/bot limit reached/i)).toBeInTheDocument()
+  })
+
+  it('BotSlot renders for each is_bot player', () => {
+    mockGame({
+      isHost: true,
+      players: [
+        { id: 'p1', user_id: 'host-uuid', display_name: 'Alice', faction: 'Arborec', colour: 'green' },
+        { ...botPlayer },
+      ],
+    })
+    renderLobby('host-uuid')
+    expect(screen.getAllByTestId('bot-slot')).toHaveLength(1)
+    expect(screen.getAllByText('Bot 1')[0]).toBeInTheDocument()
+  })
+
+  it('BotSlot Remove button calls removeBot with bot player id', async () => {
+    removeBot.mockResolvedValue({})
+    mockGame({
+      isHost: true,
+      players: [
+        { id: 'p1', user_id: 'host-uuid', display_name: 'Alice', faction: 'Arborec', colour: 'green' },
+        { ...botPlayer },
+      ],
+    })
+    renderLobby('host-uuid')
+
+    fireEvent.click(screen.getByRole('button', { name: /remove bot 1/i }))
+    await waitFor(() => expect(removeBot).toHaveBeenCalledWith('game-uuid', 'bot-1'))
+  })
+
+  it('BotSlot Remove button hidden for non-host', () => {
+    mockGame({
+      isHost: false,
+      currentPlayer: { id: 'p2', user_id: 'other-uuid', display_name: 'Bob', faction: 'Letnev', colour: 'red' },
+      players: [
+        { id: 'p1', user_id: 'host-uuid', display_name: 'Alice', faction: 'Arborec', colour: 'green' },
+        { id: 'p2', user_id: 'other-uuid', display_name: 'Bob', faction: 'Letnev', colour: 'red' },
+        { ...botPlayer },
+      ],
+    })
+    renderLobby('other-uuid')
+    expect(screen.queryByRole('button', { name: /remove bot 1/i })).not.toBeInTheDocument()
   })
 })
 

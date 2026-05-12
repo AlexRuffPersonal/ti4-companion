@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useGame } from '../../hooks/useGame.js'
 import { supabase } from '../../lib/supabase.js'
-import { updateGameSettings } from '../../lib/edgeFunctions.js'
+import { updateGameSettings, addBot, removeBot } from '../../lib/edgeFunctions.js'
 import MapPreviewSection from '../game/MapPreviewSection.jsx'
 
 const COLOURS = ['red', 'blue', 'yellow', 'green', 'purple', 'black', 'orange', 'pink']
@@ -31,6 +31,15 @@ export default function LobbyScreen({ userId }) {
   const [pendingFaction, setPendingFaction] = useState(null)
   const [pendingColour, setPendingColour] = useState(null)
 
+  // Bot add form state (host only)
+  const [showAddBot, setShowAddBot] = useState(false)
+  const [botName, setBotName] = useState('')
+  const [botFaction, setBotFaction] = useState('')
+  const [botColour, setBotColour] = useState('')
+  const [botStrategy, setBotStrategy] = useState('scripted')
+  const [botError, setBotError] = useState(null)
+  const [addingBot, setAddingBot] = useState(false)
+
   // Map builder state (host only)
   const [tileByNumber, setTileByNumber] = useState({})
   const [mapPlayerCount, setMapPlayerCount] = useState(
@@ -56,6 +65,31 @@ export default function LobbyScreen({ userId }) {
 
   const takenFactions = new Set(players.filter(p => p.user_id !== userId).map(p => p.faction).filter(Boolean))
   const takenColours = new Set(players.filter(p => p.user_id !== userId).map(p => p.colour).filter(Boolean))
+
+  const botPlayers = players.filter(p => p.is_bot)
+  const allTakenFactions = new Set(players.map(p => p.faction).filter(Boolean))
+  const allTakenColours = new Set(players.map(p => p.colour).filter(Boolean))
+
+  async function handleAddBot() {
+    setBotError(null)
+    setAddingBot(true)
+    try {
+      await addBot(game.id, botName, botFaction, botColour, botStrategy)
+      setShowAddBot(false)
+      setBotName('')
+      setBotFaction('')
+      setBotColour('')
+      setBotStrategy('scripted')
+    } catch (e) {
+      setBotError(e.message)
+    } finally {
+      setAddingBot(false)
+    }
+  }
+
+  async function handleRemoveBot(botPlayerId) {
+    await removeBot(game.id, botPlayerId)
+  }
 
   const allReady = players.length > 0 && players.every(p => p.faction && p.colour)
   const canStart = allReady && game?.speaker_player_id
@@ -127,7 +161,7 @@ export default function LobbyScreen({ userId }) {
       {/* Player list */}
       <div className="panel flex flex-col gap-2">
         <h2 className="label">Players ({players.length}/8)</h2>
-        {players.map(p => (
+        {players.filter(p => !p.is_bot).map(p => (
           <div key={p.id} className="flex items-center gap-3">
             <span
               className="w-3 h-3 rounded-full flex-shrink-0"
@@ -135,6 +169,31 @@ export default function LobbyScreen({ userId }) {
             />
             <span className="font-body text-text flex-1">{p.display_name}</span>
             <span className="font-body text-muted text-sm">{p.faction ?? '—'}</span>
+          </div>
+        ))}
+        {botPlayers.map(p => (
+          <div key={p.id} className="flex items-center gap-3" data-testid="bot-slot">
+            <span
+              className="w-3 h-3 rounded-full flex-shrink-0"
+              style={{ backgroundColor: p.colour ?? '#555' }}
+            />
+            <span className="font-body text-text flex-1">
+              <span className="text-muted text-xs mr-1">BOT</span>{p.display_name}
+            </span>
+            <span className="font-body text-muted text-sm">{p.faction ?? '—'}</span>
+            <span className="font-body text-xs text-dim border border-dim rounded px-1">
+              {p.bot_strategy === 'random' ? 'Random' : 'Scripted'}
+            </span>
+            {isHost && (
+              <button
+                type="button"
+                className="btn-ghost text-xs text-danger"
+                onClick={() => handleRemoveBot(p.id)}
+                aria-label={`Remove ${p.display_name}`}
+              >
+                Remove
+              </button>
+            )}
           </div>
         ))}
       </div>
@@ -240,6 +299,110 @@ export default function LobbyScreen({ userId }) {
                 <option key={p.id} value={p.id}>{p.display_name}</option>
               ))}
             </select>
+          </div>
+
+          {/* Add Bot */}
+          <div className="flex flex-col gap-3">
+            <h3 className="label">Bots</h3>
+            {!showAddBot && (
+              <button
+                type="button"
+                className="btn-ghost text-sm"
+                onClick={() => {
+                  setBotName(`Bot ${botPlayers.length + 1}`)
+                  setBotFaction('')
+                  setBotColour('')
+                  setBotStrategy('scripted')
+                  setBotError(null)
+                  setShowAddBot(true)
+                }}
+              >
+                Add Bot
+              </button>
+            )}
+            {showAddBot && (
+              <div className="flex flex-col gap-2 panel-inset">
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="bot-name" className="label">Display Name</label>
+                  <input
+                    id="bot-name"
+                    type="text"
+                    className="input"
+                    value={botName}
+                    onChange={e => setBotName(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="bot-faction" className="label">Faction</label>
+                  <select
+                    id="bot-faction"
+                    className="input"
+                    value={botFaction}
+                    onChange={e => setBotFaction(e.target.value)}
+                    aria-label="Bot faction"
+                  >
+                    <option value="">— pick a faction —</option>
+                    {factions.map(f => (
+                      <option key={f.name} value={f.name} disabled={allTakenFactions.has(f.name)}>
+                        {f.name}{allTakenFactions.has(f.name) ? ' (taken)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="label">Colour</span>
+                  <div className="flex flex-wrap gap-2">
+                    {COLOURS.map(c => (
+                      <button
+                        key={c}
+                        type="button"
+                        className={`w-8 h-8 rounded-full border-2 transition-all ${
+                          botColour === c ? 'border-bright scale-110' : 'border-transparent'
+                        } ${allTakenColours.has(c) ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}
+                        style={{ backgroundColor: c === 'black' ? '#222' : c }}
+                        disabled={allTakenColours.has(c)}
+                        onClick={() => setBotColour(c)}
+                        aria-label={`Bot colour ${c}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="label">Strategy</span>
+                  <div className="flex gap-2">
+                    {['scripted', 'random'].map(s => (
+                      <button
+                        key={s}
+                        type="button"
+                        className={`btn-ghost text-sm ${botStrategy === s ? 'text-bright' : 'text-muted'}`}
+                        onClick={() => setBotStrategy(s)}
+                        aria-pressed={botStrategy === s}
+                      >
+                        {s === 'scripted' ? 'Scripted' : 'Random'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {botError && <p className="text-danger text-sm font-body">{botError}</p>}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className="btn-primary text-sm"
+                    disabled={!botName || !botFaction || !botColour || addingBot}
+                    onClick={handleAddBot}
+                  >
+                    {addingBot ? 'Adding…' : 'Confirm'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-ghost text-sm"
+                    onClick={() => setShowAddBot(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Map Builder */}
