@@ -37,6 +37,6 @@ export const EXPLORATION_EFFECTS: Record<string, Op[]> = {
   'Lost Crew':                 [{ op:'draw_action_card', count:2 }],
   'Merchant Station':          [{ op:'choice', options:[ [{op:'gain_commodities',amount:'max'}], [{op:'convert_commodities',amount:'all'}] ] }],
   'Mirage':                    [{ op:'place_mirage' }],
-  'Unknown Relic Fragment':    [{ op:'gain_relic_fragment', fragment_type:'unknown' }],
+  'Unknown Relic Fragment':    [{ op:'gain_relic_fragment', fragment_type:'unknown', keep_card:true }],
   'Gamma Wormhole':            [{ op:'place_map_token', token_type:'gamma_wormhole' }],
 }

@@ -80,7 +80,7 @@ function mockDb({
   planetUpsertError = null,
 } = {}) {
   let explorationSelectCallCount = 0
-  let gamePLayersCallCount = 0
+  let gamePlayersCallCount = 0
 
   db.from.mockImplementation((table) => {
     if (table === 'games') {
@@ -94,8 +94,8 @@ function mockDb({
     }
 
     if (table === 'game_players') {
-      gamePLayersCallCount++
-      const callNum = gamePLayersCallCount
+      gamePlayersCallCount++
+      const callNum = gamePlayersCallCount
       return {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
@@ -130,6 +130,7 @@ function mockDb({
             eq: vi.fn().mockResolvedValue({ error: frontierUpdateError }),
           }),
         }),
+        upsert: vi.fn().mockResolvedValue({ error: frontierUpdateError }),
         insert: vi.fn().mockResolvedValue({ error: null }),
       }
     }
@@ -297,7 +298,10 @@ describe('game-explore-frontier', () => {
       .filter((x) => x.table === 'game_system_state')
     expect(systemStateCalls.length).toBeGreaterThanOrEqual(2)
     const lastSystemStateMock = db.from.mock.results[systemStateCalls[systemStateCalls.length - 1].i].value
-    expect(lastSystemStateMock.update).toHaveBeenCalledWith({ has_frontier_token: false })
+    expect(lastSystemStateMock.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ has_frontier_token: false }),
+      expect.anything()
+    )
   })
 
   it('applies relic fragment op for Unknown Relic Fragment', async () => {
@@ -341,8 +345,11 @@ describe('game-explore-frontier', () => {
       .filter((x) => x.table === 'game_system_state')
     expect(systemStateCalls.length).toBeGreaterThanOrEqual(2)
 
-    const updateMock = db.from.mock.results[systemStateCalls[1].i].value
-    expect(updateMock.update).toHaveBeenCalledWith(expect.objectContaining({ ion_storm: true }))
+    const upsertMock = db.from.mock.results[systemStateCalls[1].i].value
+    expect(upsertMock.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ ion_storm: true }),
+      expect.anything()
+    )
   })
 
   it('keeps Enigmatic Device in held state', async () => {
