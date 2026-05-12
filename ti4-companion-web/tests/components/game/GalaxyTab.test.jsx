@@ -12,10 +12,20 @@ vi.mock('../../../src/components/game/HexMap.jsx', () => ({
 }))
 
 vi.mock('../../../src/components/game/SystemActionModal.jsx', () => ({
-  default: ({ systemKey, onClose }) => (
+  default: ({ systemKey, onClose, onInfo }) => (
     <div data-testid="system-modal">
       <span>{systemKey}</span>
       <button onClick={onClose}>Close Modal</button>
+      {onInfo && <button onClick={onInfo}>Info</button>}
+    </div>
+  ),
+}))
+
+vi.mock('../../../src/components/game/SystemInfoModal.jsx', () => ({
+  default: ({ systemKey, tileInfo, onClose }) => (
+    <div data-testid="system-info-modal">
+      <span data-testid="info-system-key">{systemKey}</span>
+      <button onClick={onClose}>Close Info</button>
     </div>
   ),
 }))
@@ -288,5 +298,36 @@ describe('GalaxyTab — Move Ships (Phase 18)', () => {
   it('does not render Move Ships button when not the active player', () => {
     render(<GalaxyTab {...MOVE_PROPS} game={{ ...GAME, active_player_id: 'p2' }} />)
     expect(screen.queryByText('Move Ships')).not.toBeInTheDocument()
+  })
+})
+
+describe('GalaxyTab — SystemInfoModal (Phase 31)', () => {
+  beforeEach(() => {
+    useCombat.mockReturnValue({ ...DEFAULT_COMBAT_MOCK })
+  })
+
+  it('renders SystemInfoModal with correct systemKey when onInfo is called', () => {
+    const tileData = { 'tid-1': { tile_id: 'tid-1', planets: [] } }
+    render(<GalaxyTab {...BASE_PROPS} tileData={tileData} />)
+    fireEvent.click(screen.getByText('Select Hex'))
+    expect(screen.getByTestId('system-modal')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Info'))
+    expect(screen.getByTestId('system-info-modal')).toBeInTheDocument()
+    expect(screen.getByTestId('info-system-key').textContent).toBe('1,-1')
+  })
+
+  it('closes SystemInfoModal when onClose is called', () => {
+    render(<GalaxyTab {...BASE_PROPS} />)
+    fireEvent.click(screen.getByText('Select Hex'))
+    fireEvent.click(screen.getByText('Info'))
+    expect(screen.getByTestId('system-info-modal')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Close Info'))
+    expect(screen.queryByTestId('system-info-modal')).not.toBeInTheDocument()
+  })
+
+  it('accepts planetStaticMap prop without error', () => {
+    const planetStaticMap = new Map([['Mecatol Rex', { resources: 0, influence: 6 }]])
+    render(<GalaxyTab {...BASE_PROPS} planetStaticMap={planetStaticMap} />)
+    expect(screen.getByTestId('hex-map')).toBeInTheDocument()
   })
 })

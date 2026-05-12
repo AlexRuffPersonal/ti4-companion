@@ -214,7 +214,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-SystemInfoModal](component-SystemInfoModal.md) | `src/components/game/SystemInfoModal.jsx` | 31 | System Tile & Planet Detail View | planned | hook-useGalaxy-p31 |
 | [component-SystemActionModal-p31](component-SystemActionModal-p31.md) | `src/components/game/SystemActionModal.jsx` | 31 | System Tile & Planet Detail View | done | — |
 | [component-MyPanelSection-p31](component-MyPanelSection-p31.md) | `src/components/game/MyPanelSection.jsx` | 31 | System Tile & Planet Detail View | planned | hook-useGalaxy-p31 |
-| [component-GalaxyTab-p31](component-GalaxyTab-p31.md) | `src/components/game/GalaxyTab.jsx` | 31 | System Tile & Planet Detail View | planned | hook-useGalaxy-p31, component-SystemInfoModal, component-SystemActionModal-p31 |
+| [component-GalaxyTab-p31](component-GalaxyTab-p31.md) | `src/components/game/GalaxyTab.jsx` | 31 | System Tile & Planet Detail View | done | hook-useGalaxy-p31, component-SystemInfoModal, component-SystemActionModal-p31 |
 | [component-GameScreen-p31](component-GameScreen-p31.md) | `src/components/game/GameScreen.jsx` | 31 | System Tile & Planet Detail View | planned | hook-useGalaxy-p31, component-MyPanelSection-p31 |
 
 | [migration-044-bot-players](migration-044-bot-players.md) | `supabase/migrations/044_bot_players.sql` | 32 | Game Event Log | done | — |

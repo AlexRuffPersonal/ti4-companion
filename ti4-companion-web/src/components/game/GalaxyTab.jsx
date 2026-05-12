@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import HexMap from './HexMap.jsx'
 import SystemActionModal from './SystemActionModal.jsx'
+import SystemInfoModal from './SystemInfoModal.jsx'
 import SpaceCannonModal from './SpaceCannonModal.jsx'
 import CombatModal from './CombatModal.jsx'
 import GroundCombatModal from './GroundCombatModal.jsx'
@@ -67,7 +68,7 @@ function BombardmentPanel({ systemKey, systemUnits, unitDefs, bombardmentCombats
 export default function GalaxyTab({
   gameId, mapTiles, tileData, activations, allPlanets, systemUnits,
   activatedSystems, myActivations, planetOwnership, activeCombat, myPlayerId,
-  players, currentPlayer, game, unitDefs, myTokenSystems,
+  players, currentPlayer, game, unitDefs, myTokenSystems, planetStaticMap,
   activateSystem, landTroops,
 }) {
   const [selectedSystemKey, setSelectedSystemKey] = useState(null)
@@ -75,6 +76,7 @@ export default function GalaxyTab({
   const [completedCombat, setCompletedCombat] = useState(null)
   const [bombardmentCombats, setBombardmentCombats] = useState([])
   const [showMoveModal, setShowMoveModal] = useState(false)
+  const [infoSystemKey, setInfoSystemKey] = useState(null)
 
   const {
     combat, fireSpaceCannon, rollDice, rollGroundDice, assignHits, declareRetreat,
@@ -172,6 +174,15 @@ export default function GalaxyTab({
           onLandTroops={handleLandTroops}
           onClose={() => setSelectedSystemKey(null)}
           custodiansClaimed={custodiansClaimed}
+          onInfo={() => setInfoSystemKey(selectedSystemKey)}
+        />
+      )}
+
+      {infoSystemKey && (
+        <SystemInfoModal
+          systemKey={infoSystemKey}
+          tileInfo={tileData[mapTiles[infoSystemKey]?.tile_id] ?? null}
+          onClose={() => setInfoSystemKey(null)}
         />
       )}
 
