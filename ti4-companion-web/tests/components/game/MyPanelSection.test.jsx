@@ -1,6 +1,29 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import MyPanelSection from '../../../src/components/game/MyPanelSection.jsx'
+
+let capturedTechCardProps = []
+vi.mock('../../../src/components/game/TechCard.jsx', () => ({
+  default: (props) => {
+    capturedTechCardProps.push(props)
+    return <div data-testid={`tech-card-${props.tech.name}`} />
+  }
+}))
+
+const mockIsExhausted = vi.fn((name) => false)
+const mockExhaustTech = vi.fn()
+const mockReadyTech = vi.fn()
+const mockUseTechAction = vi.fn()
+vi.mock('../../../src/hooks/useTechnologies.js', () => ({
+  useTechnologies: () => ({
+    ownedTechnologies: [],
+    exhaustedTechnologies: [],
+    isExhausted: mockIsExhausted,
+    exhaustTech: mockExhaustTech,
+    readyTech: mockReadyTech,
+    useTechAction: mockUseTechAction,
+  })
+}))
 
 vi.mock('../../../src/components/game/StrategyCardPanel.jsx', () => ({
   default: ({ activePay, player }) => (
@@ -95,6 +118,15 @@ function renderPanel(overrides = {}) {
 }
 
 describe('MyPanelSection', () => {
+  beforeEach(() => {
+    capturedTechCardProps = []
+    mockIsExhausted.mockReset()
+    mockIsExhausted.mockImplementation(() => false)
+    mockExhaustTech.mockReset()
+    mockReadyTech.mockReset()
+    mockUseTechAction.mockReset()
+  })
+
   it('renders command token counts', () => {
     renderPanel()
     expect(screen.getByText('3')).toBeInTheDocument() // tactic or fleet
@@ -605,6 +637,51 @@ describe('MyPanelSection', () => {
       expect(screen.queryByText(/explore planets/i)).not.toBeInTheDocument()
       expect(screen.queryByTestId('relic-fragment-panel')).not.toBeInTheDocument()
       expect(screen.queryByTestId('relic-panel')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('Phase 30 — TechCard exhaust/ready/action props', () => {
+    it('renders a TechCard for each owned technology', () => {
+      renderPanel()
+      expect(screen.getByTestId('tech-card-Neural Motivator')).toBeInTheDocument()
+      expect(screen.getByTestId('tech-card-Sarween Tools')).toBeInTheDocument()
+    })
+
+    it('passes isExhausted=true to TechCard for exhausted technology', () => {
+      mockIsExhausted.mockImplementation((name) => name === 'Graviton Laser System')
+      renderPanel({
+        player: { ...PLAYER, technologies: ['Graviton Laser System', 'Neural Motivator'] }
+      })
+      const gravitonProps = capturedTechCardProps.find(p => p.tech.name === 'Graviton Laser System')
+      const neuralProps = capturedTechCardProps.find(p => p.tech.name === 'Neural Motivator')
+      expect(gravitonProps.isExhausted).toBe(true)
+      expect(neuralProps.isExhausted).toBe(false)
+    })
+
+    it('calls exhaustTech when onExhaust is invoked on a TechCard', () => {
+      renderPanel()
+      const neuralProps = capturedTechCardProps.find(p => p.tech.name === 'Neural Motivator')
+      neuralProps.onExhaust()
+      expect(mockExhaustTech).toHaveBeenCalledWith('Neural Motivator')
+    })
+
+    it('calls readyTech when onReady is invoked on a TechCard', () => {
+      renderPanel()
+      const neuralProps = capturedTechCardProps.find(p => p.tech.name === 'Neural Motivator')
+      neuralProps.onReady()
+      expect(mockReadyTech).toHaveBeenCalledWith('Neural Motivator')
+    })
+
+    it('calls useTechAction when onUseAction is invoked on a TechCard', () => {
+      renderPanel()
+      const neuralProps = capturedTechCardProps.find(p => p.tech.name === 'Neural Motivator')
+      neuralProps.onUseAction('Neural Motivator')
+      expect(mockUseTechAction).toHaveBeenCalledWith('Neural Motivator', {})
+    })
+
+    it('does not render TechCards when player has no technologies', () => {
+      renderPanel({ player: { ...PLAYER, technologies: [] } })
+      expect(screen.queryByTestId(/tech-card-/)).not.toBeInTheDocument()
     })
   })
 

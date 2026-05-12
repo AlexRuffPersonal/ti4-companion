@@ -208,7 +208,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [client-edgeFunctions-p30](client-edgeFunctions-p30.md) | `src/lib/edgeFunctions.js` | 30 | Technology Effect Enforcement | done | fn-game-exhaust-technology, fn-game-ready-technology, fn-game-use-technology-action |
 | [hook-useTechnologies](hook-useTechnologies.md) | `src/hooks/useTechnologies.js` | 30 | Technology Effect Enforcement | done | client-edgeFunctions-p30 |
 | [component-TechCard-p30](component-TechCard-p30.md) | `src/components/game/TechCard.jsx` | 30 | Technology Effect Enforcement | done | component-TechCard-p28, hook-useTechnologies, lib-techConstants |
-| [component-MyPanelSection-p30](component-MyPanelSection-p30.md) | `src/components/game/MyPanelSection.jsx` | 30 | Technology Effect Enforcement | planned | component-MyPanelSection (p21), hook-useTechnologies, component-TechCard-p30 |
+| [component-MyPanelSection-p30](component-MyPanelSection-p30.md) | `src/components/game/MyPanelSection.jsx` | 30 | Technology Effect Enforcement | done | component-MyPanelSection (p21), hook-useTechnologies, component-TechCard-p30 |
 
 | [hook-useGalaxy-p31](hook-useGalaxy-p31.md) | `src/hooks/useGalaxy.js` | 31 | System Tile & Planet Detail View | done | — |
 | [component-SystemInfoModal](component-SystemInfoModal.md) | `src/components/game/SystemInfoModal.jsx` | 31 | System Tile & Planet Detail View | planned | hook-useGalaxy-p31 |

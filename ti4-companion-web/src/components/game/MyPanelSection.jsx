@@ -5,6 +5,8 @@ import ExplorationModal from './ExplorationModal.jsx'
 import RelicFragmentPanel from './RelicFragmentPanel.jsx'
 import RelicPanel from './RelicPanel.jsx'
 import LegendaryCardPanel from './LegendaryCardPanel.jsx'
+import TechCard from './TechCard.jsx'
+import { useTechnologies } from '../../hooks/useTechnologies.js'
 
 export default function MyPanelSection({
   player, planets, isActive, game,
@@ -32,6 +34,7 @@ export default function MyPanelSection({
   const [draftTokens, setDraftTokens] = useState(tokens)
   const [exploringPlanet, setExploringPlanet] = useState(null)
   const isStatusPhase = game?.phase === 'status'
+  const { isExhausted, exhaustTech, readyTech, useTechAction } = useTechnologies(player, game?.id)
 
   if (!player) return null
 
@@ -246,6 +249,27 @@ export default function MyPanelSection({
           VIEW TREE
         </button>
       </div>
+      {player.technologies?.length > 0 && (
+        <div className="flex flex-col gap-2">
+          {player.technologies.map(name => {
+            const tech = { id: name, name, status: 'held' }
+            return (
+              <TechCard
+                key={name}
+                tech={tech}
+                isOwnTree={true}
+                isSelected={false}
+                onSelect={() => {}}
+                onConfirm={() => {}}
+                isExhausted={isExhausted(name)}
+                onExhaust={() => exhaustTech(name)}
+                onReady={() => readyTech(name)}
+                onUseAction={(techName) => useTechAction(techName, {})}
+              />
+            )
+          })}
+        </div>
+      )}
 
       {/* Action Cards */}
       <button className="btn-ghost text-xs self-start" onClick={onOpenActionCards}>
