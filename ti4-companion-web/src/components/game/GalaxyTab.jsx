@@ -6,6 +6,7 @@ import SpaceCannonModal from './SpaceCannonModal.jsx'
 import CombatModal from './CombatModal.jsx'
 import GroundCombatModal from './GroundCombatModal.jsx'
 import MoveShipsModal from './MoveShipsModal.jsx'
+import ExplorationModal from './ExplorationModal.jsx'
 import { useCombat } from '../../hooks/useCombat.js'
 
 function BombardmentPanel({ systemKey, systemUnits, unitDefs, bombardmentCombatsByPlanet, myPlayerId, players, onFireBombardment, onAssignHits, onAdvance }) {
@@ -69,7 +70,7 @@ export default function GalaxyTab({
   gameId, mapTiles, tileData, activations, allPlanets, systemUnits,
   activatedSystems, myActivations, planetOwnership, activeCombat, myPlayerId,
   players, currentPlayer, game, unitDefs, myTokenSystems, planetStaticMap,
-  activateSystem, landTroops,
+  activateSystem, landTroops, exploration,
 }) {
   const [selectedSystemKey, setSelectedSystemKey] = useState(null)
   const [custodiansClaimed, setCustodiansClaimed] = useState(false)
@@ -77,6 +78,8 @@ export default function GalaxyTab({
   const [bombardmentCombats, setBombardmentCombats] = useState([])
   const [showMoveModal, setShowMoveModal] = useState(false)
   const [infoSystemKey, setInfoSystemKey] = useState(null)
+  const [showExplorationModal, setShowExplorationModal] = useState(false)
+  const [selectedPlanet, setSelectedPlanet] = useState(null)
 
   const {
     combat, fireSpaceCannon, rollDice, rollGroundDice, assignHits, declareRetreat,
@@ -254,6 +257,37 @@ export default function GalaxyTab({
           myTokenSystems={myTokenSystems}
           unitDefs={unitDefs}
           onClose={() => setShowMoveModal(false)}
+        />
+      )}
+
+      {exploration && (allPlanets ?? []).map(planet => {
+        const planetState = (exploration.allPlanetState ?? []).find(
+          p => p.planet_name === planet.planet_name && p.player_id === myPlayerId
+        )
+        if (!planetState || planetState.explored) return null
+        if (!exploration.canExplore(planet.planet_name)) return null
+        return (
+          <button
+            key={planet.planet_name}
+            className="btn-primary text-xs animate-pulse"
+            data-testid={`explore-badge-${planet.planet_name}`}
+            onClick={() => { setSelectedPlanet(planet); setShowExplorationModal(true) }}
+          >
+            Explore {planet.planet_name}
+          </button>
+        )
+      })}
+
+      {showExplorationModal && selectedPlanet && (
+        <ExplorationModal
+          planet={selectedPlanet}
+          systemKey={activeSystemKey}
+          traits={selectedPlanet.traits ?? []}
+          isFrontier={false}
+          onExplorePlanet={exploration.explorePlanet}
+          onResolveCard={exploration.resolveExplorationCard}
+          onExploreFrontier={exploration.exploreFrontier}
+          onClose={() => setShowExplorationModal(false)}
         />
       )}
     </div>

@@ -301,6 +301,64 @@ describe('GalaxyTab — Move Ships (Phase 18)', () => {
   })
 })
 
+vi.mock('../../../src/components/game/ExplorationModal.jsx', () => ({
+  default: ({ planet, onClose }) => (
+    <div data-testid="exploration-modal">
+      <span data-testid="exploration-planet">{planet?.planet_name}</span>
+      <button onClick={onClose}>Close Exploration</button>
+    </div>
+  ),
+}))
+
+describe('GalaxyTab — Exploration Badge (Phase 17)', () => {
+  beforeEach(() => {
+    useCombat.mockReturnValue({ ...DEFAULT_COMBAT_MOCK })
+  })
+
+  const EXPLORE_PLANET = { planet_name: 'Wellon', traits: ['cultural'] }
+
+  const EXPLORATION_PROPS = {
+    ...BASE_PROPS,
+    gameId: 'g1',
+    myPlayerId: 'p1',
+    allPlanets: [EXPLORE_PLANET],
+    exploration: {
+      allPlanetState: [{ planet_name: 'Wellon', player_id: 'p1', explored: false }],
+      canExplore: vi.fn(() => true),
+      explorePlanet: vi.fn(),
+      resolveExplorationCard: vi.fn(),
+      exploreFrontier: vi.fn(),
+    },
+  }
+
+  it('shows explore badge when canExplore returns true for planet owned by current player', () => {
+    render(<GalaxyTab {...EXPLORATION_PROPS} />)
+    expect(screen.getByTestId('explore-badge-Wellon')).toBeInTheDocument()
+  })
+
+  it('opens ExplorationModal when explore badge is clicked', () => {
+    render(<GalaxyTab {...EXPLORATION_PROPS} />)
+    fireEvent.click(screen.getByTestId('explore-badge-Wellon'))
+    expect(screen.getByTestId('exploration-modal')).toBeInTheDocument()
+    expect(screen.getByTestId('exploration-planet').textContent).toBe('Wellon')
+  })
+
+  it('does not show explore badge when canExplore returns false', () => {
+    const exploration = { ...EXPLORATION_PROPS.exploration, canExplore: vi.fn(() => false) }
+    render(<GalaxyTab {...EXPLORATION_PROPS} exploration={exploration} />)
+    expect(screen.queryByTestId('explore-badge-Wellon')).not.toBeInTheDocument()
+  })
+
+  it('does not show explore badge when planet is already explored', () => {
+    const exploration = {
+      ...EXPLORATION_PROPS.exploration,
+      allPlanetState: [{ planet_name: 'Wellon', player_id: 'p1', explored: true }],
+    }
+    render(<GalaxyTab {...EXPLORATION_PROPS} exploration={exploration} />)
+    expect(screen.queryByTestId('explore-badge-Wellon')).not.toBeInTheDocument()
+  })
+})
+
 describe('GalaxyTab — SystemInfoModal (Phase 31)', () => {
   beforeEach(() => {
     useCombat.mockReturnValue({ ...DEFAULT_COMBAT_MOCK })
