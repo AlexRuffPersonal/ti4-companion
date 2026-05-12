@@ -22,7 +22,7 @@ const PLANET_NAME = 'Mecatol Rex'
 const TILE_ID = 'tile-1'
 
 const BASE_GAME = { phase: 2, active_player_id: PLAYER_ID, map_tiles: {} }
-const BASE_PLAYER = { id: PLAYER_ID }
+const BASE_PLAYER = { id: PLAYER_ID, technologies: [] }
 const BASE_PLANET = {
   id: 'gpp-1',
   game_id: GAME_ID,
@@ -80,9 +80,10 @@ function mockDb({
   reshuffleError = null,
   updateError = null,
   exploreUpdateError = null,
+  arcologiesReadyError = null,
 } = {}) {
-  // Track number of calls to game_exploration_decks.select
   let explorationSelectCallCount = 0
+  let planetPlanetsCallCount = 0
 
   db.from.mockImplementation((table) => {
     if (table === 'games') {
@@ -108,6 +109,19 @@ function mockDb({
     }
 
     if (table === 'game_player_planets') {
+      planetPlanetsCallCount++
+      const callIndex = planetPlanetsCallCount
+      const updateMock = vi.fn().mockImplementation((payload) => {
+        if (payload && payload.exhausted === false) {
+          const eqThird = vi.fn().mockResolvedValue({ error: arcologiesReadyError })
+          const eqSecond = vi.fn().mockReturnValue({ eq: eqThird })
+          const eqFirst = vi.fn().mockReturnValue({ eq: eqSecond })
+          return { eq: eqFirst }
+        }
+        return {
+          eq: vi.fn().mockResolvedValue({ error: exploreUpdateError }),
+        }
+      })
       return {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
@@ -118,9 +132,7 @@ function mockDb({
             }),
           }),
         }),
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: exploreUpdateError }),
-        }),
+        update: updateMock,
       }
     }
 
@@ -361,5 +373,35 @@ describe('game-explore-planet', () => {
     })
     const res = await handler(makeRequest(baseBody({ deck_type: 'industrial' })))
     expect(res.status).toBe(200)
+  })
+
+  it('readies planet after exploration when Pre-Fab Arcologies owned', async () => {
+    mockDb({ player: { id: PLAYER_ID, technologies: ['Pre-Fab Arcologies'] } })
+    const res = await handler(makeRequest(baseBody()))
+    expect(res.status).toBe(200)
+    const allUpdates = []
+    for (const call of db.from.mock.results) {
+      if (call.value && call.value.update && call.value.update.mock) {
+        for (const uc of call.value.update.mock.calls) {
+          allUpdates.push(uc[0])
+        }
+      }
+    }
+    expect(allUpdates).toContainEqual({ exhausted: false })
+  })
+
+  it('does not ready planet when Pre-Fab Arcologies not owned', async () => {
+    mockDb({ player: { id: PLAYER_ID, technologies: [] } })
+    const res = await handler(makeRequest(baseBody()))
+    expect(res.status).toBe(200)
+    const allUpdates = []
+    for (const call of db.from.mock.results) {
+      if (call.value && call.value.update && call.value.update.mock) {
+        for (const uc of call.value.update.mock.calls) {
+          allUpdates.push(uc[0])
+        }
+      }
+    }
+    expect(allUpdates).not.toContainEqual({ exhausted: false })
   })
 })

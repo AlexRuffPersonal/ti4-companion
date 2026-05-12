@@ -70,7 +70,7 @@ export async function handler(req: Request): Promise<Response> {
 
   const { data: player, error: playerError } = await db
     .from('game_players')
-    .select('id')
+    .select('id, technologies')
     .eq('game_id', game_id)
     .eq('user_id', userId)
     .maybeSingle()
@@ -148,6 +148,17 @@ export async function handler(req: Request): Promise<Response> {
     .update({ explored: true })
     .eq('id', planet.id)
   if (exploreError) return errorResponse('Database error', 500)
+
+  const technologies: string[] = (player as { id: string; technologies: string[] }).technologies ?? []
+  if (technologies.includes('Pre-Fab Arcologies')) {
+    const { error: readyError } = await db
+      .from('game_player_planets')
+      .update({ exhausted: false })
+      .eq('game_id', game_id)
+      .eq('player_id', player_id)
+      .eq('planet_name', planet_name)
+    if (readyError) return errorResponse('Database error', 500)
+  }
 
   return okResponse({
     card_id: card.id,
