@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import StrategyCardPanel from './StrategyCardPanel.jsx'
 import LeaderPanel from './LeaderPanel.jsx'
+import ExplorationModal from './ExplorationModal.jsx'
+import RelicFragmentPanel from './RelicFragmentPanel.jsx'
+import RelicPanel from './RelicPanel.jsx'
 
 export default function MyPanelSection({
   player, planets, isActive, game,
@@ -20,10 +23,12 @@ export default function MyPanelSection({
   activePay = null,
   onPlayPrimary = () => {},
   planetStaticMap = {},
-  leaders
+  leaders,
+  exploration,
 }) {
   const tokens = player?.command_tokens ?? { tactic_total: 0, fleet: 0, strategy: 0 }
   const [draftTokens, setDraftTokens] = useState(tokens)
+  const [exploringPlanet, setExploringPlanet] = useState(null)
   const isStatusPhase = game?.phase === 'status'
 
   if (!player) return null
@@ -135,6 +140,49 @@ export default function MyPanelSection({
               : leaders.unlockHero(leader.id)
           }
           onUseAbility={(leader) => leaders.resolveLeaderAbility(leader.ability_definition_id, leader.id, {})}
+        />
+      )}
+
+      {exploration?.unexploredPlanets?.length > 0 && (
+        <div>
+          <p className="label text-xs mb-2">EXPLORE PLANETS</p>
+          <div className="flex flex-col gap-1">
+            {exploration.unexploredPlanets.map(planet => (
+              <div key={planet.id} className="flex items-center justify-between text-sm">
+                <span className="text-text">{planet.planet_name}</span>
+                <button
+                  className="btn-primary text-xs"
+                  onClick={() => setExploringPlanet(planet)}
+                >
+                  EXPLORE
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <RelicFragmentPanel
+        relicFragments={exploration?.relicFragments}
+        isActivePlayer={exploration?.isActivePlayer}
+        onUseRelicFragment={exploration?.useRelicFragment}
+      />
+
+      <RelicPanel
+        relics={exploration?.relics}
+        isActivePlayer={exploration?.isActivePlayer}
+        onUseRelic={exploration?.useRelic}
+      />
+
+      {exploringPlanet && exploration && (
+        <ExplorationModal
+          planet={exploringPlanet}
+          traits={planetStaticMap[exploringPlanet.planet_name]?.traits ?? []}
+          isFrontier={false}
+          onExplorePlanet={exploration.explorePlanet}
+          onResolveCard={exploration.resolveExplorationCard}
+          onExploreFrontier={exploration.exploreFrontier}
+          onClose={() => setExploringPlanet(null)}
         />
       )}
 

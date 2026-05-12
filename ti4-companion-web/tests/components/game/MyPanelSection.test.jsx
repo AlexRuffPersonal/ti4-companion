@@ -11,6 +11,31 @@ vi.mock('../../../src/components/game/StrategyCardPanel.jsx', () => ({
   )
 }))
 
+vi.mock('../../../src/components/game/RelicFragmentPanel.jsx', () => ({
+  default: ({ relicFragments }) => (
+    relicFragments?.length > 0
+      ? <div data-testid="relic-fragment-panel" />
+      : null
+  )
+}))
+
+vi.mock('../../../src/components/game/RelicPanel.jsx', () => ({
+  default: ({ relics }) => (
+    relics?.length > 0
+      ? <div data-testid="relic-panel" />
+      : null
+  )
+}))
+
+vi.mock('../../../src/components/game/ExplorationModal.jsx', () => ({
+  default: ({ planet, onClose }) => (
+    <div data-testid="exploration-modal">
+      <span>{planet?.planet_name}</span>
+      <button onClick={onClose}>Close</button>
+    </div>
+  )
+}))
+
 let capturedLeaderPanelProps = null
 vi.mock('../../../src/components/game/LeaderPanel.jsx', () => ({
   default: (props) => {
@@ -496,5 +521,82 @@ describe('MyPanelSection', () => {
   it('does not render LeaderPanel when leaders is null', () => {
     renderPanel({ leaders: null })
     expect(screen.queryByTestId('leader-panel')).not.toBeInTheDocument()
+  })
+
+  describe('exploration', () => {
+    const makeExploration = (overrides = {}) => ({
+      unexploredPlanets: [],
+      relicFragments: [],
+      relics: [],
+      isActivePlayer: true,
+      explorePlanet: vi.fn(),
+      resolveExplorationCard: vi.fn(),
+      exploreFrontier: vi.fn(),
+      useRelicFragment: vi.fn(),
+      useRelic: vi.fn(),
+      ...overrides,
+    })
+
+    it('renders RelicFragmentPanel when relicFragments are present', () => {
+      const exploration = makeExploration({
+        relicFragments: [{ id: 'f1', relic_fragment_type: 'cultural' }],
+      })
+      renderPanel({ exploration })
+      expect(screen.getByTestId('relic-fragment-panel')).toBeInTheDocument()
+    })
+
+    it('does not render RelicFragmentPanel when relicFragments is empty', () => {
+      renderPanel({ exploration: makeExploration({ relicFragments: [] }) })
+      expect(screen.queryByTestId('relic-fragment-panel')).not.toBeInTheDocument()
+    })
+
+    it('renders RelicPanel when relics are present', () => {
+      const exploration = makeExploration({
+        relics: [{ id: 'r1', name: 'Shard of the Throne' }],
+      })
+      renderPanel({ exploration })
+      expect(screen.getByTestId('relic-panel')).toBeInTheDocument()
+    })
+
+    it('does not render RelicPanel when relics is empty', () => {
+      renderPanel({ exploration: makeExploration({ relics: [] }) })
+      expect(screen.queryByTestId('relic-panel')).not.toBeInTheDocument()
+    })
+
+    it('renders unexplored planet rows with EXPLORE button', () => {
+      const exploration = makeExploration({
+        unexploredPlanets: [{ id: 'up1', planet_name: 'Vefut II', explored: false }],
+      })
+      renderPanel({ exploration })
+      expect(screen.getByText('Vefut II')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^explore$/i })).toBeInTheDocument()
+    })
+
+    it('opens ExplorationModal when explore button is clicked', () => {
+      const exploration = makeExploration({
+        unexploredPlanets: [{ id: 'up1', planet_name: 'Vefut II', explored: false }],
+      })
+      renderPanel({ exploration })
+      fireEvent.click(screen.getByRole('button', { name: /^explore$/i }))
+      expect(screen.getByTestId('exploration-modal')).toBeInTheDocument()
+    })
+
+    it('closes ExplorationModal when onClose is called', () => {
+      const exploration = makeExploration({
+        unexploredPlanets: [{ id: 'up1', planet_name: 'Vefut II', explored: false }],
+      })
+      renderPanel({ exploration })
+      fireEvent.click(screen.getByRole('button', { name: /^explore$/i }))
+      expect(screen.getByTestId('exploration-modal')).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /close/i }))
+      expect(screen.queryByTestId('exploration-modal')).not.toBeInTheDocument()
+    })
+
+    it('does not render exploration section when exploration prop is omitted', () => {
+      renderPanel()
+      expect(screen.queryByText(/explore planets/i)).not.toBeInTheDocument()
+      expect(screen.queryByTestId('relic-fragment-panel')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('relic-panel')).not.toBeInTheDocument()
+    })
   })
 })
