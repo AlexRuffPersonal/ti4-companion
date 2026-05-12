@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import GameScreen from '../../../src/components/game/GameScreen.jsx'
 import { useStrategyCards } from '../../../src/hooks/useStrategyCards.js'
 import { useGame } from '../../../src/hooks/useGame.js'
 import { useRiftTransit } from '../../../src/hooks/useRiftTransit.js'
+import MyPanelSection from '../../../src/components/game/MyPanelSection.jsx'
 
 // Mock react-router-dom
 vi.mock('react-router-dom', () => ({
@@ -118,6 +119,7 @@ vi.mock('../../../src/hooks/useGalaxy.js', () => ({
     activatedSystems: new Set(),
     myActivations: new Set(),
     planetOwnership: new Map(),
+    planetStaticMap: { 'Mecatol Rex': { resources: 1, influence: 6, tech_specialty: null, traits: [] } },
     activeCombat: null,
     myPlayerId: 'p1',
     loading: false,
@@ -169,7 +171,7 @@ vi.mock('../../../src/components/game/ScoreboardSection.jsx', () => ({
   default: () => <div data-testid="scoreboard-section" />,
 }))
 vi.mock('../../../src/components/game/MyPanelSection.jsx', () => ({
-  default: () => <div data-testid="my-panel-section" />,
+  default: vi.fn(() => <div data-testid="my-panel-section" />),
 }))
 vi.mock('../../../src/components/game/ObjectivesSection.jsx', () => ({
   default: () => <div data-testid="objectives-section" />,
@@ -411,5 +413,29 @@ describe('GameScreen — RiftTransitModal (Phase 25)', () => {
     })
     render(<GameScreen userId="user-1" />)
     expect(screen.getByTestId('rift-transit-modal')).toBeInTheDocument()
+  })
+})
+
+describe('GameScreen — planetStaticMap threading (Phase 31)', () => {
+  beforeEach(() => {
+    useGame.mockReturnValue({ ...BASE_USE_GAME })
+    useStrategyCards.mockReturnValue({
+      activePay: null, responses: [], isMyTurnToRespond: false,
+      playPrimary: vi.fn(), useSecondary: vi.fn(), passSecondary: vi.fn(),
+    })
+    useRiftTransit.mockReturnValue({ activeTransit: null, rollAll: vi.fn(), rollOne: vi.fn(), loading: false, error: null })
+    vi.mocked(MyPanelSection).mockClear()
+  })
+
+  it('passes planetStaticMap from galaxyState to MyPanelSection', () => {
+    let capturedProps = null
+    vi.mocked(MyPanelSection).mockImplementationOnce((props) => {
+      capturedProps = props
+      return <div data-testid="my-panel-section" />
+    })
+    render(<GameScreen userId="user-1" />)
+    expect(capturedProps).not.toBeNull()
+    expect(capturedProps).toHaveProperty('planetStaticMap')
+    expect(capturedProps.planetStaticMap).toHaveProperty('Mecatol Rex')
   })
 })

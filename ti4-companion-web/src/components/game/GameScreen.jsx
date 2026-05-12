@@ -368,6 +368,7 @@ export default function GameScreen({ userId }) {
               )
               if (primaryAbility) handlePlayAbility(primaryAbility, String(currentPlayer?.strategy_card), 'strategy_card')
             }}
+            planetStaticMap={galaxyState?.planetStaticMap ?? {}}
           />
         )}
         <button
