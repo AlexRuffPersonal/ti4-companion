@@ -45,7 +45,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-roll-combat-dice](fn-game-roll-combat-dice.md) | `supabase/functions/game-roll-combat-dice/index.ts` | 13 / 20 | Anti-Fighter Barrage / Space Combat Action Cards | done | fn-game-fire-anti-fighter-barrage, migration-036-combat-action-cards |
 | [fn-game-fire-anti-fighter-barrage](fn-game-fire-anti-fighter-barrage.md) | `supabase/functions/game-fire-anti-fighter-barrage/index.ts` | 13 / 14 | AFB / Full Invasion | done | migration-030-afb, migration-031-invasion |
 | [fn-game-advance-barrage](fn-game-advance-barrage.md) | `supabase/functions/game-advance-barrage/index.ts` | 13 | Anti-Fighter Barrage | done | migration-030-afb |
-| [component-SpaceCombatModal](component-SpaceCombatModal.md) | `src/components/game/SpaceCombatModal.jsx` | 13 / 14 / 20 | AFB / Full Invasion / Space Combat Action Cards | planned | hook-useCombat, component-ActionCardWindowPanel |
+| [component-SpaceCombatModal](component-SpaceCombatModal.md) | `src/components/game/SpaceCombatModal.jsx` | 13 / 14 / 20 | AFB / Full Invasion / Space Combat Action Cards | done | hook-useCombat, component-ActionCardWindowPanel |
 | [migration-031-invasion](migration-031-invasion.md) | `supabase/migrations/031_invasion.sql` | 14 | Full Invasion | done | migration-030-afb |
 | [fn-game-assign-hits](fn-game-assign-hits.md) | `supabase/functions/game-assign-hits/index.ts` | 14 / 20 | Full Invasion / Space Combat Action Cards | done | migration-031-invasion, migration-036-combat-action-cards |
 | [fn-game-fire-bombardment](fn-game-fire-bombardment.md) | `supabase/functions/game-fire-bombardment/index.ts` | 14 | Full Invasion | done | migration-031-invasion |
@@ -91,8 +91,8 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-ExplorationModal](component-ExplorationModal.md) | `src/components/game/ExplorationModal.jsx` | 17 | Exploration / Relics | done | hook-useExploration |
 | [component-RelicFragmentPanel](component-RelicFragmentPanel.md) | `src/components/game/RelicFragmentPanel.jsx` | 17 | Exploration / Relics | done | hook-useExploration |
 | [component-RelicPanel](component-RelicPanel.md) | `src/components/game/RelicPanel.jsx` | 17 | Exploration / Relics | done | hook-useExploration |
-| [component-GalaxyTab](component-GalaxyTab.md) | `src/components/game/GalaxyTab.jsx` | 17 | Exploration / Relics | planned | hook-useExploration, component-ExplorationModal |
-| [component-MyPanelSection](component-MyPanelSection.md) | `src/components/game/MyPanelSection.jsx` | 17 | Exploration / Relics | planned | hook-useExploration, component-RelicFragmentPanel, component-RelicPanel |
+| [component-GalaxyTab](component-GalaxyTab.md) | `src/components/game/GalaxyTab.jsx` | 17 | Exploration / Relics | done | hook-useExploration, component-ExplorationModal |
+| [component-MyPanelSection](component-MyPanelSection.md) | `src/components/game/MyPanelSection.jsx` | 17 | Exploration / Relics | done | hook-useExploration, component-RelicFragmentPanel, component-RelicPanel |
 
 | [fn-game-move-ships](fn-game-move-ships.md) | `supabase/functions/game-move-ships/index.ts` | 18 | Unit Transport | done | — |
 | [hook-useGalaxy](hook-useGalaxy.md) | `src/hooks/useGalaxy.js` | 18 | Unit Transport | done | fn-game-move-ships, client-edgeFunctions |
@@ -118,15 +118,15 @@ This keeps the index accurate across multi-session implementations so future age
 | [migration-037-legendary-planets](migration-037-legendary-planets.md) | `supabase/migrations/037_legendary_planets.sql` | 21 | Legendary Planets & Wormhole Nexus | done | — |
 | [shared-abilityDsl](shared-abilityDsl.md) | `supabase/functions/_shared/abilityDsl.ts` | 21 | Legendary Planets & Wormhole Nexus | done | migration-037-legendary-planets |
 | [fn-game-resolve-ability](fn-game-resolve-ability.md) | `supabase/functions/game-resolve-ability/index.ts` | 21 | Legendary Planets & Wormhole Nexus | done | migration-037-legendary-planets |
-| [fn-game-commit-ground-forces](fn-game-commit-ground-forces.md) | `supabase/functions/game-commit-ground-forces/index.ts` | 21 | Legendary Planets & Wormhole Nexus | planned | migration-037-legendary-planets |
+| [fn-game-commit-ground-forces](fn-game-commit-ground-forces.md) | `supabase/functions/game-commit-ground-forces/index.ts` | 21 | Legendary Planets & Wormhole Nexus | done | migration-037-legendary-planets |
 | [fn-game-advance-phase](fn-game-advance-phase.md) | `supabase/functions/game-advance-phase/index.ts` | 21 | Legendary Planets & Wormhole Nexus | done | migration-037-legendary-planets |
-| [fn-game-use-relic](fn-game-use-relic.md) | `supabase/functions/game-use-relic/index.ts` | 21 | Legendary Planets & Wormhole Nexus | planned | migration-037-legendary-planets |
+| [fn-game-use-relic](fn-game-use-relic.md) | `supabase/functions/game-use-relic/index.ts` | 21 | Legendary Planets & Wormhole Nexus | done | migration-037-legendary-planets |
 | [client-edgeFunctions](client-edgeFunctions.md) | `src/lib/edgeFunctions.js` | 21 | Legendary Planets & Wormhole Nexus | done | migration-037-legendary-planets |
-| [hook-useLegendaryCards](hook-useLegendaryCards.md) | `src/hooks/useLegendaryCards.js` | 21 | Legendary Planets & Wormhole Nexus | planned | migration-037-legendary-planets, client-edgeFunctions |
-| [component-LegendaryCardPanel](component-LegendaryCardPanel.md) | `src/components/game/LegendaryCardPanel.jsx` | 21 | Legendary Planets & Wormhole Nexus | planned | hook-useLegendaryCards |
-| [component-EndTurnDialog](component-EndTurnDialog.md) | `src/components/game/EndTurnDialog.jsx` | 21 | Legendary Planets & Wormhole Nexus | planned | hook-useLegendaryCards, component-LegendaryCardPanel |
-| [component-GalaxyTab](component-GalaxyTab.md) | `src/components/game/GalaxyTab.jsx` | 21 | Legendary Planets & Wormhole Nexus | planned | migration-037-legendary-planets |
-| [component-MyPanelSection](component-MyPanelSection.md) | `src/components/game/MyPanelSection.jsx` | 21 | Legendary Planets & Wormhole Nexus | planned | hook-useLegendaryCards, component-LegendaryCardPanel |
+| [hook-useLegendaryCards](hook-useLegendaryCards.md) | `src/hooks/useLegendaryCards.js` | 21 | Legendary Planets & Wormhole Nexus | done | migration-037-legendary-planets, client-edgeFunctions |
+| [component-LegendaryCardPanel](component-LegendaryCardPanel.md) | `src/components/game/LegendaryCardPanel.jsx` | 21 | Legendary Planets & Wormhole Nexus | done | hook-useLegendaryCards |
+| [component-EndTurnDialog](component-EndTurnDialog.md) | `src/components/game/EndTurnDialog.jsx` | 21 | Legendary Planets & Wormhole Nexus | done | hook-useLegendaryCards, component-LegendaryCardPanel |
+| [component-GalaxyTab](component-GalaxyTab.md) | `src/components/game/GalaxyTab.jsx` | 21 | Legendary Planets & Wormhole Nexus | done | migration-037-legendary-planets |
+| [component-MyPanelSection](component-MyPanelSection.md) | `src/components/game/MyPanelSection.jsx` | 21 | Legendary Planets & Wormhole Nexus | done | hook-useLegendaryCards, component-LegendaryCardPanel |
 
 | [migration-038-gravity-rift](migration-038-gravity-rift.md) | `supabase/migrations/038_gravity_rift.sql` | 25 | Gravity Rift | done | — |
 | [fn-game-move-ships-p25](fn-game-move-ships-p25.md) | `supabase/functions/game-move-ships/index.ts` | 25 | Gravity Rift | done | migration-038-gravity-rift, fn-game-move-ships |
@@ -196,13 +196,13 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-roll-combat-dice-p30](fn-game-roll-combat-dice-p30.md) | `supabase/functions/game-roll-combat-dice/index.ts` | 30 | Technology Effect Enforcement | done | fn-game-roll-combat-dice (p13/p20), migration-043-tech-effects, shared-techEffects |
 | [fn-game-roll-ground-combat-dice-p30](fn-game-roll-ground-combat-dice-p30.md) | `supabase/functions/game-roll-ground-combat-dice/index.ts` | 30 | Technology Effect Enforcement | done | fn-game-roll-ground-combat-dice (p11), migration-043-tech-effects, shared-techEffects |
 | [fn-game-fire-space-cannon-p30](fn-game-fire-space-cannon-p30.md) | `supabase/functions/game-fire-space-cannon/index.ts` | 30 | Technology Effect Enforcement | done | fn-game-fire-space-cannon (p13), migration-043-tech-effects, shared-techEffects |
-| [fn-game-fire-anti-fighter-barrage-p30](fn-game-fire-anti-fighter-barrage-p30.md) | `supabase/functions/game-fire-anti-fighter-barrage/index.ts` | 30 | Technology Effect Enforcement | planned | fn-game-fire-anti-fighter-barrage (p13/p14), migration-043-tech-effects, shared-techEffects |
+| [fn-game-fire-anti-fighter-barrage-p30](fn-game-fire-anti-fighter-barrage-p30.md) | `supabase/functions/game-fire-anti-fighter-barrage/index.ts` | 30 | Technology Effect Enforcement | done | fn-game-fire-anti-fighter-barrage (p13/p14), migration-043-tech-effects, shared-techEffects |
 | [fn-game-activate-system-p30](fn-game-activate-system-p30.md) | `supabase/functions/game-activate-system/index.ts` | 30 | Technology Effect Enforcement | done | fn-game-activate-system-p20, migration-043-tech-effects, shared-techEffects |
 | [fn-game-play-action-card-p30](fn-game-play-action-card-p30.md) | `supabase/functions/game-play-action-card/index.ts` | 30 | Technology Effect Enforcement | done | fn-game-play-action-card-p29a, migration-043-tech-effects, shared-techEffects |
 | [fn-game-cast-votes-p30](fn-game-cast-votes-p30.md) | `supabase/functions/game-cast-votes/index.ts` | 30 | Technology Effect Enforcement | done | fn-game-cast-votes (p19), migration-043-tech-effects, shared-techEffects |
 | [fn-game-end-turn-p30](fn-game-end-turn-p30.md) | `supabase/functions/game-end-turn/index.ts` | 30 | Technology Effect Enforcement | done | fn-game-end-turn (p12), migration-043-tech-effects, shared-techEffects |
 | [fn-game-research-technology-p30](fn-game-research-technology-p30.md) | `supabase/functions/game-research-technology/index.ts` | 30 | Technology Effect Enforcement | done | fn-game-research-technology-p29b, migration-043-tech-effects, shared-techEffects |
-| [fn-game-explore-planet-p30](fn-game-explore-planet-p30.md) | `supabase/functions/game-explore-planet/index.ts` | 30 | Technology Effect Enforcement | planned | fn-game-explore-planet (p17), migration-043-tech-effects, shared-techEffects |
+| [fn-game-explore-planet-p30](fn-game-explore-planet-p30.md) | `supabase/functions/game-explore-planet/index.ts` | 30 | Technology Effect Enforcement | done | fn-game-explore-planet (p17), migration-043-tech-effects, shared-techEffects |
 | [fn-game-resolve-ability-p30](fn-game-resolve-ability-p30.md) | `supabase/functions/game-resolve-ability/index.ts` | 30 | Technology Effect Enforcement | done | fn-game-resolve-ability (p21), migration-043-tech-effects, shared-techEffects |
 | [lib-techConstants](lib-techConstants.md) | `src/lib/techConstants.js` | 30 | Technology Effect Enforcement | done | — |
 | [client-edgeFunctions-p30](client-edgeFunctions-p30.md) | `src/lib/edgeFunctions.js` | 30 | Technology Effect Enforcement | done | fn-game-exhaust-technology, fn-game-ready-technology, fn-game-use-technology-action |
@@ -211,9 +211,9 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-MyPanelSection-p30](component-MyPanelSection-p30.md) | `src/components/game/MyPanelSection.jsx` | 30 | Technology Effect Enforcement | done | component-MyPanelSection (p21), hook-useTechnologies, component-TechCard-p30 |
 
 | [hook-useGalaxy-p31](hook-useGalaxy-p31.md) | `src/hooks/useGalaxy.js` | 31 | System Tile & Planet Detail View | done | — |
-| [component-SystemInfoModal](component-SystemInfoModal.md) | `src/components/game/SystemInfoModal.jsx` | 31 | System Tile & Planet Detail View | planned | hook-useGalaxy-p31 |
+| [component-SystemInfoModal](component-SystemInfoModal.md) | `src/components/game/SystemInfoModal.jsx` | 31 | System Tile & Planet Detail View | done | hook-useGalaxy-p31 |
 | [component-SystemActionModal-p31](component-SystemActionModal-p31.md) | `src/components/game/SystemActionModal.jsx` | 31 | System Tile & Planet Detail View | done | — |
-| [component-MyPanelSection-p31](component-MyPanelSection-p31.md) | `src/components/game/MyPanelSection.jsx` | 31 | System Tile & Planet Detail View | planned | hook-useGalaxy-p31 |
+| [component-MyPanelSection-p31](component-MyPanelSection-p31.md) | `src/components/game/MyPanelSection.jsx` | 31 | System Tile & Planet Detail View | done | hook-useGalaxy-p31 |
 | [component-GalaxyTab-p31](component-GalaxyTab-p31.md) | `src/components/game/GalaxyTab.jsx` | 31 | System Tile & Planet Detail View | done | hook-useGalaxy-p31, component-SystemInfoModal, component-SystemActionModal-p31 |
 | [component-GameScreen-p31](component-GameScreen-p31.md) | `src/components/game/GameScreen.jsx` | 31 | System Tile & Planet Detail View | done | hook-useGalaxy-p31, component-MyPanelSection-p31 |
 
@@ -230,10 +230,10 @@ This keeps the index accurate across multi-session implementations so future age
 | [client-edgeFunctions-p33](client-edgeFunctions-p33.md) | `src/lib/edgeFunctions.js` | 33 | Bot Players + Undo | done | fn-game-add-bot, fn-game-remove-bot, fn-game-undo |
 | [lib-botStrategies-scripted](lib-botStrategies-scripted.md) | `src/lib/botStrategies/scripted.js` | 33 | Bot Players + Undo | done | — |
 | [lib-botStrategies-random](lib-botStrategies-random.md) | `src/lib/botStrategies/random.js` | 33 | Bot Players + Undo | done | — |
-| [hook-useBotPlayer](hook-useBotPlayer.md) | `src/hooks/useBotPlayer.js` | 33 | Bot Players + Undo | planned | client-edgeFunctions-p33, lib-botStrategies-scripted, lib-botStrategies-random |
-| [component-LobbyScreen-p33](component-LobbyScreen-p33.md) | `src/components/game/LobbyScreen.jsx` | 33 | Bot Players + Undo | planned | client-edgeFunctions-p33 |
-| [component-GameHeader-p33](component-GameHeader-p33.md) | `src/components/game/GameHeader.jsx` | 33 | Bot Players + Undo | planned | client-edgeFunctions-p33 |
-| [component-GameScreen-p33](component-GameScreen-p33.md) | `src/components/game/GameScreen.jsx` | 33 | Bot Players + Undo | planned | hook-useBotPlayer, component-GameHeader-p33, client-edgeFunctions-p33 |
+| [hook-useBotPlayer](hook-useBotPlayer.md) | `src/hooks/useBotPlayer.js` | 33 | Bot Players + Undo | done | client-edgeFunctions-p33, lib-botStrategies-scripted, lib-botStrategies-random |
+| [component-LobbyScreen-p33](component-LobbyScreen-p33.md) | `src/components/game/LobbyScreen.jsx` | 33 | Bot Players + Undo | done | client-edgeFunctions-p33 |
+| [component-GameHeader-p33](component-GameHeader-p33.md) | `src/components/game/GameHeader.jsx` | 33 | Bot Players + Undo | done | client-edgeFunctions-p33 |
+| [component-GameScreen-p33](component-GameScreen-p33.md) | `src/components/game/GameScreen.jsx` | 33 | Bot Players + Undo | done | hook-useBotPlayer, component-GameHeader-p33, client-edgeFunctions-p33 |
 
 ---
 
