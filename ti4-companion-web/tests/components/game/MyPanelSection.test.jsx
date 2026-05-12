@@ -36,6 +36,14 @@ vi.mock('../../../src/components/game/ExplorationModal.jsx', () => ({
   )
 }))
 
+let capturedLegendaryCardPanelProps = null
+vi.mock('../../../src/components/game/LegendaryCardPanel.jsx', () => ({
+  default: (props) => {
+    capturedLegendaryCardPanelProps = props
+    return <div data-testid="legendary-card-panel" />
+  }
+}))
+
 let capturedLeaderPanelProps = null
 vi.mock('../../../src/components/game/LeaderPanel.jsx', () => ({
   default: (props) => {
@@ -597,6 +605,31 @@ describe('MyPanelSection', () => {
       expect(screen.queryByText(/explore planets/i)).not.toBeInTheDocument()
       expect(screen.queryByTestId('relic-fragment-panel')).not.toBeInTheDocument()
       expect(screen.queryByTestId('relic-panel')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('LegendaryCardPanel', () => {
+    it('renders LegendaryCardPanel with correct props when myCards has entries', () => {
+      capturedLegendaryCardPanelProps = null
+      const exhaustCard = vi.fn()
+      const legendaryCards = {
+        myCards: [{ id: 'lc1', card_name: 'Mecatol Rex' }],
+        exhaustCard,
+      }
+      renderPanel({ legendaryCards })
+      expect(screen.getByTestId('legendary-card-panel')).toBeInTheDocument()
+      expect(capturedLegendaryCardPanelProps.myCards).toEqual(legendaryCards.myCards)
+      expect(capturedLegendaryCardPanelProps.onExhaustCard).toBe(exhaustCard)
+    })
+
+    it('does not render LegendaryCardPanel when legendaryCards is undefined', () => {
+      renderPanel({ legendaryCards: undefined })
+      expect(screen.queryByTestId('legendary-card-panel')).not.toBeInTheDocument()
+    })
+
+    it('does not render LegendaryCardPanel when myCards is empty', () => {
+      renderPanel({ legendaryCards: { myCards: [], exhaustCard: vi.fn() } })
+      expect(screen.queryByTestId('legendary-card-panel')).not.toBeInTheDocument()
     })
   })
 })

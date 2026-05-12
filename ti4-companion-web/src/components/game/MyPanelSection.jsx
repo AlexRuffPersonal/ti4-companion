@@ -4,6 +4,7 @@ import LeaderPanel from './LeaderPanel.jsx'
 import ExplorationModal from './ExplorationModal.jsx'
 import RelicFragmentPanel from './RelicFragmentPanel.jsx'
 import RelicPanel from './RelicPanel.jsx'
+import LegendaryCardPanel from './LegendaryCardPanel.jsx'
 
 export default function MyPanelSection({
   player, planets, isActive, game,
@@ -25,6 +26,7 @@ export default function MyPanelSection({
   planetStaticMap = {},
   leaders,
   exploration,
+  legendaryCards,
 }) {
   const tokens = player?.command_tokens ?? { tactic_total: 0, fleet: 0, strategy: 0 }
   const [draftTokens, setDraftTokens] = useState(tokens)
@@ -173,6 +175,13 @@ export default function MyPanelSection({
         isActivePlayer={exploration?.isActivePlayer}
         onUseRelic={exploration?.useRelic}
       />
+
+      {legendaryCards?.myCards?.length > 0 && (
+        <LegendaryCardPanel
+          myCards={legendaryCards.myCards}
+          onExhaustCard={legendaryCards.exhaustCard}
+        />
+      )}
 
       {exploringPlanet && exploration && (
         <ExplorationModal
