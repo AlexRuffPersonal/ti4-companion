@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import StrategyCardPanel from './StrategyCardPanel.jsx'
+import LeaderPanel from './LeaderPanel.jsx'
 
 export default function MyPanelSection({
   player, planets, isActive, game,
@@ -18,7 +19,8 @@ export default function MyPanelSection({
   allPlayers = [],
   activePay = null,
   onPlayPrimary = () => {},
-  planetStaticMap = {}
+  planetStaticMap = {},
+  leaders
 }) {
   const tokens = player?.command_tokens ?? { tactic_total: 0, fleet: 0, strategy: 0 }
   const [draftTokens, setDraftTokens] = useState(tokens)
@@ -119,6 +121,19 @@ export default function MyPanelSection({
         onPickStrategyCard={onPickStrategyCard}
         onPlayPrimary={onPlayPrimary}
       />
+
+      {leaders && (
+        <LeaderPanel
+          agent={leaders.agent}
+          commander={leaders.commander}
+          hero={leaders.hero}
+          factionMech={leaders.factionMech}
+          leaderStatus={leaders.leaderStatus}
+          onUnlockCommander={leaders.unlockCommander}
+          onUnlockHero={leaders.unlockHero}
+          onResolveAbility={leaders.resolveLeaderAbility}
+        />
+      )}
 
       {/* Planets */}
       {planets.length > 0 && (

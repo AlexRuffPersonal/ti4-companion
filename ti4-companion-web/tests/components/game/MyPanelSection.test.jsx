@@ -11,6 +11,14 @@ vi.mock('../../../src/components/game/StrategyCardPanel.jsx', () => ({
   )
 }))
 
+vi.mock('../../../src/components/game/LeaderPanel.jsx', () => ({
+  default: (props) => (
+    <div data-testid="leader-panel">
+      {props.agent && <span>agent-{props.agent.id ?? 'present'}</span>}
+    </div>
+  )
+}))
+
 const PLAYER = {
   id: 'p1', display_name: 'Alice', faction: 'Arborec', colour: 'green',
   strategy_card: null, passed: false, vp: 5,
@@ -442,5 +450,30 @@ describe('MyPanelSection', () => {
       onPlayPrimary
     })
     expect(screen.getByText('active-pay')).toBeInTheDocument()
+  })
+
+  it('renders LeaderPanel when leaders prop is provided', () => {
+    const leaders = {
+      agent: { id: 'ag1' },
+      commander: { id: 'cmd1' },
+      hero: { id: 'hr1' },
+      factionMech: { id: 'mech1' },
+      leaderStatus: {},
+      unlockCommander: vi.fn(),
+      unlockHero: vi.fn(),
+      resolveLeaderAbility: vi.fn(),
+    }
+    renderPanel({ leaders })
+    expect(screen.getByTestId('leader-panel')).toBeInTheDocument()
+  })
+
+  it('does not render LeaderPanel when leaders is undefined', () => {
+    renderPanel({ leaders: undefined })
+    expect(screen.queryByTestId('leader-panel')).not.toBeInTheDocument()
+  })
+
+  it('does not render LeaderPanel when leaders is null', () => {
+    renderPanel({ leaders: null })
+    expect(screen.queryByTestId('leader-panel')).not.toBeInTheDocument()
   })
 })
