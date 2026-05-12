@@ -183,6 +183,14 @@ export async function handler(req: Request): Promise<Response> {
   if (playerError) return errorResponse('Database error', 500)
   if (!player) return errorResponse('Player not found in this game', 404)
 
+  // Fetch the game
+  const { data: game } = await db
+    .from('games')
+    .select('phase, map_tiles')
+    .eq('id', game_id)
+    .maybeSingle()
+  if (!game) return errorResponse('Game not found', 404)
+
   // Fetch the card
   const { data: cardRow, error: cardError } = await db
     .from('game_exploration_decks')
@@ -249,17 +257,11 @@ export async function handler(req: Request): Promise<Response> {
   }
 
   // Determine card final state
-  const isEnigmaticDevice = card.name === 'Enigmatic Device'
-
-  if (isEnigmaticDevice) {
-    // Stays in play as 'held'
-    const { error: updateError } = await db
-      .from('game_exploration_decks')
-      .update({ state: 'held', resolved_by_player_id: player_id })
-      .eq('id', card_id)
-    if (updateError) return errorResponse('Database error', 500)
-  } else if (signalType === 'relic_fragment') {
-    // Relic fragment cards: state='held' until fragments are combined
+  // Relic fragments (including Enigmatic Device which has relic_fragment_type): stay held
+  // Attachments: discarded (attach_to_planet op handles the DB write for the attachment itself)
+  // All other cards: discarded
+  if (signalType === 'relic_fragment') {
+    // Relic fragment cards (and Enigmatic Device): state='held' until fragments are combined
     const { error: updateError } = await db
       .from('game_exploration_decks')
       .update({ state: 'held', resolved_by_player_id: player_id })

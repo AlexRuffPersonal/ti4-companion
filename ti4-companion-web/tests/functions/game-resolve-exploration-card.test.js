@@ -70,6 +70,7 @@ function baseBody(overrides = {}) {
 /**
  * Build a mock db that handles:
  * - game_players (player lookup)
+ * - games (game fetch)
  * - game_exploration_decks (card fetch + update)
  * - game_player_planets (explored update)
  * - game_player_units (conditional_mech_or_infantry)
@@ -77,6 +78,8 @@ function baseBody(overrides = {}) {
 function mockDb({
   player = BASE_PLAYER,
   playerError = null,
+  game = { phase: 3, map_tiles: [] },
+  gameError = null,
   card = makeCard(),
   cardError = null,
   cardUpdateError = null,
@@ -93,6 +96,16 @@ function mockDb({
             eq: vi.fn().mockReturnValue({
               maybeSingle: vi.fn().mockResolvedValue({ data: player, error: playerError }),
             }),
+          }),
+        }),
+      }
+    }
+
+    if (table === 'games') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: game, error: gameError }),
           }),
         }),
       }
@@ -249,7 +262,7 @@ describe('game-resolve-exploration-card', () => {
     expect(calledOps.some((op) => op.op === 'convert_commodities')).toBe(true)
   })
 
-  it('discards attachment cards and sets explored=true', async () => {
+  it('applies attach_to_planet and sets explored=true for attachment cards', async () => {
     // Dyson Sphere is an attachment card
     mockDb({ card: makeCard({ name: 'Dyson Sphere', has_attachment: true }) })
     const res = await handler(makeRequest(baseBody()))
@@ -257,15 +270,18 @@ describe('game-resolve-exploration-card', () => {
     const body = await res.json()
     expect(body.applied).toBe('Dyson Sphere')
 
-    // Card should be discarded
-    const explorationDecksFrom = db.from.mock.calls.find((c) => c[0] === 'game_exploration_decks')
-    expect(explorationDecksFrom).toBeTruthy()
+    // Card should be discarded (attach_to_planet op handles the attachment DB write)
+    // The second game_exploration_decks call is the update (first is the select/fetch)
+    const deckCallIndices = db.from.mock.calls.reduce((acc, c, i) => (c[0] === 'game_exploration_decks' ? [...acc, i] : acc), [])
+    expect(deckCallIndices.length).toBeGreaterThanOrEqual(2)
+    const deckUpdateMock = db.from.mock.results[deckCallIndices[1]].value
+    expect(deckUpdateMock.update).toHaveBeenCalledWith({ state: 'discarded', resolved_by_player_id: null })
     // planet should be marked explored
     const planetFrom = db.from.mock.calls.find((c) => c[0] === 'game_player_planets')
     expect(planetFrom).toBeTruthy()
   })
 
-  it('holds relic fragment cards and sets explored=true', async () => {
+  it('applies gain_relic_fragment and sets state=held for relic fragments', async () => {
     mockDb({
       card: makeCard({
         name: 'Cultural Relic Fragment',
@@ -279,10 +295,12 @@ describe('game-resolve-exploration-card', () => {
     const body = await res.json()
     expect(body.applied).toBe('Cultural Relic Fragment')
 
-    // Verify card update was called (should set state='held')
-    const calls = db.from.mock.calls
-    const deckCalls = calls.filter((c) => c[0] === 'game_exploration_decks')
-    expect(deckCalls.length).toBeGreaterThan(0)
+    // Find the game_exploration_decks mock instance and verify update was called with state='held'
+    // The second game_exploration_decks call is the update (first is the select/fetch)
+    const deckCallIndices = db.from.mock.calls.reduce((acc, c, i) => (c[0] === 'game_exploration_decks' ? [...acc, i] : acc), [])
+    expect(deckCallIndices.length).toBeGreaterThanOrEqual(2)
+    const deckUpdateMock = db.from.mock.results[deckCallIndices[1]].value
+    expect(deckUpdateMock.update).toHaveBeenCalledWith({ state: 'held', resolved_by_player_id: PLAYER_ID })
   })
 
   it('keeps Enigmatic Device in held state', async () => {
@@ -300,11 +318,12 @@ describe('game-resolve-exploration-card', () => {
     const body = await res.json()
     expect(body.applied).toBe('Enigmatic Device')
 
-    // Should call update on game_exploration_decks (for held state)
-    const updateMock = db.from.mock.results.find(
-      (r, i) => db.from.mock.calls[i]?.[0] === 'game_exploration_decks' && r?.value?.update
-    )
-    expect(updateMock).toBeTruthy()
+    // Verify update called with state='held' and resolved_by_player_id=PLAYER_ID
+    // The second game_exploration_decks call is the update (first is the select/fetch)
+    const deckCallIndices = db.from.mock.calls.reduce((acc, c, i) => (c[0] === 'game_exploration_decks' ? [...acc, i] : acc), [])
+    expect(deckCallIndices.length).toBeGreaterThanOrEqual(2)
+    const deckUpdateMock = db.from.mock.results[deckCallIndices[1]].value
+    expect(deckUpdateMock.update).toHaveBeenCalledWith({ state: 'held', resolved_by_player_id: PLAYER_ID })
   })
 
   it('discards non-special cards and sets explored=true', async () => {
