@@ -13,7 +13,6 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
 
 vi.mock('../../../supabase/functions/_shared/abilityDsl.ts', () => ({
   applyAbility: vi.fn().mockResolvedValue(undefined),
-  interpretEffects: vi.fn().mockResolvedValue(undefined),
   dslError: vi.fn((msg, status = 409) => {
     const err = new Error(msg)
     err.status = status
@@ -327,22 +326,24 @@ describe('game-resolve-exploration-card', () => {
   })
 
   it('discards non-special cards and sets explored=true', async () => {
-    // Derelict Vessel draws a secret objective — that is a passthrough op
     mockDb({
       card: makeCard({
-        name: 'Derelict Vessel',
+        name: 'Mercenary Outfit',
         has_attachment: false,
         relic_fragment_type: null,
-        deck_type: 'frontier',
-        planet_name: null,
+        deck_type: 'cultural',
+        planet_name: 'Mecatol Rex',
       }),
     })
     const res = await handler(makeRequest(baseBody()))
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.applied).toBe('Derelict Vessel')
-    // applyAbility called for draw_secret_objective passthrough
+    expect(body.applied).toBe('Mercenary Outfit')
     expect(applyAbility).toHaveBeenCalled()
+    const planetFromCall = db.from.mock.calls.find((c) => c[0] === 'game_player_planets')
+    expect(planetFromCall).toBeTruthy()
+    const planetMock = db.from.mock.results[db.from.mock.calls.indexOf(planetFromCall)].value
+    expect(planetMock.update).toHaveBeenCalledWith({ explored: true })
   })
 
   it('returns 200 with applied card name on success', async () => {
