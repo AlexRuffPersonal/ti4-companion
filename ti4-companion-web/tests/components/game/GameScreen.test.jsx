@@ -5,6 +5,7 @@ import { useStrategyCards } from '../../../src/hooks/useStrategyCards.js'
 import { useGame } from '../../../src/hooks/useGame.js'
 import { useRiftTransit } from '../../../src/hooks/useRiftTransit.js'
 import { useBotPlayer } from '../../../src/hooks/useBotPlayer.js'
+import { useLeaders } from '../../../src/hooks/useLeaders.js'
 import MyPanelSection from '../../../src/components/game/MyPanelSection.jsx'
 import GameHeader from '../../../src/components/game/GameHeader.jsx'
 
@@ -41,6 +42,18 @@ vi.mock('../../../src/lib/edgeFunctions.js', () => ({
 
 vi.mock('../../../src/hooks/useBotPlayer.js', () => ({
   useBotPlayer: vi.fn(() => ({ isBotTurn: false, isTicking: { current: false } })),
+}))
+
+const MOCK_LEADERS = {
+  agent: null, commander: null, hero: null, factionMech: null,
+  leaderStatus: { agent: 'unlocked', commander: 'locked', hero: 'locked' },
+  unlockCommander: vi.fn(),
+  unlockHero: vi.fn(),
+  resolveLeaderAbility: vi.fn(),
+}
+
+vi.mock('../../../src/hooks/useLeaders.js', () => ({
+  useLeaders: vi.fn(() => MOCK_LEADERS),
 }))
 
 // Mock hooks
@@ -451,6 +464,39 @@ describe('GameScreen — planetStaticMap threading (Phase 31)', () => {
     expect(capturedProps).not.toBeNull()
     expect(capturedProps).toHaveProperty('planetStaticMap')
     expect(capturedProps.planetStaticMap).toHaveProperty('Mecatol Rex')
+  })
+})
+
+describe('GameScreen — useLeaders integration (Phase 16)', () => {
+  beforeEach(() => {
+    useGame.mockReturnValue({ ...BASE_USE_GAME })
+    useStrategyCards.mockReturnValue({
+      activePay: null, responses: [], isMyTurnToRespond: false,
+      playPrimary: vi.fn(), useSecondary: vi.fn(), passSecondary: vi.fn(),
+    })
+    useRiftTransit.mockReturnValue({ activeTransit: null, rollAll: vi.fn(), rollOne: vi.fn(), loading: false, error: null })
+    useBotPlayer.mockReturnValue({ isBotTurn: false, isTicking: { current: false } })
+    vi.mocked(MyPanelSection).mockClear()
+    vi.mocked(useLeaders).mockClear()
+  })
+
+  it('calls useLeaders with gameId and currentPlayer', () => {
+    render(<GameScreen userId="user-1" />)
+    expect(useLeaders).toHaveBeenCalledWith(
+      expect.objectContaining({ gameId: 'game-uuid', currentPlayer: MOCK_PLAYER })
+    )
+  })
+
+  it('passes leaders prop to MyPanelSection', () => {
+    let capturedProps = null
+    vi.mocked(MyPanelSection).mockImplementationOnce((props) => {
+      capturedProps = props
+      return <div data-testid="my-panel-section" />
+    })
+    render(<GameScreen userId="user-1" />)
+    expect(capturedProps).not.toBeNull()
+    expect(capturedProps).toHaveProperty('leaders')
+    expect(capturedProps.leaders).toBe(MOCK_LEADERS)
   })
 })
 

@@ -4,7 +4,11 @@ import { supabase } from '../../lib/supabase.js'
 import { useGame } from '../../hooks/useGame.js'
 import { useGameEvents } from '../../hooks/useGameEvents.js'
 import { useAbilities } from '../../hooks/useAbilities.js'
-import { resolveAbility, unlockCommander, undoLastAction } from '../../lib/edgeFunctions.js'
+import {
+  resolveAbility, unlockCommander, undoLastAction,
+  endTurn, passAction, activateSystem, produceUnits as produceUnitsEF,
+  assignHits, rollCombatDice, castVotes, playStrategyCard,
+} from '../../lib/edgeFunctions.js'
 import { deriveActivePlayer, deriveSpeaker, isSpeaker } from '../../lib/gameUtils.js'
 import GameHeader from './GameHeader.jsx'
 import ScoreboardSection from './ScoreboardSection.jsx'
@@ -35,6 +39,7 @@ import ActionWindowBanner from './ActionWindowBanner.jsx'
 import RulesModal from './RulesModal.jsx'
 import RiftTransitModal from './RiftTransitModal.jsx'
 import { useRiftTransit } from '../../hooks/useRiftTransit.js'
+import { useLeaders } from '../../hooks/useLeaders.js'
 
 export default function GameScreen({ userId }) {
   const { code } = useParams()
@@ -55,6 +60,7 @@ export default function GameScreen({ userId }) {
 
   const galaxyState = useGalaxy(code, userId)
   const { activeTransit, rollAll, rollOne, loading: riftLoading, error: riftError } = useRiftTransit(game?.id)
+  const leaders = useLeaders({ currentPlayer, gameId: game?.id })
 
   const { isBotTurn, isTicking } = useBotPlayer({
     game: game ?? {},
@@ -385,6 +391,7 @@ export default function GameScreen({ userId }) {
               if (primaryAbility) handlePlayAbility(primaryAbility, String(currentPlayer?.strategy_card), 'strategy_card')
             }}
             planetStaticMap={galaxyState?.planetStaticMap ?? {}}
+            leaders={leaders}
           />
         )}
         <button
