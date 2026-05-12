@@ -290,6 +290,21 @@ export default function GalaxyTab({
           onClose={() => setShowExplorationModal(false)}
         />
       )}
+
+      {Object.values(mapTiles ?? {}).some(t => t.is_nexus) && (
+        <div className="panel-inset mt-2 flex gap-2 items-center" data-testid="nexus-wormhole-indicator">
+          <span className="label text-xs">Nexus:</span>
+          {game?.wormhole_nexus_active ? (
+            <>
+              <span className="text-xs text-muted" data-testid="nexus-wormhole-alpha">α</span>
+              <span className="text-xs text-muted" data-testid="nexus-wormhole-beta">β</span>
+              <span className="text-xs text-muted" data-testid="nexus-wormhole-gamma">γ</span>
+            </>
+          ) : (
+            <span className="text-xs text-muted" data-testid="nexus-wormhole-gamma">γ</span>
+          )}
+        </div>
+      )}
     </div>
   )
 }

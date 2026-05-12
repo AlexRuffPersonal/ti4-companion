@@ -359,6 +359,43 @@ describe('GalaxyTab — Exploration Badge (Phase 17)', () => {
   })
 })
 
+describe('GalaxyTab — Wormhole Nexus (Phase 21)', () => {
+  beforeEach(() => {
+    useCombat.mockReturnValue({ ...DEFAULT_COMBAT_MOCK })
+  })
+
+  it('does not render nexus indicator when no nexus tile in mapTiles', () => {
+    render(<GalaxyTab {...BASE_PROPS} />)
+    expect(screen.queryByTestId('nexus-wormhole-indicator')).not.toBeInTheDocument()
+  })
+
+  it('renders nexus indicator with gamma only when wormhole_nexus_active is false', () => {
+    const props = {
+      ...BASE_PROPS,
+      mapTiles: { '0,0': { tile_id: 'nexus', is_nexus: true } },
+      game: { ...GAME, wormhole_nexus_active: false },
+    }
+    render(<GalaxyTab {...props} />)
+    expect(screen.getByTestId('nexus-wormhole-indicator')).toBeInTheDocument()
+    expect(screen.getByTestId('nexus-wormhole-gamma')).toBeInTheDocument()
+    expect(screen.queryByTestId('nexus-wormhole-alpha')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('nexus-wormhole-beta')).not.toBeInTheDocument()
+  })
+
+  it('renders nexus indicator with alpha, beta, and gamma when wormhole_nexus_active is true', () => {
+    const props = {
+      ...BASE_PROPS,
+      mapTiles: { '0,0': { tile_id: 'nexus', is_nexus: true } },
+      game: { ...GAME, wormhole_nexus_active: true },
+    }
+    render(<GalaxyTab {...props} />)
+    expect(screen.getByTestId('nexus-wormhole-indicator')).toBeInTheDocument()
+    expect(screen.getByTestId('nexus-wormhole-alpha')).toBeInTheDocument()
+    expect(screen.getByTestId('nexus-wormhole-beta')).toBeInTheDocument()
+    expect(screen.getByTestId('nexus-wormhole-gamma')).toBeInTheDocument()
+  })
+})
+
 describe('GalaxyTab — SystemInfoModal (Phase 31)', () => {
   beforeEach(() => {
     useCombat.mockReturnValue({ ...DEFAULT_COMBAT_MOCK })
