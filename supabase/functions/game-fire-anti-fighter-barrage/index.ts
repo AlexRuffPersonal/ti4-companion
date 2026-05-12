@@ -1,10 +1,14 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { resolveUnitStats, type StatBlock } from '../_shared/techEffects.ts'
 
 type UnitRow = { id: string; player_id: string; unit_type: string; count: number; system_key: string }
 type UnitDef = { name: string; afb: string | null }
 type DieResult = { unit_type: string; roll: number; hit_on: number; hit: boolean }
+
+// Resolved AFB stat override keyed by unit_type (lowercase)
+type AfbOverride = { dice: number; combat: number }
 
 function parseStat(text: string): { value: number; dice: number } {
   const diceMatch = text.match(/\(x(\d+)\)/)
@@ -15,14 +19,34 @@ function parseStat(text: string): { value: number; dice: number } {
   }
 }
 
-function rollAfb(units: UnitRow[], defMap: Map<string, UnitDef>): { results: DieResult[]; hits: number } {
+function rollAfb(
+  units: UnitRow[],
+  defMap: Map<string, UnitDef>,
+  afbOverrides: Map<string, AfbOverride> = new Map(),
+  plasmaScoringUnit?: string,
+): { results: DieResult[]; hits: number } {
   const results: DieResult[] = []
   let hits = 0
   for (const unit of units) {
     const def = defMap.get(unit.unit_type)
     if (!def?.afb) continue
-    const { value, dice } = parseStat(def.afb)
-    const rollCount = dice * unit.count
+
+    const override = afbOverrides.get(unit.unit_type)
+    let value: number
+    let dice: number
+    if (override) {
+      value = override.combat
+      dice = override.dice
+    } else {
+      const parsed = parseStat(def.afb)
+      value = parsed.value
+      dice = parsed.dice
+    }
+
+    // Plasma Scoring: +1 die for the selected unit type
+    const extraDie = plasmaScoringUnit && unit.unit_type === plasmaScoringUnit ? 1 : 0
+
+    const rollCount = (dice + extraDie) * unit.count
     for (let i = 0; i < rollCount; i++) {
       const roll = Math.ceil(Math.random() * 10)
       const hit = roll >= value
@@ -42,10 +66,11 @@ export async function handler(req: Request): Promise<Response> {
     return errorResponse('Internal server error', 500)
   }
 
-  let body: { game_id?: unknown; combat_id?: unknown }
+  let body: { game_id?: unknown; combat_id?: unknown; plasma_scoring_unit?: unknown }
   try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
   if (!body.game_id || typeof body.game_id !== 'string') return errorResponse("'game_id' is required")
   if (!body.combat_id || typeof body.combat_id !== 'string') return errorResponse("'combat_id' is required")
+  const plasmaScoringUnit = typeof body.plasma_scoring_unit === 'string' ? body.plasma_scoring_unit : undefined
 
   const { data: player } = await db
     .from('game_players')
@@ -113,8 +138,48 @@ export async function handler(req: Request): Promise<Response> {
 
   const defMap = new Map((unitDefs ?? []).map((u: UnitDef) => [u.name, u]))
 
+  // Phase 30: fetch attacker technologies for upgraded Destroyer stats + Plasma Scoring
+  const { data: attackerPlayer } = await db
+    .from('game_players')
+    .select('technologies')
+    .eq('id', combat.attacker_player_id)
+    .maybeSingle()
+  const attackerTechs: string[] = attackerPlayer?.technologies ?? []
+
+  // Fetch Destroyer base def from units table to build a resolved StatBlock for AFB
+  const { data: destroyerDef } = await db
+    .from('units')
+    .select('name, combat, move, capacity, afb, space_cannon, bombardment')
+    .eq('name', 'Destroyer')
+    .maybeSingle()
+
+  // Build AFB override map for attacker — only Destroyer gets resolved stats
+  const afbOverrides = new Map<string, AfbOverride>()
+  if (destroyerDef) {
+    // Parse the raw DB afb string into a StatBlock compatible structure, then resolve
+    const rawAfbStr: string | null = destroyerDef.afb ?? null
+    const parsedAfb = rawAfbStr ? parseStat(rawAfbStr) : null
+    const baseStats: StatBlock = {
+      combat: destroyerDef.combat ?? 9,
+      dice: 1,
+      move: destroyerDef.move ?? 2,
+      capacity: destroyerDef.capacity ?? 0,
+      production: 0,
+      sustain: false,
+      afb: parsedAfb ? { dice: parsedAfb.dice, combat: parsedAfb.value } : undefined,
+    }
+    const resolved = resolveUnitStats('Destroyer', baseStats, attackerTechs)
+    if (resolved.afb) {
+      afbOverrides.set('Destroyer', { dice: resolved.afb.dice, combat: resolved.afb.combat })
+    }
+  }
+
+  // Plasma Scoring: +1 die for the chosen unit if attacker owns the tech
+  const effectivePlasmaScoringUnit =
+    attackerTechs.includes('Plasma Scoring') && plasmaScoringUnit ? plasmaScoringUnit : undefined
+
   // Roll AFB simultaneously for both sides
-  const { results: atkResults, hits: atkHits } = rollAfb(atkUnits ?? [], defMap)
+  const { results: atkResults, hits: atkHits } = rollAfb(atkUnits ?? [], defMap, afbOverrides, effectivePlasmaScoringUnit)
   const { results: defResults, hits: defHits } = rollAfb(defUnits ?? [], defMap)
 
   // Determine next phase — do NOT auto-destroy fighters

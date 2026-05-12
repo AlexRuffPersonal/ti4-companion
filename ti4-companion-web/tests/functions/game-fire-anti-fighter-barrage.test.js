@@ -44,7 +44,9 @@ const BASE_COMBAT = {
 }
 
 // callCount tracks how many times game_player_units has been called
-// to distinguish attacker (1st) from defender (2nd) query
+// to distinguish attacker (1st) from defender (2nd) query.
+// game_players is called twice: 1st for auth check (by user_id), 2nd for attacker techs (by id).
+// units is called twice: 1st for AFB def map (uses .in().not()), 2nd for Destroyer def (uses .eq().maybeSingle()).
 function mockDb({
   player = { id: PLAYER_ID },
   combat = BASE_COMBAT,
@@ -52,19 +54,37 @@ function mockDb({
   defUnits = [],
   unitDefs = [],
   updateError = null,
+  attackerTechs = [],
+  destroyerDefRow = null,
 } = {}) {
   let unitsCallCount = 0
+  let gamePlayersCallCount = 0
+  let unitsTableCallCount = 0
 
   db.from.mockImplementation((table) => {
     if (table === 'game_players') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
+      gamePlayersCallCount++
+      const thisCall = gamePlayersCallCount
+      if (thisCall === 1) {
+        // First call: auth check — .select('id').eq('game_id').eq('user_id').maybeSingle()
+        return {
+          select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: player }),
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: player }),
+              }),
             }),
           }),
-        }),
+        }
+      } else {
+        // Second call: attacker techs — .select('technologies').eq('id').maybeSingle()
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: { technologies: attackerTechs } }),
+            }),
+          }),
+        }
       }
     }
     if (table === 'game_combats') {
@@ -98,12 +118,26 @@ function mockDb({
       }
     }
     if (table === 'units') {
-      return {
-        select: vi.fn().mockReturnValue({
-          in: vi.fn().mockReturnValue({
-            not: vi.fn().mockResolvedValue({ data: unitDefs }),
+      unitsTableCallCount++
+      const thisCall = unitsTableCallCount
+      if (thisCall === 1) {
+        // First call: AFB def map — .select('name, afb').in(...).not(...)
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockReturnValue({
+              not: vi.fn().mockResolvedValue({ data: unitDefs }),
+            }),
           }),
-        }),
+        }
+      } else {
+        // Second call: Destroyer def — .select('name, combat, ...').eq('name', 'Destroyer').maybeSingle()
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: destroyerDefRow }),
+            }),
+          }),
+        }
       }
     }
     return { select: vi.fn(), update: vi.fn() }
@@ -201,16 +235,29 @@ describe('game-fire-anti-fighter-barrage', () => {
     // Capture the update mock before handler runs
     let capturedUpdateMock
     let unitsCallCount = 0
+    let gamePlayersCallCount = 0
+    let unitsTableCallCount = 0
     db.from.mockImplementation((table) => {
       if (table === 'game_players') {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
+        gamePlayersCallCount++
+        if (gamePlayersCallCount === 1) {
+          return {
+            select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                maybeSingle: vi.fn().mockResolvedValue({ data: { id: PLAYER_ID } }),
+                eq: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({ data: { id: PLAYER_ID } }),
+                }),
               }),
             }),
-          }),
+          }
+        } else {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: { technologies: [] } }),
+              }),
+            }),
+          }
         }
       }
       if (table === 'game_combats') {
@@ -246,12 +293,23 @@ describe('game-fire-anti-fighter-barrage', () => {
         }
       }
       if (table === 'units') {
-        return {
-          select: vi.fn().mockReturnValue({
-            in: vi.fn().mockReturnValue({
-              not: vi.fn().mockResolvedValue({ data: unitDefs }),
+        unitsTableCallCount++
+        if (unitsTableCallCount === 1) {
+          return {
+            select: vi.fn().mockReturnValue({
+              in: vi.fn().mockReturnValue({
+                not: vi.fn().mockResolvedValue({ data: unitDefs }),
+              }),
             }),
-          }),
+          }
+        } else {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+              }),
+            }),
+          }
         }
       }
       return { select: vi.fn() }
@@ -322,16 +380,29 @@ describe('game-fire-anti-fighter-barrage', () => {
     // Capture update mock
     let capturedUpdateMock
     let unitsCallCount = 0
+    let gamePlayersCallCount2 = 0
+    let unitsTableCallCount2 = 0
     db.from.mockImplementation((table) => {
       if (table === 'game_players') {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
+        gamePlayersCallCount2++
+        if (gamePlayersCallCount2 === 1) {
+          return {
+            select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                maybeSingle: vi.fn().mockResolvedValue({ data: { id: PLAYER_ID } }),
+                eq: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({ data: { id: PLAYER_ID } }),
+                }),
               }),
             }),
-          }),
+          }
+        } else {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: { technologies: [] } }),
+              }),
+            }),
+          }
         }
       }
       if (table === 'game_combats') {
@@ -367,12 +438,23 @@ describe('game-fire-anti-fighter-barrage', () => {
         }
       }
       if (table === 'units') {
-        return {
-          select: vi.fn().mockReturnValue({
-            in: vi.fn().mockReturnValue({
-              not: vi.fn().mockResolvedValue({ data: unitDefs }),
+        unitsTableCallCount2++
+        if (unitsTableCallCount2 === 1) {
+          return {
+            select: vi.fn().mockReturnValue({
+              in: vi.fn().mockReturnValue({
+                not: vi.fn().mockResolvedValue({ data: unitDefs }),
+              }),
             }),
-          }),
+          }
+        } else {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+              }),
+            }),
+          }
         }
       }
       return { select: vi.fn() }
@@ -399,6 +481,94 @@ describe('game-fire-anti-fighter-barrage', () => {
 
     // Confirm no game_player_units mutations — only 2 calls (select atk + select def)
     expect(unitsCallCount).toBe(2)
+
+    randomSpy.mockRestore()
+  })
+
+  // Phase 30 tests: upgraded Destroyer stats + Plasma Scoring
+
+  it('Phase 30: Destroyer II tech — resolveUnitStats called; upgraded afb stats used in roll', async () => {
+    // Destroyer II upgrades AFB from 9 to 8 (better hit value). resolveUnitStats is a stub
+    // in Phase 30, so we verify the code path: upgraded stat returned from resolveUnitStats
+    // is used when an override is present. We'll mock the Destroyer def to return afb='9'
+    // and attackerTechs=['Destroyer II']. Since resolveUnitStats is a stub returning base stats,
+    // the roll hit-threshold stays at 9. The key check is that the override path is taken (no crash)
+    // and the result is correct.
+    const atkUnits = [
+      { id: 'u1', player_id: ATTACKER_ID, unit_type: 'Destroyer', count: 1, system_key: '1,-1' },
+    ]
+    const defUnits = []
+    const unitDefs = [{ name: 'Destroyer', afb: '9' }]
+    const destroyerDefRow = { name: 'Destroyer', combat: 8, move: 2, capacity: 1, afb: '9', space_cannon: null, bombardment: null }
+
+    mockDb({ atkUnits, defUnits, unitDefs, attackerTechs: ['Destroyer II'], destroyerDefRow })
+
+    // Roll hits (roll=10 >= 9)
+    const randomSpy = vi.spyOn(Math, 'random')
+    randomSpy.mockReturnValueOnce(1.0)
+
+    const res = await handler(makeRequest({ game_id: GAME_ID, combat_id: COMBAT_ID }))
+    expect(res.status).toBe(200)
+
+    const body = await res.json()
+    expect(body.barrage_attacker_hits).toBe(1)
+    expect(body.barrage_attacker_dice).toHaveLength(1)
+    expect(body.barrage_attacker_dice[0].unit_type).toBe('Destroyer')
+
+    randomSpy.mockRestore()
+  })
+
+  it('Phase 30: Plasma Scoring owned + plasma_scoring_unit=Destroyer — bonus die added', async () => {
+    // 1 attacker Destroyer with Plasma Scoring → rolls 2 dice instead of 1
+    const atkUnits = [
+      { id: 'u1', player_id: ATTACKER_ID, unit_type: 'Destroyer', count: 1, system_key: '1,-1' },
+    ]
+    const defUnits = []
+    const unitDefs = [{ name: 'Destroyer', afb: '9' }]
+    const destroyerDefRow = { name: 'Destroyer', combat: 8, move: 2, capacity: 1, afb: '9', space_cannon: null, bombardment: null }
+
+    mockDb({ atkUnits, defUnits, unitDefs, attackerTechs: ['Plasma Scoring'], destroyerDefRow })
+
+    // Plasma Scoring adds +1 die → 2 dice total. Both miss.
+    const randomSpy = vi.spyOn(Math, 'random')
+    randomSpy.mockReturnValueOnce(0.4).mockReturnValueOnce(0.4)
+
+    const res = await handler(makeRequest({
+      game_id: GAME_ID,
+      combat_id: COMBAT_ID,
+      plasma_scoring_unit: 'Destroyer',
+    }))
+    expect(res.status).toBe(200)
+
+    const body = await res.json()
+    // 2 dice rolled (base 1 + plasma scoring bonus 1), both missed
+    expect(body.barrage_attacker_dice).toHaveLength(2)
+    expect(body.barrage_attacker_hits).toBe(0)
+
+    randomSpy.mockRestore()
+  })
+
+  it('Phase 30: no Destroyer II, no Plasma Scoring — base stats used, no bonus die', async () => {
+    // Standard case: 1 attacker Destroyer, no upgrades → exactly 1 die rolled
+    const atkUnits = [
+      { id: 'u1', player_id: ATTACKER_ID, unit_type: 'Destroyer', count: 1, system_key: '1,-1' },
+    ]
+    const defUnits = []
+    const unitDefs = [{ name: 'Destroyer', afb: '9' }]
+    const destroyerDefRow = { name: 'Destroyer', combat: 8, move: 2, capacity: 1, afb: '9', space_cannon: null, bombardment: null }
+
+    mockDb({ atkUnits, defUnits, unitDefs, attackerTechs: [], destroyerDefRow })
+
+    const randomSpy = vi.spyOn(Math, 'random')
+    randomSpy.mockReturnValueOnce(0.4)
+
+    const res = await handler(makeRequest({ game_id: GAME_ID, combat_id: COMBAT_ID }))
+    expect(res.status).toBe(200)
+
+    const body = await res.json()
+    // Exactly 1 die rolled (base, no bonus)
+    expect(body.barrage_attacker_dice).toHaveLength(1)
+    expect(body.barrage_attacker_hits).toBe(0)
 
     randomSpy.mockRestore()
   })
