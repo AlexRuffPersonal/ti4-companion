@@ -129,9 +129,12 @@ export default function MyPanelSection({
           hero={leaders.hero}
           factionMech={leaders.factionMech}
           leaderStatus={leaders.leaderStatus}
-          onUnlockCommander={leaders.unlockCommander}
-          onUnlockHero={leaders.unlockHero}
-          onResolveAbility={leaders.resolveLeaderAbility}
+          onUnlock={(leader) =>
+            leader.leader_type === 'commander'
+              ? leaders.unlockCommander(leader.id)
+              : leaders.unlockHero(leader.id)
+          }
+          onUseAbility={(leader) => leaders.resolveLeaderAbility(leader.ability_definition_id, leader.id, {})}
         />
       )}
 

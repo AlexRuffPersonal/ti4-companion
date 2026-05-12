@@ -11,12 +11,16 @@ vi.mock('../../../src/components/game/StrategyCardPanel.jsx', () => ({
   )
 }))
 
+let capturedLeaderPanelProps = null
 vi.mock('../../../src/components/game/LeaderPanel.jsx', () => ({
-  default: (props) => (
-    <div data-testid="leader-panel">
-      {props.agent && <span>agent-{props.agent.id ?? 'present'}</span>}
-    </div>
-  )
+  default: (props) => {
+    capturedLeaderPanelProps = props
+    return (
+      <div data-testid="leader-panel">
+        {props.agent && <span>agent-{props.agent.id ?? 'present'}</span>}
+      </div>
+    )
+  }
 }))
 
 const PLAYER = {
@@ -452,19 +456,36 @@ describe('MyPanelSection', () => {
     expect(screen.getByText('active-pay')).toBeInTheDocument()
   })
 
-  it('renders LeaderPanel when leaders prop is provided', () => {
+  it('renders LeaderPanel with leaders and correct callback props', () => {
+    capturedLeaderPanelProps = null
+    const unlockCommander = vi.fn()
+    const unlockHero = vi.fn()
+    const resolveLeaderAbility = vi.fn()
     const leaders = {
       agent: { id: 'ag1' },
-      commander: { id: 'cmd1' },
-      hero: { id: 'hr1' },
+      commander: { id: 'cmd1', leader_type: 'commander' },
+      hero: { id: 'hr1', leader_type: 'hero' },
       factionMech: { id: 'mech1' },
       leaderStatus: {},
-      unlockCommander: vi.fn(),
-      unlockHero: vi.fn(),
-      resolveLeaderAbility: vi.fn(),
+      unlockCommander,
+      unlockHero,
+      resolveLeaderAbility,
     }
     renderPanel({ leaders })
     expect(screen.getByTestId('leader-panel')).toBeInTheDocument()
+
+    // onUnlock dispatches to unlockCommander for commander-type leaders
+    capturedLeaderPanelProps.onUnlock({ id: 'cmd1', leader_type: 'commander' })
+    expect(unlockCommander).toHaveBeenCalledWith('cmd1')
+    expect(unlockHero).not.toHaveBeenCalled()
+
+    // onUnlock dispatches to unlockHero for hero-type leaders
+    capturedLeaderPanelProps.onUnlock({ id: 'hr1', leader_type: 'hero' })
+    expect(unlockHero).toHaveBeenCalledWith('hr1')
+
+    // onUseAbility calls resolveLeaderAbility
+    capturedLeaderPanelProps.onUseAbility({ id: 'ag1', ability_definition_id: 'adef1' })
+    expect(resolveLeaderAbility).toHaveBeenCalledWith('adef1', 'ag1', {})
   })
 
   it('does not render LeaderPanel when leaders is undefined', () => {
