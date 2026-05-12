@@ -73,8 +73,8 @@ This keeps the index accurate across multi-session implementations so future age
 | [hook-useLeaders](hook-useLeaders.md) | `src/hooks/useLeaders.js` | 16 | Leaders & Mechs | done | client-edgeFunctions |
 | [component-LeaderCard](component-LeaderCard.md) | `src/components/game/LeaderCard.jsx` | 16 | Leaders & Mechs | done | hook-useLeaders |
 | [component-LeaderPanel](component-LeaderPanel.md) | `src/components/game/LeaderPanel.jsx` | 16 | Leaders & Mechs | done | component-LeaderCard |
-| [component-MyPanelSection](component-MyPanelSection.md) | `src/components/game/MyPanelSection.jsx` | 12 / 16 | Strategy Cards / Leaders & Mechs | in-progress | component-StrategyCardPanel, component-LeaderPanel |
-| [component-GameScreen](component-GameScreen.md) | `src/components/game/GameScreen.jsx` | 12 / 16 | Strategy Cards / Leaders & Mechs | in-progress | hook-useStrategyCards, hook-useLeaders, component-LeaderPanel |
+| [component-MyPanelSection](component-MyPanelSection.md) | `src/components/game/MyPanelSection.jsx` | 12 / 16 | Strategy Cards / Leaders & Mechs | done | component-StrategyCardPanel, component-LeaderPanel |
+| [component-GameScreen](component-GameScreen.md) | `src/components/game/GameScreen.jsx` | 12 / 16 | Strategy Cards / Leaders & Mechs | done | hook-useStrategyCards, hook-useLeaders, component-LeaderPanel |
 
 | [migration-034-exploration](migration-034-exploration.md) | `supabase/migrations/034_exploration.sql` | 17 | Exploration / Relics | done | — |
 | [shared-explorationEffects](shared-explorationEffects.md) | `supabase/functions/_shared/explorationEffects.ts` | 17 | Exploration / Relics | done | migration-034-exploration, shared-abilityDsl |
