@@ -42,4 +42,28 @@ describe('GameHeader', () => {
     fireEvent.click(screen.getByText('RULES'))
     expect(onOpenRules).toHaveBeenCalled()
   })
+
+  it('renders Undo button only when isHost=true', () => {
+    render(<GameHeader game={BASE_GAME} speaker={BASE_SPEAKER} onOpenTradeLog={vi.fn()} isHost={true} onUndo={vi.fn()} canUndo={false} />)
+    expect(screen.getByText('Undo')).toBeTruthy()
+  })
+
+  it('does not render Undo button for non-host', () => {
+    render(<GameHeader game={BASE_GAME} speaker={BASE_SPEAKER} onOpenTradeLog={vi.fn()} isHost={false} onUndo={vi.fn()} canUndo={true} />)
+    expect(screen.queryByText('Undo')).toBeNull()
+  })
+
+  it('Undo button is disabled when canUndo=false', () => {
+    render(<GameHeader game={BASE_GAME} speaker={BASE_SPEAKER} onOpenTradeLog={vi.fn()} isHost={true} onUndo={vi.fn()} canUndo={false} />)
+    expect(screen.getByText('Undo').disabled).toBe(true)
+  })
+
+  it('Undo button is enabled and calls onUndo when canUndo=true', () => {
+    const onUndo = vi.fn()
+    render(<GameHeader game={BASE_GAME} speaker={BASE_SPEAKER} onOpenTradeLog={vi.fn()} isHost={true} onUndo={onUndo} canUndo={true} />)
+    const btn = screen.getByText('Undo')
+    expect(btn.disabled).toBe(false)
+    fireEvent.click(btn)
+    expect(onUndo).toHaveBeenCalled()
+  })
 })
