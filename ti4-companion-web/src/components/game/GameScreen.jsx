@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase.js'
 import { useGame } from '../../hooks/useGame.js'
 import { useGameEvents } from '../../hooks/useGameEvents.js'
 import { useAbilities } from '../../hooks/useAbilities.js'
-import { resolveAbility, unlockCommander } from '../../lib/edgeFunctions.js'
+import { resolveAbility, unlockCommander, undoLastAction } from '../../lib/edgeFunctions.js'
 import { deriveActivePlayer, deriveSpeaker, isSpeaker } from '../../lib/gameUtils.js'
 import GameHeader from './GameHeader.jsx'
 import ScoreboardSection from './ScoreboardSection.jsx'
@@ -30,6 +30,7 @@ import { useStrategyCards } from '../../hooks/useStrategyCards.js'
 import StrategyCardModal from './StrategyCardModal.jsx'
 import ProductionModal from './ProductionModal.jsx'
 import { produceUnits, passActionWindow, playActionCard } from '../../lib/edgeFunctions.js'
+import { useBotPlayer } from '../../hooks/useBotPlayer.js'
 import ActionWindowBanner from './ActionWindowBanner.jsx'
 import RulesModal from './RulesModal.jsx'
 import RiftTransitModal from './RiftTransitModal.jsx'
@@ -54,6 +55,18 @@ export default function GameScreen({ userId }) {
 
   const galaxyState = useGalaxy(code, userId)
   const { activeTransit, rollAll, rollOne, loading: riftLoading, error: riftError } = useRiftTransit(game?.id)
+
+  const { isBotTurn, isTicking } = useBotPlayer({
+    game: game ?? {},
+    players,
+    currentPlayer,
+    isHost,
+    edgeFns: {},
+  })
+
+  const canUndo = isHost && game?.phase !== 'lobby'
+
+  const handleUndo = () => undoLastAction(game?.id)
 
   const {
     activePay, responses, isMyTurnToRespond,
@@ -308,6 +321,9 @@ export default function GameScreen({ userId }) {
         speaker={deriveSpeaker(players, game)}
         onOpenTradeLog={() => setTradeLogModalOpen(true)}
         onOpenRules={() => setRulesModalOpen(true)}
+        isHost={isHost}
+        canUndo={canUndo}
+        onUndo={handleUndo}
       />
       <AbilityNotificationBar
         triggerable={triggerable.filter(a =>
@@ -535,6 +551,10 @@ export default function GameScreen({ userId }) {
           onPassSecondary={passSecondary}
           onClose={() => setStrategyModalDismissed(true)}
         />
+      )}
+
+      {isBotTurn && isTicking.current && (
+        <div className="fixed bottom-4 right-4 bg-panel text-muted text-xs px-3 py-1 rounded-full border border-border">Bot is thinking…</div>
       )}
 
       <RulesModal isOpen={rulesModalOpen} onClose={() => setRulesModalOpen(false)} />

@@ -4,7 +4,9 @@ import GameScreen from '../../../src/components/game/GameScreen.jsx'
 import { useStrategyCards } from '../../../src/hooks/useStrategyCards.js'
 import { useGame } from '../../../src/hooks/useGame.js'
 import { useRiftTransit } from '../../../src/hooks/useRiftTransit.js'
+import { useBotPlayer } from '../../../src/hooks/useBotPlayer.js'
 import MyPanelSection from '../../../src/components/game/MyPanelSection.jsx'
+import GameHeader from '../../../src/components/game/GameHeader.jsx'
 
 // Mock react-router-dom
 vi.mock('react-router-dom', () => ({
@@ -32,6 +34,13 @@ vi.mock('../../../src/lib/edgeFunctions.js', () => ({
   resolveAbility: vi.fn(),
   unlockCommander: vi.fn(),
   produceUnits: vi.fn().mockResolvedValue({}),
+  undoLastAction: vi.fn().mockResolvedValue({}),
+  passActionWindow: vi.fn().mockResolvedValue({}),
+  playActionCard: vi.fn().mockResolvedValue({}),
+}))
+
+vi.mock('../../../src/hooks/useBotPlayer.js', () => ({
+  useBotPlayer: vi.fn(() => ({ isBotTurn: false, isTicking: { current: false } })),
 }))
 
 // Mock hooks
@@ -149,11 +158,11 @@ vi.mock('../../../src/lib/gameUtils.js', () => ({
 
 // Mock child components to avoid deep rendering complexity
 vi.mock('../../../src/components/game/GameHeader.jsx', () => ({
-  default: ({ onOpenRules }) => (
+  default: vi.fn(({ onOpenRules }) => (
     <div data-testid="game-header">
       {onOpenRules && <button data-testid="rules-btn" onClick={onOpenRules}>RULES</button>}
     </div>
-  ),
+  )),
 }))
 
 vi.mock('../../../src/hooks/useRiftTransit.js', () => ({
@@ -243,6 +252,7 @@ describe('GameScreen (Phase 12)', () => {
       useSecondary: vi.fn(),
       passSecondary: vi.fn(),
     })
+    useBotPlayer.mockReturnValue({ isBotTurn: false, isTicking: { current: false } })
   })
 
   it('calls useStrategyCards with game id and current player id', () => {
@@ -323,6 +333,7 @@ describe('GameScreen — elimination', () => {
       useSecondary: vi.fn(),
       passSecondary: vi.fn(),
     })
+    useBotPlayer.mockReturnValue({ isBotTurn: false, isTicking: { current: false } })
   })
 
   it('renders eliminated banner when isEliminated is true', () => {
@@ -364,6 +375,7 @@ describe('GameScreen — RulesModal (Phase 24)', () => {
       playPrimary: vi.fn(), useSecondary: vi.fn(), passSecondary: vi.fn(),
     })
     useRiftTransit.mockReturnValue({ activeTransit: null, rollAll: vi.fn(), rollOne: vi.fn(), loading: false, error: null })
+    useBotPlayer.mockReturnValue({ isBotTurn: false, isTicking: { current: false } })
   })
 
   it('does not render RulesModal initially', () => {
@@ -392,6 +404,7 @@ describe('GameScreen — RiftTransitModal (Phase 25)', () => {
       activePay: null, responses: [], isMyTurnToRespond: false,
       playPrimary: vi.fn(), useSecondary: vi.fn(), passSecondary: vi.fn(),
     })
+    useBotPlayer.mockReturnValue({ isBotTurn: false, isTicking: { current: false } })
   })
 
   it('calls useRiftTransit with the game id', () => {
@@ -424,6 +437,7 @@ describe('GameScreen — planetStaticMap threading (Phase 31)', () => {
       playPrimary: vi.fn(), useSecondary: vi.fn(), passSecondary: vi.fn(),
     })
     useRiftTransit.mockReturnValue({ activeTransit: null, rollAll: vi.fn(), rollOne: vi.fn(), loading: false, error: null })
+    useBotPlayer.mockReturnValue({ isBotTurn: false, isTicking: { current: false } })
     vi.mocked(MyPanelSection).mockClear()
   })
 
@@ -437,5 +451,65 @@ describe('GameScreen — planetStaticMap threading (Phase 31)', () => {
     expect(capturedProps).not.toBeNull()
     expect(capturedProps).toHaveProperty('planetStaticMap')
     expect(capturedProps.planetStaticMap).toHaveProperty('Mecatol Rex')
+  })
+})
+
+describe('GameScreen — bot player support (Phase 33)', () => {
+  beforeEach(() => {
+    useGame.mockReturnValue({ ...BASE_USE_GAME })
+    useStrategyCards.mockReturnValue({
+      activePay: null, responses: [], isMyTurnToRespond: false,
+      playPrimary: vi.fn(), useSecondary: vi.fn(), passSecondary: vi.fn(),
+    })
+    useRiftTransit.mockReturnValue({ activeTransit: null, rollAll: vi.fn(), rollOne: vi.fn(), loading: false, error: null })
+    useBotPlayer.mockReturnValue({ isBotTurn: false, isTicking: { current: false } })
+    vi.mocked(GameHeader).mockClear()
+  })
+
+  it('mounts useBotPlayer with game, players, and currentPlayer', () => {
+    render(<GameScreen userId="user-1" />)
+    expect(useBotPlayer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        game: MOCK_GAME,
+        players: [MOCK_PLAYER],
+        currentPlayer: MOCK_PLAYER,
+      })
+    )
+  })
+
+  it('shows "Bot is thinking…" badge when isBotTurn and isTicking', () => {
+    useBotPlayer.mockReturnValue({ isBotTurn: true, isTicking: { current: true } })
+    render(<GameScreen userId="user-1" />)
+    expect(screen.getByText('Bot is thinking…')).toBeInTheDocument()
+  })
+
+  it('does not show "Bot is thinking…" badge when isBotTurn is false', () => {
+    useBotPlayer.mockReturnValue({ isBotTurn: false, isTicking: { current: false } })
+    render(<GameScreen userId="user-1" />)
+    expect(screen.queryByText('Bot is thinking…')).not.toBeInTheDocument()
+  })
+
+  it('passes isHost, canUndo, and onUndo props to GameHeader', () => {
+    let capturedProps = null
+    vi.mocked(GameHeader).mockImplementationOnce((props) => {
+      capturedProps = props
+      return <div data-testid="game-header" />
+    })
+    render(<GameScreen userId="user-1" />)
+    expect(capturedProps).toHaveProperty('isHost', true)
+    expect(capturedProps).toHaveProperty('canUndo')
+    expect(capturedProps).toHaveProperty('onUndo')
+    expect(typeof capturedProps.onUndo).toBe('function')
+  })
+
+  it('canUndo is false when game phase is lobby', () => {
+    useGame.mockReturnValue({ ...BASE_USE_GAME, game: { ...MOCK_GAME, phase: 'lobby' }, isHost: true })
+    let capturedProps = null
+    vi.mocked(GameHeader).mockImplementationOnce((props) => {
+      capturedProps = props
+      return <div data-testid="game-header" />
+    })
+    render(<GameScreen userId="user-1" />)
+    expect(capturedProps.canUndo).toBe(false)
   })
 })
