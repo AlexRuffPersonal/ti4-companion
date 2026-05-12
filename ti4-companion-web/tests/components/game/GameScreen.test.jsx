@@ -38,6 +38,13 @@ vi.mock('../../../src/lib/edgeFunctions.js', () => ({
   undoLastAction: vi.fn().mockResolvedValue({}),
   passActionWindow: vi.fn().mockResolvedValue({}),
   playActionCard: vi.fn().mockResolvedValue({}),
+  endTurn: vi.fn().mockResolvedValue({}),
+  passAction: vi.fn().mockResolvedValue({}),
+  activateSystem: vi.fn().mockResolvedValue({}),
+  assignHits: vi.fn().mockResolvedValue({}),
+  rollCombatDice: vi.fn().mockResolvedValue({}),
+  castVotes: vi.fn().mockResolvedValue({}),
+  playStrategyCard: vi.fn().mockResolvedValue({}),
 }))
 
 vi.mock('../../../src/hooks/useBotPlayer.js', () => ({

@@ -62,17 +62,29 @@ export default function GameScreen({ userId }) {
   const { activeTransit, rollAll, rollOne, loading: riftLoading, error: riftError } = useRiftTransit(game?.id)
   const leaders = useLeaders({ currentPlayer, gameId: game?.id })
 
-  const { isBotTurn, isTicking } = useBotPlayer({
+  const gameId = game?.id
+  const edgeFns = useMemo(() => ({
+    'game-end-turn': (args) => endTurn(args.game_id),
+    'game-player-pass': (args) => passAction(args.game_id),
+    'game-activate-system': (args) => activateSystem(args.game_id, args.system_key),
+    'game-produce-units': (args) => produceUnitsEF(args.game_id, args.system_key, args.units, args.planet_exhausts),
+    'game-assign-hits': (args) => assignHits(args.game_id, args.combat_id, args.casualties),
+    'game-roll-combat-dice': (args) => rollCombatDice(args.game_id, args.combat_id),
+    'game-cast-votes': (args) => castVotes(args.game_id, { outcome: args.outcome, votes: args.votes }),
+    'game-play-strategy-card': (args) => playStrategyCard(args.game_id, null, { strategy_card: args.strategy_card }),
+  }), [gameId]) // eslint-disable-line react-hooks/exhaustive-deps -- bound to gameId only
+
+  const { isBotTurn } = useBotPlayer({
     game: game ?? {},
     players,
     currentPlayer,
     isHost,
-    edgeFns: {},
+    edgeFns,
   })
 
   const canUndo = isHost && game?.phase !== 'lobby'
 
-  const handleUndo = () => undoLastAction(game?.id)
+  const handleUndo = async () => { await undoLastAction(game?.id) }
 
   const {
     activePay, responses, isMyTurnToRespond,
@@ -560,7 +572,7 @@ export default function GameScreen({ userId }) {
         />
       )}
 
-      {isBotTurn && isTicking.current && (
+      {isBotTurn && (
         <div className="fixed bottom-4 right-4 bg-panel text-muted text-xs px-3 py-1 rounded-full border border-border">Bot is thinking…</div>
       )}
 
