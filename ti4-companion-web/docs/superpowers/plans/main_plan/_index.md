@@ -235,6 +235,10 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-GameHeader-p33](component-GameHeader-p33.md) | `src/components/game/GameHeader.jsx` | 33 | Bot Players + Undo | done | client-edgeFunctions-p33 |
 | [component-GameScreen-p33](component-GameScreen-p33.md) | `src/components/game/GameScreen.jsx` | 33 | Bot Players + Undo | done | hook-useBotPlayer, component-GameHeader-p33, client-edgeFunctions-p33 |
 
+| [component-HexTile-p34](component-HexTile-p34.md) | `src/components/game/HexTile.jsx` | 34 | Units on Map | planned | — |
+| [component-UnitTooltip](component-UnitTooltip.md) | `src/components/game/UnitTooltip.jsx` | 34 | Units on Map | planned | — |
+| [component-HexMap-p34](component-HexMap-p34.md) | `src/components/game/HexMap.jsx` | 34 | Units on Map | planned | component-HexTile-p34, component-UnitTooltip |
+
 ---
 
 ## Planned Feature Areas (specs to be added)
