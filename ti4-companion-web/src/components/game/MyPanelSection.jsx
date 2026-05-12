@@ -17,7 +17,8 @@ export default function MyPanelSection({
   onOpenNotes, noteCount = 0, onOpenTrade,
   allPlayers = [],
   activePay = null,
-  onPlayPrimary = () => {}
+  onPlayPrimary = () => {},
+  planetStaticMap = {}
 }) {
   const tokens = player?.command_tokens ?? { tactic_total: 0, fleet: 0, strategy: 0 }
   const [draftTokens, setDraftTokens] = useState(tokens)
@@ -124,19 +125,39 @@ export default function MyPanelSection({
         <div>
           <p className="label text-xs mb-2">PLANETS</p>
           <div className="flex flex-col gap-1">
-            {planets.map(planet => (
-              <div key={planet.id} className="flex items-center justify-between text-sm">
-                <span className={planet.exhausted ? 'text-dim line-through' : 'text-text'}>
-                  {planet.planet_name}
-                </span>
-                <button
-                  className="label text-xs hover:text-text"
-                  onClick={() => planet.exhausted ? onReadyPlanet(planet.planet_name) : onExhaustPlanet(planet.planet_name)}
-                >
-                  {planet.exhausted ? 'READY' : 'EXHAUST'}
-                </button>
-              </div>
-            ))}
+            {planets.map(planet => {
+              const staticInfo = planetStaticMap[planet.planet_name]
+              return (
+                <div key={planet.id} className="flex items-center justify-between text-sm gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={planet.exhausted ? 'text-dim line-through' : 'text-text'}>
+                      {planet.planet_name}
+                    </span>
+                    {staticInfo && (
+                      <>
+                        <span className="text-muted text-xs shrink-0">
+                          {staticInfo.resources}/{staticInfo.influence}
+                        </span>
+                        {staticInfo.tech_specialty &&
+                          <span className={`text-xs px-1 rounded font-mono tech-chip-${staticInfo.tech_specialty}`}>
+                            {staticInfo.tech_specialty[0].toUpperCase()}
+                          </span>
+                        }
+                        {staticInfo.traits.map(t => (
+                          <span key={t} className="text-dim text-xs font-body uppercase shrink-0">{t}</span>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                  <button
+                    className="label text-xs hover:text-text shrink-0"
+                    onClick={() => planet.exhausted ? onReadyPlanet(planet.planet_name) : onExhaustPlanet(planet.planet_name)}
+                  >
+                    {planet.exhausted ? 'READY' : 'EXHAUST'}
+                  </button>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

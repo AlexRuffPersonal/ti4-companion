@@ -378,6 +378,50 @@ describe('MyPanelSection', () => {
     expect(screen.queryByText(/planets/i)).not.toBeInTheDocument()
   })
 
+  describe('planetStaticMap', () => {
+    const PLANET_WELFOR = { id: 'pl3', player_id: 'p1', planet_name: 'Welfor', exhausted: false }
+    const staticMapWithWelfor = {
+      Welfor: { resources: 2, influence: 0, tech_specialty: 'blue', traits: ['cultural'] }
+    }
+
+    it('shows resources/influence, tech chip, and trait when planetStaticMap has entry', () => {
+      renderPanel({ planets: [PLANET_WELFOR], planetStaticMap: staticMapWithWelfor })
+      expect(screen.getByText((content, el) => el?.tagName === 'SPAN' && /2.*0/.test(el.textContent))).toBeInTheDocument()
+      expect(screen.getByText('B')).toBeInTheDocument()
+      expect(screen.getByText('cultural')).toBeInTheDocument()
+    })
+
+    it('does not render tech chip when tech_specialty is null', () => {
+      const map = { Welfor: { resources: 2, influence: 0, tech_specialty: null, traits: ['cultural'] } }
+      renderPanel({ planets: [PLANET_WELFOR], planetStaticMap: map })
+      expect(screen.queryByText('B')).not.toBeInTheDocument()
+      expect(screen.queryByText('G')).not.toBeInTheDocument()
+      expect(screen.queryByText('R')).not.toBeInTheDocument()
+      expect(screen.queryByText('Y')).not.toBeInTheDocument()
+    })
+
+    it('does not render trait labels when traits is empty', () => {
+      const map = { Welfor: { resources: 2, influence: 0, tech_specialty: 'blue', traits: [] } }
+      renderPanel({ planets: [PLANET_WELFOR], planetStaticMap: map })
+      expect(screen.queryByText('CULTURAL')).not.toBeInTheDocument()
+      expect(screen.queryByText('HAZARDOUS')).not.toBeInTheDocument()
+      expect(screen.queryByText('INDUSTRIAL')).not.toBeInTheDocument()
+    })
+
+    it('renders planet name and EXHAUST button without crash when planetStaticMap has no entry for planet', () => {
+      renderPanel({ planets: [PLANET_WELFOR], planetStaticMap: {} })
+      expect(screen.getByText('Welfor')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /exhaust/i })).toBeInTheDocument()
+      expect(screen.queryByText((content, el) => el?.tagName === 'SPAN' && /\d+\/\d+/.test(el.textContent))).not.toBeInTheDocument()
+    })
+
+    it('renders planet rows without crash when planetStaticMap prop is omitted', () => {
+      renderPanel({ planets: [PLANET_WELFOR] })
+      expect(screen.getByText('Welfor')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /exhaust/i })).toBeInTheDocument()
+    })
+  })
+
   it('renders StrategyCardPanel with correct props', () => {
     const allPlayers = [PLAYER]
     const onPlayPrimary = vi.fn()
