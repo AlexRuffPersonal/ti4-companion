@@ -8,6 +8,8 @@
 ```pseudocode
 import UnitTooltip
 
+props: { ...existing..., pokEnabled = false }
+
 // Add hover state:
 const [hover, setHover] = useState(null)
 // hover = { systemKey: string, x: number, y: number } | null
@@ -26,6 +28,7 @@ const [hover, setHover] = useState(null)
       ...existing...
       <HexTile
         ...existing props...
+        pokEnabled={pokEnabled}
         onMouseEnter={(k) => setHover({ systemKey: k, x: 0, y: 0 })}
         onMouseLeave={() => setHover(null)}
       />

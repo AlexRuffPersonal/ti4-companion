@@ -239,6 +239,9 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-UnitTooltip](component-UnitTooltip.md) | `src/components/game/UnitTooltip.jsx` | 34 | Units on Map | planned | — |
 | [component-HexMap-p34](component-HexMap-p34.md) | `src/components/game/HexMap.jsx` | 34 | Units on Map | planned | component-HexTile-p34, component-UnitTooltip |
 
+| [component-SystemInfoModal-p35](component-SystemInfoModal-p35.md) | `src/components/game/SystemInfoModal.jsx` | 35 | Mech Plastic Unit | planned | — |
+| [component-GalaxyTab-p35](component-GalaxyTab-p35.md) | `src/components/game/GalaxyTab.jsx` | 35 | Mech Plastic Unit | planned | component-HexMap-p34, component-SystemInfoModal-p35 |
+
 ---
 
 ## Planned Feature Areas (specs to be added)
