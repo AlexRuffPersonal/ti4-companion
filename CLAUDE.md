@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+<!-- NEXT-SESSION-PROMPT: If `NEXT_SESSION_PROMPT.md` exists in the project root, read it and use its contents as your first task, then delete `NEXT_SESSION_PROMPT.md` and remove this entire comment line from CLAUDE.md. Commit both deletions/edits before proceeding. -->
+
 Guidance for Claude Code when working in this repository.
 
 Before asking to move on to another section, consider whether the next step would be achieved with lower token usage by starting a new Claude chat. If so, please instruct the user to start a new chat and provide the prompt to be used.
