@@ -84,7 +84,7 @@ Pure display component. Props: `units`, `tileInfo`, `players`, `style`.
 |----------|--------|
 | carrier | C |
 | cruiser | Cr |
-| destroyer | D |
+| destroyer | De |
 | dreadnought | Dr |
 | fighter | F |
 | flagship | Fl |
