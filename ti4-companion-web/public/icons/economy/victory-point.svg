@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  
+  <polygon points="32,10 36.94,25.21 52.93,25.20 39.99,34.60 44.94,49.80 32,40.4 19.06,49.80 24.01,34.60 11.07,25.20 27.06,25.21" fill="#d4a017"></polygon>
+
+  
+  <g fill="#d4a017">
+    
+    <g transform="translate(25.16 50.80) rotate(115)"><path d="M 0 0 Q 2.4 -1.8 6.4 0 Q 2.4 1.8 0 0 Z"></path></g>
+    <g transform="translate(18.59 46.00) rotate(135)"><path d="M 0 0 Q 2.4 -1.8 6.4 0 Q 2.4 1.8 0 0 Z"></path></g>
+    <g transform="translate(13.40 39.43) rotate(160)"><path d="M 0 0 Q 2.4 -1.8 6.4 0 Q 2.4 1.8 0 0 Z"></path></g>
+    <g transform="translate(11.04 31.66) rotate(185)"><path d="M 0 0 Q 2.4 -1.8 6.4 0 Q 2.4 1.8 0 0 Z"></path></g>
+    <g transform="translate(12.30 23.55) rotate(205)"><path d="M 0 0 Q 2.4 -1.8 6.4 0 Q 2.4 1.8 0 0 Z"></path></g>
+    <g transform="translate(16.68 16.68) rotate(225)"><path d="M 0 0 Q 2.4 -1.8 6.4 0 Q 2.4 1.8 0 0 Z"></path></g>
+
+    
+    <g transform="translate(38.84 50.80) rotate(65)"><path d="M 0 0 Q 2.4 -1.8 6.4 0 Q 2.4 1.8 0 0 Z"></path></g>
+    <g transform="translate(45.41 46.00) rotate(45)"><path d="M 0 0 Q 2.4 -1.8 6.4 0 Q 2.4 1.8 0 0 Z"></path></g>
+    <g transform="translate(50.60 39.43) rotate(20)"><path d="M 0 0 Q 2.4 -1.8 6.4 0 Q 2.4 1.8 0 0 Z"></path></g>
+    <g transform="translate(52.96 31.66) rotate(-5)"><path d="M 0 0 Q 2.4 -1.8 6.4 0 Q 2.4 1.8 0 0 Z"></path></g>
+    <g transform="translate(51.70 23.55) rotate(-25)"><path d="M 0 0 Q 2.4 -1.8 6.4 0 Q 2.4 1.8 0 0 Z"></path></g>
+    <g transform="translate(47.32 16.68) rotate(-45)"><path d="M 0 0 Q 2.4 -1.8 6.4 0 Q 2.4 1.8 0 0 Z"></path></g>
+
+    
+    <path d="M 27 56 Q 32 53 37 56 Q 32 59 27 56 Z"></path>
+  </g>
+</svg>

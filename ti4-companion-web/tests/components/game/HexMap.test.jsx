@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import HexMap from '../../../src/components/game/HexMap.jsx'
 
 const MAP_TILES = {
@@ -54,5 +54,20 @@ describe('HexMap', () => {
   it('renders nothing when mapTiles is empty', () => {
     const { container } = renderMap({ mapTiles: {} })
     expect(container.querySelectorAll('polygon').length).toBe(0)
+  })
+
+  it('shows UnitTooltip when hovering a tile with units', () => {
+    const units = [{ player_id: 'p1', unit_type: 'carrier', count: 2, system_key: '0,0', on_planet: null }]
+    const { container } = renderMap({ systemUnits: units })
+    fireEvent.mouseEnter(container.querySelectorAll('polygon')[0].closest('g'))
+    expect(screen.getByTestId('unit-tooltip')).toBeInTheDocument()
+  })
+
+  it('removes UnitTooltip when mouse leaves wrapper', () => {
+    const units = [{ player_id: 'p1', unit_type: 'carrier', count: 2, system_key: '0,0', on_planet: null }]
+    const { container } = renderMap({ systemUnits: units })
+    fireEvent.mouseEnter(container.querySelectorAll('polygon')[0].closest('g'))
+    fireEvent.mouseLeave(container.querySelector('.relative'))
+    expect(screen.queryByTestId('unit-tooltip')).not.toBeInTheDocument()
   })
 })

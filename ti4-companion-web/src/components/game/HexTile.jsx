@@ -7,7 +7,7 @@ function hexPolygonPoints(size) {
     .join(' ')
 }
 
-export default function HexTile({ systemKey, tileNumber, planets, activations, units, planetOwnership, players, onSelect, size = 60 }) {
+export default function HexTile({ systemKey, tileNumber, planets, activations, units, planetOwnership, players, onSelect, onMouseEnter = () => {}, onMouseLeave = () => {}, pokEnabled = false, size = 60 }) {
   const spaceUnits = units.filter(u => u.on_planet === null || u.on_planet === undefined)
   const spacePlayerIds = [...new Set(spaceUnits.map(u => u.player_id))]
   let borderColour = '#4a5568'
@@ -19,9 +19,23 @@ export default function HexTile({ systemKey, tileNumber, planets, activations, u
   const infantryCount = units
     .filter(u => u.unit_type === 'infantry')
     .reduce((sum, u) => sum + (u.count ?? 0), 0)
+  const mechCount = pokEnabled
+    ? units.filter(u => u.unit_type === 'mech').reduce((sum, u) => sum + (u.count ?? 0), 0)
+    : 0
+
+  const badgeParts = []
+  if (infantryCount > 0) badgeParts.push(`${infantryCount}I`)
+  if (mechCount > 0) badgeParts.push(`${mechCount}M`)
+  const badgeText = badgeParts.join(' ')
+  const badgeWidth = Math.max(20, badgeText.length * 5.5 + 6)
 
   return (
-    <g onClick={() => onSelect(systemKey)} style={{ cursor: 'pointer' }}>
+    <g
+      onClick={() => onSelect(systemKey)}
+      onMouseEnter={() => onMouseEnter(systemKey)}
+      onMouseLeave={() => onMouseLeave()}
+      style={{ cursor: 'pointer' }}
+    >
       <polygon points={hexPolygonPoints(size)} fill="#1a202c" stroke={borderColour} strokeWidth={2} />
 
       <text x={0} y={-size + 14} textAnchor="middle" fill="#d4af37" fontSize={10} fontFamily="Orbitron,sans-serif">
@@ -57,11 +71,11 @@ export default function HexTile({ systemKey, tileNumber, planets, activations, u
         )
       })}
 
-      {infantryCount > 0 && (
+      {badgeText && (
         <g transform={`translate(0,${size - 14})`}>
-          <rect x={-10} y={-8} width={20} height={14} rx={3} fill="#1a202c" stroke="#4a5568" strokeWidth={1} />
+          <rect x={-badgeWidth / 2} y={-8} width={badgeWidth} height={14} rx={3} fill="#1a202c" stroke="#4a5568" strokeWidth={1} />
           <text x={0} y={2} textAnchor="middle" fontSize={9} fill="#e2e8f0" fontFamily="Space Mono,monospace">
-            {infantryCount}
+            {badgeText}
           </text>
         </g>
       )}

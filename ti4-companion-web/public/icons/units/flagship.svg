@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  
+  <g fill="#ffffff">
+    
+    <path d="M28 18 L60 22 L62 24 L48 25 L32 25 Z"></path>
+    <path d="M28 46 L60 42 L62 40 L48 39 L32 39 Z"></path>
+    
+    <path d="M30 25 L58 27 L60 29 L48 30 L34 30 Z"></path>
+    <path d="M30 39 L58 37 L60 35 L48 34 L34 34 Z"></path>
+    
+    <path d="M6 24 L40 22 L54 28 L60 32 L54 36 L40 42 L6 40 Z"></path>
+    
+    <polygon points="54,32 64,30 64,34"></polygon>
+    
+    <polygon points="18,22 22,14 26,22"></polygon>
+    <polygon points="28,22 34,10 40,22"></polygon>
+    
+    <polygon points="18,42 22,50 26,42"></polygon>
+    <polygon points="28,42 34,54 40,42"></polygon>
+    
+    <rect x="0" y="22" width="9" height="6"></rect>
+    <rect x="0" y="36" width="9" height="6"></rect>
+    <rect x="0" y="29" width="6" height="6"></rect>
+    
+    <rect x="14" y="22" width="14" height="3"></rect>
+    <rect x="14" y="39" width="14" height="3"></rect>
+  </g>
+</svg>

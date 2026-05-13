@@ -44,19 +44,54 @@ describe('HexTile', () => {
     expect(screen.getByText('Vefut II')).toBeInTheDocument()
   })
 
-  it('renders unit count badge when infantry present', () => {
+  it('renders ground-force badge with infantry count', () => {
     renderTile({
       units: [
         { player_id: 'p1', unit_type: 'infantry', count: 3, on_planet: 'Wellon' },
         { player_id: 'p1', unit_type: 'infantry', count: 1, on_planet: 'Vefut II' },
       ],
     })
-    expect(screen.getByText('4')).toBeInTheDocument()
+    expect(screen.getByText('4I')).toBeInTheDocument()
   })
 
-  it('does not render unit badge when no infantry', () => {
+  it('renders combined infantry and mech badge when pokEnabled', () => {
+    renderTile({
+      pokEnabled: true,
+      units: [
+        { player_id: 'p1', unit_type: 'infantry', count: 2, on_planet: 'Wellon' },
+        { player_id: 'p1', unit_type: 'mech', count: 1, on_planet: 'Wellon' },
+      ],
+    })
+    expect(screen.getByText('2I 1M')).toBeInTheDocument()
+  })
+
+  it('omits mech from badge when pokEnabled is false', () => {
+    renderTile({
+      pokEnabled: false,
+      units: [
+        { player_id: 'p1', unit_type: 'mech', count: 1, on_planet: 'Wellon' },
+      ],
+    })
+    expect(screen.queryByText('1M')).not.toBeInTheDocument()
+  })
+
+  it('does not render unit badge when no ground forces', () => {
     renderTile({ units: [] })
     expect(screen.queryByText('0')).not.toBeInTheDocument()
+  })
+
+  it('calls onMouseEnter with systemKey on mouse enter', () => {
+    const onMouseEnter = vi.fn()
+    const { container } = renderTile({ onMouseEnter })
+    fireEvent.mouseEnter(container.querySelector('g'))
+    expect(onMouseEnter).toHaveBeenCalledWith('1,-1')
+  })
+
+  it('calls onMouseLeave on mouse leave', () => {
+    const onMouseLeave = vi.fn()
+    const { container } = renderTile({ onMouseLeave })
+    fireEvent.mouseLeave(container.querySelector('g'))
+    expect(onMouseLeave).toHaveBeenCalled()
   })
 
   it('renders one tactic token circle per activation', () => {

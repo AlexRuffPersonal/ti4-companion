@@ -1,4 +1,17 @@
-export default function SystemInfoModal({ tileInfo, systemKey, onClose }) {
+const UNIT_ABBREV = {
+  carrier: 'C', cruiser: 'Cr', destroyer: 'D', dreadnought: 'Dr',
+  fighter: 'F', flagship: 'Fl', war_sun: 'W', space_dock: 'SD',
+  infantry: 'I', mech: 'M', pds: 'P',
+}
+
+function unitLine(units) {
+  return units
+    .filter(u => (u.count ?? 0) > 0)
+    .map(u => `${u.count}${UNIT_ABBREV[u.unit_type] ?? u.unit_type}`)
+    .join('  ')
+}
+
+export default function SystemInfoModal({ tileInfo, systemKey, onClose, systemUnits = [], players = [] }) {
   const planets = tileInfo?.planets ?? []
   const wormholes = tileInfo?.wormholes ?? []
   const anomalies = tileInfo?.anomalies ?? []
@@ -40,6 +53,48 @@ export default function SystemInfoModal({ tileInfo, systemKey, onClose }) {
           <div>
             <p className="label">ANOMALIES</p>
             <p className="text-muted text-xs">{anomalies.join(', ')}</p>
+          </div>
+        )}
+
+        {systemUnits.length > 0 && (
+          <div>
+            <p className="label">UNITS</p>
+
+            {(() => {
+              const spaceUnits = systemUnits.filter(u => u.on_planet == null)
+              const spaceRows = players
+                .map(pl => ({ player: pl, units: spaceUnits.filter(u => u.player_id === pl.id) }))
+                .filter(r => r.units.length > 0)
+              return spaceRows.length > 0 ? (
+                <div className="mb-2">
+                  <p className="text-dim text-xs mb-1">Space Area</p>
+                  {spaceRows.map(r => (
+                    <div key={r.player.id} className="flex items-center gap-2">
+                      <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: r.player.colour }} />
+                      <span className="text-muted text-xs font-mono">{unitLine(r.units)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : null
+            })()}
+
+            {planets.map(planet => {
+              const planetUnits = systemUnits.filter(u => u.on_planet === planet.name)
+              const rows = players
+                .map(pl => ({ player: pl, units: planetUnits.filter(u => u.player_id === pl.id) }))
+                .filter(r => r.units.length > 0)
+              return rows.length > 0 ? (
+                <div key={planet.name} className="mb-2">
+                  <p className="text-dim text-xs mb-1">{planet.name}</p>
+                  {rows.map(r => (
+                    <div key={r.player.id} className="flex items-center gap-2">
+                      <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: r.player.colour }} />
+                      <span className="text-muted text-xs font-mono">{unitLine(r.units)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : null
+            })}
           </div>
         )}
 

@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <g fill="#ffffff">
+    
+    
+    <rect x="31" y="14" width="2" height="22"></rect>
+    <rect x="29.5" y="12" width="5" height="3"></rect>
+    <circle cx="32" cy="13" r="0.9"></circle>
+    
+    <rect x="22" y="18" width="1.6" height="18"></rect>
+    <rect x="20.6" y="16.5" width="4.4" height="2.5"></rect>
+    
+    <rect x="40.4" y="18" width="1.6" height="18"></rect>
+    <rect x="39" y="16.5" width="4.4" height="2.5"></rect>
+
+    
+    <path fill-rule="evenodd" d="M58 36 A26 12 0 1 1 6 36 A26 12 0 1 1 58 36 Z&#xA;             M50 36 A18 6 0 1 0 14 36 A18 6 0 1 0 50 36 Z"></path>
+
+    
+    <path d="M6 36 A26 12 0 0 0 58 36 L58 38 A26 12 0 0 1 6 38 Z"></path>
+
+    
+    <rect x="30" y="28" width="4" height="6"></rect>
+    <polygon points="14,40 22,32 26,34 18,42"></polygon>
+    <polygon points="50,40 42,32 38,34 46,42"></polygon>
+
+    
+    <ellipse cx="32" cy="36" rx="6" ry="3"></ellipse>
+
+    
+    <rect x="30.5" y="30" width="3" height="2"></rect>
+    <rect x="18" y="40" width="3" height="2"></rect>
+    <rect x="43" y="40" width="3" height="2"></rect>
+  </g>
+</svg>

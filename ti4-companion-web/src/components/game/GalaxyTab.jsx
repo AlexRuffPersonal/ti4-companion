@@ -159,6 +159,7 @@ export default function GalaxyTab({
           planetOwnership={planetOwnership}
           players={players}
           onSelectSystem={setSelectedSystemKey}
+          pokEnabled={game?.expansions?.pok ?? false}
         />
       </div>
 
@@ -185,6 +186,8 @@ export default function GalaxyTab({
         <SystemInfoModal
           systemKey={infoSystemKey}
           tileInfo={tileData[mapTiles[infoSystemKey]?.tile_id] ?? null}
+          systemUnits={systemUnits.filter(u => u.system_key === infoSystemKey)}
+          players={players}
           onClose={() => setInfoSystemKey(null)}
         />
       )}
