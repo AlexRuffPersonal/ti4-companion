@@ -1,0 +1,9 @@
+{
+  "name": "ti4-companion-root",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix ti4-companion-web install && npm --prefix ti4-companion-web run dev",
+    "build": "npm --prefix ti4-companion-web run build",
+    "preview": "npm --prefix ti4-companion-web run preview"
+  }
+}
