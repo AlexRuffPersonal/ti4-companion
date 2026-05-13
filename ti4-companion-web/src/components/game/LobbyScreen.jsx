@@ -40,6 +40,10 @@ export default function LobbyScreen({ userId }) {
   const [botError, setBotError] = useState(null)
   const [addingBot, setAddingBot] = useState(false)
 
+  // Optimistic speaker selection
+  const [pendingSpeaker, setPendingSpeaker] = useState(null)
+  const [speakerError, setSpeakerError] = useState(null)
+
   // Map builder state (host only)
   const [tileByNumber, setTileByNumber] = useState({})
   const [mapPlayerCount, setMapPlayerCount] = useState(
@@ -108,6 +112,19 @@ export default function LobbyScreen({ userId }) {
       setPickError(e.message)
       setPendingFaction(null)
       setPendingColour(null)
+    }
+  }
+
+  async function handleSetSpeaker(playerId) {
+    if (!playerId) return
+    setPendingSpeaker(playerId)
+    setSpeakerError(null)
+    try {
+      await setGameSpeaker(playerId)
+      setPendingSpeaker(null)
+    } catch (e) {
+      setSpeakerError(e.message)
+      setPendingSpeaker(null)
     }
   }
 
@@ -291,14 +308,15 @@ export default function LobbyScreen({ userId }) {
             <select
               id="speaker"
               className="input"
-              value={game?.speaker_player_id ?? ''}
-              onChange={(e) => setGameSpeaker(e.target.value)}
+              value={pendingSpeaker ?? game?.speaker_player_id ?? ''}
+              onChange={(e) => handleSetSpeaker(e.target.value)}
             >
               <option value="">— assign speaker —</option>
               {players.map(p => (
                 <option key={p.id} value={p.id}>{p.display_name}</option>
               ))}
             </select>
+            {speakerError && <p className="text-danger text-sm font-body">{speakerError}</p>}
           </div>
 
           {/* Add Bot */}

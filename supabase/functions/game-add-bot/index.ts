@@ -41,13 +41,13 @@ export async function handler(req: Request): Promise<Response> {
 
   const { data: game } = await db
     .from('games')
-    .select('phase, host_player_id, status')
+    .select('status, host_user_id')
     .eq('id', gameId)
     .maybeSingle()
   if (!game) return errorResponse('Game not found', 404)
 
   if (game.status !== 'lobby') return errorResponse('Game already started', 409)
-  if (player.id !== game.host_player_id) return errorResponse('Not host', 403)
+  if (userId !== game.host_user_id) return errorResponse('Not host', 403)
   if (!VALID_BOT_STRATEGIES.includes(botStrategy)) return errorResponse('Invalid bot_strategy', 400)
 
   const { data: factionConflict } = await db
@@ -62,7 +62,7 @@ export async function handler(req: Request): Promise<Response> {
     .from('game_players')
     .select('id')
     .eq('game_id', gameId)
-    .eq('color', color)
+    .eq('colour', color)
     .maybeSingle()
   if (colorConflict) return errorResponse('Color taken', 409)
 
@@ -79,7 +79,7 @@ export async function handler(req: Request): Promise<Response> {
       user_id: null,
       display_name: displayName,
       faction,
-      color,
+      colour: color,
       bot_strategy: botStrategy,
       is_bot: true,
       seat_index: seatIndex,

@@ -45,7 +45,7 @@ const VALID_BODY = {
 
 function mockDb({
   player = { id: PLAYER_ID },
-  game = { phase: 'lobby', host_player_id: PLAYER_ID, status: 'lobby' },
+  game = { status: 'lobby', host_user_id: USER_ID },
   factionConflict = null,
   colorConflict = null,
   playerCount = 2,
@@ -106,7 +106,7 @@ function mockDb({
 // Finer-grained mock that routes table+field queries properly
 function mockDbDetailed({
   player = { id: PLAYER_ID },
-  game = { phase: 'lobby', host_player_id: PLAYER_ID, status: 'lobby' },
+  game = { status: 'lobby', host_user_id: USER_ID },
   factionConflict = null,
   colorConflict = null,
   playerCount = 2,
@@ -220,7 +220,7 @@ describe('game-add-bot', () => {
   })
 
   it('returns 409 when game is already started', async () => {
-    mockDbDetailed({ game: { status: 'in_progress', host_player_id: PLAYER_ID, phase: 'action' } })
+    mockDbDetailed({ game: { status: 'in_progress', host_user_id: USER_ID } })
     const res = await handler(makeRequest(VALID_BODY))
     expect(res.status).toBe(409)
     const body = await res.json()
@@ -228,7 +228,7 @@ describe('game-add-bot', () => {
   })
 
   it('returns 403 when caller is not host', async () => {
-    mockDbDetailed({ game: { status: 'lobby', host_player_id: 'other-player-id', phase: 'lobby' } })
+    mockDbDetailed({ game: { status: 'lobby', host_user_id: 'other-user-id' } })
     const res = await handler(makeRequest(VALID_BODY))
     expect(res.status).toBe(403)
   })
@@ -296,7 +296,7 @@ describe('game-add-bot', () => {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
               maybeSingle: vi.fn().mockResolvedValue({
-                data: { status: 'lobby', host_player_id: PLAYER_ID, phase: 'lobby' },
+                data: { status: 'lobby', host_user_id: USER_ID },
                 error: null,
               }),
             }),
@@ -308,7 +308,7 @@ describe('game-add-bot', () => {
 
     const res = await handler(makeRequest(VALID_BODY))
     expect(res.status).toBe(200)
-    expect(insertArgs).toMatchObject({ is_bot: true, user_id: null, faction: 'Arborec', color: 'green' })
+    expect(insertArgs).toMatchObject({ is_bot: true, user_id: null, faction: 'Arborec', colour: 'green' })
     expect(logEvent).toHaveBeenCalledOnce()
     const body = await res.json()
     expect(body.id).toBe(NEW_BOT_ID)
