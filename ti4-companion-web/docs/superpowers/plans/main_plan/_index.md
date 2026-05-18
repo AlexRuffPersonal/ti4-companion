@@ -266,6 +266,28 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-SystemActionModal-p38](component-SystemActionModal-p38.md) | `src/components/game/SystemActionModal.jsx` | 38 | Dark Energy Tap | planned | component-SystemActionModal (p31) |
 | [component-GalaxyTab-p38](component-GalaxyTab-p38.md) | `src/components/game/GalaxyTab.jsx` | 38 | Dark Energy Tap | planned | component-SystemActionModal-p38, component-GalaxyTab-p35 |
 
+| [migration-048-draft-state](migration-048-draft-state.md) | `supabase/migrations/048_draft_state.sql` | 39 | In-App Map Draft | planned | — |
+| [shared-draftHelpers](shared-draftHelpers.md) | `supabase/functions/_shared/draftHelpers.ts` | 39 | In-App Map Draft | planned | migration-048-draft-state |
+| [fn-game-start-draft](fn-game-start-draft.md) | `supabase/functions/game-start-draft/index.ts` | 39 | In-App Map Draft | planned | migration-048-draft-state, shared-draftHelpers |
+| [fn-game-draft-pick-slice](fn-game-draft-pick-slice.md) | `supabase/functions/game-draft-pick-slice/index.ts` | 39 | In-App Map Draft | planned | fn-game-start-draft, shared-draftHelpers |
+| [fn-game-draft-place-tile](fn-game-draft-place-tile.md) | `supabase/functions/game-draft-place-tile/index.ts` | 39 | In-App Map Draft | planned | fn-game-start-draft, shared-draftHelpers |
+| [client-edgeFunctions-p39](client-edgeFunctions-p39.md) | `src/lib/edgeFunctions.js` | 39 | In-App Map Draft | planned | fn-game-start-draft, fn-game-draft-pick-slice, fn-game-draft-place-tile |
+| [hook-useDraft](hook-useDraft.md) | `src/hooks/useDraft.js` | 39 | In-App Map Draft | planned | client-edgeFunctions-p39 |
+| [component-DraftTileHand](component-DraftTileHand.md) | `src/components/game/DraftTileHand.jsx` | 39 | In-App Map Draft | planned | hook-useDraft |
+| [component-DraftSlicePickView](component-DraftSlicePickView.md) | `src/components/game/DraftSlicePickView.jsx` | 39 | In-App Map Draft | planned | component-DraftTileHand |
+| [component-DraftPlacementView](component-DraftPlacementView.md) | `src/components/game/DraftPlacementView.jsx` | 39 | In-App Map Draft | planned | component-DraftTileHand |
+| [component-DraftPanel](component-DraftPanel.md) | `src/components/game/DraftPanel.jsx` | 39 | In-App Map Draft | planned | component-DraftSlicePickView, component-DraftPlacementView |
+| [component-LobbyScreen-p39](component-LobbyScreen-p39.md) | `src/components/game/LobbyScreen.jsx` | 39 | In-App Map Draft | planned | component-DraftPanel, hook-useDraft, client-edgeFunctions-p39 |
+
+| [migration-049-law-enforcement](migration-049-law-enforcement.md) | `supabase/migrations/049_law_enforcement.sql` | 40 | Persistent Agenda Law Enforcement | planned | — |
+| [shared-lawEffects](shared-lawEffects.md) | `supabase/functions/_shared/lawEffects.ts` | 40 | Persistent Agenda Law Enforcement | planned | migration-049-law-enforcement |
+| [shared-abilityDsl-p40](shared-abilityDsl-p40.md) | `supabase/functions/_shared/abilityDsl.ts` | 40 | Persistent Agenda Law Enforcement | planned | shared-lawEffects |
+| [fn-game-produce-units-p40](fn-game-produce-units-p40.md) | `supabase/functions/game-produce-units/index.ts` | 40 | Persistent Agenda Law Enforcement | planned | shared-lawEffects |
+| [fn-game-move-ships-p40](fn-game-move-ships-p40.md) | `supabase/functions/game-move-ships/index.ts` | 40 | Persistent Agenda Law Enforcement | planned | shared-lawEffects |
+| [fn-game-land-troops-p40](fn-game-land-troops-p40.md) | `supabase/functions/game-land-troops/index.ts` | 40 | Persistent Agenda Law Enforcement | planned | shared-lawEffects |
+| [fn-game-assign-hits-p40](fn-game-assign-hits-p40.md) | `supabase/functions/game-assign-hits/index.ts` | 40 | Persistent Agenda Law Enforcement | planned | shared-lawEffects |
+| [fn-game-advance-phase-p40](fn-game-advance-phase-p40.md) | `supabase/functions/game-advance-phase/index.ts` | 40 | Persistent Agenda Law Enforcement | planned | shared-lawEffects, migration-049-law-enforcement |
+
 ---
 
 ## Planned Feature Areas (specs to be added)
