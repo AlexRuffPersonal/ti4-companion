@@ -252,6 +252,16 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-ObjectivesSection-p36](component-ObjectivesSection-p36.md) | `src/components/game/ObjectivesSection.jsx` | 36 | Objective Condition Enforcement | planned | lib-objectiveEvaluator, hook-useGame-p36 |
 | [component-MyPanelSection-p36](component-MyPanelSection-p36.md) | `src/components/game/MyPanelSection.jsx` | 36 | Objective Condition Enforcement | planned | lib-objectiveEvaluator, hook-useGame-p36 |
 
+| [migration-047-strategy-card-effects](migration-047-strategy-card-effects.md) | `supabase/migrations/047_strategy_card_effects.sql` | 37 | Strategy Card Text & Ability Enforcement | planned | migration-029-strategy-production |
+| [lib-strategyCardConstants](lib-strategyCardConstants.md) | `src/lib/strategyCardConstants.js` | 37 | Strategy Card Text & Ability Enforcement | planned | — |
+| [shared-abilityDsl-p37](shared-abilityDsl-p37.md) | `supabase/functions/_shared/abilityDsl.ts` | 37 | Strategy Card Text & Ability Enforcement | planned | migration-047-strategy-card-effects, shared-objectiveConditions |
+| [fn-game-play-strategy-card-p37](fn-game-play-strategy-card-p37.md) | `supabase/functions/game-play-strategy-card/index.ts` | 37 | Strategy Card Text & Ability Enforcement | planned | migration-047-strategy-card-effects, shared-abilityDsl-p37 |
+| [fn-game-use-strategy-secondary-p37](fn-game-use-strategy-secondary-p37.md) | `supabase/functions/game-use-strategy-secondary/index.ts` | 37 | Strategy Card Text & Ability Enforcement | planned | migration-047-strategy-card-effects, shared-abilityDsl-p37 |
+| [fn-game-produce-units-p37](fn-game-produce-units-p37.md) | `supabase/functions/game-produce-units/index.ts` | 37 | Strategy Card Text & Ability Enforcement | planned | fn-game-use-strategy-secondary-p37 |
+| [hook-useStrategyCards-p37](hook-useStrategyCards-p37.md) | `src/hooks/useStrategyCards.js` | 37 | Strategy Card Text & Ability Enforcement | planned | fn-game-play-strategy-card-p37, fn-game-use-strategy-secondary-p37 |
+| [component-StrategyCardPanel-p37](component-StrategyCardPanel-p37.md) | `src/components/game/StrategyCardPanel.jsx` | 37 | Strategy Card Text & Ability Enforcement | planned | lib-strategyCardConstants, hook-useStrategyCards-p37 |
+| [component-StrategyCardModal-p37](component-StrategyCardModal-p37.md) | `src/components/game/StrategyCardModal.jsx` | 37 | Strategy Card Text & Ability Enforcement | planned | lib-strategyCardConstants, hook-useStrategyCards-p37, component-StrategyCardPanel-p37 |
+
 ---
 
 ## Planned Feature Areas (specs to be added)
