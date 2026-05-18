@@ -1,4 +1,4 @@
-# Phase 39 — Persistent Agenda Law Enforcement
+# Phase 40 — Persistent Agenda Law Enforcement
 
 **Date:** 2026-05-18
 **Status:** Approved
@@ -40,7 +40,7 @@ Exports six functions called by affected Edge Functions:
 
 Internal helper: `getActiveLaws(db, gameId)` — fetches all `game_laws` rows for the game where `is_repealed = false`, joining `agendas` for `name` and `elected_target`.
 
-### New migration: `supabase/migrations/048_law_enforcement.sql`
+### New migration: `supabase/migrations/049_law_enforcement.sql`
 
 Adds one performance index and one new column:
 
@@ -93,7 +93,7 @@ VP deduction is guarded: only fires if the player's current VP > 0 and VP was aw
 
 | Law | Logic |
 |---|---|
-| Minister of War | New op in `abilityDsl.ts`. The `elected_target` player may exhaust their `elected_target` planet to use the secondary ability of any strategy card currently in play that round. Op validates: caller is elected player, elected planet is not already exhausted. On success: exhausts the planet and sets `game_players.minister_of_war_unlocked = true` for the caller. The existing strategy card secondary flow checks this flag to permit the additional secondary use. Requires `minister_of_war_unlocked BOOLEAN DEFAULT false` column on `game_players` (added in migration 048). |
+| Minister of War | New op in `abilityDsl.ts`. The `elected_target` player may exhaust their `elected_target` planet to use the secondary ability of any strategy card currently in play that round. Op validates: caller is elected player, elected planet is not already exhausted. On success: exhausts the planet and sets `game_players.minister_of_war_unlocked = true` for the caller. The existing strategy card secondary flow checks this flag to permit the additional secondary use. Requires `minister_of_war_unlocked BOOLEAN DEFAULT false` column on `game_players` (added in migration 049). |
 
 ### Remaining laws
 
