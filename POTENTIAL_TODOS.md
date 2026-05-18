@@ -61,7 +61,18 @@ These card types have no implementation and do not appear anywhere in the UI.
 
 ## Icons / Sprites
 
-- **Integrate generated SVG icons** — `ti4-companion-web/public/icons/` contains generated SVG sprite sheets organized by category (`units/`, `tech/`, `tokens/`, `leaders/`, `phases/`, `economy/`, `planet/`, `status/`, `dice/`). These are not yet referenced anywhere in the app. A future phase should wire them in: unit-type icons on hex tiles and in unit lists (carrier.svg, cruiser.svg, etc.), tech-type icons on TechCard chips, token icons, and leader-type icons on LeaderCard. The unit icons are the highest-priority integration point since Phase 34/35 adds unit overlays on the map.
+- **Integrate generated SVG icons** — `ti4-companion-web/public/icons/` contains SVG icons organized by category:
+  - `units/` — carrier, cruiser, destroyer, dreadnought, fighter, flagship, infantry, mech, pds, space-dock, war-sun
+  - `tech/` — biotic, cybernetic, propulsion, warfare *(new)*
+  - `tokens/` — fleet, strategy, tactic *(new)*
+  - `planet/` — influence, resource *(new)*
+  - `status/` — exhausted, ready, damaged, purged *(damaged & purged new)*
+  - `leaders/` — agent, commander, hero
+  - `phases/` — action-phase, agenda-phase, status-phase, strategy-phase
+  - `economy/` — commodity, trade-good, victory-point
+  - `dice/` — d10
+
+  None are referenced in the app yet. Priority integration points: unit icons on hex tiles and unit lists (Phase 34/35 map overlays), tech-type colour chips on TechCard, token icons on the command-token display, planet resource/influence icons on PlanetCard, and leader-type icons on LeaderCard.
 
 ---
 

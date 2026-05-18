@@ -4,11 +4,6 @@
   
   <polygon points="20,13 44,13 54,32 44,51 20,51 10,32" fill="none" stroke="#8a6810" stroke-width="2" stroke-linejoin="miter"></polygon>
   
-  <g fill="#8a6810">
-    
-    <path d="M 40 24.5 L 28 24.5 L 22 32 L 28 39.5 L 40 39.5 L 40 36.5 L 30 36.5 L 26 32 L 30 27.5 L 40 27.5 Z"></path>
-    
-    <rect x="23" y="29.5" width="19" height="1.6"></rect>
-    <rect x="23" y="33" width="19" height="1.6"></rect>
-  </g>
+  <polygon points="32,21 42,32 32,43 22,32" fill="none" stroke="#8a6810" stroke-width="2.4" stroke-linejoin="miter"></polygon>
+  <rect x="18.5" y="30.6" width="27" height="2.8" fill="#8a6810"></rect>
 </svg>
