@@ -235,12 +235,22 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-GameHeader-p33](component-GameHeader-p33.md) | `src/components/game/GameHeader.jsx` | 33 | Bot Players + Undo | done | client-edgeFunctions-p33 |
 | [component-GameScreen-p33](component-GameScreen-p33.md) | `src/components/game/GameScreen.jsx` | 33 | Bot Players + Undo | done | hook-useBotPlayer, component-GameHeader-p33, client-edgeFunctions-p33 |
 
-| [component-HexTile-p34](component-HexTile-p34.md) | `src/components/game/HexTile.jsx` | 34 | Units on Map | planned | — |
-| [component-UnitTooltip](component-UnitTooltip.md) | `src/components/game/UnitTooltip.jsx` | 34 | Units on Map | planned | — |
-| [component-HexMap-p34](component-HexMap-p34.md) | `src/components/game/HexMap.jsx` | 34 | Units on Map | planned | component-HexTile-p34, component-UnitTooltip |
+| [component-HexTile-p34](component-HexTile-p34.md) | `src/components/game/HexTile.jsx` | 34 | Units on Map | done | — |
+| [component-UnitTooltip](component-UnitTooltip.md) | `src/components/game/UnitTooltip.jsx` | 34 | Units on Map | done | — |
+| [component-HexMap-p34](component-HexMap-p34.md) | `src/components/game/HexMap.jsx` | 34 | Units on Map | done | component-HexTile-p34, component-UnitTooltip |
 
-| [component-SystemInfoModal-p35](component-SystemInfoModal-p35.md) | `src/components/game/SystemInfoModal.jsx` | 35 | Mech Plastic Unit | planned | — |
-| [component-GalaxyTab-p35](component-GalaxyTab-p35.md) | `src/components/game/GalaxyTab.jsx` | 35 | Mech Plastic Unit | planned | component-HexMap-p34, component-SystemInfoModal-p35 |
+| [component-SystemInfoModal-p35](component-SystemInfoModal-p35.md) | `src/components/game/SystemInfoModal.jsx` | 35 | Mech Plastic Unit | done | — |
+| [component-GalaxyTab-p35](component-GalaxyTab-p35.md) | `src/components/game/GalaxyTab.jsx` | 35 | Mech Plastic Unit | done | component-HexMap-p34, component-SystemInfoModal-p35 |
+
+| [migration-046-objective-conditions](migration-046-objective-conditions.md) | `supabase/migrations/046_objective_conditions.sql` | 36 | Objective Condition Enforcement | planned | — |
+| [shared-objectiveConditions](shared-objectiveConditions.md) | `supabase/functions/_shared/objectiveConditions.ts` | 36 | Objective Condition Enforcement | planned | migration-046-objective-conditions |
+| [lib-objectiveEvaluator](lib-objectiveEvaluator.md) | `src/lib/objectiveEvaluator.js` | 36 | Objective Condition Enforcement | planned | migration-046-objective-conditions |
+| [fn-game-score-objective-p36](fn-game-score-objective-p36.md) | `supabase/functions/game-score-objective/index.ts` | 36 | Objective Condition Enforcement | planned | shared-objectiveConditions |
+| [fn-game-score-secret-objective-p36](fn-game-score-secret-objective-p36.md) | `supabase/functions/game-score-secret-objective/index.ts` | 36 | Objective Condition Enforcement | planned | shared-objectiveConditions |
+| [fn-game-assign-hits-p36](fn-game-assign-hits-p36.md) | `supabase/functions/game-assign-hits/index.ts` | 36 | Objective Condition Enforcement | planned | migration-046-objective-conditions |
+| [hook-useGame-p36](hook-useGame-p36.md) | `src/hooks/useGame.js` | 36 | Objective Condition Enforcement | planned | migration-046-objective-conditions |
+| [component-ObjectivesSection-p36](component-ObjectivesSection-p36.md) | `src/components/game/ObjectivesSection.jsx` | 36 | Objective Condition Enforcement | planned | lib-objectiveEvaluator, hook-useGame-p36 |
+| [component-MyPanelSection-p36](component-MyPanelSection-p36.md) | `src/components/game/MyPanelSection.jsx` | 36 | Objective Condition Enforcement | planned | lib-objectiveEvaluator, hook-useGame-p36 |
 
 ---
 
