@@ -198,7 +198,7 @@ if found: update state='held', held_by_player_id=player_id
 
 `freelancers_produce`:
 ```
-if !ctx.unitType: return 'handled'  // player skipped
+if !ctx.unitType: return 'handled'  // player skipped (optional)
 fetch unit definition for unit_type → cost
 fetch game_player_planets WHERE game_id + player_id + planet_name IN resource_planet_names
 ERR 409 if any planet not found or already exhausted
@@ -206,12 +206,18 @@ totalSpend = sum(planet.resources) + sum(planet.influence)  // influence counts 
 ERR 409 'Insufficient resources' if totalSpend < cost
 exhaust all chosen planets
 upsert game_player_units: unit_type, system_key=ctx.systemKey, on_planet=null, count+1
+// Note: bypasses fleet-pool and capacity checks — exploration production does not require
+// system activation, so normal fleet limits do not apply (LRR §35.2).
 ```
 
 `place_mech_on_current_planet`:
 ```
+// TI4: max 1 mech per planet
+existing = fetch game_player_units WHERE game_id + player_id
+           + unit_type='mech' + on_planet=ctx.planetName
+ERR 409 'Planet already has a mech' if existing and existing.count >= 1
 upsert game_player_units: unit_type='mech', system_key=ctx.systemKey,
-       on_planet=ctx.planetName, count+1
+       on_planet=ctx.planetName, count=1
 ```
 
 `place_mirage`:
@@ -221,6 +227,10 @@ insert game_player_planets: game_id, player_id, planet_name='Mirage',
        system_key=ctx.systemKey, exhausted=false
 return 'purge'
 ```
+
+**Dispatch signal union** — extend `dispatchExplorationOp` return type from
+`'handled' | 'passthrough' | 'relic_fragment' | 'attachment' | Response`
+to also include `'hold' | 'purge'`.
 
 **Final state machine** (extended):
 - `signalType='relic_fragment'` → `state='held'`
