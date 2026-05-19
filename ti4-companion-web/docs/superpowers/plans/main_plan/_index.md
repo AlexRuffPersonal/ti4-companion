@@ -341,6 +341,12 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-DiscardBrowserModal](component-DiscardBrowserModal.md) | `src/components/game/DiscardBrowserModal.jsx` | 42 | Relic Card Effects A | planned | client-edgeFunctions-p42 |
 | [component-RelicPanel-p42](component-RelicPanel-p42.md) | `src/components/game/RelicPanel.jsx` | 42 | Relic Card Effects A | planned | component-RelicPanel, component-DiscardBrowserModal, client-edgeFunctions-p42 |
 
+| [component-GameIcon](component-GameIcon.md) | `src/components/shared/GameIcon.jsx` | UI | SVG Icon Integration | planned | — |
+| [component-TechCard-icon-integration](component-TechCard-icon-integration.md) | `src/components/game/TechCard.jsx` | UI | SVG Icon Integration | planned | component-GameIcon |
+| [component-MyPanelSection-icon-integration](component-MyPanelSection-icon-integration.md) | `src/components/game/MyPanelSection.jsx` | UI | SVG Icon Integration | planned | component-GameIcon |
+| [component-LeaderCard-icon-integration](component-LeaderCard-icon-integration.md) | `src/components/game/LeaderCard.jsx` | UI | SVG Icon Integration | planned | component-GameIcon |
+| [component-HexTile-icon-integration](component-HexTile-icon-integration.md) | `src/components/game/HexTile.jsx` | UI | SVG Icon Integration | planned | component-GameIcon |
+
 ---
 
 ## Planned Feature Areas (specs to be added)
