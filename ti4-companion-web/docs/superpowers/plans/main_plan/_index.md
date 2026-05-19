@@ -332,6 +332,14 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-use-enigmatic-device](fn-game-use-enigmatic-device.md) | `supabase/functions/game-use-enigmatic-device/index.ts` | 41 | Exploration Full Validation | planned | migration-051-exploration-fixes, shared-abilityDsl |
 | [fn-game-land-troops-p39](fn-game-land-troops-p39.md) | `supabase/functions/game-land-troops/index.ts` | 41 | Exploration Full Validation | planned | fn-game-land-troops-p26, migration-051-exploration-fixes |
 | [client-edgeFunctions-exploration-fixes](client-edgeFunctions-exploration-fixes.md) | `src/lib/edgeFunctions.js` | 41 | Exploration Full Validation | planned | fn-game-use-enigmatic-device |
+| [shared-relicEffects-p42](shared-relicEffects-p42.md) | `supabase/functions/_shared/relicEffects.ts` | 42 | Relic Card Effects A | planned | shared-relicEffects, shared-abilityDsl |
+| [shared-abilityDsl-p42](shared-abilityDsl-p42.md) | `supabase/functions/_shared/abilityDsl.ts` | 42 | Relic Card Effects A | planned | shared-abilityDsl, shared-relicEffects-p42 |
+| [fn-game-use-relic-p42](fn-game-use-relic-p42.md) | `supabase/functions/game-use-relic/index.ts` | 42 | Relic Card Effects A | planned | fn-game-use-relic, shared-relicEffects-p42, shared-abilityDsl-p42 |
+| [fn-game-use-relic-fragment-p42](fn-game-use-relic-fragment-p42.md) | `supabase/functions/game-use-relic-fragment/index.ts` | 42 | Relic Card Effects A | planned | fn-game-use-relic-fragment, shared-relicEffects-p42, shared-abilityDsl-p42 |
+| [fn-game-resolve-exploration-card-p42](fn-game-resolve-exploration-card-p42.md) | `supabase/functions/game-resolve-exploration-card/index.ts` | 42 | Relic Card Effects A | planned | fn-game-resolve-exploration-card, shared-relicEffects-p42, shared-abilityDsl-p42 |
+| [client-edgeFunctions-p42](client-edgeFunctions-p42.md) | `src/lib/edgeFunctions.js` | 42 | Relic Card Effects A | planned | fn-game-use-relic-p42 |
+| [component-DiscardBrowserModal](component-DiscardBrowserModal.md) | `src/components/game/DiscardBrowserModal.jsx` | 42 | Relic Card Effects A | planned | client-edgeFunctions-p42 |
+| [component-RelicPanel-p42](component-RelicPanel-p42.md) | `src/components/game/RelicPanel.jsx` | 42 | Relic Card Effects A | planned | component-RelicPanel, component-DiscardBrowserModal, client-edgeFunctions-p42 |
 
 ---
 
