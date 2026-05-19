@@ -266,6 +266,29 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-SystemActionModal-p38](component-SystemActionModal-p38.md) | `src/components/game/SystemActionModal.jsx` | 38 | Dark Energy Tap | planned | component-SystemActionModal (p31) |
 | [component-GalaxyTab-p38](component-GalaxyTab-p38.md) | `src/components/game/GalaxyTab.jsx` | 38 | Dark Energy Tap | planned | component-SystemActionModal-p38, component-GalaxyTab-p35 |
 
+| [migration-048-promissory-dsl](migration-048-promissory-dsl.md) | `supabase/migrations/048_promissory_dsl.sql` | 39a | Promissory Note DSL Effects | planned | migration-032-promissory-effects |
+| [shared-abilityDsl-p39a](shared-abilityDsl-p39a.md) | `supabase/functions/_shared/abilityDsl.ts` | 39a | Promissory Note DSL Effects | planned | migration-048-promissory-dsl |
+| [shared-promissoryHandlers-p39a](shared-promissoryHandlers-p39a.md) | `supabase/functions/_shared/promissoryHandlers.ts` | 39a | Promissory Note DSL Effects | planned | shared-abilityDsl-p39a |
+| [shared-promissoryEnforcement-p39a](shared-promissoryEnforcement-p39a.md) | `supabase/functions/_shared/promissoryEnforcement.ts` | 39a | Promissory Note DSL Effects | planned | shared-promissoryHandlers-p39a |
+| [fn-game-play-promissory-note-p39a](fn-game-play-promissory-note-p39a.md) | `supabase/functions/game-play-promissory-note/index.ts` | 39a | Promissory Note DSL Effects | planned | shared-abilityDsl-p39a, shared-promissoryHandlers-p39a |
+
+| [fn-game-confirm-transaction-p39b](fn-game-confirm-transaction-p39b.md) | `supabase/functions/game-confirm-transaction/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
+| [fn-game-activate-system-p39b](fn-game-activate-system-p39b.md) | `supabase/functions/game-activate-system/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
+| [fn-game-advance-phase-p39b](fn-game-advance-phase-p39b.md) | `supabase/functions/game-advance-phase/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
+| [fn-game-create-transaction-p39b](fn-game-create-transaction-p39b.md) | `supabase/functions/game-create-transaction/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
+| [fn-game-cast-votes-p39b](fn-game-cast-votes-p39b.md) | `supabase/functions/game-cast-votes/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
+| [fn-game-produce-units-p39b](fn-game-produce-units-p39b.md) | `supabase/functions/game-produce-units/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
+| [fn-game-roll-combat-dice-p39b](fn-game-roll-combat-dice-p39b.md) | `supabase/functions/game-roll-combat-dice/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a |
+| [fn-game-roll-ground-combat-dice-p39b](fn-game-roll-ground-combat-dice-p39b.md) | `supabase/functions/game-roll-ground-combat-dice/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a |
+| [fn-game-fire-anti-fighter-barrage-p39b](fn-game-fire-anti-fighter-barrage-p39b.md) | `supabase/functions/game-fire-anti-fighter-barrage/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
+| [fn-game-fire-space-cannon-p39b](fn-game-fire-space-cannon-p39b.md) | `supabase/functions/game-fire-space-cannon/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
+| [fn-game-research-technology-p39b](fn-game-research-technology-p39b.md) | `supabase/functions/game-research-technology/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
+| [fn-game-commit-ground-forces-p39b](fn-game-commit-ground-forces-p39b.md) | `supabase/functions/game-commit-ground-forces/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
+| [fn-game-resolve-ability-p39b](fn-game-resolve-ability-p39b.md) | `supabase/functions/game-resolve-ability/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
+| [fn-game-end-turn-p39b](fn-game-end-turn-p39b.md) | `supabase/functions/game-end-turn/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
+
+| [shared-promissoryHandlers-p39c](shared-promissoryHandlers-p39c.md) | `supabase/functions/_shared/promissoryHandlers.ts` | 39c | Promissory Note DSL Effects | planned | shared-promissoryHandlers-p39a, fn-game-confirm-transaction-p39b, fn-game-activate-system-p39b, fn-game-advance-phase-p39b, fn-game-end-turn-p39b |
+
 | [migration-050-mech-abilities](migration-050-mech-abilities.md) | `supabase/migrations/050_mech_abilities.sql` | 39 | Mech Unit Card Abilities | planned | — |
 | [fn-admin-import-units-mech](fn-admin-import-units-mech.md) | `supabase/functions/admin-import-units/index.ts` | 39 | Mech Unit Card Abilities | planned | migration-050-mech-abilities |
 | [lib-importSchemas-mech](lib-importSchemas-mech.md) | `src/lib/importSchemas.js` | 39 | Mech Unit Card Abilities | planned | migration-050-mech-abilities |
