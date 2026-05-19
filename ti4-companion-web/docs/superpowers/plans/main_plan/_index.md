@@ -266,6 +266,17 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-SystemActionModal-p38](component-SystemActionModal-p38.md) | `src/components/game/SystemActionModal.jsx` | 38 | Dark Energy Tap | planned | component-SystemActionModal (p31) |
 | [component-GalaxyTab-p38](component-GalaxyTab-p38.md) | `src/components/game/GalaxyTab.jsx` | 38 | Dark Energy Tap | planned | component-SystemActionModal-p38, component-GalaxyTab-p35 |
 
+| [migration-050-mech-abilities](migration-050-mech-abilities.md) | `supabase/migrations/050_mech_abilities.sql` | 39 | Mech Unit Card Abilities | planned | — |
+| [fn-admin-import-units-mech](fn-admin-import-units-mech.md) | `supabase/functions/admin-import-units/index.ts` | 39 | Mech Unit Card Abilities | planned | migration-050-mech-abilities |
+| [lib-importSchemas-mech](lib-importSchemas-mech.md) | `src/lib/importSchemas.js` | 39 | Mech Unit Card Abilities | planned | migration-050-mech-abilities |
+| [fn-game-resolve-ability-mech](fn-game-resolve-ability-mech.md) | `supabase/functions/game-resolve-ability/index.ts` | 39 | Mech Unit Card Abilities | planned | migration-050-mech-abilities |
+| [fn-game-deploy-mech](fn-game-deploy-mech.md) | `supabase/functions/game-deploy-mech/index.ts` | 39 | Mech Unit Card Abilities | planned | migration-050-mech-abilities |
+| [client-edgeFunctions-mech](client-edgeFunctions-mech.md) | `src/lib/edgeFunctions.js` | 39 | Mech Unit Card Abilities | planned | fn-game-deploy-mech, fn-game-resolve-ability-mech |
+| [hook-useLeaders-mech](hook-useLeaders-mech.md) | `src/hooks/useLeaders.js` | 39 | Mech Unit Card Abilities | planned | client-edgeFunctions-mech |
+| [component-LeaderCard-mech](component-LeaderCard-mech.md) | `src/components/game/LeaderCard.jsx` | 39 | Mech Unit Card Abilities | planned | hook-useLeaders-mech |
+| [component-LeaderPanel-mech](component-LeaderPanel-mech.md) | `src/components/game/LeaderPanel.jsx` | 39 | Mech Unit Card Abilities | planned | component-LeaderCard-mech |
+| [component-MyPanelSection-mech](component-MyPanelSection-mech.md) | `src/components/game/MyPanelSection.jsx` | 39 | Mech Unit Card Abilities | planned | component-LeaderPanel-mech |
+
 | [migration-048-draft-state](migration-048-draft-state.md) | `supabase/migrations/048_draft_state.sql` | 39 | In-App Map Draft | planned | — |
 | [shared-draftHelpers](shared-draftHelpers.md) | `supabase/functions/_shared/draftHelpers.ts` | 39 | In-App Map Draft | planned | migration-048-draft-state |
 | [fn-game-start-draft](fn-game-start-draft.md) | `supabase/functions/game-start-draft/index.ts` | 39 | In-App Map Draft | planned | migration-048-draft-state, shared-draftHelpers |
