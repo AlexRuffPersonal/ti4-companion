@@ -185,6 +185,93 @@ describe('game-resolve-ability', () => {
     expect(logEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ event_type: 'resolve_ability' }))
   })
 
+  describe('purges_source side-effect for leader', () => {
+    const PURGE_LEADER_ABILITY = {
+      id: ABILITY_ID,
+      ability_name: 'Some Hero',
+      trigger: { timing: 'action' },
+      effects: [{ op: 'gain_trade_goods', amount: 1 }],
+      handler: null,
+      exhausts_source: false,
+      purges_source: true,
+    }
+    const LEADER_SOURCE_ID = 'leader-source-uuid'
+
+    it('sets leaders.hero = purged when purges_source=true and source_type=leader', async () => {
+      let callCount = 0
+      db.from.mockImplementation((table) => {
+        if (table === 'game_players') {
+          callCount++
+          if (callCount === 1) {
+            return {
+              select: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({ data: { id: PLAYER_ID, action_card_count: 0 }, error: null }),
+                  }),
+                }),
+              }),
+              update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+            }
+          }
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: { leaders: { hero: 'unlocked' } }, error: null }),
+              }),
+            }),
+            update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+          }
+        }
+        if (table === 'ability_definitions') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: PURGE_LEADER_ABILITY, error: null }),
+              }),
+            }),
+          }
+        }
+        if (table === 'ability_sources') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({ data: { id: LEADER_SOURCE_ID }, error: null }),
+                  }),
+                }),
+              }),
+            }),
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+            }),
+          }),
+        }
+      })
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        ability_definition_id: ABILITY_ID,
+        source_type: 'leader',
+        source_id: LEADER_SOURCE_ID,
+      }))
+      expect(res.status).toBe(200)
+
+      // Verify game_players.update was called with leaders.hero = 'purged'
+      const updateCalls = db.from.mock.results
+        .filter(r => r.value?.update)
+        .map(r => r.value.update.mock?.calls?.[0]?.[0])
+        .filter(Boolean)
+      const purgeCall = updateCalls.find(arg => arg?.leaders?.hero === 'purged')
+      expect(purgeCall).toBeDefined()
+    })
+  })
+
   describe('ul_progenitor_hero handler', () => {
     const UL_ABILITY = {
       id: ABILITY_ID,
