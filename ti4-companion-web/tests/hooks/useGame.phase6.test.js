@@ -137,6 +137,13 @@ function mockSupabase({ mySecrets = MY_SECRETS } = {}) {
         }),
       }
     }
+    if (table === 'game_combats') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+        }),
+      }
+    }
   })
 }
 

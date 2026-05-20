@@ -129,8 +129,12 @@ export const rejectTransaction = (gameId, transactionId) =>
 export const rescindTransaction = (gameId, transactionId) =>
   callFunction('game-rescind-transaction', { game_id: gameId, transaction_id: transactionId })
 
-export const playPromissoryNote = (gameId, noteInstanceId) =>
-  callFunction('game-play-promissory-note', { game_id: gameId, note_instance_id: noteInstanceId })
+export const playPromissoryNote = (gameId, noteInstanceId, planetName) =>
+  callFunction('game-play-promissory-note', {
+    game_id: gameId,
+    note_instance_id: noteInstanceId,
+    ...(planetName ? { planet_name: planetName } : {}),
+  })
 
 export const activateSystem = (gameId, systemKey) =>
   callFunction('game-activate-system', { game_id: gameId, system_key: systemKey })

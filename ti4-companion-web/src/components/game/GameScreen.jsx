@@ -297,9 +297,9 @@ export default function GameScreen({ userId }) {
     setNotesModalOpen(false)
     setTradeModalOpen(true)
   }
-  const handlePlayNote = async (noteId) => {
+  const handlePlayNote = async (noteId, planetName) => {
     try {
-      await playTheNote(noteId)
+      await playTheNote(noteId, planetName)
     } catch (e) {
       console.error('Play note error:', e)
     }
@@ -503,6 +503,7 @@ export default function GameScreen({ userId }) {
         <PromissoryNotesModal
           notes={myNotes?.filter(n => n.state === 'held') ?? []}
           players={players}
+          myPlanets={myPlanets}
           currentPlayerId={currentPlayer?.id}
           onGive={handleGiveNote}
           onPlay={handlePlayNote}

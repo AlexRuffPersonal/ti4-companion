@@ -187,6 +187,13 @@ function mockSupabase() {
         }),
       }
     }
+    if (table === 'game_combats') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+        }),
+      }
+    }
   })
 }
 
@@ -250,7 +257,7 @@ describe('useGame Phase 8 — promissory notes & transactions', () => {
     const { result } = renderHook(() => useGame('ABC123', 'host-uuid'))
     await waitFor(() => expect(result.current.loading).toBe(false))
     await act(() => result.current.playTheNote('note-1'))
-    expect(playPromissoryNote).toHaveBeenCalledWith('game-uuid', 'note-1')
+    expect(playPromissoryNote).toHaveBeenCalledWith('game-uuid', 'note-1', undefined)
   })
 
   it('has myNotes and pendingIncomingTrades in return object', async () => {

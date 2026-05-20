@@ -79,6 +79,7 @@ export function useGame(code, userId) {
       let pendingIncomingTradesData = []
       let enactedLawsData = []
       let currentAgendaData = null
+      let combatsData = []
       let myPlayer = null
 
       if (isGameScreen) {
@@ -133,11 +134,12 @@ export function useGame(code, userId) {
           pendingIncomingTradesData = trades ?? []
         }
 
-        const { data: combatsData } = await supabase
+        const { data } = await supabase
           .from('game_combats')
           .select('*')
           .eq('game_id', gameData.id)
         if (!mounted) return
+        combatsData = data ?? []
         // fetch enacted laws
         const { data: laws } = await supabase
           .from('game_laws')
@@ -404,8 +406,8 @@ export function useGame(code, userId) {
     return game ? rescindTransaction(game.id, transactionId) : Promise.reject(new Error('Game not loaded'))
   }
 
-  function playTheNote(noteInstanceId) {
-    return game ? playPromissoryNote(game.id, noteInstanceId) : Promise.reject(new Error('Game not loaded'))
+  function playTheNote(noteInstanceId, planetName) {
+    return game ? playPromissoryNote(game.id, noteInstanceId, planetName) : Promise.reject(new Error('Game not loaded'))
   }
 
   return {
