@@ -184,4 +184,43 @@ describe('game-resolve-ability', () => {
     expect(res.status).toBe(200)
     expect(logEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ event_type: 'resolve_ability' }))
   })
+
+  describe('ul_progenitor_hero handler', () => {
+    const UL_ABILITY = {
+      id: ABILITY_ID,
+      ability_name: 'Ul The Progenitor',
+      trigger: { timing: 'action' },
+      effects: null,
+      handler: 'ul_progenitor_hero',
+      exhausts_source: false,
+      purges_source: false,
+    }
+
+    it('calls ul_progenitor_hero handler and returns 200', async () => {
+      const handlerMock = vi.fn().mockResolvedValue(undefined)
+      getHandler.mockReturnValue(handlerMock)
+      mockDb({ ability: UL_ABILITY })
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        ability_definition_id: ABILITY_ID,
+        source_type: 'leader',
+      }))
+      expect(res.status).toBe(200)
+      expect(handlerMock).toHaveBeenCalledOnce()
+    })
+
+    it('returns 409 when handler throws 409 error', async () => {
+      const err = Object.assign(new Error('Elysium not controlled'), { status: 409 })
+      getHandler.mockReturnValue(vi.fn().mockRejectedValue(err))
+      mockDb({ ability: UL_ABILITY })
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        ability_definition_id: ABILITY_ID,
+        source_type: 'leader',
+      }))
+      expect(res.status).toBe(409)
+      const body = await res.json()
+      expect(body.error).toMatch(/Elysium not controlled/)
+    })
+  })
 })
