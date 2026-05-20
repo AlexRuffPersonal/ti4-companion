@@ -27,6 +27,8 @@ const ORIGIN_PLAYER_ID = 'origin-player-uuid'
 const NOTE_INSTANCE_ID = 'note-instance-uuid'
 const NOTE_ID = 'note-uuid'
 const ABILITY_DEF_ID = 'ability-def-uuid'
+const ATTACHMENT_ID = 'attachment-uuid'
+const PLANET_ROW_ID = 'planet-row-uuid'
 
 function makeRequest(body) {
   return new Request('http://localhost/game-play-promissory-note', {
@@ -49,9 +51,15 @@ function mockDb({
   noteRowError = null,
   abilitySource = { ability_definition_id: ABILITY_DEF_ID, ability_definitions: { id: ABILITY_DEF_ID, handler_key: 'test_handler', effects: [] } },
   abilitySourceError = null,
-  noteRef = { purge_on_use: false, into_play_area: false },
+  noteRef = { purge_on_use: false, into_play_area: false, name: 'Test Note' },
   noteRefError = null,
   updateError = null,
+  // New for Terraform:
+  planetRow = { id: PLANET_ROW_ID, attachments: [], tiles: { type: 'blue' } },
+  planetRowError = null,
+  attachmentRow = { id: ATTACHMENT_ID },
+  attachmentRowError = null,
+  planetUpdateError = null,
 } = {}) {
   db.from.mockImplementation((table) => {
     if (table === 'game_players') {
@@ -94,6 +102,31 @@ function mockDb({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             maybeSingle: vi.fn().mockResolvedValue({ data: noteRef, error: noteRefError }),
+          }),
+        }),
+      }
+    }
+    if (table === 'game_player_planets') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: planetRow, error: planetRowError }),
+              }),
+            }),
+          }),
+        }),
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: planetUpdateError }),
+        }),
+      }
+    }
+    if (table === 'attachments') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: attachmentRow, error: attachmentRowError }),
           }),
         }),
       }
@@ -463,5 +496,89 @@ describe('game-play-promissory-note', () => {
       selections: { target_player_id: 'some-player' },
     }))
     expect(res.status).toBe(200)
+  })
+
+  describe('game-play-promissory-note — Terraform attachment', () => {
+    const TERRAFORM_NOTE_REF = { purge_on_use: false, into_play_area: true, name: 'Terraform' }
+
+    it('400 when planet_name missing for Terraform', async () => {
+      mockDb({ noteRef: TERRAFORM_NOTE_REF })
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        note_instance_id: NOTE_INSTANCE_ID,
+      }))
+      expect(res.status).toBe(400)
+      const body = await res.json()
+      expect(body.error).toMatch(/planet_name/)
+    })
+
+    it('409 when planet not controlled', async () => {
+      mockDb({ noteRef: TERRAFORM_NOTE_REF, planetRow: null })
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        note_instance_id: NOTE_INSTANCE_ID,
+        planet_name: 'Ang',
+      }))
+      expect(res.status).toBe(409)
+      const body = await res.json()
+      expect(body.error).toMatch(/not controlled/)
+    })
+
+    it('409 when planet is on home system tile', async () => {
+      mockDb({
+        noteRef: TERRAFORM_NOTE_REF,
+        planetRow: { id: PLANET_ROW_ID, attachments: [], tiles: { type: 'faction' } },
+      })
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        note_instance_id: NOTE_INSTANCE_ID,
+        planet_name: 'Elysium',
+      }))
+      expect(res.status).toBe(409)
+      const body = await res.json()
+      expect(body.error).toMatch(/home planet or Mecatol Rex/)
+    })
+
+    it('409 when planet is Mecatol Rex', async () => {
+      mockDb({
+        noteRef: TERRAFORM_NOTE_REF,
+        planetRow: { id: PLANET_ROW_ID, attachments: [], tiles: { type: 'red' } },
+      })
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        note_instance_id: NOTE_INSTANCE_ID,
+        planet_name: 'Mecatol Rex',
+      }))
+      expect(res.status).toBe(409)
+      const body = await res.json()
+      expect(body.error).toMatch(/home planet or Mecatol Rex/)
+    })
+
+    it('409 when Terraform already attached', async () => {
+      mockDb({
+        noteRef: TERRAFORM_NOTE_REF,
+        planetRow: { id: PLANET_ROW_ID, attachments: [ATTACHMENT_ID], tiles: { type: 'blue' } },
+      })
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        note_instance_id: NOTE_INSTANCE_ID,
+        planet_name: 'Ang',
+      }))
+      expect(res.status).toBe(409)
+      const body = await res.json()
+      expect(body.error).toMatch(/Already attached/)
+    })
+
+    it('200 happy path: attaches and sets state to in_play', async () => {
+      mockDb({ noteRef: TERRAFORM_NOTE_REF })
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        note_instance_id: NOTE_INSTANCE_ID,
+        planet_name: 'Ang',
+      }))
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.played).toBe(true)
+    })
   })
 })
