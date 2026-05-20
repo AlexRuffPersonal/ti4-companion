@@ -27,6 +27,7 @@ Shorthand tokens used in all spec files. Read this before reading any individual
 | `CLAIM_PLANET(gameId, playerId, planetName, tileId)` | upsert `game_player_planets` `{game_id, player_id, planet_name, tile_id, exhausted:true}` onConflict `game_id,planet_name`; delete prior owner's row |
 | `CUSTODIANS(gameId, playerId, systemKey, game)` | if `systemKey==='0,0'` and `!game.custodians_claimed`: update games `{custodians_claimed:true, agenda_unlocked:true}`; increment player VP by 1 |
 | `GRANT_LEGENDARY_CARD(gameId, playerId, planetName)` | Phase 21+. `LEGENDARY_PLANETS = ['primor','hopes_end','mallice','mirage']`. If `planetName NOT IN LEGENDARY_PLANETS`: no-op. Else: fetch existing `game_player_legendary_cards` row for `(gameId, planetName)`; if exists → UPDATE `player_id=playerId` (preserve `status`); else → INSERT `{game_id:gameId, player_id:playerId, planet_name:planetName, status:'readied'}`. If `planetName==='mallice'` → UPDATE `games SET wormhole_nexus_active=true WHERE id=gameId`. |
+| `ATTACH_PLANET(gameId, playerId, planetName, attachmentName)` | Phase 44+. SELECT `id` FROM `attachments` WHERE `name=attachmentName` → 409 'Attachment definition not found' if missing. SELECT `id, attachments` FROM `game_player_planets` WHERE `game_id+player_id+planet_name` → 409 'Planet not controlled' if missing. If `attachmentId` already in `planet.attachments` → 409 'Already attached'. UPDATE `game_player_planets SET attachments=array_append(attachments, attachmentId)` WHERE `id=planet.id`. |
 
 ## Test Tokens
 
