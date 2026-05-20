@@ -9,6 +9,8 @@ export interface ResolveContext {
   chosenOption?: number
   selections?: Record<string, unknown>
   ignorePrerequisite?: boolean
+  gameRound?: number
+  strategyPlayId?: string
 }
 
 export interface CombatResolveContext extends ResolveContext {
@@ -713,6 +715,136 @@ async function interpretOp(
       const techs = (player.technologies as string[]) ?? []
       if (techs.includes(techName)) throw dslError('Technology already researched')
       await db.from('game_players').update({ technologies: [...techs, techName] }).eq('id', context.activatingPlayerId)
+      break
+    }
+
+    case 'spend_influence_for_tokens': {
+      const planetIds = ((sel.influence_planet_ids as string[]) ?? [])
+      if (planetIds.length === 0) break
+      const pool = (sel.token_pool as string) ?? 'tactic_total'
+      const { data: planets } = await db
+        .from('game_player_planets')
+        .select('id, player_id, influence')
+        .eq('game_id', context.gameId)
+        .in('planet_name', planetIds)
+      const owned = (planets ?? []).filter((p: Record<string, unknown>) => p.player_id === context.activatingPlayerId)
+      if (owned.length !== planetIds.length) throw dslError('Planet not owned')
+      const totalInfluence = owned.reduce((sum: number, p: Record<string, unknown>) => sum + ((p.influence as number) ?? 0), 0)
+      const tokenCount = Math.floor(totalInfluence / 3)
+      const planetRowIds = owned.map((p: Record<string, unknown>) => p.id as string)
+      await db.from('game_player_planets').update({ exhausted: true }).in('id', planetRowIds)
+      if (tokenCount > 0) {
+        const tokens = player.command_tokens as Record<string, number>
+        await db.from('game_players').update({
+          command_tokens: { ...tokens, [pool]: (tokens[pool] ?? 0) + tokenCount }
+        }).eq('id', context.activatingPlayerId)
+      }
+      break
+    }
+
+    case 'diplomacy_lock_system': {
+      const systemCoords = sel.target_system_coords as string
+      if (!systemCoords) throw dslError('target_system_coords required')
+      const { data: otherPlayers } = await db
+        .from('game_players')
+        .select('id, command_tokens')
+        .eq('game_id', context.gameId)
+        .neq('id', context.activatingPlayerId)
+      const gameRound = context.gameRound ?? 1
+      for (const op of (otherPlayers ?? []) as Array<Record<string, unknown>>) {
+        const { data: existing } = await db
+          .from('game_system_activations')
+          .select('id')
+          .eq('game_id', context.gameId)
+          .eq('player_id', op.id as string)
+          .eq('system_key', systemCoords)
+          .maybeSingle()
+        if (existing) continue
+        await db.from('game_system_activations').insert({
+          game_id: context.gameId,
+          player_id: op.id as string,
+          system_key: systemCoords,
+          round: gameRound,
+          token_owner_id: op.id as string,
+        })
+        // Decrement one token from their command sheet (tactic_total first, then fleet, then strategy)
+        const tokens = (op.command_tokens as Record<string, number>) ?? {}
+        if ((tokens.tactic_total ?? 0) > 0) {
+          await db.from('game_players').update({ command_tokens: { ...tokens, tactic_total: tokens.tactic_total - 1 } }).eq('id', op.id as string)
+        } else if ((tokens.fleet ?? 0) > 0) {
+          await db.from('game_players').update({ command_tokens: { ...tokens, fleet: tokens.fleet - 1 } }).eq('id', op.id as string)
+        } else if ((tokens.strategy ?? 0) > 0) {
+          await db.from('game_players').update({ command_tokens: { ...tokens, strategy: tokens.strategy - 1 } }).eq('id', op.id as string)
+        }
+      }
+      break
+    }
+
+    case 'grant_free_secondary': {
+      const playerIds = (sel.free_secondary_player_ids as string[]) ?? []
+      const playId = context.strategyPlayId
+      if (!playId || playerIds.length === 0) break
+      await db.from('game_strategy_card_plays').update({ free_secondary_player_ids: playerIds }).eq('id', playId)
+      break
+    }
+
+    case 'warfare_remove_board_token': {
+      const systemCoords = sel.remove_from_system_coords as string
+      if (!systemCoords) throw dslError('remove_from_system_coords required')
+      const pool = (sel.remove_to_pool as string) ?? 'tactic_total'
+      const gameRound2 = context.gameRound ?? 1
+      const { data: activation } = await db
+        .from('game_system_activations')
+        .select('id')
+        .eq('game_id', context.gameId)
+        .eq('player_id', context.activatingPlayerId)
+        .eq('system_key', systemCoords)
+        .eq('round', gameRound2)
+        .maybeSingle()
+      if (!activation) throw dslError('No token to remove from that system')
+      await db.from('game_system_activations').delete().eq('id', (activation as Record<string, unknown>).id as string)
+      const tokens = player.command_tokens as Record<string, number>
+      await db.from('game_players').update({
+        command_tokens: { ...tokens, [pool]: (tokens[pool] ?? 0) + 1 }
+      }).eq('id', context.activatingPlayerId)
+      break
+    }
+
+    case 'warfare_redistribute_tokens': {
+      const tactic = sel.redistribution_tactic as number
+      const fleet2 = sel.redistribution_fleet as number
+      const strategy2 = sel.redistribution_strategy as number
+      if (tactic === undefined || fleet2 === undefined || strategy2 === undefined) throw dslError('redistribution values required')
+      if (tactic + fleet2 + strategy2 > 16) throw dslError('Token total exceeds 16')
+      await db.from('game_players').update({
+        command_tokens: { tactic_total: tactic, fleet: fleet2, strategy: strategy2 }
+      }).eq('id', context.activatingPlayerId)
+      break
+    }
+
+    case 'score_public_objective': {
+      const objectiveId = sel.public_objective_id as string
+      if (!objectiveId) break
+      // Check that the game objective is revealed
+      const { data: gameObj } = await db
+        .from('game_public_objectives')
+        .select('id, state, scored_by, objective_id')
+        .eq('id', objectiveId)
+        .eq('game_id', context.gameId)
+        .maybeSingle()
+      if (!gameObj || (gameObj as Record<string, unknown>).state !== 'revealed') throw dslError('Objective not available')
+      const scoredBy = ((gameObj as Record<string, unknown>).scored_by as string[]) ?? []
+      if (scoredBy.includes(context.activatingPlayerId)) throw dslError('Already scored this objective')
+      const { data: refObj } = await db
+        .from('public_objectives')
+        .select('points')
+        .eq('id', (gameObj as Record<string, unknown>).objective_id as string)
+        .single()
+      const points = ((refObj as Record<string, unknown> | null)?.points as number) ?? 1
+      await db.from('game_public_objectives').update({
+        scored_by: [...scoredBy, context.activatingPlayerId]
+      }).eq('id', objectiveId)
+      await db.from('game_players').update({ vp: (player.vp as number) + points }).eq('id', context.activatingPlayerId)
       break
     }
 

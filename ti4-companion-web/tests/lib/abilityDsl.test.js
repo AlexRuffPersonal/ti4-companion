@@ -487,3 +487,382 @@ describe('research_same_technology', () => {
     ).rejects.toThrow('Technology already researched')
   })
 })
+
+// ── Phase 37 ops ─────────────────────────────────────────────────────────────
+
+const PLAYER_WITH_TOKENS = { id: 'p1', trade_goods: 0, commodities: 0, vp: 5, technologies: [], action_card_count: 0, command_tokens: { tactic_total: 3, fleet: 2, strategy: 1 } }
+
+describe('spend_influence_for_tokens', () => {
+  it('grants floor(inf/3) tokens and exhausts correct planets', async () => {
+    const planets = [
+      { id: 'pl-1', player_id: 'p1', influence: 4 },
+      { id: 'pl-2', player_id: 'p1', influence: 2 },
+    ] // total = 6, floor(6/3) = 2
+    const planetUpdateMock = vi.fn().mockReturnValue({ in: vi.fn().mockResolvedValue({ error: null }) })
+    const playerUpdateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: PLAYER_WITH_TOKENS, error: null }) }) }),
+          update: playerUpdateMock,
+        }
+        if (table === 'game_player_planets') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ in: vi.fn().mockResolvedValue({ data: planets, error: null }) }) }),
+          update: planetUpdateMock,
+        }
+        return {}
+      }),
+    }
+    await interpretEffects([{ op: 'spend_influence_for_tokens' }], {
+      ...CTX,
+      selections: { influence_planet_ids: ['Mecatol Rex', 'Archon Ren'], token_pool: 'tactic_total' }
+    }, db)
+    expect(planetUpdateMock).toHaveBeenCalledWith({ exhausted: true })
+    expect(playerUpdateMock).toHaveBeenCalledWith({ command_tokens: { tactic_total: 5, fleet: 2, strategy: 1 } })
+  })
+
+  it('no-op when planet list is empty', async () => {
+    const playerUpdateMock = vi.fn()
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: PLAYER_WITH_TOKENS, error: null }) }) }),
+          update: playerUpdateMock,
+        }
+        return {}
+      }),
+    }
+    await interpretEffects([{ op: 'spend_influence_for_tokens' }], {
+      ...CTX,
+      selections: { influence_planet_ids: [] }
+    }, db)
+    expect(playerUpdateMock).not.toHaveBeenCalled()
+  })
+
+  it('throws 409 if a planet is not owned', async () => {
+    const planets = [{ id: 'pl-1', player_id: 'p2', influence: 4 }] // owned by p2, not p1
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: PLAYER_WITH_TOKENS, error: null }) }) }) }
+        if (table === 'game_player_planets') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ in: vi.fn().mockResolvedValue({ data: planets, error: null }) }) }),
+        }
+        return {}
+      }),
+    }
+    await expect(
+      interpretEffects([{ op: 'spend_influence_for_tokens' }], {
+        ...CTX,
+        selections: { influence_planet_ids: ['Mecatol Rex'] }
+      }, db)
+    ).rejects.toThrow('Planet not owned')
+  })
+})
+
+describe('diplomacy_lock_system', () => {
+  it('inserts activations for all other players and decrements their tactic tokens', async () => {
+    const otherPlayers = [
+      { id: 'p2', command_tokens: { tactic_total: 2, fleet: 1, strategy: 1 } },
+      { id: 'p3', command_tokens: { tactic_total: 1, fleet: 0, strategy: 0 } },
+    ]
+    const insertMock = vi.fn().mockResolvedValue({ error: null })
+    const playerUpdateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    let activationSelectCallIdx = 0
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') {
+          return {
+            select: vi.fn().mockImplementation((cols) => {
+              if (cols && cols === 'id, command_tokens') {
+                // called for otherPlayers fetch
+                return { eq: vi.fn().mockReturnValue({ neq: vi.fn().mockResolvedValue({ data: otherPlayers, error: null }) }) }
+              }
+              // initial player fetch
+              return { eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: PLAYER_WITH_TOKENS, error: null }) }) }
+            }),
+            update: playerUpdateMock,
+          }
+        }
+        if (table === 'game_system_activations') return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+                }),
+              }),
+            }),
+          }),
+          insert: insertMock,
+        }
+        return {}
+      }),
+    }
+    await interpretEffects([{ op: 'diplomacy_lock_system' }], {
+      ...CTX,
+      gameRound: 2,
+      selections: { target_system_coords: '3,0' }
+    }, db)
+    expect(insertMock).toHaveBeenCalledTimes(2)
+    expect(playerUpdateMock).toHaveBeenCalledWith({ command_tokens: { tactic_total: 1, fleet: 1, strategy: 1 } })
+    expect(playerUpdateMock).toHaveBeenCalledWith({ command_tokens: { tactic_total: 0, fleet: 0, strategy: 0 } })
+  })
+
+  it('skips player already in system (existing activation row)', async () => {
+    const otherPlayers = [{ id: 'p2', command_tokens: { tactic_total: 2, fleet: 1, strategy: 1 } }]
+    const insertMock = vi.fn().mockResolvedValue({ error: null })
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return {
+          select: vi.fn().mockImplementation((cols) => {
+            if (cols && cols === 'id, command_tokens') {
+              return { eq: vi.fn().mockReturnValue({ neq: vi.fn().mockResolvedValue({ data: otherPlayers, error: null }) }) }
+            }
+            return { eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: PLAYER_WITH_TOKENS, error: null }) }) }
+          }),
+          update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        }
+        if (table === 'game_system_activations') return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'existing-1' }, error: null }),
+                }),
+              }),
+            }),
+          }),
+          insert: insertMock,
+        }
+        return {}
+      }),
+    }
+    await interpretEffects([{ op: 'diplomacy_lock_system' }], {
+      ...CTX,
+      gameRound: 1,
+      selections: { target_system_coords: '3,0' }
+    }, db)
+    expect(insertMock).not.toHaveBeenCalled()
+  })
+
+  it('throws 409 when target_system_coords missing', async () => {
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: PLAYER_WITH_TOKENS, error: null }) }) }) }
+        return {}
+      }),
+    }
+    await expect(
+      interpretEffects([{ op: 'diplomacy_lock_system' }], { ...CTX, selections: {} }, db)
+    ).rejects.toThrow('target_system_coords required')
+  })
+})
+
+describe('grant_free_secondary', () => {
+  it('updates strategy card play row with provided player ids', async () => {
+    const updateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: PLAYER_WITH_TOKENS, error: null }) }) }) }
+        if (table === 'game_strategy_card_plays') return { update: updateMock }
+        return {}
+      }),
+    }
+    await interpretEffects([{ op: 'grant_free_secondary' }], {
+      ...CTX,
+      strategyPlayId: 'play-1',
+      selections: { free_secondary_player_ids: ['p2', 'p3'] }
+    }, db)
+    expect(updateMock).toHaveBeenCalledWith({ free_secondary_player_ids: ['p2', 'p3'] })
+  })
+
+  it('no-op if strategyPlayId not set', async () => {
+    const updateMock = vi.fn()
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: PLAYER_WITH_TOKENS, error: null }) }) }) }
+        if (table === 'game_strategy_card_plays') return { update: updateMock }
+        return {}
+      }),
+    }
+    await interpretEffects([{ op: 'grant_free_secondary' }], {
+      ...CTX,
+      // no strategyPlayId
+      selections: { free_secondary_player_ids: ['p2'] }
+    }, db)
+    expect(updateMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('warfare_remove_board_token', () => {
+  it('deletes activation row and increments correct pool', async () => {
+    const activation = { id: 'act-1' }
+    const deleteMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    const playerUpdateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: PLAYER_WITH_TOKENS, error: null }) }) }),
+          update: playerUpdateMock,
+        }
+        if (table === 'game_system_activations') return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({ data: activation, error: null }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+          delete: deleteMock,
+        }
+        return {}
+      }),
+    }
+    await interpretEffects([{ op: 'warfare_remove_board_token' }], {
+      ...CTX,
+      gameRound: 1,
+      selections: { remove_from_system_coords: '2,1', remove_to_pool: 'tactic_total' }
+    }, db)
+    expect(deleteMock).toHaveBeenCalled()
+    expect(playerUpdateMock).toHaveBeenCalledWith({ command_tokens: { tactic_total: 4, fleet: 2, strategy: 1 } })
+  })
+
+  it('throws 409 if no token in the specified system', async () => {
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: PLAYER_WITH_TOKENS, error: null }) }) }) }
+        if (table === 'game_system_activations') return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }
+        return {}
+      }),
+    }
+    await expect(
+      interpretEffects([{ op: 'warfare_remove_board_token' }], {
+        ...CTX,
+        gameRound: 1,
+        selections: { remove_from_system_coords: '2,1' }
+      }, db)
+    ).rejects.toThrow('No token to remove from that system')
+  })
+})
+
+describe('warfare_redistribute_tokens', () => {
+  it('updates command_tokens correctly', async () => {
+    const updateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: PLAYER_WITH_TOKENS, error: null }) }) }),
+          update: updateMock,
+        }
+        return {}
+      }),
+    }
+    await interpretEffects([{ op: 'warfare_redistribute_tokens' }], {
+      ...CTX,
+      selections: { redistribution_tactic: 4, redistribution_fleet: 3, redistribution_strategy: 2 }
+    }, db)
+    expect(updateMock).toHaveBeenCalledWith({ command_tokens: { tactic_total: 4, fleet: 3, strategy: 2 } })
+  })
+
+  it('throws 409 if token sum exceeds 16', async () => {
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: PLAYER_WITH_TOKENS, error: null }) }) }) }
+        return {}
+      }),
+    }
+    await expect(
+      interpretEffects([{ op: 'warfare_redistribute_tokens' }], {
+        ...CTX,
+        selections: { redistribution_tactic: 7, redistribution_fleet: 7, redistribution_strategy: 7 }
+      }, db)
+    ).rejects.toThrow('Token total exceeds 16')
+  })
+})
+
+describe('score_public_objective', () => {
+  function makeScoreDb({ state = 'revealed', scoredBy = [], points = 1 } = {}) {
+    const gameObj = { id: 'gobj-1', state, scored_by: scoredBy, objective_id: 'obj-1' }
+    const refObj = { points }
+    const updateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: PLAYER_WITH_TOKENS, error: null }) }) }),
+          update: updateMock,
+        }
+        if (table === 'game_public_objectives') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: gameObj, error: null }) }) }) }),
+          update: updateMock,
+        }
+        if (table === 'public_objectives') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ single: vi.fn().mockResolvedValue({ data: refObj, error: null }) }) }),
+        }
+        return {}
+      }),
+    }
+    return { db, updateMock }
+  }
+
+  it('scores if revealed and not yet scored', async () => {
+    const { db, updateMock } = makeScoreDb({ state: 'revealed', scoredBy: [], points: 2 })
+    await interpretEffects([{ op: 'score_public_objective' }], {
+      ...CTX,
+      selections: { public_objective_id: 'gobj-1' }
+    }, db)
+    expect(updateMock).toHaveBeenCalledWith({ scored_by: ['p1'] })
+    expect(updateMock).toHaveBeenCalledWith({ vp: 7 }) // 5 + 2
+  })
+
+  it('no-op if public_objective_id not provided', async () => {
+    const updateMock = vi.fn()
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: PLAYER_WITH_TOKENS, error: null }) }) }) }
+        if (table === 'game_public_objectives') return { update: updateMock }
+        return {}
+      }),
+    }
+    await interpretEffects([{ op: 'score_public_objective' }], {
+      ...CTX,
+      selections: {}
+    }, db)
+    expect(updateMock).not.toHaveBeenCalled()
+  })
+
+  it('throws 409 if objective is not revealed', async () => {
+    const { db } = makeScoreDb({ state: 'hidden' })
+    await expect(
+      interpretEffects([{ op: 'score_public_objective' }], {
+        ...CTX,
+        selections: { public_objective_id: 'gobj-1' }
+      }, db)
+    ).rejects.toThrow('Objective not available')
+  })
+
+  it('throws 409 if already scored by activating player', async () => {
+    const { db } = makeScoreDb({ state: 'revealed', scoredBy: ['p1'] })
+    await expect(
+      interpretEffects([{ op: 'score_public_objective' }], {
+        ...CTX,
+        selections: { public_objective_id: 'gobj-1' }
+      }, db)
+    ).rejects.toThrow('Already scored this objective')
+  })
+})
