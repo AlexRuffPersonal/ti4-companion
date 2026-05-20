@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { evaluateCondition } from '../../lib/objectiveEvaluator.js'
 import StrategyCardPanel from './StrategyCardPanel.jsx'
 import LeaderPanel from './LeaderPanel.jsx'
 import ExplorationModal from './ExplorationModal.jsx'
@@ -21,6 +22,9 @@ export default function MyPanelSection({
   onUnlockCommander,
   onOpenSecrets,
   secretCount = 0,
+  mySecrets = [],
+  evaluationCtx,
+  onScoreSecret,
   onOpenNotes, noteCount = 0, onOpenTrade,
   allPlayers = [],
   activePay = null,
@@ -280,6 +284,37 @@ export default function MyPanelSection({
       <button className="btn-ghost text-xs self-start" onClick={onOpenSecrets}>
         SECRETS ({secretCount})
       </button>
+      {mySecrets.length > 0 && (
+        <div className="flex flex-col gap-1 pl-2">
+          {mySecrets.map(obj => {
+            const conditionCheck = obj.secret_objectives?.condition_check ?? null
+            const eligibility = evaluationCtx && conditionCheck
+              ? evaluateCondition(conditionCheck, evaluationCtx)
+              : { eligible: true, reason: '' }
+            return (
+              <div key={obj.id} className="flex items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-1 min-w-0">
+                  {eligibility.eligible
+                    ? <span className="text-success text-xs">✓</span>
+                    : <span className="text-dim text-xs" title={eligibility.reason}>✗</span>
+                  }
+                  <span className="text-dim truncate">{obj.secret_objectives?.name}</span>
+                </div>
+                {onScoreSecret && isStatusPhase && (
+                  <button
+                    className="btn-ghost text-xs shrink-0"
+                    onClick={() => onScoreSecret(obj.id)}
+                    disabled={!eligibility.eligible}
+                    title={!eligibility.eligible ? eligibility.reason : undefined}
+                  >
+                    SCORE
+                  </button>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* Promissory Notes */}
       <button className="btn-ghost text-xs self-start" onClick={onOpenNotes}>

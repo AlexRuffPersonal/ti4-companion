@@ -33,9 +33,12 @@ describe('ObjectivesSection', () => {
     expect(screen.queryByText('Secret Deck Card')).not.toBeInTheDocument()
   })
 
-  it('shows scorer display names for scored objectives', () => {
-    render(<ObjectivesSection objectives={OBJECTIVES} players={PLAYERS} />)
-    expect(screen.getByText('Alice')).toBeInTheDocument()
+  it('shows scorer dot for scored objectives', () => {
+    const { container } = render(<ObjectivesSection objectives={OBJECTIVES} players={PLAYERS} />)
+    // Alice (p1) scored 'Spend 8 Resources' — her dot should be text-success with title="Alice"
+    const aliceDot = container.querySelector('span.text-success[title="Alice"]')
+    expect(aliceDot).toBeInTheDocument()
+    expect(aliceDot.textContent).toBe('•')
   })
 
   it('shows empty state when no objectives are revealed', () => {

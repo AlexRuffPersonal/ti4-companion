@@ -26,6 +26,7 @@ export function useGame(code, userId) {
   const [agendaVotes, setAgendaVotes] = useState([])
   const [enactedLaws, setEnactedLaws] = useState([])
   const [currentAgenda, setCurrentAgenda] = useState(null)
+  const [combats, setCombats] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -132,6 +133,11 @@ export function useGame(code, userId) {
           pendingIncomingTradesData = trades ?? []
         }
 
+        const { data: combatsData } = await supabase
+          .from('game_combats')
+          .select('*')
+          .eq('game_id', gameData.id)
+        if (!mounted) return
         // fetch enacted laws
         const { data: laws } = await supabase
           .from('game_laws')
@@ -163,6 +169,7 @@ export function useGame(code, userId) {
       setAgendaVotes([])
       setEnactedLaws(enactedLawsData)
       setCurrentAgenda(currentAgendaData)
+      setCombats(combatsData ?? [])
       setLoading(false)
 
       channel = supabase
@@ -304,6 +311,14 @@ export function useGame(code, userId) {
               if (mounted && data) setPendingIncomingTrades(data)
             }
           )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'game_combats', filter: `game_id=eq.${gameData.id}` },
+            async () => {
+              const { data } = await supabase.from('game_combats').select('*').eq('game_id', gameData.id)
+              if (mounted) setCombats(data ?? [])
+            }
+          )
       }
 
       channel.subscribe()
@@ -402,6 +417,7 @@ export function useGame(code, userId) {
     mySecrets,
     myNotes,
     pendingIncomingTrades,
+    combats,
     currentPlayer,
     isEliminated: currentPlayer?.eliminated ?? false,
     isHost,
