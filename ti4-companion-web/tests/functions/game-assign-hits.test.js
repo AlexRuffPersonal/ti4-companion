@@ -66,7 +66,9 @@ function mockDb({
   atkUnitsLeft = [{ id: 'u2' }],
   defUnitsLeft = [{ id: 'u1' }],
   updateError = null,
+  onGameCombatsUpdate = null, // callback when game_combats.update is called
 } = {}) {
+  let queryCount = 0
   db.from.mockImplementation((table) => {
     if (table === 'game_players') {
       return {
@@ -88,8 +90,11 @@ function mockDb({
             }),
           }),
         }),
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: updateError }),
+        update: vi.fn().mockImplementation((updateData) => {
+          if (onGameCombatsUpdate) onGameCombatsUpdate(updateData)
+          return {
+            eq: vi.fn().mockResolvedValue({ error: updateError }),
+          }
         }),
       }
     }
@@ -105,30 +110,19 @@ function mockDb({
         select: vi.fn().mockImplementation((fields) => {
           if (fields === 'id') {
             // unit count queries for atkUnitsLeft / defUnitsLeft
-            return {
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockReturnValue({
-                    eq: vi.fn().mockReturnValue({
-                      is: vi.fn().mockImplementation(() =>
-                        Promise.resolve({ data: atkUnitsLeft })
-                      ),
-                    }),
-                  }),
-                }),
-              }),
-            }
+            const isFirstQuery = queryCount === 0
+            queryCount++
+            const resultData = isFirstQuery ? atkUnitsLeft : defUnitsLeft
+            const chainable = {}
+            chainable.eq = vi.fn().mockReturnValue(chainable)
+            chainable.is = vi.fn().mockResolvedValue({ data: resultData })
+            return chainable
           }
           // assignee units query (fields includes more columns)
-          return {
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  is: vi.fn().mockResolvedValue({ data: assigneeUnits }),
-                }),
-              }),
-            }),
-          }
+          const chainable = {}
+          chainable.eq = vi.fn().mockReturnValue(chainable)
+          chainable.is = vi.fn().mockResolvedValue({ data: assigneeUnits })
+          return chainable
         }),
         update: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
@@ -275,5 +269,101 @@ describe('game-assign-hits', () => {
   it('handles CORS preflight', async () => {
     const res = await handler(new Request('http://localhost', { method: 'OPTIONS' }))
     expect(res.status).toBe(204)
+  })
+
+  it('increments attacker ships_destroyed when attacker unit is destroyed', async () => {
+    const unitDef = { name: 'fighter', sustain_damage: false }
+    const attackerUnit = { id: 'u_atk', player_id: ATTACKER_ID, unit_type: 'fighter', count: 3, damaged: false, system_key: '1,-1' }
+    let shipUpdateCalls = []
+    mockDb({
+      player: { id: ATTACKER_ID },
+      combat: {
+        ...BASE_COMBAT,
+        phase: 'attacker_assign',
+        attacker_hits: 0,
+        defender_hits: 2,
+        ships_destroyed: { attacker: {}, defender: {} },
+      },
+      unitDefs: [unitDef],
+      assigneeUnits: [attackerUnit],
+      atkUnitsLeft: [{ id: 'u_atk' }],
+      defUnitsLeft: [{ id: 'u2' }],
+      onGameCombatsUpdate: (updateData) => {
+        if (updateData.ships_destroyed) {
+          shipUpdateCalls.push(updateData)
+        }
+      },
+    })
+    const res = await handler(makeRequest({
+      game_id: GAME_ID, combat_id: COMBAT_ID,
+      casualties: [{ unit_type: 'fighter', player_unit_id: 'u_atk', action: 'destroy' }, { unit_type: 'fighter', player_unit_id: 'u_atk', action: 'destroy' }],
+    }))
+    expect(res.status).toBe(200)
+    // Verify game_combats update was called with ships_destroyed
+    expect(shipUpdateCalls.length).toBeGreaterThan(0)
+    expect(shipUpdateCalls[0].ships_destroyed).toEqual({
+      attacker: { fighter: 2 },
+      defender: {},
+    })
+  })
+
+  it('increments defender ships_destroyed when defender unit is destroyed', async () => {
+    const unitDef = { name: 'cruiser', sustain_damage: false }
+    let shipUpdateCalls = []
+    mockDb({
+      player: { id: DEFENDER_ID },
+      combat: {
+        ...BASE_COMBAT,
+        phase: 'defender_assign',
+        attacker_hits: 1,
+        defender_hits: 0,
+        ships_destroyed: { attacker: {}, defender: {} },
+      },
+      unitDefs: [unitDef],
+      assigneeUnits: [{ id: 'u1', player_id: DEFENDER_ID, unit_type: 'cruiser', count: 2, damaged: false, system_key: '1,-1' }],
+      atkUnitsLeft: [{ id: 'u_atk' }],
+      defUnitsLeft: [{ id: 'u1' }],
+      onGameCombatsUpdate: (updateData) => {
+        if (updateData.ships_destroyed) {
+          shipUpdateCalls.push(updateData)
+        }
+      },
+    })
+    const res = await handler(makeRequest({
+      game_id: GAME_ID, combat_id: COMBAT_ID,
+      casualties: [{ unit_type: 'cruiser', player_unit_id: 'u1', action: 'destroy' }],
+    }))
+    expect(res.status).toBe(200)
+    // Verify game_combats update was called with ships_destroyed
+    expect(shipUpdateCalls.length).toBeGreaterThan(0)
+    expect(shipUpdateCalls[0].ships_destroyed).toEqual({
+      attacker: {},
+      defender: { cruiser: 1 },
+    })
+  })
+
+  it('does not update ships_destroyed when no units destroyed (all sustain)', async () => {
+    const unitDef = { name: 'fighter', sustain_damage: true }
+    mockDb({
+      player: { id: DEFENDER_ID },
+      combat: {
+        ...BASE_COMBAT,
+        phase: 'defender_assign',
+        attacker_hits: 1,
+        defender_hits: 0,
+        ships_destroyed: { attacker: {}, defender: {} },
+      },
+      unitDefs: [unitDef],
+      assigneeUnits: [{ id: 'u1', player_id: DEFENDER_ID, unit_type: 'fighter', count: 2, damaged: false, system_key: '1,-1' }],
+    })
+    const res = await handler(makeRequest({
+      game_id: GAME_ID, combat_id: COMBAT_ID,
+      casualties: [{ unit_type: 'fighter', player_unit_id: 'u1', action: 'sustain' }],
+    }))
+    expect(res.status).toBe(200)
+    // Verify game_combats update was NOT called with ships_destroyed
+    const updateCalls = db.from('game_combats').update.mock.calls
+    const shipUpdateCall = updateCalls.find(call => call[0]?.ships_destroyed)
+    expect(shipUpdateCall).toBeUndefined()
   })
 })

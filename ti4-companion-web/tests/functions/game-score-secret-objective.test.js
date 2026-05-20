@@ -14,10 +14,16 @@ vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
   logEvent: vi.fn().mockResolvedValue(undefined),
   EVT_SCORE_SECRET: 'score_secret_objective',
 }))
+vi.mock('../../../supabase/functions/_shared/objectiveConditions.ts', () => ({
+  buildEvaluationContext: vi.fn().mockResolvedValue({}),
+  evaluateCondition: vi.fn().mockReturnValue({ eligible: true, reason: '' }),
+  applySpendSideEffect: vi.fn().mockResolvedValue(undefined),
+}))
 
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { logEvent } from '../../../supabase/functions/_shared/gameEvents.ts'
+import { buildEvaluationContext, evaluateCondition, applySpendSideEffect } from '../../../supabase/functions/_shared/objectiveConditions.ts'
 import { handler } from '../../../supabase/functions/game-score-secret-objective/index.ts'
 
 const USER_ID = 'user-uuid'
@@ -105,6 +111,9 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockDb()
   requireAuth.mockResolvedValue(USER_ID)
+  evaluateCondition.mockReturnValue({ eligible: true, reason: '' })
+  buildEvaluationContext.mockResolvedValue({})
+  applySpendSideEffect.mockResolvedValue(undefined)
 })
 
 describe('game-score-secret-objective', () => {
@@ -184,5 +193,23 @@ describe('game-score-secret-objective', () => {
     const res = await handler(makeRequest({ game_id: GAME_ID, objective_id: OBJ_ID }))
     expect(res.status).toBe(200)
     expect(logEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ event_type: 'score_secret_objective' }))
+  })
+
+  it('returns 422 when condition is not met', async () => {
+    mockDb({ row: { id: OBJ_ID, state: 'held', player_id: PLAYER_ID, secret_objectives: { timing: 'status', condition_check: { type: 'count_planets', params: { min: 6 } } } } })
+    evaluateCondition.mockReturnValue({ eligible: false, reason: 'Need more' })
+    const res = await handler(makeRequest({ game_id: GAME_ID, objective_id: OBJ_ID }))
+    expect(res.status).toBe(422)
+    const body = await res.json()
+    expect(body.error).toMatch(/Need more/i)
+  })
+
+  it('returns 200 and scores when condition is met', async () => {
+    mockDb({ row: { id: OBJ_ID, state: 'held', player_id: PLAYER_ID, secret_objectives: { timing: 'status', condition_check: { type: 'count_planets', params: { min: 3 } } } } })
+    evaluateCondition.mockReturnValue({ eligible: true, reason: '' })
+    const res = await handler(makeRequest({ game_id: GAME_ID, objective_id: OBJ_ID }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.scored).toBe(true)
   })
 })

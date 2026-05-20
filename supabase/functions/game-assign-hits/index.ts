@@ -97,6 +97,26 @@ export async function handler(req: Request): Promise<Response> {
     }
   }
 
+  // Track ships destroyed for objective condition evaluation
+  const totalDestroyed = new Map<string, number>() // unitType → count destroyed
+  for (const [unitId, removeCount] of destroyCounts.entries()) {
+    const unit = unitMap.get(unitId)
+    if (!unit) continue
+    totalDestroyed.set(unit.unit_type, (totalDestroyed.get(unit.unit_type) ?? 0) + removeCount)
+  }
+
+  if (totalDestroyed.size > 0) {
+    // Determine which side is losing units (the assignee is taking casualties)
+    const side = assigneeId === combat.attacker_player_id ? 'attacker' : 'defender'
+    const currentShipsDestroyed = (combat.ships_destroyed ?? { attacker: {}, defender: {} }) as { attacker: Record<string, number>; defender: Record<string, number> }
+    const updatedSide = { ...currentShipsDestroyed[side] }
+    for (const [unitType, count] of totalDestroyed.entries()) {
+      updatedSide[unitType] = (updatedSide[unitType] ?? 0) + count
+    }
+    const updatedShipsDestroyed = { ...currentShipsDestroyed, [side]: updatedSide }
+    await db.from('game_combats').update({ ships_destroyed: updatedShipsDestroyed }).eq('id', body.combat_id)
+  }
+
   // If this was defender_assign, advance to defender_roll
   if (isDefenderAssign) {
     await db.from('game_combats').update({ phase: 'defender_roll' }).eq('id', body.combat_id)

@@ -2,6 +2,7 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { logEvent, EVT_SCORE_SECRET } from '../_shared/gameEvents.ts'
+import { buildEvaluationContext, evaluateCondition, applySpendSideEffect } from '../_shared/objectiveConditions.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -38,7 +39,7 @@ export async function handler(req: Request): Promise<Response> {
 
   const { data: row, error: rowError } = await db
     .from('game_player_secret_objectives')
-    .select('id, state, player_id, secret_objectives(timing)')
+    .select('id, state, player_id, secret_objectives(timing, condition_check)')
     .eq('id', body.objective_id)
     .maybeSingle()
   if (rowError) return errorResponse('Database error', 500)
@@ -46,7 +47,7 @@ export async function handler(req: Request): Promise<Response> {
   if (row.state !== 'held') return errorResponse('Objective is not held', 409)
   if (row.player_id !== player.id) return errorResponse('You do not hold this objective', 403)
 
-  const timing = (row.secret_objectives as { timing: string } | null)?.timing
+  const timing = (row.secret_objectives as { timing: string; condition_check?: unknown } | null)?.timing
   if (timing && timing !== game.phase) {
     return errorResponse(`Cannot score: objective timing '${timing}' does not match current phase '${game.phase}'`, 409)
   }
@@ -62,6 +63,16 @@ export async function handler(req: Request): Promise<Response> {
     return errorResponse('You have already scored a secret objective this round', 409)
   }
 
+  // Get condition_check from secret_objectives reference via the join
+  const refObjData = row.secret_objectives as { timing: string; condition_check?: unknown } | null
+  const conditionCheck = refObjData?.condition_check ?? null
+
+  if (conditionCheck) {
+    const ctx = await buildEvaluationContext(db, body.game_id, player.id)
+    const result = evaluateCondition(conditionCheck as { type: string; params: Record<string, unknown> }, ctx)
+    if (!result.eligible) return errorResponse(result.reason || 'Objective condition not met', 422)
+  }
+
   const { error: updateObjError } = await db
     .from('game_player_secret_objectives')
     .update({ state: 'scored', scored_at_round: game.round })
@@ -73,6 +84,16 @@ export async function handler(req: Request): Promise<Response> {
     .update({ vp: player.vp + 1, secret_objective_count: (player.secret_objective_count ?? 0) + 1 })
     .eq('id', player.id)
   if (updatePlayerError) return errorResponse(`Update failed: ${updatePlayerError.message}`, 500)
+
+  // Apply spend side effects after VP update
+  if (conditionCheck) {
+    const ctx2 = await buildEvaluationContext(db, body.game_id, player.id)
+    const spendTypes = ['spend_resources', 'spend_influence', 'spend_trade_goods', 'spend_command_tokens']
+    const cc = conditionCheck as { type: string; params?: Record<string, unknown> }
+    if (spendTypes.includes(cc.type)) {
+      await applySpendSideEffect(cc.type, cc.params ?? {}, ctx2, db)
+    }
+  }
 
   await logEvent(db, {
     game_id: body.game_id,

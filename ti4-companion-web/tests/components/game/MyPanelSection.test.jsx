@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import MyPanelSection from '../../../src/components/game/MyPanelSection.jsx'
+import { evaluateCondition } from '../../../src/lib/objectiveEvaluator.js'
+
+vi.mock('../../../src/lib/objectiveEvaluator.js', () => ({ evaluateCondition: vi.fn() }))
 
 let capturedTechCardProps = []
 vi.mock('../../../src/components/game/TechCard.jsx', () => ({
@@ -707,6 +710,39 @@ describe('MyPanelSection', () => {
     it('does not render LegendaryCardPanel when myCards is empty', () => {
       renderPanel({ legendaryCards: { myCards: [], exhaustCard: vi.fn() } })
       expect(screen.queryByTestId('legendary-card-panel')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('Phase 36 — secret objective eligibility indicators', () => {
+    beforeEach(() => {
+      vi.mocked(evaluateCondition).mockReset()
+    })
+
+    const SECRET = {
+      id: 'so1',
+      secret_objectives: { name: 'Destroy Their Flagship', condition_check: 'someCheck' },
+    }
+
+    it('shows eligible indicator when condition met', () => {
+      vi.mocked(evaluateCondition).mockReturnValue({ eligible: true, reason: '' })
+      renderPanel({
+        mySecrets: [SECRET],
+        evaluationCtx: { someData: true },
+      })
+      expect(screen.getByText('✓')).toBeInTheDocument()
+      expect(screen.getByText('✓')).toHaveClass('text-success')
+    })
+
+    it('shows ineligible indicator with reason when condition not met', () => {
+      vi.mocked(evaluateCondition).mockReturnValue({ eligible: false, reason: 'Need flagship kill' })
+      renderPanel({
+        mySecrets: [SECRET],
+        evaluationCtx: { someData: false },
+      })
+      const indicator = screen.getByText('✗')
+      expect(indicator).toBeInTheDocument()
+      expect(indicator).toHaveClass('text-dim')
+      expect(indicator).toHaveAttribute('title', 'Need flagship kill')
     })
   })
 })

@@ -1,4 +1,6 @@
-export default function ObjectivesSection({ objectives, players, game, currentPlayerId, onScore }) {
+import { evaluateCondition } from '../../lib/objectiveEvaluator.js'
+
+export default function ObjectivesSection({ objectives, players, game, currentPlayerId, onScore, evaluationCtxByPlayer }) {
   const revealed = objectives.filter(o => o.state === 'revealed')
   const isStatusPhase = game?.phase === 'status'
 
@@ -11,11 +13,18 @@ export default function ObjectivesSection({ objectives, players, game, currentPl
         <div className="panel-inset flex flex-col gap-3">
           {revealed.map(obj => {
             const ref = obj.public_objectives
-            const scorers = (obj.scored_by ?? [])
-              .map(pid => players.find(p => p.id === pid)?.display_name)
-              .filter(Boolean)
+            const conditionCheck = ref?.condition_check ?? null
             const alreadyScored = (obj.scored_by ?? []).includes(currentPlayerId)
             const showScore = isStatusPhase && !alreadyScored && onScore
+
+            const playerEligibility = players.reduce((acc, p) => {
+              const ctx = evaluationCtxByPlayer?.[p.id]
+              acc[p.id] = ctx && conditionCheck
+                ? evaluateCondition(conditionCheck, ctx)
+                : { eligible: true, reason: '' }
+              return acc
+            }, {})
+            const myEligibility = playerEligibility[currentPlayerId] ?? { eligible: true, reason: '' }
 
             return (
               <div key={obj.id} className="flex items-start justify-between gap-4">
@@ -31,13 +40,31 @@ export default function ObjectivesSection({ objectives, players, game, currentPl
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <div className="text-xs text-success">
-                    {scorers.length > 0 ? scorers.join(', ') : <span className="text-dim">—</span>}
+                  <div className="flex items-center gap-0.5 text-xs">
+                    {players.map(p => {
+                      const scored = (obj.scored_by ?? []).includes(p.id)
+                      const eligibility = playerEligibility[p.id] ?? { eligible: true, reason: '' }
+                      if (scored) {
+                        return (
+                          <span key={p.id} className="text-success" title={p.display_name}>•</span>
+                        )
+                      } else if (eligibility.eligible) {
+                        return (
+                          <span key={p.id} className="text-gold" title={p.display_name}>•</span>
+                        )
+                      } else {
+                        return (
+                          <span key={p.id} className="text-dim" title={eligibility.reason}>•</span>
+                        )
+                      }
+                    })}
                   </div>
                   {showScore && (
                     <button
                       className="btn-ghost text-xs"
                       onClick={() => onScore(obj.id)}
+                      disabled={!myEligibility.eligible}
+                      title={!myEligibility.eligible ? myEligibility.reason : undefined}
                     >
                       SCORE
                     </button>

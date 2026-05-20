@@ -2,8 +2,9 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { logEvent, EVT_SCORE_OBJECTIVE } from '../_shared/gameEvents.ts'
+import { buildEvaluationContext, evaluateCondition, applySpendSideEffect } from '../_shared/objectiveConditions.ts'
 
-Deno.serve(async (req: Request) => {
+export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
 
   let userId: string
@@ -43,14 +44,59 @@ Deno.serve(async (req: Request) => {
     return errorResponse('Player has already scored this objective', 409)
   }
 
-  // Get point value from reference table
+  // Get player row for home system check
+  const { data: player_data, error: playerDataError } = await db
+    .from('game_players')
+    .select('id, faction')
+    .eq('id', body.player_id)
+    .eq('game_id', body.game_id)
+    .maybeSingle()
+  if (playerDataError) return errorResponse('Database error', 500)
+  if (!player_data) return errorResponse('Player not found in this game', 404)
+
+  // Get game map_tiles to find home system
+  const { data: gameMapData } = await db.from('games').select('map_tiles').eq('id', body.game_id).maybeSingle()
+  const mapTiles = gameMapData?.map_tiles ?? {}
+
+  // Find home system key for this player's faction
+  const { data: factionTile } = await db.from('tiles').select('id, faction_key').eq('faction_key', player_data.faction).maybeSingle()
+
+  if (factionTile) {
+    // Find the system_key in map_tiles where tileId === factionTile.id
+    const homeSystemKey = Object.entries(mapTiles as Record<string, number>).find(([, tileId]) => tileId === factionTile.id)?.[0]
+    if (homeSystemKey) {
+      // Get all planets in game_player_planets for this player
+      const { data: playerPlanets } = await db.from('game_player_planets').select('tile_id').eq('player_id', body.player_id)
+      const controlledTileIds = new Set((playerPlanets ?? []).map((p: { tile_id: string }) => p.tile_id))
+
+      // Get planets in home system tile
+      const homeSystemTileId = mapTiles[homeSystemKey]
+      const { data: homeSystemTile } = await db.from('tiles').select('planets').eq('id', homeSystemTileId).maybeSingle()
+      const homePlanets = (homeSystemTile?.planets as { name: string }[]) ?? []
+
+      if (homePlanets.length > 0 && !controlledTileIds.has(String(homeSystemTileId))) {
+        return errorResponse('Must control your home system to score public objectives', 422)
+      }
+    }
+  }
+
+  // Get point value and condition_check from reference table
   const { data: refObj, error: refError } = await db
     .from('public_objectives')
-    .select('points')
+    .select('points, condition_check')
     .eq('id', gameObj.objective_id)
     .single()
   if (refError) return errorResponse('Database error', 500)
   const points = refObj?.points ?? 1
+
+  // Evaluate condition if present
+  const refConditionCheck = refObj?.condition_check ?? null
+  let conditionCtx = null
+  if (refConditionCheck) {
+    conditionCtx = await buildEvaluationContext(db, body.game_id, body.player_id)
+    const result = evaluateCondition(refConditionCheck, conditionCtx)
+    if (!result.eligible) return errorResponse(result.reason || 'Objective condition not met', 422)
+  }
 
   // Append player to scored_by
   const { error: updateObjError } = await db
@@ -75,6 +121,15 @@ Deno.serve(async (req: Request) => {
     .eq('id', body.player_id)
   if (vpError) return errorResponse(`VP update failed: ${vpError.message}`, 500)
 
+  // Apply spend side effects after VP update
+  if (refConditionCheck) {
+    const spendTypes = ['spend_resources', 'spend_influence', 'spend_trade_goods', 'spend_command_tokens']
+    if (spendTypes.includes(refConditionCheck.type)) {
+      const ctx = conditionCtx ?? await buildEvaluationContext(db, body.game_id, body.player_id)
+      await applySpendSideEffect(refConditionCheck.type, refConditionCheck.params ?? {}, ctx, db)
+    }
+  }
+
   await logEvent(db, {
     game_id: body.game_id,
     player_id: body.player_id,
@@ -84,4 +139,6 @@ Deno.serve(async (req: Request) => {
     phase: 'status',
   })
   return okResponse({ scored: true, vp_awarded: points })
-})
+}
+
+if (typeof Deno !== 'undefined') Deno.serve(handler)

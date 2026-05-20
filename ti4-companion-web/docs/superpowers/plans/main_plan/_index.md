@@ -242,19 +242,19 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-SystemInfoModal-p35](component-SystemInfoModal-p35.md) | `src/components/game/SystemInfoModal.jsx` | 35 | Mech Plastic Unit | done | — |
 | [component-GalaxyTab-p35](component-GalaxyTab-p35.md) | `src/components/game/GalaxyTab.jsx` | 35 | Mech Plastic Unit | done | component-HexMap-p34, component-SystemInfoModal-p35 |
 
-| [migration-046-objective-conditions](migration-046-objective-conditions.md) | `supabase/migrations/046_objective_conditions.sql` | 36 | Objective Condition Enforcement | planned | — |
-| [shared-objectiveConditions](shared-objectiveConditions.md) | `supabase/functions/_shared/objectiveConditions.ts` | 36 | Objective Condition Enforcement | planned | migration-046-objective-conditions |
-| [lib-objectiveEvaluator](lib-objectiveEvaluator.md) | `src/lib/objectiveEvaluator.js` | 36 | Objective Condition Enforcement | planned | migration-046-objective-conditions |
-| [fn-game-score-objective-p36](fn-game-score-objective-p36.md) | `supabase/functions/game-score-objective/index.ts` | 36 | Objective Condition Enforcement | planned | shared-objectiveConditions |
-| [fn-game-score-secret-objective-p36](fn-game-score-secret-objective-p36.md) | `supabase/functions/game-score-secret-objective/index.ts` | 36 | Objective Condition Enforcement | planned | shared-objectiveConditions |
-| [fn-game-assign-hits-p36](fn-game-assign-hits-p36.md) | `supabase/functions/game-assign-hits/index.ts` | 36 | Objective Condition Enforcement | planned | migration-046-objective-conditions |
-| [hook-useGame-p36](hook-useGame-p36.md) | `src/hooks/useGame.js` | 36 | Objective Condition Enforcement | planned | migration-046-objective-conditions |
-| [component-ObjectivesSection-p36](component-ObjectivesSection-p36.md) | `src/components/game/ObjectivesSection.jsx` | 36 | Objective Condition Enforcement | planned | lib-objectiveEvaluator, hook-useGame-p36 |
-| [component-MyPanelSection-p36](component-MyPanelSection-p36.md) | `src/components/game/MyPanelSection.jsx` | 36 | Objective Condition Enforcement | planned | lib-objectiveEvaluator, hook-useGame-p36 |
+| [migration-046-objective-conditions](migration-046-objective-conditions.md) | `supabase/migrations/046_objective_conditions.sql` | 36 | Objective Condition Enforcement | done | — |
+| [shared-objectiveConditions](shared-objectiveConditions.md) | `supabase/functions/_shared/objectiveConditions.ts` | 36 | Objective Condition Enforcement | done | migration-046-objective-conditions |
+| [lib-objectiveEvaluator](lib-objectiveEvaluator.md) | `src/lib/objectiveEvaluator.js` | 36 | Objective Condition Enforcement | done | migration-046-objective-conditions |
+| [fn-game-score-objective-p36](fn-game-score-objective-p36.md) | `supabase/functions/game-score-objective/index.ts` | 36 | Objective Condition Enforcement | done | shared-objectiveConditions |
+| [fn-game-score-secret-objective-p36](fn-game-score-secret-objective-p36.md) | `supabase/functions/game-score-secret-objective/index.ts` | 36 | Objective Condition Enforcement | done | shared-objectiveConditions |
+| [fn-game-assign-hits-p36](fn-game-assign-hits-p36.md) | `supabase/functions/game-assign-hits/index.ts` | 36 | Objective Condition Enforcement | done | migration-046-objective-conditions |
+| [hook-useGame-p36](hook-useGame-p36.md) | `src/hooks/useGame.js` | 36 | Objective Condition Enforcement | done | migration-046-objective-conditions |
+| [component-ObjectivesSection-p36](component-ObjectivesSection-p36.md) | `src/components/game/ObjectivesSection.jsx` | 36 | Objective Condition Enforcement | done | lib-objectiveEvaluator, hook-useGame-p36 |
+| [component-MyPanelSection-p36](component-MyPanelSection-p36.md) | `src/components/game/MyPanelSection.jsx` | 36 | Objective Condition Enforcement | done | lib-objectiveEvaluator, hook-useGame-p36 |
 
-| [migration-047-strategy-card-effects](migration-047-strategy-card-effects.md) | `supabase/migrations/047_strategy_card_effects.sql` | 37 | Strategy Card Text & Ability Enforcement | planned | migration-029-strategy-production |
-| [lib-strategyCardConstants](lib-strategyCardConstants.md) | `src/lib/strategyCardConstants.js` | 37 | Strategy Card Text & Ability Enforcement | planned | — |
-| [shared-abilityDsl-p37](shared-abilityDsl-p37.md) | `supabase/functions/_shared/abilityDsl.ts` | 37 | Strategy Card Text & Ability Enforcement | planned | migration-047-strategy-card-effects, shared-objectiveConditions |
+| [migration-047-strategy-card-effects](migration-047-strategy-card-effects.md) | `supabase/migrations/047_strategy_card_effects.sql` | 37 | Strategy Card Text & Ability Enforcement | done | migration-029-strategy-production |
+| [lib-strategyCardConstants](lib-strategyCardConstants.md) | `src/lib/strategyCardConstants.js` | 37 | Strategy Card Text & Ability Enforcement | done | — |
+| [shared-abilityDsl-p37](shared-abilityDsl-p37.md) | `supabase/functions/_shared/abilityDsl.ts` | 37 | Strategy Card Text & Ability Enforcement | done | migration-047-strategy-card-effects, shared-objectiveConditions |
 | [fn-game-play-strategy-card-p37](fn-game-play-strategy-card-p37.md) | `supabase/functions/game-play-strategy-card/index.ts` | 37 | Strategy Card Text & Ability Enforcement | planned | migration-047-strategy-card-effects, shared-abilityDsl-p37 |
 | [fn-game-use-strategy-secondary-p37](fn-game-use-strategy-secondary-p37.md) | `supabase/functions/game-use-strategy-secondary/index.ts` | 37 | Strategy Card Text & Ability Enforcement | planned | migration-047-strategy-card-effects, shared-abilityDsl-p37 |
 | [fn-game-produce-units-p37](fn-game-produce-units-p37.md) | `supabase/functions/game-produce-units/index.ts` | 37 | Strategy Card Text & Ability Enforcement | planned | fn-game-use-strategy-secondary-p37 |
