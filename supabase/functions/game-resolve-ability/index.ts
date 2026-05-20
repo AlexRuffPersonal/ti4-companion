@@ -97,11 +97,12 @@ export async function handler(req: Request): Promise<Response> {
       const p = player as Record<string, number>
       await db.from('game_players').update({ action_card_count: Math.max(0, p.action_card_count - 1) }).eq('id', p.id)
     } else if (body.source_type === 'leader') {
-      const { data: playerLeaders } = await db
+      const { data: playerLeaders, error: playerLeadersError } = await db
         .from('game_players')
         .select('leaders')
         .eq('id', (player as Record<string, string>).id)
         .maybeSingle()
+      if (playerLeadersError) return errorResponse('Database error', 500)
       const leaders = ((playerLeaders as Record<string, unknown> | null)?.leaders as Record<string, string>) ?? {}
       await db.from('game_players')
         .update({ leaders: { ...leaders, hero: 'purged' } })
