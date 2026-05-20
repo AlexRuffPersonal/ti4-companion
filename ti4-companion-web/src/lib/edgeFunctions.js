@@ -253,4 +253,14 @@ export const removeBot = (gameId, botPlayerId) =>
 export const undoLastAction = (gameId) =>
   callFunction('game-undo', { game_id: gameId })
 
+// Phase 41
+export const useEnigmaticDevice = (gameId, playerId, cardId, resourcePlanetNames, technologyName) =>
+  callFunction('game-use-enigmatic-device', {
+    game_id: gameId,
+    player_id: playerId,
+    card_id: cardId,
+    resource_planet_names: resourcePlanetNames,
+    technology_name: technologyName,
+  })
+
 export { callFunction }
