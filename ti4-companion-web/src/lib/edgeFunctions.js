@@ -281,4 +281,14 @@ export const useEnigmaticDevice = (gameId, playerId, cardId, resourcePlanetNames
     technology_name: technologyName,
   })
 
+// Phase 39 — In-App Map Draft
+export const startDraft = (gameId, mode) =>
+  callFunction('game-start-draft', { game_id: gameId, mode })
+
+export const draftPickSlice = (gameId, sliceId) =>
+  callFunction('game-draft-pick-slice', { game_id: gameId, slice_id: sliceId })
+
+export const draftPlaceTile = (gameId, tileNumber, position, rotation = 0) =>
+  callFunction('game-draft-place-tile', { game_id: gameId, tile_number: tileNumber, position, rotation })
+
 export { callFunction }
