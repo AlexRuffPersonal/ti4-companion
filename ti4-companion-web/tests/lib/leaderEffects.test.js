@@ -80,7 +80,7 @@ describe('applyCommanderPassives', () => {
     expect(result.pendingWindows).toHaveLength(0)
   })
 
-  it('returns empty arrays when COMMANDER_PASSIVES is empty (pre-p43c)', async () => {
+  it('queues window effects for unlocked commanders with matching trigger', async () => {
     db.from.mockReturnValue({
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockResolvedValue({
@@ -92,7 +92,7 @@ describe('applyCommanderPassives', () => {
       }),
     })
 
-    // COMMANDER_PASSIVES is empty at this phase
+    // Titans Of Ul commander triggers on PRODUCTION (window mode)
     const result = await applyCommanderPassives(
       'PRODUCTION',
       { gameId: GAME_ID, activatingPlayerId: 'p1', faction: 'The Titans Of Ul' },
@@ -100,6 +100,10 @@ describe('applyCommanderPassives', () => {
     )
 
     expect(result.inlineEffects).toHaveLength(0)
-    expect(result.pendingWindows).toHaveLength(0)
+    expect(result.pendingWindows).toHaveLength(1)
+    expect(result.pendingWindows[0]).toMatchObject({
+      faction: 'The Titans Of Ul',
+      trigger: 'PRODUCTION',
+    })
   })
 })
