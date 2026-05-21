@@ -293,7 +293,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-admin-import-units-mech](fn-admin-import-units-mech.md) | `supabase/functions/admin-import-units/index.ts` | 39 | Mech Unit Card Abilities | planned | migration-050-mech-abilities |
 | [lib-importSchemas-mech](lib-importSchemas-mech.md) | `src/lib/importSchemas.js` | 39 | Mech Unit Card Abilities | planned | migration-050-mech-abilities |
 | [fn-game-resolve-ability-mech](fn-game-resolve-ability-mech.md) | `supabase/functions/game-resolve-ability/index.ts` | 39 | Mech Unit Card Abilities | planned | migration-050-mech-abilities |
-| [fn-game-deploy-mech](fn-game-deploy-mech.md) | `supabase/functions/game-deploy-mech/index.ts` | 39 | Mech Unit Card Abilities | planned | migration-050-mech-abilities |
+| [fn-game-deploy-mech](fn-game-deploy-mech.md) | `supabase/functions/game-deploy-mech/index.ts` | 39 | Mech Unit Card Abilities | done | migration-050-mech-abilities |
 | [client-edgeFunctions-mech](client-edgeFunctions-mech.md) | `src/lib/edgeFunctions.js` | 39 | Mech Unit Card Abilities | planned | fn-game-deploy-mech, fn-game-resolve-ability-mech |
 | [hook-useLeaders-mech](hook-useLeaders-mech.md) | `src/hooks/useLeaders.js` | 39 | Mech Unit Card Abilities | planned | client-edgeFunctions-mech |
 | [component-LeaderCard-mech](component-LeaderCard-mech.md) | `src/components/game/LeaderCard.jsx` | 39 | Mech Unit Card Abilities | planned | hook-useLeaders-mech |
