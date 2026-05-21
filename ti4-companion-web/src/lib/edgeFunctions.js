@@ -111,11 +111,8 @@ export const resolveMechAbility = (gameId, unitId, selections = {}) =>
     selections,
   })
 
-export const unlockCommander = (gameId, abilityDefinitionId) =>
-  callFunction('game-unlock-commander', {
-    game_id: gameId,
-    ability_definition_id: abilityDefinitionId,
-  })
+export const unlockCommander = (gameId, leaderId) =>
+  callFunction('game-unlock-commander', { game_id: gameId, leader_id: leaderId })
 
 export const discardSecretObjective = (gameId, objectiveId) =>
   callFunction('game-discard-secret-objective', { game_id: gameId, objective_id: objectiveId })
