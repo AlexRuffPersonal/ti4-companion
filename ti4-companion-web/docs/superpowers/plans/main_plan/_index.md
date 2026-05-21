@@ -301,7 +301,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-MyPanelSection-mech](component-MyPanelSection-mech.md) | `src/components/game/MyPanelSection.jsx` | 39 | Mech Unit Card Abilities | planned | component-LeaderPanel-mech |
 
 | [migration-048-draft-state](migration-048-draft-state.md) | `supabase/migrations/048_draft_state.sql` | 39 | In-App Map Draft | done | — |
-| [shared-draftHelpers](shared-draftHelpers.md) | `supabase/functions/_shared/draftHelpers.ts` | 39 | In-App Map Draft | planned | migration-048-draft-state |
+| [shared-draftHelpers](shared-draftHelpers.md) | `supabase/functions/_shared/draftHelpers.ts` | 39 | In-App Map Draft | done | migration-048-draft-state |
 | [fn-game-start-draft](fn-game-start-draft.md) | `supabase/functions/game-start-draft/index.ts` | 39 | In-App Map Draft | planned | migration-048-draft-state, shared-draftHelpers |
 | [fn-game-draft-pick-slice](fn-game-draft-pick-slice.md) | `supabase/functions/game-draft-pick-slice/index.ts` | 39 | In-App Map Draft | planned | fn-game-start-draft, shared-draftHelpers |
 | [fn-game-draft-place-tile](fn-game-draft-place-tile.md) | `supabase/functions/game-draft-place-tile/index.ts` | 39 | In-App Map Draft | planned | fn-game-start-draft, shared-draftHelpers |
