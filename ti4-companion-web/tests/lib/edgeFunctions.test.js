@@ -254,9 +254,19 @@ describe('useRelic', () => {
 
   it('calls game-use-relic with correct payload', async () => {
     supabase.functions.invoke.mockResolvedValue({ data: { ok: true }, error: null })
-    await useRelic('game-1', 'player-1', 'relic-shard', 'exhaust')
+    await useRelic('game-1', 'player-1', 'relic-shard', { choice: 0, useType: 'explore' })
     expect(supabase.functions.invoke).toHaveBeenCalledWith('game-use-relic', {
-      body: { game_id: 'game-1', player_id: 'player-1', relic_id: 'relic-shard', choice: 'exhaust' },
+      body: {
+        game_id: 'game-1',
+        player_id: 'player-1',
+        relic_id: 'relic-shard',
+        choice: 0,
+        use_type: 'explore',
+        planet_name: undefined,
+        deck_type: undefined,
+        card_ids: undefined,
+        technology_name: undefined,
+      },
     })
   })
 })

@@ -235,8 +235,18 @@ export const exploreFrontier = (gameId, playerId, systemKey) =>
 export const useRelicFragment = (gameId, playerId, fragmentIds) =>
   callFunction('game-use-relic-fragment', { game_id: gameId, player_id: playerId, fragment_ids: fragmentIds })
 
-export const useRelic = (gameId, playerId, relicId, choice) =>
-  callFunction('game-use-relic', { game_id: gameId, player_id: playerId, relic_id: relicId, choice })
+export const useRelic = (gameId, playerId, relicId, opts = {}) =>
+  callFunction('game-use-relic', {
+    game_id: gameId,
+    player_id: playerId,
+    relic_id: relicId,
+    choice: opts.choice,
+    use_type: opts.useType,
+    planet_name: opts.planetName,
+    deck_type: opts.deckType,
+    card_ids: opts.cardIds,
+    technology_name: opts.technologyName,
+  })
 
 // Phase 20
 export const playCombatActionCard = (gameId, combatId, cardId, targets) =>

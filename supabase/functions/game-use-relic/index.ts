@@ -4,7 +4,7 @@ import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/err
 import { applyAbility } from '../_shared/abilityDsl.ts'
 import { RELIC_EFFECTS } from '../_shared/relicEffects.ts'
 
-const ACTION_RELICS = ['Dominus Orb', 'Maw Of Worlds', 'Stellar Converter', 'The Codex', 'Enigmatic Device']
+const ACTION_RELICS = ['Stellar Converter', 'The Codex']
 
 type RelicRow = {
   id: string
@@ -34,7 +34,17 @@ export async function handler(req: Request): Promise<Response> {
     return errorResponse('Internal server error', 500)
   }
 
-  let body: { game_id?: unknown; player_id?: unknown; relic_id?: unknown; choice?: unknown; planet_name?: unknown }
+  let body: {
+    game_id?: unknown
+    player_id?: unknown
+    relic_id?: unknown
+    choice?: unknown
+    use_type?: unknown
+    planet_name?: unknown
+    deck_type?: unknown
+    card_ids?: unknown
+    technology_name?: unknown
+  }
   try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
 
   if (!body.game_id || typeof body.game_id !== 'string') return errorResponse("'game_id' is required")
@@ -45,7 +55,11 @@ export async function handler(req: Request): Promise<Response> {
   const playerId = body.player_id
   const relicId = body.relic_id
   const choice = typeof body.choice === 'number' ? body.choice : null
+  const useType = typeof body.use_type === 'string' ? body.use_type : null
   const planetName = typeof body.planet_name === 'string' ? body.planet_name : null
+  const deckType = typeof body.deck_type === 'string' ? body.deck_type : null
+  const cardIds = Array.isArray(body.card_ids) ? body.card_ids as string[] : null
+  const technologyName = typeof body.technology_name === 'string' ? body.technology_name : null
 
   const { data: player, error: playerError } = await db
     .from('game_players')
@@ -99,6 +113,49 @@ export async function handler(req: Request): Promise<Response> {
     }
   }
 
+  // Maw Of Worlds: agenda phase gate
+  if (def.name === 'Maw Of Worlds') {
+    if (gameRow.phase !== 'agenda') {
+      return errorResponse('Not agenda phase', 409)
+    }
+  }
+
+  // Crown Of Emphidia: two paths via use_type
+  if (def.name === 'The Crown Of Emphidia' && useType === 'purge_for_vp') {
+    if (gameRow.phase !== 'status') {
+      return errorResponse('Not status phase', 409)
+    }
+    const { data: tomb, error: tombError } = await db
+      .from('game_player_planets')
+      .select('id')
+      .eq('game_id', gameId)
+      .eq('player_id', playerRow.id)
+      .eq('planet_name', 'Tomb of Emphidia')
+      .maybeSingle()
+    if (tombError) return errorResponse('Database error', 500)
+    if (!tomb) return errorResponse('Tomb of Emphidia not controlled', 409)
+
+    const { data: playerVpRow, error: vpFetchError } = await db
+      .from('game_players')
+      .select('vp')
+      .eq('id', playerRow.id)
+      .maybeSingle()
+    if (vpFetchError || !playerVpRow) return errorResponse('Database error', 500)
+    const { error: vpError } = await db
+      .from('game_players')
+      .update({ vp: (playerVpRow as { vp: number }).vp + 1 })
+      .eq('id', playerRow.id)
+    if (vpError) return errorResponse('Database error', 500)
+
+    const { error: purgeError } = await db
+      .from('game_relic_deck')
+      .update({ state: 'purged' })
+      .eq('id', relicId)
+    if (purgeError) return errorResponse('Database error', 500)
+
+    return okResponse({ applied: 'The Crown Of Emphidia', effect: 'purge_for_vp' })
+  }
+
   const ops = RELIC_EFFECTS[def.name]
   if (ops === undefined) return errorResponse('Unknown relic', 409)
 
@@ -108,6 +165,12 @@ export async function handler(req: Request): Promise<Response> {
     chosenOption: choice ?? undefined,
     relicId,
     phase: gameRow.phase,
+    selections: {
+      ...(planetName ? { planet_name: planetName } : {}),
+      ...(deckType ? { deck_type: deckType } : {}),
+      ...(cardIds ? { card_ids: cardIds } : {}),
+      ...(technologyName ? { technology_name: technologyName } : {}),
+    },
   }
 
   try {
@@ -115,6 +178,12 @@ export async function handler(req: Request): Promise<Response> {
   } catch (e: unknown) {
     const err = e as Error & { status?: number }
     return errorResponse(err.message ?? 'Failed to apply relic', err.status === 409 ? 409 : 500)
+  }
+
+  // Prophet's Tears: enrich response with chosen effect
+  let effect: string | undefined
+  if (def.name === "The Prophet's Tears") {
+    effect = choice === 0 ? 'ignore_prerequisite' : 'draw_action_card'
   }
 
   if (def.name === 'Stellar Converter' && planetName) {
@@ -140,7 +209,7 @@ export async function handler(req: Request): Promise<Response> {
     if (exhaustError) return errorResponse('Database error', 500)
   }
 
-  return okResponse({ applied: def.name })
+  return okResponse({ applied: def.name, ...(effect ? { effect } : {}) })
 }
 
 if (typeof Deno !== 'undefined') Deno.serve(handler)

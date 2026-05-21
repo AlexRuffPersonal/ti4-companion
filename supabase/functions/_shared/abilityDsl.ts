@@ -1,4 +1,5 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { EXPLORATION_EFFECTS } from './explorationEffects.ts'
 
 export interface ResolveContext {
   gameId: string
@@ -11,6 +12,8 @@ export interface ResolveContext {
   ignorePrerequisite?: boolean
   gameRound?: number
   strategyPlayId?: string
+  gainedRelicName?: string
+  drawnExplorationCard?: Record<string, unknown>
 }
 
 export interface CombatResolveContext extends ResolveContext {
@@ -339,22 +342,27 @@ async function interpretOp(
     }
 
     case 'take_from_discard': {
-      const cardId = (context.selections as Record<string, unknown>)?.card_id as string
-      if (!cardId) throw dslError('card_id is required in selections')
-      const { data: card, error: findError } = await db.from('game_action_card_deck')
-        .select('id')
-        .eq('id', cardId)
-        .eq('game_id', context.gameId)
-        .eq('state', 'discard')
-        .maybeSingle()
-      if (findError) throw new Error(`take_from_discard: query failed: ${findError.message}`)
-      if (!card) throw dslError('Card not found in discard')
-      const { error } = await db.from('game_action_card_deck')
-        .update({ state: 'held', held_by_player_id: context.activatingPlayerId, deck_position: null })
-        .eq('id', cardId)
-      if (error) throw new Error(`take_from_discard: update failed: ${error.message}`)
+      const selections = context.selections as Record<string, unknown>
+      const cardIds: string[] = (selections?.card_ids as string[]) ?? (selections?.card_id ? [selections.card_id as string] : [])
+      const maxCount = (op.count as number) ?? cardIds.length
+      const idsToTake = cardIds.slice(0, maxCount)
+      if (idsToTake.length === 0) throw dslError('card_id or card_ids is required in selections')
+      for (const cardId of idsToTake) {
+        const { data: card, error: findError } = await db.from('game_action_card_deck')
+          .select('id')
+          .eq('id', cardId)
+          .eq('game_id', context.gameId)
+          .eq('state', 'discard')
+          .maybeSingle()
+        if (findError) throw new Error(`take_from_discard: query failed: ${findError.message}`)
+        if (!card) throw dslError(`Card ${cardId} not found in discard`)
+        const { error } = await db.from('game_action_card_deck')
+          .update({ state: 'held', held_by_player_id: context.activatingPlayerId, deck_position: null })
+          .eq('id', cardId)
+        if (error) throw new Error(`take_from_discard: update failed: ${error.message}`)
+      }
       const { error: countError } = await db.from('game_players')
-        .update({ action_card_count: (player.action_card_count as number ?? 0) + 1 })
+        .update({ action_card_count: (player.action_card_count as number ?? 0) + idsToTake.length })
         .eq('id', context.activatingPlayerId)
       if (countError) throw new Error(`take_from_discard: count update failed: ${countError.message}`)
       break
@@ -522,7 +530,45 @@ async function interpretOp(
     }
 
     case 'explore_planet': {
-      // Stub — delegates to exploration system (implemented in Phase 17)
+      const planetName = (context.selections as Record<string, unknown>)?.planet_name as string
+      const deckType = (context.selections as Record<string, unknown>)?.deck_type as string
+      if (!planetName) throw dslError('planet_name is required in selections')
+      if (!deckType) throw dslError('deck_type is required in selections')
+      // Validate player controls the planet
+      const { data: controlledPlanet, error: controlError } = await db
+        .from('game_player_planets')
+        .select('id')
+        .eq('game_id', context.gameId)
+        .eq('player_id', context.activatingPlayerId)
+        .eq('planet_name', planetName)
+        .maybeSingle()
+      if (controlError) throw new Error(`explore_planet: planet query failed: ${controlError.message}`)
+      if (!controlledPlanet) throw dslError('Player does not control this planet')
+      // Draw top card from exploration deck
+      const { data: topCard, error: deckError } = await db
+        .from('game_exploration_decks')
+        .select('id, name, deck_type')
+        .eq('game_id', context.gameId)
+        .eq('deck_type', deckType)
+        .eq('state', 'deck')
+        .order('deck_position', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+      if (deckError) throw new Error(`explore_planet: deck query failed: ${deckError.message}`)
+      if (!topCard) throw dslError('Exploration deck is empty')
+      const card = topCard as Record<string, unknown>
+      // Mark card as resolved
+      const { error: resolveError } = await db
+        .from('game_exploration_decks')
+        .update({ state: 'resolved', resolved_by_player_id: context.activatingPlayerId, deck_position: null })
+        .eq('id', card.id as string)
+      if (resolveError) throw new Error(`explore_planet: card resolve failed: ${resolveError.message}`)
+      // Apply exploration effects if known
+      const effects = EXPLORATION_EFFECTS[card.name as string]
+      if (effects) {
+        await interpretEffects(effects, context, db)
+      }
+      context.drawnExplorationCard = card
       break
     }
 
@@ -530,7 +576,7 @@ async function interpretOp(
       // Draw the top relic from the relic deck and assign it to the player
       const { data: topRelic, error: deckError } = await db
         .from('game_relic_deck')
-        .select('id')
+        .select('id, relic_id')
         .eq('game_id', context.gameId)
         .eq('state', 'deck')
         .order('deck_position', { ascending: true })
@@ -538,11 +584,21 @@ async function interpretOp(
         .maybeSingle()
       if (deckError) throw new Error(`gain_relic: deck query failed: ${deckError.message}`)
       if (!topRelic) break  // Empty relic deck — silently skip
+      const topRelicRow = topRelic as Record<string, string>
       const { error: updateError } = await db
         .from('game_relic_deck')
         .update({ state: 'held', held_by_player_id: context.activatingPlayerId, deck_position: null })
-        .eq('id', (topRelic as Record<string, string>).id)
+        .eq('id', topRelicRow.id)
       if (updateError) throw new Error(`gain_relic: update failed: ${updateError.message}`)
+      // Fetch relic name and set on context for on-gain effects
+      const { data: relicDef, error: relicDefError } = await db
+        .from('relics')
+        .select('name')
+        .eq('id', topRelicRow.relic_id)
+        .maybeSingle()
+      if (!relicDefError && relicDef) {
+        context.gainedRelicName = (relicDef as Record<string, string>).name
+      }
       break
     }
 
