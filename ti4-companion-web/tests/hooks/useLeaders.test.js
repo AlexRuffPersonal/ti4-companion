@@ -10,10 +10,12 @@ vi.mock('../../src/lib/supabase.js', () => ({
 vi.mock('../../src/lib/edgeFunctions.js', () => ({
   unlockCommander: vi.fn().mockResolvedValue({}),
   resolveAbility: vi.fn().mockResolvedValue({}),
+  deployMech: vi.fn().mockResolvedValue({}),
+  resolveMechAbility: vi.fn().mockResolvedValue({}),
 }))
 
 import { supabase } from '../../src/lib/supabase.js'
-import { unlockCommander, resolveAbility } from '../../src/lib/edgeFunctions.js'
+import { unlockCommander, resolveAbility, deployMech, resolveMechAbility } from '../../src/lib/edgeFunctions.js'
 import { useLeaders } from '../../src/hooks/useLeaders.js'
 
 const AGENT = { id: 'l1', leader_type: 'agent', faction: 'Arborec', leader_name: 'Trr\'n' }
@@ -118,5 +120,27 @@ describe('useLeaders', () => {
       await result.current.resolveLeaderAbility('ab-42', 'l1', { target: 'p2' })
     })
     expect(resolveAbility).toHaveBeenCalledWith('g1', 'ab-42', 'leader', 'l1', { target: 'p2' })
+  })
+
+  it('deployMech calls deployMech with gameId prepended', async () => {
+    mockSupabaseTables()
+    const { result } = renderHook(() =>
+      useLeaders({ currentPlayer: { faction: 'Arborec', leaders: null }, gameId: 'g1' })
+    )
+    await act(async () => {
+      await result.current.deployMech('u1', '0,1', 'Mecatol Rex', false)
+    })
+    expect(deployMech).toHaveBeenCalledWith('g1', 'u1', '0,1', 'Mecatol Rex', false)
+  })
+
+  it('resolveMechAbility calls resolveMechAbility with gameId prepended', async () => {
+    mockSupabaseTables()
+    const { result } = renderHook(() =>
+      useLeaders({ currentPlayer: { faction: 'Arborec', leaders: null }, gameId: 'g1' })
+    )
+    await act(async () => {
+      await result.current.resolveMechAbility('u1', { target: 'system-1' })
+    })
+    expect(resolveMechAbility).toHaveBeenCalledWith('g1', 'u1', { target: 'system-1' })
   })
 })

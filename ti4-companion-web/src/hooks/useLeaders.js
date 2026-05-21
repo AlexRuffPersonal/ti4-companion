@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabase.js'
 import {
   unlockCommander as unlockCommanderFn,
   resolveAbility as resolveAbilityFn,
+  deployMech as deployMechFn,
+  resolveMechAbility as resolveMechAbilityFn,
 } from '../lib/edgeFunctions.js'
 
 export function useLeaders({ currentPlayer, gameId }) {
@@ -52,5 +54,9 @@ export function useLeaders({ currentPlayer, gameId }) {
     unlockHero: (leaderId) => resolveAbilityFn(gameId, null, 'leader', leaderId, { unlock: true }),
     resolveLeaderAbility: (abilityDefinitionId, leaderId, selections) =>
       resolveAbilityFn(gameId, abilityDefinitionId, 'leader', leaderId, selections),
+    deployMech: (unitId, systemKey, targetPlanetName, replacingInfantry) =>
+      deployMechFn(gameId, unitId, systemKey, targetPlanetName, replacingInfantry),
+    resolveMechAbility: (unitId, selections) =>
+      resolveMechAbilityFn(gameId, unitId, selections),
   }
 }
