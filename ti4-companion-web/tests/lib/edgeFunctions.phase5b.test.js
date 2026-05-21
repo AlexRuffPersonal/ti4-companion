@@ -24,11 +24,11 @@ describe('Phase 5b edge function wrappers', () => {
     })
   })
 
-  it('unlockCommander calls game-unlock-commander with game_id and ability_definition_id', async () => {
+  it('unlockCommander calls game-unlock-commander with game_id and leader_id', async () => {
     supabase.functions.invoke.mockResolvedValue({ data: { unlocked: true }, error: null })
-    await unlockCommander('g1', 'ability-uuid')
+    await unlockCommander('g1', 'leader-uuid')
     expect(supabase.functions.invoke).toHaveBeenCalledWith('game-unlock-commander', {
-      body: { game_id: 'g1', ability_definition_id: 'ability-uuid' },
+      body: { game_id: 'g1', leader_id: 'leader-uuid' },
     })
   })
 })

@@ -114,6 +114,10 @@ export const resolveMechAbility = (gameId, unitId, selections = {}) =>
 export const unlockCommander = (gameId, leaderId) =>
   callFunction('game-unlock-commander', { game_id: gameId, leader_id: leaderId })
 
+// Phase 43c — Commander Passives
+export const resolveCommanderReroll = (gameId, combatId, rerollIndices) =>
+  callFunction('game-resolve-commander-reroll', { game_id: gameId, combat_id: combatId, reroll_indices: rerollIndices })
+
 export const discardSecretObjective = (gameId, objectiveId) =>
   callFunction('game-discard-secret-objective', { game_id: gameId, objective_id: objectiveId })
 

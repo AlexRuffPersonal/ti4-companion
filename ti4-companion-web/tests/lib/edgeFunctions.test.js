@@ -35,6 +35,8 @@ import {
   addBot,
   removeBot,
   undoLastAction,
+  unlockCommander,
+  resolveCommanderReroll,
 } from '../../src/lib/edgeFunctions.js'
 
 describe('importTable', () => {
@@ -369,6 +371,31 @@ describe('undoLastAction', () => {
     await undoLastAction('game-1')
     expect(supabase.functions.invoke).toHaveBeenCalledWith('game-undo', {
       body: { game_id: 'game-1' },
+    })
+  })
+})
+
+// Phase 43c — Commander Passives
+describe('unlockCommander', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('calls game-unlock-commander with game_id and leader_id', async () => {
+    supabase.functions.invoke.mockResolvedValue({ data: { unlocked: true }, error: null })
+    await unlockCommander('game-1', 'leader-1')
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('game-unlock-commander', {
+      body: { game_id: 'game-1', leader_id: 'leader-1' },
+    })
+  })
+})
+
+describe('resolveCommanderReroll', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('calls game-resolve-commander-reroll with correct body', async () => {
+    supabase.functions.invoke.mockResolvedValue({ data: { dice: [], hits: 0 }, error: null })
+    await resolveCommanderReroll('game-1', 'combat-1', [0, 2])
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('game-resolve-commander-reroll', {
+      body: { game_id: 'game-1', combat_id: 'combat-1', reroll_indices: [0, 2] },
     })
   })
 })
