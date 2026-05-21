@@ -362,7 +362,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-advance-phase-p43b](fn-game-advance-phase-p43b.md) | `supabase/functions/game-advance-phase/index.ts` | 43b | Leader Card Abilities — Heroes | planned | fn-game-advance-phase-p43a, migration-052-leader-abilities |
 | [component-LeaderAbilityModal-p43b](component-LeaderAbilityModal-p43b.md) | `src/components/game/LeaderAbilityModal.jsx` | 43b | Leader Card Abilities — Heroes | planned | component-LeaderAbilityModal, lib-leaderConstants |
 
-| [shared-commanderUnlock](shared-commanderUnlock.md) | `supabase/functions/_shared/commanderUnlock.ts` | 43c | Leader Card Abilities — Commander Passives | planned | migration-052-leader-abilities |
+| [shared-commanderUnlock](shared-commanderUnlock.md) | `supabase/functions/_shared/commanderUnlock.ts` | 43c | Leader Card Abilities — Commander Passives | done | migration-052-leader-abilities |
 | [fn-game-unlock-commander](fn-game-unlock-commander.md) | `supabase/functions/game-unlock-commander/index.ts` | 43c | Leader Card Abilities — Commander Passives | planned | shared-commanderUnlock, migration-052-leader-abilities |
 | [shared-leaderEffects-p43c](shared-leaderEffects-p43c.md) | `supabase/functions/_shared/leaderEffects.ts` | 43c | Leader Card Abilities — Commander Passives | planned | shared-leaderEffects |
 | [shared-abilityHandlers-p43c](shared-abilityHandlers-p43c.md) | `supabase/functions/_shared/abilityHandlers.ts` | 43c | Leader Card Abilities — Commander Passives | planned | shared-leaderEffects-p43c |
