@@ -5,6 +5,7 @@ import {
   resolveAbility as resolveAbilityFn,
   deployMech as deployMechFn,
   resolveMechAbility as resolveMechAbilityFn,
+  resolveCommanderReroll as resolveCommanderRerollFn,
 } from '../lib/edgeFunctions.js'
 
 export function useLeaders({ currentPlayer, gameId }) {
@@ -12,6 +13,10 @@ export function useLeaders({ currentPlayer, gameId }) {
   const [commander, setCommander] = useState(null)
   const [hero, setHero] = useState(null)
   const [factionMech, setFactionMech] = useState(null)
+  const [leaderModalOpen, setLeaderModalOpen] = useState(false)
+  const [activeLeader, setActiveLeader] = useState(null)
+  const [commanderRerollModalOpen, setCommanderRerollModalOpen] = useState(false)
+  const [commanderRerollWindow, setCommanderRerollWindow] = useState(null)
 
   const faction = currentPlayer?.faction
 
@@ -44,13 +49,55 @@ export function useLeaders({ currentPlayer, gameId }) {
 
   const leaderStatus = currentPlayer?.leaders ?? { agent: 'unlocked', commander: 'locked', hero: 'locked' }
 
+  function handleUseAbility(leader) {
+    setActiveLeader(leader)
+    setLeaderModalOpen(true)
+  }
+
+  function handleConfirm(selections) {
+    setLeaderModalOpen(false)
+    if (activeLeader) {
+      resolveAbilityFn(gameId, activeLeader.abilityDefinitionId, 'leader', activeLeader.id, selections)
+    }
+  }
+
+  function handleReactiveAgentWindow(window) {
+    const eligible = (window.eligible ?? []).find(e => e.player_id === currentPlayer?.id)
+    if (eligible) {
+      setActiveLeader({ ...agent, leaderType: 'agent', isReactive: true, windowContext: window.context })
+      setLeaderModalOpen(true)
+    }
+  }
+
+  function handleCommanderPassiveWindow(window) {
+    if (window.type === 'commander_reroll') {
+      setCommanderRerollWindow(window)
+      setCommanderRerollModalOpen(true)
+    }
+  }
+
+  function handleCommanderRerollConfirm(rerollIndices) {
+    resolveCommanderRerollFn(gameId, commanderRerollWindow?.combat_id, rerollIndices)
+    setCommanderRerollModalOpen(false)
+    setCommanderRerollWindow(null)
+  }
+
   return {
     agent,
     commander,
     hero,
     factionMech,
     leaderStatus,
-    unlockCommander: (abilityDefinitionId) => unlockCommanderFn(gameId, abilityDefinitionId),
+    leaderModalOpen,
+    activeLeader,
+    commanderRerollModalOpen,
+    commanderRerollWindow,
+    handleUseAbility,
+    handleConfirm,
+    handleReactiveAgentWindow,
+    handleCommanderPassiveWindow,
+    handleCommanderRerollConfirm,
+    unlockCommander: (leaderId) => unlockCommanderFn(gameId, leaderId),
     unlockHero: (leaderId) => resolveAbilityFn(gameId, null, 'leader', leaderId, { unlock: true }),
     resolveLeaderAbility: (abilityDefinitionId, leaderId, selections) =>
       resolveAbilityFn(gameId, abilityDefinitionId, 'leader', leaderId, selections),

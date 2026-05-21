@@ -12,10 +12,11 @@ vi.mock('../../src/lib/edgeFunctions.js', () => ({
   resolveAbility: vi.fn().mockResolvedValue({}),
   deployMech: vi.fn().mockResolvedValue({}),
   resolveMechAbility: vi.fn().mockResolvedValue({}),
+  resolveCommanderReroll: vi.fn().mockResolvedValue({}),
 }))
 
 import { supabase } from '../../src/lib/supabase.js'
-import { unlockCommander, resolveAbility, deployMech, resolveMechAbility } from '../../src/lib/edgeFunctions.js'
+import { unlockCommander, resolveAbility, deployMech, resolveMechAbility, resolveCommanderReroll } from '../../src/lib/edgeFunctions.js'
 import { useLeaders } from '../../src/hooks/useLeaders.js'
 
 const AGENT = { id: 'l1', leader_type: 'agent', faction: 'Arborec', leader_name: 'Trr\'n' }
@@ -89,7 +90,7 @@ describe('useLeaders', () => {
     expect(result.current.leaderStatus).toEqual({ agent: 'unlocked', commander: 'locked', hero: 'locked' })
   })
 
-  it('unlockCommander calls unlockCommander with gameId and abilityId', async () => {
+  it('unlockCommander calls unlockCommander with gameId and leaderId', async () => {
     mockSupabaseTables()
     const { result } = renderHook(() =>
       useLeaders({ currentPlayer: { faction: 'Arborec', leaders: null }, gameId: 'g1' })
@@ -142,5 +143,101 @@ describe('useLeaders', () => {
       await result.current.resolveMechAbility('u1', { target: 'system-1' })
     })
     expect(resolveMechAbility).toHaveBeenCalledWith('g1', 'u1', { target: 'system-1' })
+  })
+
+  it('handleUseAbility opens modal with the given leader set as activeLeader', async () => {
+    mockSupabaseTables()
+    const { result } = renderHook(() =>
+      useLeaders({ currentPlayer: { faction: 'Arborec', leaders: null }, gameId: 'g1' })
+    )
+    act(() => {
+      result.current.handleUseAbility({ id: 'l1', abilityDefinitionId: 'ab-1' })
+    })
+    expect(result.current.leaderModalOpen).toBe(true)
+    expect(result.current.activeLeader).toMatchObject({ id: 'l1', abilityDefinitionId: 'ab-1' })
+  })
+
+  it('handleConfirm calls resolveAbility with correct args and closes modal', async () => {
+    mockSupabaseTables()
+    const { result } = renderHook(() =>
+      useLeaders({ currentPlayer: { faction: 'Arborec', leaders: null }, gameId: 'g1' })
+    )
+    act(() => {
+      result.current.handleUseAbility({ id: 'l1', abilityDefinitionId: 'ab-42' })
+    })
+    act(() => {
+      result.current.handleConfirm({ target: 'p2' })
+    })
+    expect(result.current.leaderModalOpen).toBe(false)
+    expect(resolveAbility).toHaveBeenCalledWith('g1', 'ab-42', 'leader', 'l1', { target: 'p2' })
+  })
+
+  it('handleReactiveAgentWindow opens modal when current player is eligible', async () => {
+    mockSupabaseTables()
+    const { result } = renderHook(() =>
+      useLeaders({ currentPlayer: { faction: 'Arborec', id: 'p1', leaders: null }, gameId: 'g1' })
+    )
+    await waitFor(() => expect(result.current.agent).not.toBeNull())
+    act(() => {
+      result.current.handleReactiveAgentWindow({
+        eligible: [{ player_id: 'p1' }],
+        context: { trigger: 'something' },
+      })
+    })
+    expect(result.current.leaderModalOpen).toBe(true)
+    expect(result.current.activeLeader).toMatchObject({ isReactive: true })
+  })
+
+  it('handleReactiveAgentWindow does nothing when current player is not eligible', async () => {
+    mockSupabaseTables()
+    const { result } = renderHook(() =>
+      useLeaders({ currentPlayer: { faction: 'Arborec', id: 'p1', leaders: null }, gameId: 'g1' })
+    )
+    act(() => {
+      result.current.handleReactiveAgentWindow({
+        eligible: [{ player_id: 'p2' }],
+        context: {},
+      })
+    })
+    expect(result.current.leaderModalOpen).toBe(false)
+  })
+
+  it('unlockCommander calls unlockCommander edge function with gameId and leaderId', async () => {
+    mockSupabaseTables()
+    const { result } = renderHook(() =>
+      useLeaders({ currentPlayer: { faction: 'Arborec', leaders: null }, gameId: 'g1' })
+    )
+    await act(async () => {
+      await result.current.unlockCommander('leader-123')
+    })
+    expect(unlockCommander).toHaveBeenCalledWith('g1', 'leader-123')
+  })
+
+  it('handleCommanderRerollConfirm calls resolveCommanderReroll and closes modal', async () => {
+    mockSupabaseTables()
+    const { result } = renderHook(() =>
+      useLeaders({ currentPlayer: { faction: 'Arborec', leaders: null }, gameId: 'g1' })
+    )
+    act(() => {
+      result.current.handleCommanderPassiveWindow({ type: 'commander_reroll', combat_id: 'c1' })
+    })
+    expect(result.current.commanderRerollModalOpen).toBe(true)
+    act(() => {
+      result.current.handleCommanderRerollConfirm([0, 2])
+    })
+    expect(resolveCommanderReroll).toHaveBeenCalledWith('g1', 'c1', [0, 2])
+    expect(result.current.commanderRerollModalOpen).toBe(false)
+  })
+
+  it('handleCommanderPassiveWindow opens reroll modal for commander_reroll type', async () => {
+    mockSupabaseTables()
+    const { result } = renderHook(() =>
+      useLeaders({ currentPlayer: { faction: 'Arborec', leaders: null }, gameId: 'g1' })
+    )
+    act(() => {
+      result.current.handleCommanderPassiveWindow({ type: 'commander_reroll', combat_id: 'c1' })
+    })
+    expect(result.current.commanderRerollModalOpen).toBe(true)
+    expect(result.current.commanderRerollWindow).toMatchObject({ type: 'commander_reroll', combat_id: 'c1' })
   })
 })
