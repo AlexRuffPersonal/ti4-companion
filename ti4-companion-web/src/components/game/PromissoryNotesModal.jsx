@@ -24,6 +24,9 @@ export default function PromissoryNotesModal({ notes, players, myPlanets, curren
             {notes.map(n => {
               const ref = n.promissory_notes
               const text = resolveText(ref?.text, n.origin_player_id, players)
+              // Only Terraform is gated behind the planet-picker sub-modal.
+              // Other planet-picker notes (Military Support, Creuss IFF) are not yet
+              // wired to the attachment system, so they call onPlay directly for now.
               const needsSubModal = ref?.name === 'Terraform'
               return (
                 <div key={n.id} className="panel-inset flex items-start justify-between gap-3">

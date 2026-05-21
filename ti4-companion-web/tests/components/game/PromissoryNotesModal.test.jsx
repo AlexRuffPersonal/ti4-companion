@@ -37,7 +37,7 @@ describe('PromissoryNotesModal', () => {
     expect(onPlay).toHaveBeenCalledTimes(1)
   })
 
-  it('shows PLAY button for Terraform notes (into_play_area=true)', () => {
+  it('does not auto-open sub-modal for Terraform note before PLAY is clicked', () => {
     render(
       <PromissoryNotesModal
         notes={[TERRAFORM_NOTE]}
@@ -49,7 +49,9 @@ describe('PromissoryNotesModal', () => {
         onClose={vi.fn()}
       />
     )
-    expect(screen.getByText('PLAY')).toBeInTheDocument()
+    // Planet list (sub-modal) must not be visible until PLAY is clicked
+    expect(screen.queryByText('Ang')).not.toBeInTheDocument()
+    expect(screen.queryByText('Elysium')).not.toBeInTheDocument()
   })
 
   it('opens PlayPromissoryNoteModal when Terraform PLAY is clicked', () => {
