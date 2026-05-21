@@ -385,13 +385,13 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-CommanderRerollModal](component-CommanderRerollModal.md) | `src/components/game/CommanderRerollModal.jsx` | 43c | Leader Card Abilities — Commander Passives | planned | hook-useLeaders-p43c |
 | [component-GameScreen-p43c](component-GameScreen-p43c.md) | `src/components/game/GameScreen.jsx` | 43c | Leader Card Abilities — Commander Passives | planned | hook-useLeaders-p43c, component-CommanderRerollModal |
 
-| [migration-053-titans-ul-attachments](migration-053-titans-ul-attachments.md) | `supabase/migrations/053_titans_ul_attachments.sql` | 44 | TE — Titans of Ul Attachments | planned | — |
-| [fn-game-play-promissory-note-p44](fn-game-play-promissory-note-p44.md) | `supabase/functions/game-play-promissory-note/index.ts` | 44 | TE — Titans of Ul Attachments | planned | migration-053-titans-ul-attachments |
-| [shared-abilityHandlers-p44](shared-abilityHandlers-p44.md) | `supabase/functions/_shared/abilityHandlers.ts` | 44 | TE — Titans of Ul Attachments | planned | migration-053-titans-ul-attachments |
-| [fn-game-resolve-ability-p44](fn-game-resolve-ability-p44.md) | `supabase/functions/game-resolve-ability/index.ts` | 44 | TE — Titans of Ul Attachments | planned | shared-abilityHandlers-p44 |
-| [client-edgeFunctions-p44](client-edgeFunctions-p44.md) | `src/lib/edgeFunctions.js` | 44 | TE — Titans of Ul Attachments | planned | fn-game-play-promissory-note-p44 |
-| [component-PromissoryNotesModal-p44](component-PromissoryNotesModal-p44.md) | `src/components/game/PromissoryNotesModal.jsx` | 44 | TE — Titans of Ul Attachments | planned | client-edgeFunctions-p44 |
-| [component-LeaderCard-p44](component-LeaderCard-p44.md) | `src/components/game/LeaderCard.jsx` | 44 | TE — Titans of Ul Attachments | planned | — |
+| [migration-053-titans-ul-attachments](migration-053-titans-ul-attachments.md) | `supabase/migrations/053_titans_ul_attachments.sql` | 44 | TE — Titans of Ul Attachments | done | — |
+| [fn-game-play-promissory-note-p44](fn-game-play-promissory-note-p44.md) | `supabase/functions/game-play-promissory-note/index.ts` | 44 | TE — Titans of Ul Attachments | done | migration-053-titans-ul-attachments |
+| [shared-abilityHandlers-p44](shared-abilityHandlers-p44.md) | `supabase/functions/_shared/abilityHandlers.ts` | 44 | TE — Titans of Ul Attachments | done | migration-053-titans-ul-attachments |
+| [fn-game-resolve-ability-p44](fn-game-resolve-ability-p44.md) | `supabase/functions/game-resolve-ability/index.ts` | 44 | TE — Titans of Ul Attachments | done | shared-abilityHandlers-p44 |
+| [client-edgeFunctions-p44](client-edgeFunctions-p44.md) | `src/lib/edgeFunctions.js` | 44 | TE — Titans of Ul Attachments | done | fn-game-play-promissory-note-p44 |
+| [component-PromissoryNotesModal-p44](component-PromissoryNotesModal-p44.md) | `src/components/game/PromissoryNotesModal.jsx` | 44 | TE — Titans of Ul Attachments | done | client-edgeFunctions-p44 |
+| [component-LeaderCard-p44](component-LeaderCard-p44.md) | `src/components/game/LeaderCard.jsx` | 44 | TE — Titans of Ul Attachments | done | — |
 
 | [component-GameIcon](component-GameIcon.md) | `src/components/shared/GameIcon.jsx` | UI | SVG Icon Integration | planned | — |
 | [component-TechCard-icon-integration](component-TechCard-icon-integration.md) | `src/components/game/TechCard.jsx` | UI | SVG Icon Integration | planned | component-GameIcon |
