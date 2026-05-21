@@ -93,6 +93,24 @@ export const resolveAbility = (gameId, abilityDefinitionId, sourceType, sourceId
     selections,
   })
 
+// Phase 39 — Mech Unit Card Abilities
+export const deployMech = (gameId, unitId, systemKey, targetPlanetName, replacingInfantry = false) =>
+  callFunction('game-deploy-mech', {
+    game_id: gameId,
+    unit_id: unitId,
+    system_key: systemKey,
+    target_planet_name: targetPlanetName,
+    replacing_infantry: replacingInfantry,
+  })
+
+export const resolveMechAbility = (gameId, unitId, selections = {}) =>
+  callFunction('game-resolve-ability', {
+    game_id: gameId,
+    source_type: 'mech',
+    source_id: unitId,
+    selections,
+  })
+
 export const unlockCommander = (gameId, abilityDefinitionId) =>
   callFunction('game-unlock-commander', {
     game_id: gameId,
