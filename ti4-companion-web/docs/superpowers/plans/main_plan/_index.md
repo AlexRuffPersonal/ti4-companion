@@ -266,7 +266,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-SystemActionModal-p38](component-SystemActionModal-p38.md) | `src/components/game/SystemActionModal.jsx` | 38 | Dark Energy Tap | planned | component-SystemActionModal (p31) |
 | [component-GalaxyTab-p38](component-GalaxyTab-p38.md) | `src/components/game/GalaxyTab.jsx` | 38 | Dark Energy Tap | planned | component-SystemActionModal-p38, component-GalaxyTab-p35 |
 
-| [migration-048-promissory-dsl](migration-048-promissory-dsl.md) | `supabase/migrations/048_promissory_dsl.sql` | 39a | Promissory Note DSL Effects | planned | migration-032-promissory-effects |
+| [migration-048-promissory-dsl](migration-048-promissory-dsl.md) | `supabase/migrations/053_promissory_dsl.sql` | 39a | Promissory Note DSL Effects | done | migration-032-promissory-effects |
 | [shared-abilityDsl-p39a](shared-abilityDsl-p39a.md) | `supabase/functions/_shared/abilityDsl.ts` | 39a | Promissory Note DSL Effects | planned | migration-048-promissory-dsl |
 | [shared-promissoryHandlers-p39a](shared-promissoryHandlers-p39a.md) | `supabase/functions/_shared/promissoryHandlers.ts` | 39a | Promissory Note DSL Effects | planned | shared-abilityDsl-p39a |
 | [shared-promissoryEnforcement-p39a](shared-promissoryEnforcement-p39a.md) | `supabase/functions/_shared/promissoryEnforcement.ts` | 39a | Promissory Note DSL Effects | planned | shared-promissoryHandlers-p39a |
@@ -313,7 +313,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-DraftPanel](component-DraftPanel.md) | `src/components/game/DraftPanel.jsx` | 39 | In-App Map Draft | planned | component-DraftSlicePickView, component-DraftPlacementView |
 | [component-LobbyScreen-p39](component-LobbyScreen-p39.md) | `src/components/game/LobbyScreen.jsx` | 39 | In-App Map Draft | planned | component-DraftPanel, hook-useDraft, client-edgeFunctions-p39 |
 
-| [migration-049-law-enforcement](migration-049-law-enforcement.md) | `supabase/migrations/049_law_enforcement.sql` | 40 | Persistent Agenda Law Enforcement | planned | — |
+| [migration-049-law-enforcement](migration-049-law-enforcement.md) | `supabase/migrations/049_law_enforcement.sql` | 40 | Persistent Agenda Law Enforcement | done | — |
 | [fn-game-resolve-agenda-p40](fn-game-resolve-agenda-p40.md) | `supabase/functions/game-resolve-agenda/index.ts` | 40 | Persistent Agenda Law Enforcement | planned | migration-049-law-enforcement |
 | [shared-lawEffects](shared-lawEffects.md) | `supabase/functions/_shared/lawEffects.ts` | 40 | Persistent Agenda Law Enforcement | planned | migration-049-law-enforcement |
 | [shared-abilityDsl-p40](shared-abilityDsl-p40.md) | `supabase/functions/_shared/abilityDsl.ts` | 40 | Persistent Agenda Law Enforcement | planned | shared-lawEffects |
