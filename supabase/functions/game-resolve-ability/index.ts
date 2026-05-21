@@ -19,20 +19,59 @@ export async function handler(req: Request): Promise<Response> {
   let body: { game_id?: unknown; ability_definition_id?: unknown; source_type?: unknown; source_id?: unknown; selections?: unknown }
   try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
   if (!body.game_id || typeof body.game_id !== 'string') return errorResponse("'game_id' is required")
-  if (!body.ability_definition_id || typeof body.ability_definition_id !== 'string') return errorResponse("'ability_definition_id' is required")
+  if (body.source_type !== 'mech') {
+    if (!body.ability_definition_id || typeof body.ability_definition_id !== 'string') return errorResponse("'ability_definition_id' is required")
+  }
   if (!body.source_type || typeof body.source_type !== 'string') return errorResponse("'source_type' is required")
-  const VALID_SOURCE_TYPES = ['faction_ability', 'action_card', 'leader', 'relic', 'promissory_note', 'exploration_card', 'technology', 'strategy_card']
+  const VALID_SOURCE_TYPES = ['faction_ability', 'action_card', 'leader', 'relic', 'promissory_note', 'exploration_card', 'technology', 'strategy_card', 'mech']
   if (!VALID_SOURCE_TYPES.includes(body.source_type)) return errorResponse(`Invalid source_type: ${body.source_type}`)
 
   // 1. Find the activating player
   const { data: player, error: playerError } = await db
     .from('game_players')
-    .select('id, action_card_count')
+    .select('id, action_card_count, faction')
     .eq('game_id', body.game_id)
     .eq('user_id', userId)
     .maybeSingle()
   if (playerError) return errorResponse('Database error', 500)
   if (!player) return errorResponse('Player not found in this game', 404)
+
+  // 1b. Mech ability early-return branch
+  if (body.source_type === 'mech') {
+    if (!body.source_id || typeof body.source_id !== 'string') return errorResponse("'source_id' is required")
+    const { data: unit, error: unitError } = await db
+      .from('units')
+      .select('id, unit_type, faction, effects')
+      .eq('id', body.source_id)
+      .maybeSingle()
+    if (unitError) return errorResponse('Database error', 500)
+    if (!unit) return errorResponse('Unit not found', 404)
+    const u = unit as Record<string, unknown>
+    if (u.unit_type !== 'mech') return errorResponse('Unit is not a mech', 409)
+    const p = player as Record<string, string>
+    if (u.faction !== p.faction) return errorResponse('Faction mismatch: unit does not belong to your faction', 409)
+    const selections = ((body.selections ?? {}) as Record<string, unknown>)
+    const context: ResolveContext = {
+      gameId: body.game_id,
+      activatingPlayerId: p.id,
+      selections,
+    }
+    try {
+      await interpretEffects((u.effects as unknown[]) ?? [], context, db)
+    } catch (e: unknown) {
+      const err = e as Error & { status?: number }
+      return errorResponse(err.message ?? 'Resolution failed', err.status === 409 ? 409 : 500)
+    }
+    await logEvent(db, {
+      game_id: body.game_id,
+      player_id: p.id,
+      event_type: EVT_RESOLVE_ABILITY,
+      payload: { source_type: 'mech', source_id: body.source_id, selections },
+      round: 0,
+      phase: 'action',
+    })
+    return okResponse({ resolved: true })
+  }
 
   // 2. Load the ability definition
   const { data: ability, error: abilityError } = await db
