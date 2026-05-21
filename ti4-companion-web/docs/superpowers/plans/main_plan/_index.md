@@ -344,7 +344,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [migration-052-leader-abilities](migration-052-leader-abilities.md) | `supabase/migrations/052_leader_abilities.sql` | 43a | Leader Card Abilities — Agents | done | — |
 | [lib-leaderConstants](lib-leaderConstants.md) | `src/lib/leaderConstants.js` | 43a | Leader Card Abilities — Agents | planned | — |
 | [component-LeaderAbilityModal](component-LeaderAbilityModal.md) | `src/components/game/LeaderAbilityModal.jsx` | 43a | Leader Card Abilities — Agents | planned | lib-leaderConstants |
-| [shared-leaderEffects](shared-leaderEffects.md) | `supabase/functions/_shared/leaderEffects.ts` | 43a | Leader Card Abilities — Agents | planned | migration-052-leader-abilities |
+| [shared-leaderEffects](shared-leaderEffects.md) | `supabase/functions/_shared/leaderEffects.ts` | 43a | Leader Card Abilities — Agents | done | migration-052-leader-abilities |
 | [shared-abilityDsl-p43a](shared-abilityDsl-p43a.md) | `supabase/functions/_shared/abilityDsl.ts` | 43a | Leader Card Abilities — Agents | planned | migration-052-leader-abilities |
 | [shared-abilityHandlers-p43a](shared-abilityHandlers-p43a.md) | `supabase/functions/_shared/abilityHandlers.ts` | 43a | Leader Card Abilities — Agents | planned | shared-leaderEffects, shared-abilityDsl-p43a |
 | [fn-game-resolve-ability-p43a](fn-game-resolve-ability-p43a.md) | `supabase/functions/game-resolve-ability/index.ts` | 43a | Leader Card Abilities — Agents | planned | shared-leaderEffects, shared-abilityDsl-p43a, shared-abilityHandlers-p43a |
