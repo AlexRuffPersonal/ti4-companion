@@ -255,10 +255,10 @@ This keeps the index accurate across multi-session implementations so future age
 | [migration-047-strategy-card-effects](migration-047-strategy-card-effects.md) | `supabase/migrations/047_strategy_card_effects.sql` | 37 | Strategy Card Text & Ability Enforcement | done | migration-029-strategy-production |
 | [lib-strategyCardConstants](lib-strategyCardConstants.md) | `src/lib/strategyCardConstants.js` | 37 | Strategy Card Text & Ability Enforcement | done | — |
 | [shared-abilityDsl-p37](shared-abilityDsl-p37.md) | `supabase/functions/_shared/abilityDsl.ts` | 37 | Strategy Card Text & Ability Enforcement | done | migration-047-strategy-card-effects, shared-objectiveConditions |
-| [fn-game-play-strategy-card-p37](fn-game-play-strategy-card-p37.md) | `supabase/functions/game-play-strategy-card/index.ts` | 37 | Strategy Card Text & Ability Enforcement | planned | migration-047-strategy-card-effects, shared-abilityDsl-p37 |
-| [fn-game-use-strategy-secondary-p37](fn-game-use-strategy-secondary-p37.md) | `supabase/functions/game-use-strategy-secondary/index.ts` | 37 | Strategy Card Text & Ability Enforcement | planned | migration-047-strategy-card-effects, shared-abilityDsl-p37 |
+| [fn-game-play-strategy-card-p37](fn-game-play-strategy-card-p37.md) | `supabase/functions/game-play-strategy-card/index.ts` | 37 | Strategy Card Text & Ability Enforcement | done | migration-047-strategy-card-effects, shared-abilityDsl-p37 |
+| [fn-game-use-strategy-secondary-p37](fn-game-use-strategy-secondary-p37.md) | `supabase/functions/game-use-strategy-secondary/index.ts` | 37 | Strategy Card Text & Ability Enforcement | done | migration-047-strategy-card-effects, shared-abilityDsl-p37 |
 | [fn-game-produce-units-p37](fn-game-produce-units-p37.md) | `supabase/functions/game-produce-units/index.ts` | 37 | Strategy Card Text & Ability Enforcement | planned | fn-game-use-strategy-secondary-p37 |
-| [hook-useStrategyCards-p37](hook-useStrategyCards-p37.md) | `src/hooks/useStrategyCards.js` | 37 | Strategy Card Text & Ability Enforcement | planned | fn-game-play-strategy-card-p37, fn-game-use-strategy-secondary-p37 |
+| [hook-useStrategyCards-p37](hook-useStrategyCards-p37.md) | `src/hooks/useStrategyCards.js` | 37 | Strategy Card Text & Ability Enforcement | done | fn-game-play-strategy-card-p37, fn-game-use-strategy-secondary-p37 |
 | [component-StrategyCardPanel-p37](component-StrategyCardPanel-p37.md) | `src/components/game/StrategyCardPanel.jsx` | 37 | Strategy Card Text & Ability Enforcement | planned | lib-strategyCardConstants, hook-useStrategyCards-p37 |
 | [component-StrategyCardModal-p37](component-StrategyCardModal-p37.md) | `src/components/game/StrategyCardModal.jsx` | 37 | Strategy Card Text & Ability Enforcement | planned | lib-strategyCardConstants, hook-useStrategyCards-p37, component-StrategyCardPanel-p37 |
 
@@ -295,7 +295,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-resolve-ability-mech](fn-game-resolve-ability-mech.md) | `supabase/functions/game-resolve-ability/index.ts` | 39 | Mech Unit Card Abilities | done | migration-050-mech-abilities |
 | [fn-game-deploy-mech](fn-game-deploy-mech.md) | `supabase/functions/game-deploy-mech/index.ts` | 39 | Mech Unit Card Abilities | done | migration-050-mech-abilities |
 | [client-edgeFunctions-mech](client-edgeFunctions-mech.md) | `src/lib/edgeFunctions.js` | 39 | Mech Unit Card Abilities | done | fn-game-deploy-mech, fn-game-resolve-ability-mech |
-| [hook-useLeaders-mech](hook-useLeaders-mech.md) | `src/hooks/useLeaders.js` | 39 | Mech Unit Card Abilities | planned | client-edgeFunctions-mech |
+| [hook-useLeaders-mech](hook-useLeaders-mech.md) | `src/hooks/useLeaders.js` | 39 | Mech Unit Card Abilities | done | client-edgeFunctions-mech |
 | [component-LeaderCard-mech](component-LeaderCard-mech.md) | `src/components/game/LeaderCard.jsx` | 39 | Mech Unit Card Abilities | planned | hook-useLeaders-mech |
 | [component-LeaderPanel-mech](component-LeaderPanel-mech.md) | `src/components/game/LeaderPanel.jsx` | 39 | Mech Unit Card Abilities | planned | component-LeaderCard-mech |
 | [component-MyPanelSection-mech](component-MyPanelSection-mech.md) | `src/components/game/MyPanelSection.jsx` | 39 | Mech Unit Card Abilities | planned | component-LeaderPanel-mech |
@@ -306,7 +306,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-draft-pick-slice](fn-game-draft-pick-slice.md) | `supabase/functions/game-draft-pick-slice/index.ts` | 39 | In-App Map Draft | done | fn-game-start-draft, shared-draftHelpers |
 | [fn-game-draft-place-tile](fn-game-draft-place-tile.md) | `supabase/functions/game-draft-place-tile/index.ts` | 39 | In-App Map Draft | done | fn-game-start-draft, shared-draftHelpers |
 | [client-edgeFunctions-p39](client-edgeFunctions-p39.md) | `src/lib/edgeFunctions.js` | 39 | In-App Map Draft | done | fn-game-start-draft, fn-game-draft-pick-slice, fn-game-draft-place-tile |
-| [hook-useDraft](hook-useDraft.md) | `src/hooks/useDraft.js` | 39 | In-App Map Draft | planned | client-edgeFunctions-p39 |
+| [hook-useDraft](hook-useDraft.md) | `src/hooks/useDraft.js` | 39 | In-App Map Draft | done | client-edgeFunctions-p39 |
 | [component-DraftTileHand](component-DraftTileHand.md) | `src/components/game/DraftTileHand.jsx` | 39 | In-App Map Draft | planned | hook-useDraft |
 | [component-DraftSlicePickView](component-DraftSlicePickView.md) | `src/components/game/DraftSlicePickView.jsx` | 39 | In-App Map Draft | planned | component-DraftTileHand |
 | [component-DraftPlacementView](component-DraftPlacementView.md) | `src/components/game/DraftPlacementView.jsx` | 39 | In-App Map Draft | planned | component-DraftTileHand |
@@ -343,7 +343,7 @@ This keeps the index accurate across multi-session implementations so future age
 
 | [migration-052-leader-abilities](migration-052-leader-abilities.md) | `supabase/migrations/052_leader_abilities.sql` | 43a | Leader Card Abilities — Agents | done | — |
 | [lib-leaderConstants](lib-leaderConstants.md) | `src/lib/leaderConstants.js` | 43a | Leader Card Abilities — Agents | done | — |
-| [component-LeaderAbilityModal](component-LeaderAbilityModal.md) | `src/components/game/LeaderAbilityModal.jsx` | 43a | Leader Card Abilities — Agents | planned | lib-leaderConstants |
+| [component-LeaderAbilityModal](component-LeaderAbilityModal.md) | `src/components/game/LeaderAbilityModal.jsx` | 43a | Leader Card Abilities — Agents | done | lib-leaderConstants |
 | [shared-leaderEffects](shared-leaderEffects.md) | `supabase/functions/_shared/leaderEffects.ts` | 43a | Leader Card Abilities — Agents | done | migration-052-leader-abilities |
 | [shared-abilityDsl-p43a](shared-abilityDsl-p43a.md) | `supabase/functions/_shared/abilityDsl.ts` | 43a | Leader Card Abilities — Agents | planned | migration-052-leader-abilities |
 | [shared-abilityHandlers-p43a](shared-abilityHandlers-p43a.md) | `supabase/functions/_shared/abilityHandlers.ts` | 43a | Leader Card Abilities — Agents | planned | shared-leaderEffects, shared-abilityDsl-p43a |
@@ -352,7 +352,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-activate-system-p43a](fn-game-activate-system-p43a.md) | `supabase/functions/game-activate-system/index.ts` | 43a | Leader Card Abilities — Agents | planned | shared-leaderEffects |
 | [fn-game-produce-units-p43a](fn-game-produce-units-p43a.md) | `supabase/functions/game-produce-units/index.ts` | 43a | Leader Card Abilities — Agents | planned | shared-leaderEffects |
 | [fn-game-assign-hits-p43a](fn-game-assign-hits-p43a.md) | `supabase/functions/game-assign-hits/index.ts` | 43a | Leader Card Abilities — Agents | planned | shared-leaderEffects |
-| [hook-useLeaders-p43a](hook-useLeaders-p43a.md) | `src/hooks/useLeaders.js` | 43a | Leader Card Abilities — Agents | planned | component-LeaderAbilityModal, lib-leaderConstants |
+| [hook-useLeaders-p43a](hook-useLeaders-p43a.md) | `src/hooks/useLeaders.js` | 43a | Leader Card Abilities — Agents | done | component-LeaderAbilityModal, lib-leaderConstants |
 | [component-LeaderPanel-p43a](component-LeaderPanel-p43a.md) | `src/components/game/LeaderPanel.jsx` | 43a | Leader Card Abilities — Agents | planned | hook-useLeaders-p43a, component-LeaderAbilityModal |
 | [component-GameScreen-p43a](component-GameScreen-p43a.md) | `src/components/game/GameScreen.jsx` | 43a | Leader Card Abilities — Agents | planned | hook-useLeaders-p43a |
 
@@ -381,7 +381,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-cast-votes-p43c](fn-game-cast-votes-p43c.md) | `supabase/functions/game-cast-votes/index.ts` | 43c | Leader Card Abilities — Commander Passives | planned | shared-leaderEffects-p43c, shared-abilityHandlers-p43c |
 | [fn-game-resolve-commander-reroll](fn-game-resolve-commander-reroll.md) | `supabase/functions/game-resolve-commander-reroll/index.ts` | 43c | Leader Card Abilities — Commander Passives | done | shared-leaderEffects-p43c, migration-052-leader-abilities |
 | [client-edgeFunctions-p43c](client-edgeFunctions-p43c.md) | `src/lib/edgeFunctions.js` | 43c | Leader Card Abilities — Commander Passives | done | fn-game-unlock-commander, fn-game-resolve-commander-reroll |
-| [hook-useLeaders-p43c](hook-useLeaders-p43c.md) | `src/hooks/useLeaders.js` | 43c | Leader Card Abilities — Commander Passives | planned | client-edgeFunctions-p43c, hook-useLeaders-p43a |
+| [hook-useLeaders-p43c](hook-useLeaders-p43c.md) | `src/hooks/useLeaders.js` | 43c | Leader Card Abilities — Commander Passives | done | client-edgeFunctions-p43c, hook-useLeaders-p43a |
 | [component-CommanderRerollModal](component-CommanderRerollModal.md) | `src/components/game/CommanderRerollModal.jsx` | 43c | Leader Card Abilities — Commander Passives | planned | hook-useLeaders-p43c |
 | [component-GameScreen-p43c](component-GameScreen-p43c.md) | `src/components/game/GameScreen.jsx` | 43c | Leader Card Abilities — Commander Passives | planned | hook-useLeaders-p43c, component-CommanderRerollModal |
 
