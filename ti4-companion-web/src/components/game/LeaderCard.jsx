@@ -17,6 +17,8 @@ export default function LeaderCard({ leader, status, onUseAbility, onUnlock, isM
           ? 'bg-success/20 text-success'
           : status === 'exhausted'
           ? 'bg-warning/20 text-warning'
+          : status === 'attached'
+          ? 'bg-gold/20 text-gold'
           : status === 'purged'
           ? 'bg-danger/20 text-danger'
           : 'bg-muted/20 text-muted'
