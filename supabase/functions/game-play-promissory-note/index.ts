@@ -35,18 +35,6 @@ export async function handler(req: Request): Promise<Response> {
   if (noteRow.held_by_player_id !== player.id) return errorResponse('You do not hold this note', 403)
   if (noteRow.state !== 'held') return errorResponse('Note is not held', 409)
 
-  const { data: abilitySource } = await db
-    .from('ability_sources')
-    .select('ability_definition_id, ability_definitions(id, handler_key, effects)')
-    .eq('source_type', 'promissory_note')
-    .eq('source_id', noteRow.note_id)
-    .maybeSingle()
-
-  if (!abilitySource) return errorResponse('No ability definition for this note', 404)
-  // Full ability resolution wired in Phase 30; for now we just track the play
-  // const _abilityDef = abilitySource.ability_definitions as Record<string, unknown>
-  // const _selections = body.selections ?? {}
-
   const { data: noteRefData, error: noteRefError } = await db
     .from('promissory_notes')
     .select('purge_on_use, into_play_area, name')
@@ -55,6 +43,7 @@ export async function handler(req: Request): Promise<Response> {
   if (noteRefError) return errorResponse('Database error', 500)
 
   // Terraform promissory note: validate and attach to planet before state change
+  // (handled inline; does not need an ability_sources row)
   if ((noteRefData as Record<string, unknown> | null)?.name === 'Terraform') {
     if (!body.planet_name || typeof body.planet_name !== 'string') {
       return errorResponse("'planet_name' is required for Terraform", 400)
@@ -109,6 +98,18 @@ export async function handler(req: Request): Promise<Response> {
     })
     return okResponse({ played: true })
   }
+
+  const { data: abilitySource } = await db
+    .from('ability_sources')
+    .select('ability_definition_id, ability_definitions(id, handler_key, effects)')
+    .eq('source_type', 'promissory_note')
+    .eq('source_id', noteRow.note_id)
+    .maybeSingle()
+
+  if (!abilitySource) return errorResponse('No ability definition for this note', 404)
+  // Full ability resolution wired in Phase 30; for now we just track the play
+  // const _abilityDef = abilitySource.ability_definitions as Record<string, unknown>
+  // const _selections = body.selections ?? {}
 
   let newState: string
   if (noteRefData?.into_play_area) {
