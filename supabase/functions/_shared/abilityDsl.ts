@@ -14,6 +14,8 @@ export interface ResolveContext {
   strategyPlayId?: string
   gainedRelicName?: string
   drawnExplorationCard?: Record<string, unknown>
+  noteInstanceId?: string
+  noteOriginPlayerId?: string
 }
 
 export interface CombatResolveContext extends ResolveContext {
@@ -934,6 +936,32 @@ async function interpretOp(
         .update({ command_tokens: tokens })
         .eq('id', context.activatingPlayerId)
       if (error) throw new Error(`gain_command_token_choice failed: ${error.message}`)
+      break
+    }
+
+    case 'purge_relic_fragments': {
+      const fragmentType = context.selections?.fragment_type as string | undefined
+      if (!fragmentType || !['cultural', 'hazardous', 'industrial'].includes(fragmentType)) {
+        throw dslError('fragment_type must be cultural, hazardous, or industrial', 400)
+      }
+      const count = op.count as number
+      const { data: fragments, error: fragError } = await db
+        .from('game_exploration_decks')
+        .select('id')
+        .eq('game_id', context.gameId)
+        .eq('resolved_by_player_id', context.activatingPlayerId)
+        .eq('relic_fragment_type', fragmentType)
+        .eq('state', 'held')
+        .limit(count)
+      if (fragError) throw new Error(`purge_relic_fragments: query failed: ${fragError.message}`)
+      const rows = (fragments ?? []) as Array<{ id: string }>
+      if (rows.length < count) throw dslError('Insufficient relic fragments')
+      const ids = rows.map(r => r.id)
+      const { error: updateError } = await db
+        .from('game_exploration_decks')
+        .update({ state: 'discarded', resolved_by_player_id: null })
+        .in('id', ids)
+      if (updateError) throw new Error(`purge_relic_fragments: update failed: ${updateError.message}`)
       break
     }
 

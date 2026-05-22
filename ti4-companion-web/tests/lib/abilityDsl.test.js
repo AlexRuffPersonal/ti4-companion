@@ -932,6 +932,70 @@ describe('spend_commodities', () => {
   })
 })
 
+// ── Phase 39a ops ─────────────────────────────────────────────────────────────
+
+describe('purge_relic_fragments', () => {
+  function makePurgeDb({ fragmentRows = [], updateError = null } = {}) {
+    const updateMock = vi.fn().mockReturnValue({ in: vi.fn().mockResolvedValue({ error: updateError }) })
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'p1', trade_goods: 0, commodities: 0, vp: 0, technologies: [], action_card_count: 0, command_tokens: {} }, error: null }) }) }),
+        }
+        if (table === 'game_exploration_decks') return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    limit: vi.fn().mockResolvedValue({ data: fragmentRows, error: null }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+          update: updateMock,
+        }
+        return {}
+      }),
+    }
+    return { db, updateMock }
+  }
+
+  it('discards count rows when sufficient fragments held', async () => {
+    const fragments = [{ id: 'frag-1' }, { id: 'frag-2' }]
+    const { db, updateMock } = makePurgeDb({ fragmentRows: fragments })
+    await interpretEffects(
+      [{ op: 'purge_relic_fragments', count: 2 }],
+      { ...CTX, selections: { fragment_type: 'cultural' } },
+      db
+    )
+    expect(updateMock).toHaveBeenCalledWith({ state: 'discarded', resolved_by_player_id: null })
+  })
+
+  it('409 Insufficient relic fragments when fewer rows', async () => {
+    const { db } = makePurgeDb({ fragmentRows: [{ id: 'frag-1' }] })
+    await expect(
+      interpretEffects(
+        [{ op: 'purge_relic_fragments', count: 2 }],
+        { ...CTX, selections: { fragment_type: 'hazardous' } },
+        db
+      )
+    ).rejects.toThrow('Insufficient relic fragments')
+  })
+
+  it('400/dslError when fragment_type missing from selections', async () => {
+    const { db } = makePurgeDb({ fragmentRows: [] })
+    await expect(
+      interpretEffects(
+        [{ op: 'purge_relic_fragments', count: 1 }],
+        { ...CTX, selections: {} },
+        db
+      )
+    ).rejects.toThrow('fragment_type must be cultural, hazardous, or industrial')
+  })
+})
+
 describe('gain_command_token_choice', () => {
   it('adds 1 token to the chosen bucket', async () => {
     const updateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })

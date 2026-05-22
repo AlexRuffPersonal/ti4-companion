@@ -267,7 +267,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-GalaxyTab-p38](component-GalaxyTab-p38.md) | `src/components/game/GalaxyTab.jsx` | 38 | Dark Energy Tap | planned | component-SystemActionModal-p38, component-GalaxyTab-p35 |
 
 | [migration-048-promissory-dsl](migration-048-promissory-dsl.md) | `supabase/migrations/053_promissory_dsl.sql` | 39a | Promissory Note DSL Effects | done | migration-032-promissory-effects |
-| [shared-abilityDsl-p39a](shared-abilityDsl-p39a.md) | `supabase/functions/_shared/abilityDsl.ts` | 39a | Promissory Note DSL Effects | planned | migration-048-promissory-dsl |
+| [shared-abilityDsl-p39a](shared-abilityDsl-p39a.md) | `supabase/functions/_shared/abilityDsl.ts` | 39a | Promissory Note DSL Effects | done | migration-048-promissory-dsl |
 | [shared-promissoryHandlers-p39a](shared-promissoryHandlers-p39a.md) | `supabase/functions/_shared/promissoryHandlers.ts` | 39a | Promissory Note DSL Effects | planned | shared-abilityDsl-p39a |
 | [shared-promissoryEnforcement-p39a](shared-promissoryEnforcement-p39a.md) | `supabase/functions/_shared/promissoryEnforcement.ts` | 39a | Promissory Note DSL Effects | planned | shared-promissoryHandlers-p39a |
 | [fn-game-play-promissory-note-p39a](fn-game-play-promissory-note-p39a.md) | `supabase/functions/game-play-promissory-note/index.ts` | 39a | Promissory Note DSL Effects | planned | shared-abilityDsl-p39a, shared-promissoryHandlers-p39a |
