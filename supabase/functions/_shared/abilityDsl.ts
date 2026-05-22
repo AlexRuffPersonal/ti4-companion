@@ -965,6 +965,211 @@ async function interpretOp(
       break
     }
 
+    // ── Phase 43a ops ────────────────────────────────────────────────────────
+
+    case 'reclaim_command_tokens': {
+      // Fetch and delete all activation rows for this player across the board
+      const { data: activations, error: actFetchError } = await db
+        .from('game_system_activations')
+        .select('id')
+        .eq('game_id', context.gameId)
+        .eq('player_id', context.activatingPlayerId)
+      if (actFetchError) throw new Error(`reclaim_command_tokens: fetch failed: ${actFetchError.message}`)
+      const actRows = (activations ?? []) as Array<{ id: string }>
+      if (actRows.length > 0) {
+        const ids = actRows.map(r => r.id)
+        const { error: deleteError } = await db
+          .from('game_system_activations')
+          .delete()
+          .in('id', ids)
+        if (deleteError) throw new Error(`reclaim_command_tokens: delete failed: ${deleteError.message}`)
+      }
+      break
+    }
+
+    case 'produce_in_systems_with_ground_forces': {
+      // Arborec hero: produce units in any system containing player's ground forces
+      const { data: groundForceRows, error: gfError } = await db
+        .from('game_player_units')
+        .select('system_key')
+        .eq('game_id', context.gameId)
+        .eq('player_id', context.activatingPlayerId)
+        .in('unit_type', ['infantry', 'mech'])
+        .not('on_planet', 'is', null)
+      if (gfError) throw new Error(`produce_in_systems_with_ground_forces: query failed: ${gfError.message}`)
+      const validSystems = new Set(
+        ((groundForceRows ?? []) as Array<{ system_key: string }>).map(r => r.system_key)
+      )
+      const produceList = (context.selections?.produce_list ?? []) as Array<{ system_key: string; unit_type: string; count: number }>
+      for (const entry of produceList) {
+        if (!validSystems.has(entry.system_key)) throw dslError('System has no ground forces')
+        const { data: existing, error: existError } = await db
+          .from('game_player_units')
+          .select('id, count')
+          .eq('game_id', context.gameId)
+          .eq('player_id', context.activatingPlayerId)
+          .eq('system_key', entry.system_key)
+          .eq('unit_type', entry.unit_type)
+          .is('on_planet', null)
+          .maybeSingle()
+        if (existError) throw new Error(`produce_in_systems_with_ground_forces: unit query failed: ${existError.message}`)
+        if (existing) {
+          const { error } = await db
+            .from('game_player_units')
+            .update({ count: ((existing as { count: number }).count ?? 0) + entry.count })
+            .eq('id', (existing as { id: string }).id)
+          if (error) throw new Error(`produce_in_systems_with_ground_forces: update failed: ${error.message}`)
+        } else {
+          const { error } = await db
+            .from('game_player_units')
+            .insert({ game_id: context.gameId, player_id: context.activatingPlayerId, system_key: entry.system_key, unit_type: entry.unit_type, on_planet: null, count: entry.count })
+          if (error) throw new Error(`produce_in_systems_with_ground_forces: insert failed: ${error.message}`)
+        }
+      }
+      break
+    }
+
+    case 'produce_units_free': {
+      // Hacan hero: flag downstream production as free (no resource cost)
+      ;(context as Record<string, unknown>).free_production = true
+      break
+    }
+
+    case 'explore_planet_free': {
+      // Naaz-Rokha commander: scaffold — set flag for caller to handle exploration
+      const planetName = context.selections?.planet_name as string
+      if (!planetName) throw dslError('planet_name is required', 400)
+      const { data: controlled, error: controlError } = await db
+        .from('game_player_planets')
+        .select('id')
+        .eq('game_id', context.gameId)
+        .eq('player_id', context.activatingPlayerId)
+        .eq('planet_name', planetName)
+        .maybeSingle()
+      if (controlError) throw new Error(`explore_planet_free: query failed: ${controlError.message}`)
+      if (!controlled) throw dslError('Planet not controlled')
+      // Set flag for caller to handle the actual card draw
+      ;(context as Record<string, unknown>).explore_planet_name = planetName
+      break
+    }
+
+    case 'replace_ship': {
+      // Arborec agent: replace a non-fighter ship with one costing at most 2 more
+      const targetPlayerId = context.selections?.chosen_player_id as string
+      const sourceSystemKey = context.selections?.system_key as string
+      const oldUnitType = context.selections?.old_unit_type as string
+      const newUnitType = context.selections?.new_unit_type as string
+      if (!targetPlayerId || !sourceSystemKey || !oldUnitType || !newUnitType) {
+        throw dslError('chosen_player_id, system_key, old_unit_type, and new_unit_type are required', 400)
+      }
+      // Fetch unit definitions for cost comparison
+      const { data: oldDef, error: oldDefError } = await db
+        .from('units')
+        .select('cost')
+        .eq('name', oldUnitType)
+        .maybeSingle()
+      if (oldDefError || !oldDef) throw new Error(`replace_ship: old unit def not found for ${oldUnitType}`)
+      const { data: newDef, error: newDefError } = await db
+        .from('units')
+        .select('cost')
+        .eq('name', newUnitType)
+        .maybeSingle()
+      if (newDefError || !newDef) throw new Error(`replace_ship: new unit def not found for ${newUnitType}`)
+      if ((newDef as { cost: number }).cost > (oldDef as { cost: number }).cost + 2) {
+        throw dslError('New unit must cost at most 2 more')
+      }
+      // Fetch the source unit row
+      const { data: sourceUnit, error: sourceError } = await db
+        .from('game_player_units')
+        .select('id, count')
+        .eq('game_id', context.gameId)
+        .eq('player_id', targetPlayerId)
+        .eq('system_key', sourceSystemKey)
+        .eq('unit_type', oldUnitType)
+        .is('on_planet', null)
+        .maybeSingle()
+      if (sourceError) throw new Error(`replace_ship: source query failed: ${sourceError.message}`)
+      if (!sourceUnit) throw dslError('Source unit not found')
+      // Decrement old unit (delete if count drops to 0)
+      const oldCount = (sourceUnit as { count: number }).count
+      if (oldCount <= 1) {
+        const { error: deleteError } = await db
+          .from('game_player_units')
+          .delete()
+          .eq('id', (sourceUnit as { id: string }).id)
+        if (deleteError) throw new Error(`replace_ship: delete old unit failed: ${deleteError.message}`)
+      } else {
+        const { error: decrementError } = await db
+          .from('game_player_units')
+          .update({ count: oldCount - 1 })
+          .eq('id', (sourceUnit as { id: string }).id)
+        if (decrementError) throw new Error(`replace_ship: decrement failed: ${decrementError.message}`)
+      }
+      // Upsert new unit in same system
+      const { data: existingNew, error: existNewError } = await db
+        .from('game_player_units')
+        .select('id, count')
+        .eq('game_id', context.gameId)
+        .eq('player_id', targetPlayerId)
+        .eq('system_key', sourceSystemKey)
+        .eq('unit_type', newUnitType)
+        .is('on_planet', null)
+        .maybeSingle()
+      if (existNewError) throw new Error(`replace_ship: new unit query failed: ${existNewError.message}`)
+      if (existingNew) {
+        const { error } = await db
+          .from('game_player_units')
+          .update({ count: ((existingNew as { count: number }).count ?? 0) + 1 })
+          .eq('id', (existingNew as { id: string }).id)
+        if (error) throw new Error(`replace_ship: new unit update failed: ${error.message}`)
+      } else {
+        const { error } = await db
+          .from('game_player_units')
+          .insert({ game_id: context.gameId, player_id: targetPlayerId, system_key: sourceSystemKey, unit_type: newUnitType, on_planet: null, count: 1 })
+        if (error) throw new Error(`replace_ship: new unit insert failed: ${error.message}`)
+      }
+      break
+    }
+
+    case 'give_promissory_to_opponent': {
+      // Mentak commander: opponent gives 1 promissory note to activating player
+      const opponentId = context.selections?.chosen_player_id as string
+      const noteId = context.selections?.note_id as string
+      if (!opponentId || !noteId) throw dslError('chosen_player_id and note_id are required', 400)
+      const { data: note, error: noteError } = await db
+        .from('game_player_promissory_notes')
+        .select('id')
+        .eq('id', noteId)
+        .eq('held_by_player_id', opponentId)
+        .eq('state', 'hand')
+        .maybeSingle()
+      if (noteError) throw new Error(`give_promissory_to_opponent: query failed: ${noteError.message}`)
+      if (!note) throw dslError('Note not found in opponent hand')
+      const { error: transferError } = await db
+        .from('game_player_promissory_notes')
+        .update({ held_by_player_id: context.activatingPlayerId })
+        .eq('id', noteId)
+      if (transferError) throw new Error(`give_promissory_to_opponent: transfer failed: ${transferError.message}`)
+      break
+    }
+
+    case 'increase_move': {
+      // Set move override flag for caller to compute actual max move
+      ;(context as Record<string, unknown>).move_override = {
+        ship_id: context.selections?.ship_id,
+        move: 'MAX',
+      }
+      break
+    }
+
+    case 'produce_at_any_space_dock': {
+      // Set dock planet override for caller to handle
+      const dockPlanet = context.selections?.dock_planet as string
+      if (!dockPlanet) throw dslError('dock_planet is required', 400)
+      ;(context as Record<string, unknown>).dock_planet_override = dockPlanet
+      break
+    }
+
     default:
       throw new Error(`Unknown op: ${op.op}`)
   }

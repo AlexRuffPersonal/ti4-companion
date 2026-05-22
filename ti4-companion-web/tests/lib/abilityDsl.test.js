@@ -1041,3 +1041,157 @@ describe('gain_command_token_choice', () => {
     ).rejects.toThrow('Invalid command token bucket')
   })
 })
+
+// ── Phase 43a ops ─────────────────────────────────────────────────────────────
+
+describe('reclaim_command_tokens', () => {
+  it('deletes all activation rows for player', async () => {
+    const activations = [{ id: 'act-1' }, { id: 'act-2' }]
+    const deleteMock = vi.fn().mockReturnValue({ in: vi.fn().mockResolvedValue({ error: null }) })
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'p1', trade_goods: 0, commodities: 0, vp: 0, technologies: [], action_card_count: 0, command_tokens: {} }, error: null }) }) }) }
+        if (table === 'game_system_activations') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: activations, error: null }) }) }),
+          delete: deleteMock,
+        }
+        return {}
+      }),
+    }
+    await interpretEffects([{ op: 'reclaim_command_tokens' }], CTX, db)
+    expect(deleteMock).toHaveBeenCalled()
+  })
+
+  it('no-ops when no activations exist for player', async () => {
+    const deleteMock = vi.fn()
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'p1', trade_goods: 0, commodities: 0, vp: 0, technologies: [], action_card_count: 0, command_tokens: {} }, error: null }) }) }) }
+        if (table === 'game_system_activations') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: [], error: null }) }) }),
+          delete: deleteMock,
+        }
+        return {}
+      }),
+    }
+    await interpretEffects([{ op: 'reclaim_command_tokens' }], CTX, db)
+    expect(deleteMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('replace_ship', () => {
+  function makeReplaceShipDb({ oldCost = 2, newCost = 3, sourceUnit = { id: 'u1', count: 1 }, existingNew = null } = {}) {
+    const deleteMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    const updateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    const insertMock = vi.fn().mockResolvedValue({ error: null })
+    let unitSelectCount = 0
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'p1', trade_goods: 0, commodities: 0, vp: 0, technologies: [], action_card_count: 0, command_tokens: {} }, error: null }) }) }) }
+        if (table === 'units') {
+          return {
+            select: vi.fn().mockImplementation(() => ({
+              eq: vi.fn().mockImplementation((col, val) => ({
+                maybeSingle: vi.fn().mockResolvedValue({ data: val === 'Destroyer' ? { cost: oldCost } : { cost: newCost }, error: null }),
+              })),
+            })),
+          }
+        }
+        if (table === 'game_player_units') {
+          unitSelectCount++
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockReturnValue({
+                      is: vi.fn().mockReturnValue({
+                        maybeSingle: vi.fn().mockResolvedValue({ data: unitSelectCount === 1 ? sourceUnit : existingNew, error: null }),
+                      }),
+                    }),
+                  }),
+                }),
+              }),
+            }),
+            update: updateMock,
+            delete: deleteMock,
+            insert: insertMock,
+          }
+        }
+        return {}
+      }),
+    }
+    return { db, deleteMock, updateMock, insertMock }
+  }
+
+  it('throws 409 when new unit costs more than 2 above old', async () => {
+    const { db } = makeReplaceShipDb({ oldCost: 2, newCost: 5 })
+    await expect(
+      interpretEffects([{ op: 'replace_ship' }], {
+        ...CTX,
+        selections: { chosen_player_id: 'p2', system_key: '1,0', old_unit_type: 'Destroyer', new_unit_type: 'Dreadnought' }
+      }, db)
+    ).rejects.toThrow('New unit must cost at most 2 more')
+  })
+
+  it('throws 409 when source unit not found', async () => {
+    const { db } = makeReplaceShipDb({ sourceUnit: null })
+    await expect(
+      interpretEffects([{ op: 'replace_ship' }], {
+        ...CTX,
+        selections: { chosen_player_id: 'p2', system_key: '1,0', old_unit_type: 'Destroyer', new_unit_type: 'Cruiser' }
+      }, db)
+    ).rejects.toThrow('Source unit not found')
+  })
+
+  it('decrements old unit and inserts new unit when count is 1', async () => {
+    const { db, deleteMock, insertMock } = makeReplaceShipDb({ oldCost: 2, newCost: 3, sourceUnit: { id: 'u1', count: 1 }, existingNew: null })
+    await interpretEffects([{ op: 'replace_ship' }], {
+      ...CTX,
+      selections: { chosen_player_id: 'p2', system_key: '1,0', old_unit_type: 'Destroyer', new_unit_type: 'Cruiser' }
+    }, db)
+    expect(deleteMock).toHaveBeenCalled()
+    expect(insertMock).toHaveBeenCalledWith(expect.objectContaining({ unit_type: 'Cruiser', count: 1, on_planet: null }))
+  })
+})
+
+describe('give_promissory_to_opponent', () => {
+  it('throws 409 when note not in opponent hand', async () => {
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'p1', trade_goods: 0, commodities: 0, vp: 0, technologies: [], action_card_count: 0, command_tokens: {} }, error: null }) }) }) }
+        if (table === 'game_player_promissory_notes') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }) }) }) }) }),
+          update: vi.fn(),
+        }
+        return {}
+      }),
+    }
+    await expect(
+      interpretEffects([{ op: 'give_promissory_to_opponent' }], {
+        ...CTX,
+        selections: { chosen_player_id: 'p2', note_id: 'note-1' }
+      }, db)
+    ).rejects.toThrow('Note not found in opponent hand')
+  })
+
+  it('transfers note to activating player', async () => {
+    const note = { id: 'note-1' }
+    const updateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'p1', trade_goods: 0, commodities: 0, vp: 0, technologies: [], action_card_count: 0, command_tokens: {} }, error: null }) }) }) }
+        if (table === 'game_player_promissory_notes') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: note, error: null }) }) }) }) }),
+          update: updateMock,
+        }
+        return {}
+      }),
+    }
+    await interpretEffects([{ op: 'give_promissory_to_opponent' }], {
+      ...CTX,
+      selections: { chosen_player_id: 'p2', note_id: 'note-1' }
+    }, db)
+    expect(updateMock).toHaveBeenCalledWith({ held_by_player_id: 'p1' })
+  })
+})
