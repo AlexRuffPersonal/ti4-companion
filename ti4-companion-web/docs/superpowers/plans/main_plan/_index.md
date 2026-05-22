@@ -324,7 +324,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-advance-phase-p40](fn-game-advance-phase-p40.md) | `supabase/functions/game-advance-phase/index.ts` | 40 | Persistent Agenda Law Enforcement | planned | shared-lawEffects, migration-049-law-enforcement |
 
 | [migration-051-exploration-fixes](migration-051-exploration-fixes.md) | `supabase/migrations/051_exploration_fixes.sql` | 41 | Exploration Full Validation | done | — |
-| [shared-abilityDsl-p39](shared-abilityDsl-p39.md) | `supabase/functions/_shared/abilityDsl.ts` | 41 | Exploration Full Validation | planned | migration-051-exploration-fixes, shared-abilityDsl |
+| [shared-abilityDsl-p39](shared-abilityDsl-p39.md) | `supabase/functions/_shared/abilityDsl.ts` | 41 | Exploration Full Validation | done | migration-051-exploration-fixes, shared-abilityDsl |
 | [shared-explorationEffects-p39](shared-explorationEffects-p39.md) | `supabase/functions/_shared/explorationEffects.ts` | 41 | Exploration Full Validation | planned | shared-explorationEffects, shared-abilityDsl-p39 |
 | [fn-game-explore-planet-p39](fn-game-explore-planet-p39.md) | `supabase/functions/game-explore-planet/index.ts` | 41 | Exploration Full Validation | planned | fn-game-explore-planet, migration-051-exploration-fixes |
 | [fn-game-explore-frontier-p39](fn-game-explore-frontier-p39.md) | `supabase/functions/game-explore-frontier/index.ts` | 41 | Exploration Full Validation | planned | fn-game-explore-frontier, migration-051-exploration-fixes, shared-explorationEffects-p39 |

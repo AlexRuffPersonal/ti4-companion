@@ -866,3 +866,114 @@ describe('score_public_objective', () => {
     ).rejects.toThrow('Already scored this objective')
   })
 })
+
+// ── Phase 41 (shared-abilityDsl-p39) ops ──────────────────────────────────────
+
+describe('convert_all_commodities', () => {
+  it('converts all commodities to trade goods', async () => {
+    const updateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'p1', trade_goods: 1, commodities: 3, vp: 0, technologies: [], action_card_count: 0, command_tokens: {} }, error: null }) }) }),
+          update: updateMock,
+        }
+        return {}
+      }),
+    }
+    await interpretEffects([{ op: 'convert_all_commodities' }], CTX, db)
+    expect(updateMock).toHaveBeenCalledWith({ commodities: 0, trade_goods: 4 })
+  })
+
+  it('no-ops when commodities=0', async () => {
+    const updateMock = vi.fn()
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'p1', trade_goods: 2, commodities: 0, vp: 0, technologies: [], action_card_count: 0, command_tokens: {} }, error: null }) }) }),
+          update: updateMock,
+        }
+        return {}
+      }),
+    }
+    await interpretEffects([{ op: 'convert_all_commodities' }], CTX, db)
+    expect(updateMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('spend_commodities', () => {
+  it('deducts commodities by op.amount', async () => {
+    const updateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'p1', trade_goods: 0, commodities: 2, vp: 0, technologies: [], action_card_count: 0, command_tokens: {} }, error: null }) }) }),
+          update: updateMock,
+        }
+        return {}
+      }),
+    }
+    await interpretEffects([{ op: 'spend_commodities', amount: 1 }], CTX, db)
+    expect(updateMock).toHaveBeenCalledWith({ commodities: 1 })
+  })
+
+  it('throws 409 when player has fewer commodities than amount', async () => {
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'p1', trade_goods: 0, commodities: 0, vp: 0, technologies: [], action_card_count: 0, command_tokens: {} }, error: null }) }) }),
+        }
+        return {}
+      }),
+    }
+    await expect(
+      interpretEffects([{ op: 'spend_commodities', amount: 1 }], CTX, db)
+    ).rejects.toThrow('Insufficient commodities')
+  })
+})
+
+describe('gain_command_token_choice', () => {
+  it('adds 1 token to the chosen bucket', async () => {
+    const updateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'p1', trade_goods: 0, commodities: 0, vp: 0, technologies: [], action_card_count: 0, command_tokens: { tactic_total: 3, fleet: 2, strategy: 1 } }, error: null }) }) }),
+          update: updateMock,
+        }
+        return {}
+      }),
+    }
+    await interpretEffects([{ op: 'gain_command_token_choice' }], { ...CTX, selections: { command_token_bucket: 'fleet' } }, db)
+    expect(updateMock).toHaveBeenCalledWith({ command_tokens: { tactic_total: 3, fleet: 3, strategy: 1 } })
+  })
+
+  it('defaults to tactic_total when bucket not provided', async () => {
+    const updateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'p1', trade_goods: 0, commodities: 0, vp: 0, technologies: [], action_card_count: 0, command_tokens: { tactic_total: 3, fleet: 2, strategy: 1 } }, error: null }) }) }),
+          update: updateMock,
+        }
+        return {}
+      }),
+    }
+    await interpretEffects([{ op: 'gain_command_token_choice' }], { ...CTX, selections: {} }, db)
+    expect(updateMock).toHaveBeenCalledWith({ command_tokens: { tactic_total: 4, fleet: 2, strategy: 1 } })
+  })
+
+  it('throws 409 for an invalid bucket name', async () => {
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'p1', trade_goods: 0, commodities: 0, vp: 0, technologies: [], action_card_count: 0, command_tokens: {} }, error: null }) }) }),
+        }
+        return {}
+      }),
+    }
+    await expect(
+      interpretEffects([{ op: 'gain_command_token_choice' }], { ...CTX, selections: { command_token_bucket: 'invalid_bucket' } }, db)
+    ).rejects.toThrow('Invalid command token bucket')
+  })
+})

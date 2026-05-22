@@ -904,6 +904,39 @@ async function interpretOp(
       break
     }
 
+    case 'convert_all_commodities': {
+      const count = player.commodities as number
+      if (count > 0) {
+        const { error } = await db.from('game_players')
+          .update({ commodities: 0, trade_goods: (player.trade_goods as number) + count })
+          .eq('id', context.activatingPlayerId)
+        if (error) throw new Error(`convert_all_commodities failed: ${error.message}`)
+      }
+      break
+    }
+
+    case 'spend_commodities': {
+      const amount = op.amount as number
+      if ((player.commodities as number) < amount) throw dslError('Insufficient commodities')
+      const { error } = await db.from('game_players')
+        .update({ commodities: (player.commodities as number) - amount })
+        .eq('id', context.activatingPlayerId)
+      if (error) throw new Error(`spend_commodities failed: ${error.message}`)
+      break
+    }
+
+    case 'gain_command_token_choice': {
+      const bucket = (context.selections?.command_token_bucket as string) ?? 'tactic_total'
+      if (!['tactic_total', 'fleet', 'strategy'].includes(bucket)) throw dslError('Invalid command token bucket')
+      const tokens = { ...(player.command_tokens ?? {}) as Record<string, number> }
+      tokens[bucket] = (tokens[bucket] ?? 0) + 1
+      const { error } = await db.from('game_players')
+        .update({ command_tokens: tokens })
+        .eq('id', context.activatingPlayerId)
+      if (error) throw new Error(`gain_command_token_choice failed: ${error.message}`)
+      break
+    }
+
     default:
       throw new Error(`Unknown op: ${op.op}`)
   }
