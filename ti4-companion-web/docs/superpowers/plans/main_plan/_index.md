@@ -259,11 +259,11 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-use-strategy-secondary-p37](fn-game-use-strategy-secondary-p37.md) | `supabase/functions/game-use-strategy-secondary/index.ts` | 37 | Strategy Card Text & Ability Enforcement | done | migration-047-strategy-card-effects, shared-abilityDsl-p37 |
 | [fn-game-produce-units-p37](fn-game-produce-units-p37.md) | `supabase/functions/game-produce-units/index.ts` | 37 | Strategy Card Text & Ability Enforcement | planned | fn-game-use-strategy-secondary-p37 |
 | [hook-useStrategyCards-p37](hook-useStrategyCards-p37.md) | `src/hooks/useStrategyCards.js` | 37 | Strategy Card Text & Ability Enforcement | done | fn-game-play-strategy-card-p37, fn-game-use-strategy-secondary-p37 |
-| [component-StrategyCardPanel-p37](component-StrategyCardPanel-p37.md) | `src/components/game/StrategyCardPanel.jsx` | 37 | Strategy Card Text & Ability Enforcement | planned | lib-strategyCardConstants, hook-useStrategyCards-p37 |
+| [component-StrategyCardPanel-p37](component-StrategyCardPanel-p37.md) | `src/components/game/StrategyCardPanel.jsx` | 37 | Strategy Card Text & Ability Enforcement | in-progress | lib-strategyCardConstants, hook-useStrategyCards-p37 |
 | [component-StrategyCardModal-p37](component-StrategyCardModal-p37.md) | `src/components/game/StrategyCardModal.jsx` | 37 | Strategy Card Text & Ability Enforcement | planned | lib-strategyCardConstants, hook-useStrategyCards-p37, component-StrategyCardPanel-p37 |
 
 | [fn-game-declare-retreat-p38](fn-game-declare-retreat-p38.md) | `supabase/functions/game-declare-retreat/index.ts` | 38 | Dark Energy Tap | planned | fn-game-declare-retreat-p20 |
-| [component-SystemActionModal-p38](component-SystemActionModal-p38.md) | `src/components/game/SystemActionModal.jsx` | 38 | Dark Energy Tap | planned | component-SystemActionModal (p31) |
+| [component-SystemActionModal-p38](component-SystemActionModal-p38.md) | `src/components/game/SystemActionModal.jsx` | 38 | Dark Energy Tap | in-progress | component-SystemActionModal (p31) |
 | [component-GalaxyTab-p38](component-GalaxyTab-p38.md) | `src/components/game/GalaxyTab.jsx` | 38 | Dark Energy Tap | planned | component-SystemActionModal-p38, component-GalaxyTab-p35 |
 
 | [migration-048-promissory-dsl](migration-048-promissory-dsl.md) | `supabase/migrations/053_promissory_dsl.sql` | 39a | Promissory Note DSL Effects | done | migration-032-promissory-effects |
@@ -307,7 +307,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-draft-place-tile](fn-game-draft-place-tile.md) | `supabase/functions/game-draft-place-tile/index.ts` | 39 | In-App Map Draft | done | fn-game-start-draft, shared-draftHelpers |
 | [client-edgeFunctions-p39](client-edgeFunctions-p39.md) | `src/lib/edgeFunctions.js` | 39 | In-App Map Draft | done | fn-game-start-draft, fn-game-draft-pick-slice, fn-game-draft-place-tile |
 | [hook-useDraft](hook-useDraft.md) | `src/hooks/useDraft.js` | 39 | In-App Map Draft | done | client-edgeFunctions-p39 |
-| [component-DraftTileHand](component-DraftTileHand.md) | `src/components/game/DraftTileHand.jsx` | 39 | In-App Map Draft | planned | hook-useDraft |
+| [component-DraftTileHand](component-DraftTileHand.md) | `src/components/game/DraftTileHand.jsx` | 39 | In-App Map Draft | in-progress | hook-useDraft |
 | [component-DraftSlicePickView](component-DraftSlicePickView.md) | `src/components/game/DraftSlicePickView.jsx` | 39 | In-App Map Draft | planned | component-DraftTileHand |
 | [component-DraftPlacementView](component-DraftPlacementView.md) | `src/components/game/DraftPlacementView.jsx` | 39 | In-App Map Draft | planned | component-DraftTileHand |
 | [component-DraftPanel](component-DraftPanel.md) | `src/components/game/DraftPanel.jsx` | 39 | In-App Map Draft | planned | component-DraftSlicePickView, component-DraftPlacementView |
@@ -338,7 +338,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-use-relic-fragment-p42](fn-game-use-relic-fragment-p42.md) | `supabase/functions/game-use-relic-fragment/index.ts` | 42 | Relic Card Effects A | planned | fn-game-use-relic-fragment, shared-relicEffects-p42, shared-abilityDsl-p42 |
 | [fn-game-resolve-exploration-card-p42](fn-game-resolve-exploration-card-p42.md) | `supabase/functions/game-resolve-exploration-card/index.ts` | 42 | Relic Card Effects A | planned | fn-game-resolve-exploration-card, shared-relicEffects-p42, shared-abilityDsl-p42 |
 | [client-edgeFunctions-p42](client-edgeFunctions-p42.md) | `src/lib/edgeFunctions.js` | 42 | Relic Card Effects A | done | fn-game-use-relic-p42 |
-| [component-DiscardBrowserModal](component-DiscardBrowserModal.md) | `src/components/game/DiscardBrowserModal.jsx` | 42 | Relic Card Effects A | planned | client-edgeFunctions-p42 |
+| [component-DiscardBrowserModal](component-DiscardBrowserModal.md) | `src/components/game/DiscardBrowserModal.jsx` | 42 | Relic Card Effects A | done | client-edgeFunctions-p42 |
 | [component-RelicPanel-p42](component-RelicPanel-p42.md) | `src/components/game/RelicPanel.jsx` | 42 | Relic Card Effects A | planned | component-RelicPanel, component-DiscardBrowserModal, client-edgeFunctions-p42 |
 
 | [migration-052-leader-abilities](migration-052-leader-abilities.md) | `supabase/migrations/052_leader_abilities.sql` | 43a | Leader Card Abilities — Agents | done | — |
@@ -365,7 +365,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [shared-commanderUnlock](shared-commanderUnlock.md) | `supabase/functions/_shared/commanderUnlock.ts` | 43c | Leader Card Abilities — Commander Passives | done | migration-052-leader-abilities |
 | [fn-game-unlock-commander](fn-game-unlock-commander.md) | `supabase/functions/game-unlock-commander/index.ts` | 43c | Leader Card Abilities — Commander Passives | done | shared-commanderUnlock, migration-052-leader-abilities |
 | [shared-leaderEffects-p43c](shared-leaderEffects-p43c.md) | `supabase/functions/_shared/leaderEffects.ts` | 43c | Leader Card Abilities — Commander Passives | done | shared-leaderEffects |
-| [shared-abilityHandlers-p43c](shared-abilityHandlers-p43c.md) | `supabase/functions/_shared/abilityHandlers.ts` | 43c | Leader Card Abilities — Commander Passives | planned | shared-leaderEffects-p43c |
+| [shared-abilityHandlers-p43c](shared-abilityHandlers-p43c.md) | `supabase/functions/_shared/abilityHandlers.ts` | 43c | Leader Card Abilities — Commander Passives | in-progress | shared-leaderEffects-p43c |
 | [fn-game-produce-units-p43c](fn-game-produce-units-p43c.md) | `supabase/functions/game-produce-units/index.ts` | 43c | Leader Card Abilities — Commander Passives | planned | shared-leaderEffects-p43c, shared-abilityHandlers-p43c |
 | [fn-game-research-technology-p43c](fn-game-research-technology-p43c.md) | `supabase/functions/game-research-technology/index.ts` | 43c | Leader Card Abilities — Commander Passives | planned | shared-leaderEffects-p43c, shared-abilityHandlers-p43c |
 | [fn-game-assign-hits-p43c](fn-game-assign-hits-p43c.md) | `supabase/functions/game-assign-hits/index.ts` | 43c | Leader Card Abilities — Commander Passives | planned | shared-leaderEffects-p43c, shared-abilityHandlers-p43c |
@@ -385,7 +385,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-CommanderRerollModal](component-CommanderRerollModal.md) | `src/components/game/CommanderRerollModal.jsx` | 43c | Leader Card Abilities — Commander Passives | planned | hook-useLeaders-p43c |
 | [component-GameScreen-p43c](component-GameScreen-p43c.md) | `src/components/game/GameScreen.jsx` | 43c | Leader Card Abilities — Commander Passives | planned | hook-useLeaders-p43c, component-CommanderRerollModal |
 
-| [component-GameIcon](component-GameIcon.md) | `src/components/shared/GameIcon.jsx` | UI | SVG Icon Integration | planned | — |
+| [component-GameIcon](component-GameIcon.md) | `src/components/shared/GameIcon.jsx` | UI | SVG Icon Integration | in-progress | — |
 | [component-TechCard-icon-integration](component-TechCard-icon-integration.md) | `src/components/game/TechCard.jsx` | UI | SVG Icon Integration | planned | component-GameIcon |
 | [component-MyPanelSection-icon-integration](component-MyPanelSection-icon-integration.md) | `src/components/game/MyPanelSection.jsx` | UI | SVG Icon Integration | planned | component-GameIcon |
 | [component-LeaderCard-icon-integration](component-LeaderCard-icon-integration.md) | `src/components/game/LeaderCard.jsx` | UI | SVG Icon Integration | planned | component-GameIcon |
