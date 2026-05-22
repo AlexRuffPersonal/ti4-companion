@@ -297,8 +297,8 @@ This keeps the index accurate across multi-session implementations so future age
 | [client-edgeFunctions-mech](client-edgeFunctions-mech.md) | `src/lib/edgeFunctions.js` | 39 | Mech Unit Card Abilities | done | fn-game-deploy-mech, fn-game-resolve-ability-mech |
 | [hook-useLeaders-mech](hook-useLeaders-mech.md) | `src/hooks/useLeaders.js` | 39 | Mech Unit Card Abilities | done | client-edgeFunctions-mech |
 | [component-LeaderCard-mech](component-LeaderCard-mech.md) | `src/components/game/LeaderCard.jsx` | 39 | Mech Unit Card Abilities | done | hook-useLeaders-mech |
-| [component-LeaderPanel-mech](component-LeaderPanel-mech.md) | `src/components/game/LeaderPanel.jsx` | 39 | Mech Unit Card Abilities | planned | component-LeaderCard-mech |
-| [component-MyPanelSection-mech](component-MyPanelSection-mech.md) | `src/components/game/MyPanelSection.jsx` | 39 | Mech Unit Card Abilities | planned | component-LeaderPanel-mech |
+| [component-LeaderPanel-mech](component-LeaderPanel-mech.md) | `src/components/game/LeaderPanel.jsx` | 39 | Mech Unit Card Abilities | done | component-LeaderCard-mech |
+| [component-MyPanelSection-mech](component-MyPanelSection-mech.md) | `src/components/game/MyPanelSection.jsx` | 39 | Mech Unit Card Abilities | done | component-LeaderPanel-mech |
 
 | [migration-048-draft-state](migration-048-draft-state.md) | `supabase/migrations/048_draft_state.sql` | 39 | In-App Map Draft | done | — |
 | [shared-draftHelpers](shared-draftHelpers.md) | `supabase/functions/_shared/draftHelpers.ts` | 39 | In-App Map Draft | done | migration-048-draft-state |
@@ -386,9 +386,9 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-GameScreen-p43c](component-GameScreen-p43c.md) | `src/components/game/GameScreen.jsx` | 43c | Leader Card Abilities — Commander Passives | planned | hook-useLeaders-p43c, component-CommanderRerollModal |
 
 | [component-GameIcon](component-GameIcon.md) | `src/components/shared/GameIcon.jsx` | UI | SVG Icon Integration | done | — |
-| [component-TechCard-icon-integration](component-TechCard-icon-integration.md) | `src/components/game/TechCard.jsx` | UI | SVG Icon Integration | in-progress | component-GameIcon |
-| [component-MyPanelSection-icon-integration](component-MyPanelSection-icon-integration.md) | `src/components/game/MyPanelSection.jsx` | UI | SVG Icon Integration | planned | component-GameIcon |
-| [component-LeaderCard-icon-integration](component-LeaderCard-icon-integration.md) | `src/components/game/LeaderCard.jsx` | UI | SVG Icon Integration | planned | component-GameIcon |
+| [component-TechCard-icon-integration](component-TechCard-icon-integration.md) | `src/components/game/TechCard.jsx` | UI | SVG Icon Integration | done | component-GameIcon |
+| [component-MyPanelSection-icon-integration](component-MyPanelSection-icon-integration.md) | `src/components/game/MyPanelSection.jsx` | UI | SVG Icon Integration | done | component-GameIcon |
+| [component-LeaderCard-icon-integration](component-LeaderCard-icon-integration.md) | `src/components/game/LeaderCard.jsx` | UI | SVG Icon Integration | done | component-GameIcon |
 | [component-HexTile-icon-integration](component-HexTile-icon-integration.md) | `src/components/game/HexTile.jsx` | UI | SVG Icon Integration | done | component-GameIcon |
 
 ---

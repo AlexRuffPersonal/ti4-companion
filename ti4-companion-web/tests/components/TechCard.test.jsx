@@ -44,13 +44,13 @@ describe('TechCard', () => {
     expect(screen.getByTestId('tech-card').className).toMatch(/border-plasma/)
   })
 
-  it('renders filled prereq dots for satisfied prerequisites', () => {
+  it('prereq-dot-filled testid no longer present (replaced by type icon)', () => {
     const tech = { ...BASE_TECH, prerequisites: { green: 1 }, status: 'held' }
     render(<TechCard tech={tech} isOwnTree={false} isSelected={false} onSelect={vi.fn()} />)
-    expect(screen.getAllByTestId('prereq-dot-filled')).toHaveLength(1)
+    expect(screen.queryByTestId('prereq-dot-filled')).toBeNull()
   })
 
-  it('renders empty prereq dots for missing prerequisites on unavailable tech', () => {
+  it('prereq-dot-empty testid no longer present (replaced by type icon)', () => {
     const tech = {
       ...BASE_TECH,
       status: 'unavailable',
@@ -58,7 +58,7 @@ describe('TechCard', () => {
       missingPrereqs: [{ colour: 'green', count: 2 }],
     }
     render(<TechCard tech={tech} isOwnTree={false} isSelected={false} onSelect={vi.fn()} />)
-    expect(screen.getAllByTestId('prereq-dot-empty')).toHaveLength(2)
+    expect(screen.queryByTestId('prereq-dot-empty')).toBeNull()
   })
 
   it('shows missing prereq tooltip text when status is unavailable', () => {

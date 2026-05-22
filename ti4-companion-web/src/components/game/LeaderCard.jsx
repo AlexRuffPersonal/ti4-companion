@@ -1,3 +1,5 @@
+import GameIcon from '../shared/GameIcon.jsx'
+
 export default function LeaderCard({ leader, status, onUseAbility, onUnlock, isMech = false, onDeploy, onUseMechAbility }) {
   if (!leader) return null;
 
@@ -6,6 +8,7 @@ export default function LeaderCard({ leader, status, onUseAbility, onUnlock, isM
 
   const typeBadge = leader.leader_type && (
     <span className="label uppercase text-xs px-1 py-0.5 border border-border rounded flex items-center gap-1">
+      <GameIcon category="leaders" name={leader.leader_type} size={12} alt={leader.leader_type} />
       {leader.leader_type}
     </span>
   );

@@ -444,12 +444,58 @@ export default function LobbyScreen({ userId }) {
             )}
           </div>
 
-          {/* Map Builder */}
+          {/* Map Configuration */}
           <div className="flex flex-col gap-3">
             <h3 className="label">Map Configuration</h3>
 
-            <div className="flex flex-col gap-1">
-              <label className="label">Player Count</label>
+            {/* Setup method toggle (only when no draft active) */}
+            {game?.draft_state === null || game?.draft_state === undefined ? (
+              <>
+                <div className="flex gap-2">
+                  {['string', 'draft'].map(method => (
+                    <button
+                      key={method}
+                      type="button"
+                      className={`btn-ghost text-sm ${mapSetupMethod === method ? 'text-bright' : 'text-muted'}`}
+                      onClick={() => setMapSetupMethod(method)}
+                      aria-pressed={mapSetupMethod === method}
+                    >
+                      {method === 'string' ? 'Paste Map String' : 'In-App Draft'}
+                    </button>
+                  ))}
+                </div>
+
+                {mapSetupMethod === 'draft' ? (
+                  <div className="flex flex-col gap-2">
+                    <span className="label">Draft Mode</span>
+                    <div className="flex gap-2">
+                      {['official', 'milty'].map(mode => (
+                        <label key={mode} className="flex items-center gap-2 font-body text-text text-sm cursor-pointer">
+                          <input
+                            type="radio"
+                            name="draftMode"
+                            value={mode}
+                            checked={draftMode === mode}
+                            onChange={() => setDraftMode(mode)}
+                          />
+                          {mode === 'official' ? 'Official' : 'Milty'}
+                        </label>
+                      ))}
+                    </div>
+                    {startDraftError && <p className="text-danger text-sm font-body">{startDraftError}</p>}
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      onClick={handleStartDraft}
+                    >
+                      Start Draft
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    {/* Paste map string builder */}
+                    <div className="flex flex-col gap-1">
+                      <label className="label">Player Count</label>
               <select
                 aria-label="Player count"
                 className="input"
@@ -540,6 +586,10 @@ export default function LobbyScreen({ userId }) {
             >
               Save Map
             </button>
+                  </>
+                )}
+              </>
+            ) : null}
           </div>
 
           {startError && <p className="text-danger text-sm font-body">{startError}</p>}
@@ -556,6 +606,20 @@ export default function LobbyScreen({ userId }) {
 
       {/* Map Preview (all players) */}
       <MapPreviewSection mapTiles={game?.map_tiles} tileByNumber={tileByNumber} />
+
+      {/* Draft Panel (all players, when draft_state is active) */}
+      {game?.draft_state ? (
+        <DraftPanel
+          draftState={game.draft_state}
+          tileByNumber={tileByNumber}
+          tileDataById={tileDataById}
+          currentPlayer={currentPlayer}
+          players={players}
+          game={game}
+          onPickSlice={(sliceId) => draftPickSlice(game.id, sliceId)}
+          onPlaceTile={(tileNumber, position, rotation) => draftPlaceTile(game.id, tileNumber, position, rotation)}
+        />
+      ) : null}
     </div>
   )
 }
