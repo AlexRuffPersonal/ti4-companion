@@ -1,9 +1,14 @@
+import { useState } from 'react'
+
 export default function SystemActionModal({
   systemKey, tileInfo, activations, planetOwnership, players,
   currentPlayer, isActivePlayer, hasAvailableTacticTokens,
   myActivations, onActivate, onLandTroops, onClose, custodiansClaimed,
   myPlanets, systemUnits, unitDefs, onOpenProduction, onInfo,
+  hasFrontierToken, hasDarkEnergyTap, onExploreFrontier,
 }) {
+  const [confirmingFrontier, setConfirmingFrontier] = useState(false)
+
   const systemActivatedByMe = myActivations.has(systemKey)
   const planets = tileInfo?.planets ?? []
 
@@ -45,6 +50,34 @@ export default function SystemActionModal({
           <button className="btn-ghost w-full mb-2" onClick={() => onOpenProduction(systemKey)}>
             PRODUCE UNITS
           </button>
+        )}
+
+        {systemActivatedByMe && isActivePlayer && (
+          !confirmingFrontier ? (
+            <button
+              className="btn-ghost w-full mb-2"
+              onClick={() => {
+                if (hasFrontierToken && hasDarkEnergyTap) setConfirmingFrontier(true)
+                else onClose()
+              }}
+            >
+              DONE
+            </button>
+          ) : (
+            <div className="flex flex-col gap-2 mb-2">
+              <p className="label">EXPLORE FRONTIER TOKEN?</p>
+              <p className="text-muted text-xs">You may explore the frontier token in this system.</p>
+              <button
+                className="btn-primary w-full"
+                onClick={() => { onExploreFrontier(systemKey); onClose() }}
+              >
+                EXPLORE
+              </button>
+              <button className="btn-ghost w-full" onClick={onClose}>
+                SKIP
+              </button>
+            </div>
+          )
         )}
 
         {custodiansClaimed && (

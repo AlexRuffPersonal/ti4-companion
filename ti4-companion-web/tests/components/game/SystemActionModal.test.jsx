@@ -167,3 +167,83 @@ describe('SystemActionModal', () => {
     expect(onInfo).toHaveBeenCalled()
   })
 })
+
+describe('SystemActionModal — Dark Energy Tap (Phase 38)', () => {
+  const DET_BASE = {
+    ...BASE_PROPS,
+    isActivePlayer: true,
+    myActivations: new Set(['1,-1']),
+    onClose: vi.fn(),
+    onExploreFrontier: vi.fn(),
+  }
+
+  it('renders DONE button when system activated by caller and is active player', () => {
+    render(<SystemActionModal {...DET_BASE} />)
+    expect(screen.getByRole('button', { name: /^done$/i })).toBeInTheDocument()
+  })
+
+  it('does not render DONE when system not activated by caller', () => {
+    render(<SystemActionModal {...DET_BASE} myActivations={new Set()} />)
+    expect(screen.queryByRole('button', { name: /^done$/i })).not.toBeInTheDocument()
+  })
+
+  it('closes immediately on DONE when DET conditions not met (hasFrontierToken false)', () => {
+    const onClose = vi.fn()
+    render(<SystemActionModal {...DET_BASE} onClose={onClose} hasFrontierToken={false} hasDarkEnergyTap={true} />)
+    fireEvent.click(screen.getByRole('button', { name: /^done$/i }))
+    expect(onClose).toHaveBeenCalled()
+    expect(screen.queryByText(/explore frontier token/i)).not.toBeInTheDocument()
+  })
+
+  it('closes immediately on DONE when DET conditions not met (hasDarkEnergyTap false)', () => {
+    const onClose = vi.fn()
+    render(<SystemActionModal {...DET_BASE} onClose={onClose} hasFrontierToken={true} hasDarkEnergyTap={false} />)
+    fireEvent.click(screen.getByRole('button', { name: /^done$/i }))
+    expect(onClose).toHaveBeenCalled()
+    expect(screen.queryByText(/explore frontier token/i)).not.toBeInTheDocument()
+  })
+
+  it('shows inline frontier confirmation on DONE when hasFrontierToken=true and hasDarkEnergyTap=true', () => {
+    render(<SystemActionModal {...DET_BASE} hasFrontierToken={true} hasDarkEnergyTap={true} />)
+    fireEvent.click(screen.getByRole('button', { name: /^done$/i }))
+    expect(screen.getByText(/explore frontier token/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^explore$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^skip$/i })).toBeInTheDocument()
+  })
+
+  it('calls onExploreFrontier with systemKey and closes on EXPLORE', () => {
+    const onClose = vi.fn()
+    const onExploreFrontier = vi.fn()
+    render(
+      <SystemActionModal
+        {...DET_BASE}
+        onClose={onClose}
+        onExploreFrontier={onExploreFrontier}
+        hasFrontierToken={true}
+        hasDarkEnergyTap={true}
+      />
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^done$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^explore$/i }))
+    expect(onExploreFrontier).toHaveBeenCalledWith('1,-1')
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('calls onClose without calling onExploreFrontier on SKIP', () => {
+    const onClose = vi.fn()
+    const onExploreFrontier = vi.fn()
+    render(
+      <SystemActionModal
+        {...DET_BASE}
+        onClose={onClose}
+        onExploreFrontier={onExploreFrontier}
+        hasFrontierToken={true}
+        hasDarkEnergyTap={true}
+      />
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^done$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^skip$/i }))
+    expect(onClose).toHaveBeenCalled()
+    expect(onExploreFrontier).not.toHaveBeenCalled()
+  })
+})
