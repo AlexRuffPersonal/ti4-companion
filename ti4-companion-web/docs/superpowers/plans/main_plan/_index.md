@@ -296,7 +296,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-deploy-mech](fn-game-deploy-mech.md) | `supabase/functions/game-deploy-mech/index.ts` | 39 | Mech Unit Card Abilities | done | migration-050-mech-abilities |
 | [client-edgeFunctions-mech](client-edgeFunctions-mech.md) | `src/lib/edgeFunctions.js` | 39 | Mech Unit Card Abilities | done | fn-game-deploy-mech, fn-game-resolve-ability-mech |
 | [hook-useLeaders-mech](hook-useLeaders-mech.md) | `src/hooks/useLeaders.js` | 39 | Mech Unit Card Abilities | done | client-edgeFunctions-mech |
-| [component-LeaderCard-mech](component-LeaderCard-mech.md) | `src/components/game/LeaderCard.jsx` | 39 | Mech Unit Card Abilities | in-progress | hook-useLeaders-mech |
+| [component-LeaderCard-mech](component-LeaderCard-mech.md) | `src/components/game/LeaderCard.jsx` | 39 | Mech Unit Card Abilities | done | hook-useLeaders-mech |
 | [component-LeaderPanel-mech](component-LeaderPanel-mech.md) | `src/components/game/LeaderPanel.jsx` | 39 | Mech Unit Card Abilities | planned | component-LeaderCard-mech |
 | [component-MyPanelSection-mech](component-MyPanelSection-mech.md) | `src/components/game/MyPanelSection.jsx` | 39 | Mech Unit Card Abilities | planned | component-LeaderPanel-mech |
 
@@ -309,8 +309,8 @@ This keeps the index accurate across multi-session implementations so future age
 | [hook-useDraft](hook-useDraft.md) | `src/hooks/useDraft.js` | 39 | In-App Map Draft | done | client-edgeFunctions-p39 |
 | [component-DraftTileHand](component-DraftTileHand.md) | `src/components/game/DraftTileHand.jsx` | 39 | In-App Map Draft | done | hook-useDraft |
 | [component-DraftSlicePickView](component-DraftSlicePickView.md) | `src/components/game/DraftSlicePickView.jsx` | 39 | In-App Map Draft | done | component-DraftTileHand |
-| [component-DraftPlacementView](component-DraftPlacementView.md) | `src/components/game/DraftPlacementView.jsx` | 39 | In-App Map Draft | in-progress | component-DraftTileHand |
-| [component-DraftPanel](component-DraftPanel.md) | `src/components/game/DraftPanel.jsx` | 39 | In-App Map Draft | planned | component-DraftSlicePickView, component-DraftPlacementView |
+| [component-DraftPlacementView](component-DraftPlacementView.md) | `src/components/game/DraftPlacementView.jsx` | 39 | In-App Map Draft | done | component-DraftTileHand |
+| [component-DraftPanel](component-DraftPanel.md) | `src/components/game/DraftPanel.jsx` | 39 | In-App Map Draft | in-progress | component-DraftSlicePickView, component-DraftPlacementView |
 | [component-LobbyScreen-p39](component-LobbyScreen-p39.md) | `src/components/game/LobbyScreen.jsx` | 39 | In-App Map Draft | planned | component-DraftPanel, hook-useDraft, client-edgeFunctions-p39 |
 
 | [migration-049-law-enforcement](migration-049-law-enforcement.md) | `supabase/migrations/049_law_enforcement.sql` | 40 | Persistent Agenda Law Enforcement | done | — |
@@ -389,7 +389,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-TechCard-icon-integration](component-TechCard-icon-integration.md) | `src/components/game/TechCard.jsx` | UI | SVG Icon Integration | planned | component-GameIcon |
 | [component-MyPanelSection-icon-integration](component-MyPanelSection-icon-integration.md) | `src/components/game/MyPanelSection.jsx` | UI | SVG Icon Integration | planned | component-GameIcon |
 | [component-LeaderCard-icon-integration](component-LeaderCard-icon-integration.md) | `src/components/game/LeaderCard.jsx` | UI | SVG Icon Integration | planned | component-GameIcon |
-| [component-HexTile-icon-integration](component-HexTile-icon-integration.md) | `src/components/game/HexTile.jsx` | UI | SVG Icon Integration | planned | component-GameIcon |
+| [component-HexTile-icon-integration](component-HexTile-icon-integration.md) | `src/components/game/HexTile.jsx` | UI | SVG Icon Integration | done | component-GameIcon |
 
 ---
 

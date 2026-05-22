@@ -44,40 +44,80 @@ describe('HexTile', () => {
     expect(screen.getByText('Vefut II')).toBeInTheDocument()
   })
 
-  it('renders ground-force badge with infantry count', () => {
+  it('renders space-unit-icon-carrier when carrier present in space', () => {
+    const { container } = renderTile({
+      units: [{ player_id: 'p1', unit_type: 'carrier', count: 2, on_planet: null }],
+    })
+    const icon = container.querySelector('[data-testid="space-unit-icon-carrier"]')
+    expect(icon).toBeTruthy()
+  })
+
+  it('renders space-unit-icon-fighter for fighters in space', () => {
+    const { container } = renderTile({
+      units: [{ player_id: 'p1', unit_type: 'fighter', count: 3, on_planet: null }],
+    })
+    const icon = container.querySelector('[data-testid="space-unit-icon-fighter"]')
+    expect(icon).toBeTruthy()
+  })
+
+  it('renders ground-unit-icon-infantry-{planetName} for infantry on that planet', () => {
+    const { container } = renderTile({
+      units: [{ player_id: 'p1', unit_type: 'infantry', count: 3, on_planet: 'Wellon' }],
+    })
+    const icon = container.querySelector('[data-testid="ground-unit-icon-infantry-Wellon"]')
+    expect(icon).toBeTruthy()
+  })
+
+  it('renders ground-unit-icon-mech-{planetName} for mech on that planet when pokEnabled', () => {
+    const { container } = renderTile({
+      pokEnabled: true,
+      units: [{ player_id: 'p1', unit_type: 'mech', count: 1, on_planet: 'Wellon' }],
+    })
+    const icon = container.querySelector('[data-testid="ground-unit-icon-mech-Wellon"]')
+    expect(icon).toBeTruthy()
+  })
+
+  it('does NOT render mech ground icon when pokEnabled=false', () => {
+    const { container } = renderTile({
+      pokEnabled: false,
+      units: [{ player_id: 'p1', unit_type: 'mech', count: 1, on_planet: 'Wellon' }],
+    })
+    const icon = container.querySelector('[data-testid="ground-unit-icon-mech-Wellon"]')
+    expect(icon).toBeNull()
+  })
+
+  it('does NOT render space unit row when no space units', () => {
+    const { container } = renderTile({ units: [] })
+    const icon = container.querySelector('[data-testid^="space-unit-icon-"]')
+    expect(icon).toBeNull()
+  })
+
+  it('does NOT render ground box when no ground units', () => {
+    const { container } = renderTile({ units: [] })
+    const icon = container.querySelector('[data-testid^="ground-unit-icon-"]')
+    expect(icon).toBeNull()
+  })
+
+  it('old text badge (4I, 2I 1M) no longer present', () => {
     renderTile({
       units: [
-        { player_id: 'p1', unit_type: 'infantry', count: 3, on_planet: 'Wellon' },
+        { player_id: 'p1', unit_type: 'infantry', count: 4, on_planet: 'Wellon' },
+        { player_id: 'p1', unit_type: 'mech', count: 1, on_planet: 'Wellon' },
+      ],
+    })
+    expect(screen.queryByText('4I')).toBeNull()
+    expect(screen.queryByText(/2I 1M/)).toBeNull()
+  })
+
+  it('multiple planets get separate ground boxes with different data-testid planetNames', () => {
+    const { container } = renderTile({
+      units: [
+        { player_id: 'p1', unit_type: 'infantry', count: 2, on_planet: 'Wellon' },
         { player_id: 'p1', unit_type: 'infantry', count: 1, on_planet: 'Vefut II' },
       ],
     })
-    expect(screen.getByText('4I')).toBeInTheDocument()
-  })
-
-  it('renders combined infantry and mech badge when pokEnabled', () => {
-    renderTile({
-      pokEnabled: true,
-      units: [
-        { player_id: 'p1', unit_type: 'infantry', count: 2, on_planet: 'Wellon' },
-        { player_id: 'p1', unit_type: 'mech', count: 1, on_planet: 'Wellon' },
-      ],
-    })
-    expect(screen.getByText('2I 1M')).toBeInTheDocument()
-  })
-
-  it('omits mech from badge when pokEnabled is false', () => {
-    renderTile({
-      pokEnabled: false,
-      units: [
-        { player_id: 'p1', unit_type: 'mech', count: 1, on_planet: 'Wellon' },
-      ],
-    })
-    expect(screen.queryByText('1M')).not.toBeInTheDocument()
-  })
-
-  it('does not render unit badge when no ground forces', () => {
-    renderTile({ units: [] })
-    expect(screen.queryByText('0')).not.toBeInTheDocument()
+    expect(container.querySelector('[data-testid="ground-unit-icon-infantry-Wellon"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="ground-unit-icon-infantry-Vefut II"]')).toBeTruthy()
   })
 
   it('calls onMouseEnter with systemKey on mouse enter', () => {
@@ -101,7 +141,6 @@ describe('HexTile', () => {
         { id: 'a2', player_id: 'p2' },
       ],
     })
-    // Tactic token circles are rendered as <circle> with player fill colour
     const circles = container.querySelectorAll('circle[fill="#22c55e"], circle[fill="#ef4444"]')
     expect(circles.length).toBe(2)
   })
