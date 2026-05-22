@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useGame } from '../../hooks/useGame.js'
 import { supabase } from '../../lib/supabase.js'
-import { updateGameSettings, addBot, removeBot } from '../../lib/edgeFunctions.js'
+import { updateGameSettings, addBot, removeBot, startDraft, draftPickSlice, draftPlaceTile } from '../../lib/edgeFunctions.js'
 import MapPreviewSection from '../game/MapPreviewSection.jsx'
+import DraftPanel from '../game/DraftPanel.jsx'
 
 const COLOURS = ['red', 'blue', 'yellow', 'green', 'purple', 'black', 'orange', 'pink']
 
@@ -46,6 +47,7 @@ export default function LobbyScreen({ userId }) {
 
   // Map builder state (host only)
   const [tileByNumber, setTileByNumber] = useState({})
+  const [tileDataById, setTileDataById] = useState({})
   const [mapPlayerCount, setMapPlayerCount] = useState(
     players.length > 0 ? Math.max(3, Math.min(8, players.length)) : 6
   )
@@ -53,17 +55,27 @@ export default function LobbyScreen({ userId }) {
   const [mapString, setMapString] = useState('')
   const [parseError, setParseError] = useState(null)
 
+  // Draft setup state (host only)
+  const [mapSetupMethod, setMapSetupMethod] = useState('string') // 'string' | 'draft'
+  const [draftMode, setDraftMode] = useState('official') // 'official' | 'milty'
+  const [startDraftError, setStartDraftError] = useState(null)
+
   useEffect(() => {
     supabase.from('factions').select('name, expansion').order('name')
       .then(({ data }) => setFactions(data ?? []))
   }, [])
 
   useEffect(() => {
-    supabase.from('tiles').select('id, tile_number, wormhole')
+    supabase.from('tiles').select('id, tile_number, wormhole, planets, anomaly, type, name')
       .then(({ data }) => {
         const map = {}
-        for (const t of data ?? []) map[t.tile_number] = t
+        const byId = {}
+        for (const t of data ?? []) {
+          map[t.tile_number] = t
+          byId[t.id] = t
+        }
         setTileByNumber(map)
+        setTileDataById(byId)
       })
   }, [])
 
@@ -137,6 +149,15 @@ export default function LobbyScreen({ userId }) {
       setStartError(e.message)
     } finally {
       setStarting(false)
+    }
+  }
+
+  async function handleStartDraft() {
+    setStartDraftError(null)
+    try {
+      await startDraft(game.id, draftMode)
+    } catch (e) {
+      setStartDraftError(e.message)
     }
   }
 

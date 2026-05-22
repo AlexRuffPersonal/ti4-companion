@@ -264,7 +264,7 @@ This keeps the index accurate across multi-session implementations so future age
 
 | [fn-game-declare-retreat-p38](fn-game-declare-retreat-p38.md) | `supabase/functions/game-declare-retreat/index.ts` | 38 | Dark Energy Tap | planned | fn-game-declare-retreat-p20 |
 | [component-SystemActionModal-p38](component-SystemActionModal-p38.md) | `src/components/game/SystemActionModal.jsx` | 38 | Dark Energy Tap | done | component-SystemActionModal (p31) |
-| [component-GalaxyTab-p38](component-GalaxyTab-p38.md) | `src/components/game/GalaxyTab.jsx` | 38 | Dark Energy Tap | in-progress | component-SystemActionModal-p38, component-GalaxyTab-p35 |
+| [component-GalaxyTab-p38](component-GalaxyTab-p38.md) | `src/components/game/GalaxyTab.jsx` | 38 | Dark Energy Tap | done | component-SystemActionModal-p38, component-GalaxyTab-p35 |
 
 | [migration-048-promissory-dsl](migration-048-promissory-dsl.md) | `supabase/migrations/053_promissory_dsl.sql` | 39a | Promissory Note DSL Effects | done | migration-032-promissory-effects |
 | [shared-abilityDsl-p39a](shared-abilityDsl-p39a.md) | `supabase/functions/_shared/abilityDsl.ts` | 39a | Promissory Note DSL Effects | done | migration-048-promissory-dsl |
@@ -310,8 +310,8 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-DraftTileHand](component-DraftTileHand.md) | `src/components/game/DraftTileHand.jsx` | 39 | In-App Map Draft | done | hook-useDraft |
 | [component-DraftSlicePickView](component-DraftSlicePickView.md) | `src/components/game/DraftSlicePickView.jsx` | 39 | In-App Map Draft | done | component-DraftTileHand |
 | [component-DraftPlacementView](component-DraftPlacementView.md) | `src/components/game/DraftPlacementView.jsx` | 39 | In-App Map Draft | done | component-DraftTileHand |
-| [component-DraftPanel](component-DraftPanel.md) | `src/components/game/DraftPanel.jsx` | 39 | In-App Map Draft | in-progress | component-DraftSlicePickView, component-DraftPlacementView |
-| [component-LobbyScreen-p39](component-LobbyScreen-p39.md) | `src/components/game/LobbyScreen.jsx` | 39 | In-App Map Draft | planned | component-DraftPanel, hook-useDraft, client-edgeFunctions-p39 |
+| [component-DraftPanel](component-DraftPanel.md) | `src/components/game/DraftPanel.jsx` | 39 | In-App Map Draft | done | component-DraftSlicePickView, component-DraftPlacementView |
+| [component-LobbyScreen-p39](component-LobbyScreen-p39.md) | `src/components/game/LobbyScreen.jsx` | 39 | In-App Map Draft | in-progress | component-DraftPanel, hook-useDraft, client-edgeFunctions-p39 |
 
 | [migration-049-law-enforcement](migration-049-law-enforcement.md) | `supabase/migrations/049_law_enforcement.sql` | 40 | Persistent Agenda Law Enforcement | done | — |
 | [fn-game-resolve-agenda-p40](fn-game-resolve-agenda-p40.md) | `supabase/functions/game-resolve-agenda/index.ts` | 40 | Persistent Agenda Law Enforcement | planned | migration-049-law-enforcement |
@@ -386,7 +386,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-GameScreen-p43c](component-GameScreen-p43c.md) | `src/components/game/GameScreen.jsx` | 43c | Leader Card Abilities — Commander Passives | planned | hook-useLeaders-p43c, component-CommanderRerollModal |
 
 | [component-GameIcon](component-GameIcon.md) | `src/components/shared/GameIcon.jsx` | UI | SVG Icon Integration | done | — |
-| [component-TechCard-icon-integration](component-TechCard-icon-integration.md) | `src/components/game/TechCard.jsx` | UI | SVG Icon Integration | planned | component-GameIcon |
+| [component-TechCard-icon-integration](component-TechCard-icon-integration.md) | `src/components/game/TechCard.jsx` | UI | SVG Icon Integration | in-progress | component-GameIcon |
 | [component-MyPanelSection-icon-integration](component-MyPanelSection-icon-integration.md) | `src/components/game/MyPanelSection.jsx` | UI | SVG Icon Integration | planned | component-GameIcon |
 | [component-LeaderCard-icon-integration](component-LeaderCard-icon-integration.md) | `src/components/game/LeaderCard.jsx` | UI | SVG Icon Integration | planned | component-GameIcon |
 | [component-HexTile-icon-integration](component-HexTile-icon-integration.md) | `src/components/game/HexTile.jsx` | UI | SVG Icon Integration | done | component-GameIcon |
