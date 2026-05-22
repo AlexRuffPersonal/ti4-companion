@@ -1154,6 +1154,8 @@ async function interpretOp(
     }
 
     case 'increase_move': {
+      // Validate ship_id is present
+      if (!context.selections?.ship_id) throw dslError('increase_move: ship_id is required', 400)
       // Set move override flag for caller to compute actual max move
       ;(context as Record<string, unknown>).move_override = {
         ship_id: context.selections?.ship_id,
