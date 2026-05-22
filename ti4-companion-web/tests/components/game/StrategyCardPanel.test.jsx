@@ -42,7 +42,6 @@ describe('StrategyCardPanel', () => {
       game: { phase: 'strategy' },
       player: { ...PLAYER, strategy_card: 3 },
     })
-    expect(screen.getByText(/card 3/i)).toBeInTheDocument()
     expect(screen.getByText(/politics/i)).toBeInTheDocument()
   })
 
@@ -58,7 +57,7 @@ describe('StrategyCardPanel', () => {
     expect(onPickStrategyCard).toHaveBeenCalledWith(1)
   })
 
-  it('renders PLAY STRATEGY CARD button when action phase, isActive, no activePay', () => {
+  it('renders PLAY <card name> button when action phase, isActive, no activePay', () => {
     renderPanel({
       game: { phase: 'action' },
       player: { ...PLAYER, strategy_card: 2 },
@@ -66,10 +65,10 @@ describe('StrategyCardPanel', () => {
       activePay: null,
       onPlayPrimary: vi.fn(),
     })
-    expect(screen.getByRole('button', { name: /play strategy card/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /play diplomacy/i })).toBeInTheDocument()
   })
 
-  it('calls onPlayPrimary when PLAY STRATEGY CARD button is clicked', () => {
+  it('calls onPlayPrimary when play button is clicked', () => {
     const onPlayPrimary = vi.fn()
     renderPanel({
       game: { phase: 'action' },
@@ -78,7 +77,7 @@ describe('StrategyCardPanel', () => {
       activePay: null,
       onPlayPrimary,
     })
-    fireEvent.click(screen.getByRole('button', { name: /play strategy card/i }))
+    fireEvent.click(screen.getByRole('button', { name: /play diplomacy/i }))
     expect(onPlayPrimary).toHaveBeenCalledOnce()
   })
 
@@ -89,18 +88,18 @@ describe('StrategyCardPanel', () => {
       isActive: false,
       activePay: null,
     })
-    expect(screen.queryByRole('button', { name: /play strategy card/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /play/i })).not.toBeInTheDocument()
   })
 
-  it('shows card active label when activePay exists', () => {
+  it('shows card name as active label when activePay exists', () => {
     renderPanel({
       game: { phase: 'action' },
       player: { ...PLAYER, strategy_card: 4 },
       activePay: { card_number: 4 },
       isActive: true,
     })
-    expect(screen.getByText(/card 4 is active/i)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /play strategy card/i })).not.toBeInTheDocument()
+    expect(screen.getByText(/construction is active/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /play/i })).not.toBeInTheDocument()
   })
 
   it('renders nothing during action phase when player has no strategy card', () => {
@@ -160,5 +159,44 @@ describe('StrategyCardPanel', () => {
     expect(screen.queryByRole('button', { name: /1.*leadership/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /5.*trade/i })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /2.*diplomacy/i })).toBeInTheDocument()
+  })
+
+  // New tests from p37 spec
+  it('play button shows card name in action phase', () => {
+    renderPanel({
+      game: { phase: 'action' },
+      player: { ...PLAYER, strategy_card: 6 },
+      isActive: true,
+      activePay: null,
+    })
+    expect(screen.getByRole('button', { name: /play warfare/i })).toBeInTheDocument()
+  })
+
+  it('dim label shows initiative + name when not active turn', () => {
+    renderPanel({
+      game: { phase: 'action' },
+      player: { ...PLAYER, strategy_card: 5 },
+      isActive: false,
+      activePay: null,
+    })
+    expect(screen.getByText(/5\. trade/i)).toBeInTheDocument()
+  })
+
+  it('activePay label shows card name', () => {
+    renderPanel({
+      game: { phase: 'action' },
+      player: { ...PLAYER, strategy_card: 7 },
+      activePay: { card_number: 7 },
+      isActive: false,
+    })
+    expect(screen.getByText(/technology is active/i)).toBeInTheDocument()
+  })
+
+  it('strategy phase selected label shows initiative + name', () => {
+    renderPanel({
+      game: { phase: 'strategy' },
+      player: { ...PLAYER, strategy_card: 8 },
+    })
+    expect(screen.getByText(/8\. imperial selected/i)).toBeInTheDocument()
   })
 })

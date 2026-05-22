@@ -259,7 +259,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-use-strategy-secondary-p37](fn-game-use-strategy-secondary-p37.md) | `supabase/functions/game-use-strategy-secondary/index.ts` | 37 | Strategy Card Text & Ability Enforcement | done | migration-047-strategy-card-effects, shared-abilityDsl-p37 |
 | [fn-game-produce-units-p37](fn-game-produce-units-p37.md) | `supabase/functions/game-produce-units/index.ts` | 37 | Strategy Card Text & Ability Enforcement | planned | fn-game-use-strategy-secondary-p37 |
 | [hook-useStrategyCards-p37](hook-useStrategyCards-p37.md) | `src/hooks/useStrategyCards.js` | 37 | Strategy Card Text & Ability Enforcement | done | fn-game-play-strategy-card-p37, fn-game-use-strategy-secondary-p37 |
-| [component-StrategyCardPanel-p37](component-StrategyCardPanel-p37.md) | `src/components/game/StrategyCardPanel.jsx` | 37 | Strategy Card Text & Ability Enforcement | in-progress | lib-strategyCardConstants, hook-useStrategyCards-p37 |
+| [component-StrategyCardPanel-p37](component-StrategyCardPanel-p37.md) | `src/components/game/StrategyCardPanel.jsx` | 37 | Strategy Card Text & Ability Enforcement | done | lib-strategyCardConstants, hook-useStrategyCards-p37 |
 | [component-StrategyCardModal-p37](component-StrategyCardModal-p37.md) | `src/components/game/StrategyCardModal.jsx` | 37 | Strategy Card Text & Ability Enforcement | planned | lib-strategyCardConstants, hook-useStrategyCards-p37, component-StrategyCardPanel-p37 |
 
 | [fn-game-declare-retreat-p38](fn-game-declare-retreat-p38.md) | `supabase/functions/game-declare-retreat/index.ts` | 38 | Dark Energy Tap | planned | fn-game-declare-retreat-p20 |
@@ -307,8 +307,8 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-draft-place-tile](fn-game-draft-place-tile.md) | `supabase/functions/game-draft-place-tile/index.ts` | 39 | In-App Map Draft | done | fn-game-start-draft, shared-draftHelpers |
 | [client-edgeFunctions-p39](client-edgeFunctions-p39.md) | `src/lib/edgeFunctions.js` | 39 | In-App Map Draft | done | fn-game-start-draft, fn-game-draft-pick-slice, fn-game-draft-place-tile |
 | [hook-useDraft](hook-useDraft.md) | `src/hooks/useDraft.js` | 39 | In-App Map Draft | done | client-edgeFunctions-p39 |
-| [component-DraftTileHand](component-DraftTileHand.md) | `src/components/game/DraftTileHand.jsx` | 39 | In-App Map Draft | in-progress | hook-useDraft |
-| [component-DraftSlicePickView](component-DraftSlicePickView.md) | `src/components/game/DraftSlicePickView.jsx` | 39 | In-App Map Draft | planned | component-DraftTileHand |
+| [component-DraftTileHand](component-DraftTileHand.md) | `src/components/game/DraftTileHand.jsx` | 39 | In-App Map Draft | done | hook-useDraft |
+| [component-DraftSlicePickView](component-DraftSlicePickView.md) | `src/components/game/DraftSlicePickView.jsx` | 39 | In-App Map Draft | in-progress | component-DraftTileHand |
 | [component-DraftPlacementView](component-DraftPlacementView.md) | `src/components/game/DraftPlacementView.jsx` | 39 | In-App Map Draft | planned | component-DraftTileHand |
 | [component-DraftPanel](component-DraftPanel.md) | `src/components/game/DraftPanel.jsx` | 39 | In-App Map Draft | planned | component-DraftSlicePickView, component-DraftPlacementView |
 | [component-LobbyScreen-p39](component-LobbyScreen-p39.md) | `src/components/game/LobbyScreen.jsx` | 39 | In-App Map Draft | planned | component-DraftPanel, hook-useDraft, client-edgeFunctions-p39 |
@@ -339,7 +339,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-resolve-exploration-card-p42](fn-game-resolve-exploration-card-p42.md) | `supabase/functions/game-resolve-exploration-card/index.ts` | 42 | Relic Card Effects A | planned | fn-game-resolve-exploration-card, shared-relicEffects-p42, shared-abilityDsl-p42 |
 | [client-edgeFunctions-p42](client-edgeFunctions-p42.md) | `src/lib/edgeFunctions.js` | 42 | Relic Card Effects A | done | fn-game-use-relic-p42 |
 | [component-DiscardBrowserModal](component-DiscardBrowserModal.md) | `src/components/game/DiscardBrowserModal.jsx` | 42 | Relic Card Effects A | done | client-edgeFunctions-p42 |
-| [component-RelicPanel-p42](component-RelicPanel-p42.md) | `src/components/game/RelicPanel.jsx` | 42 | Relic Card Effects A | planned | component-RelicPanel, component-DiscardBrowserModal, client-edgeFunctions-p42 |
+| [component-RelicPanel-p42](component-RelicPanel-p42.md) | `src/components/game/RelicPanel.jsx` | 42 | Relic Card Effects A | in-progress | component-RelicPanel, component-DiscardBrowserModal, client-edgeFunctions-p42 |
 
 | [migration-052-leader-abilities](migration-052-leader-abilities.md) | `supabase/migrations/052_leader_abilities.sql` | 43a | Leader Card Abilities — Agents | done | — |
 | [lib-leaderConstants](lib-leaderConstants.md) | `src/lib/leaderConstants.js` | 43a | Leader Card Abilities — Agents | done | — |

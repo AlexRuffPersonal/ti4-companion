@@ -1,13 +1,4 @@
-const STRATEGY_CARD_NAMES = {
-  1: 'Leadership',
-  2: 'Diplomacy',
-  3: 'Politics',
-  4: 'Construction',
-  5: 'Trade',
-  6: 'Warfare',
-  7: 'Technology',
-  8: 'Imperial',
-}
+import { getCard } from '../../lib/strategyCardConstants.js'
 
 export default function StrategyCardPanel({
   player,
@@ -36,6 +27,7 @@ export default function StrategyCardPanel({
           <div className="grid grid-cols-4 gap-2">
             {Array.from({ length: 8 }, (_, i) => i + 1).map(cardNum => {
               if (heldCards.has(cardNum)) return null
+              const card = getCard(cardNum)
               return (
                 <button
                   key={cardNum}
@@ -43,7 +35,7 @@ export default function StrategyCardPanel({
                   className="btn-primary text-xs py-2"
                 >
                   <div className="font-display">{cardNum}</div>
-                  <div className="text-xs text-muted">{STRATEGY_CARD_NAMES[cardNum]}</div>
+                  <div className="text-xs text-muted">{card?.name}</div>
                 </button>
               )
             })}
@@ -51,12 +43,13 @@ export default function StrategyCardPanel({
         </div>
       )
     } else {
-      // Card selected - show read-only label
+      // Card selected - show read-only label with initiative + name
+      const card = getCard(player.strategy_card)
       return (
         <div className="panel">
-          <div className="label text-dim">
-            Card {player.strategy_card} selected: {STRATEGY_CARD_NAMES[player.strategy_card]}
-          </div>
+          <p className="label text-dim">
+            {card?.initiative ?? player.strategy_card}. {card?.name ?? player.strategy_card} selected
+          </p>
         </div>
       )
     }
@@ -70,33 +63,36 @@ export default function StrategyCardPanel({
     }
 
     if (activePay) {
-      // Card is currently active
+      // Card is currently active — show card name
+      const activeCard = getCard(activePay.card_number)
       return (
         <div className="panel">
-          <div className="label text-dim">
-            Card {activePay.card_number} is active
-          </div>
+          <p className="label text-dim">
+            {activeCard?.name ?? activePay.card_number} is active
+          </p>
         </div>
       )
     }
 
     if (isActive) {
-      // Player's turn and can play their strategy card
+      // Player's turn and can play their strategy card — show card name on button
+      const card = getCard(player.strategy_card)
       return (
         <div className="panel">
           <button onClick={onPlayPrimary} className="btn-primary w-full">
-            PLAY STRATEGY CARD
+            PLAY {card?.name?.toUpperCase() ?? 'STRATEGY CARD'}
           </button>
         </div>
       )
     }
 
-    // Player has card but it's not their turn
+    // Player has card but it's not their turn — show initiative + name
+    const card = getCard(player.strategy_card)
     return (
       <div className="panel">
-        <div className="label text-dim">
-          Card {player.strategy_card}: {STRATEGY_CARD_NAMES[player.strategy_card]}
-        </div>
+        <p className="label text-dim">
+          {card?.initiative ?? player.strategy_card}. {card?.name ?? player.strategy_card}
+        </p>
       </div>
     )
   }
