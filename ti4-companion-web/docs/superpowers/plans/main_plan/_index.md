@@ -260,7 +260,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-produce-units-p37](fn-game-produce-units-p37.md) | `supabase/functions/game-produce-units/index.ts` | 37 | Strategy Card Text & Ability Enforcement | planned | fn-game-use-strategy-secondary-p37 |
 | [hook-useStrategyCards-p37](hook-useStrategyCards-p37.md) | `src/hooks/useStrategyCards.js` | 37 | Strategy Card Text & Ability Enforcement | done | fn-game-play-strategy-card-p37, fn-game-use-strategy-secondary-p37 |
 | [component-StrategyCardPanel-p37](component-StrategyCardPanel-p37.md) | `src/components/game/StrategyCardPanel.jsx` | 37 | Strategy Card Text & Ability Enforcement | done | lib-strategyCardConstants, hook-useStrategyCards-p37 |
-| [component-StrategyCardModal-p37](component-StrategyCardModal-p37.md) | `src/components/game/StrategyCardModal.jsx` | 37 | Strategy Card Text & Ability Enforcement | in-progress | lib-strategyCardConstants, hook-useStrategyCards-p37, component-StrategyCardPanel-p37 |
+| [component-StrategyCardModal-p37](component-StrategyCardModal-p37.md) | `src/components/game/StrategyCardModal.jsx` | 37 | Strategy Card Text & Ability Enforcement | done | lib-strategyCardConstants, hook-useStrategyCards-p37, component-StrategyCardPanel-p37 |
 
 | [fn-game-declare-retreat-p38](fn-game-declare-retreat-p38.md) | `supabase/functions/game-declare-retreat/index.ts` | 38 | Dark Energy Tap | planned | fn-game-declare-retreat-p20 |
 | [component-SystemActionModal-p38](component-SystemActionModal-p38.md) | `src/components/game/SystemActionModal.jsx` | 38 | Dark Energy Tap | done | component-SystemActionModal (p31) |
@@ -311,7 +311,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-DraftSlicePickView](component-DraftSlicePickView.md) | `src/components/game/DraftSlicePickView.jsx` | 39 | In-App Map Draft | done | component-DraftTileHand |
 | [component-DraftPlacementView](component-DraftPlacementView.md) | `src/components/game/DraftPlacementView.jsx` | 39 | In-App Map Draft | done | component-DraftTileHand |
 | [component-DraftPanel](component-DraftPanel.md) | `src/components/game/DraftPanel.jsx` | 39 | In-App Map Draft | done | component-DraftSlicePickView, component-DraftPlacementView |
-| [component-LobbyScreen-p39](component-LobbyScreen-p39.md) | `src/components/game/LobbyScreen.jsx` | 39 | In-App Map Draft | in-progress | component-DraftPanel, hook-useDraft, client-edgeFunctions-p39 |
+| [component-LobbyScreen-p39](component-LobbyScreen-p39.md) | `src/components/game/LobbyScreen.jsx` | 39 | In-App Map Draft | done | component-DraftPanel, hook-useDraft, client-edgeFunctions-p39 |
 
 | [migration-049-law-enforcement](migration-049-law-enforcement.md) | `supabase/migrations/049_law_enforcement.sql` | 40 | Persistent Agenda Law Enforcement | done | — |
 | [fn-game-resolve-agenda-p40](fn-game-resolve-agenda-p40.md) | `supabase/functions/game-resolve-agenda/index.ts` | 40 | Persistent Agenda Law Enforcement | planned | migration-049-law-enforcement |
@@ -353,14 +353,14 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-produce-units-p43a](fn-game-produce-units-p43a.md) | `supabase/functions/game-produce-units/index.ts` | 43a | Leader Card Abilities — Agents | planned | shared-leaderEffects |
 | [fn-game-assign-hits-p43a](fn-game-assign-hits-p43a.md) | `supabase/functions/game-assign-hits/index.ts` | 43a | Leader Card Abilities — Agents | planned | shared-leaderEffects |
 | [hook-useLeaders-p43a](hook-useLeaders-p43a.md) | `src/hooks/useLeaders.js` | 43a | Leader Card Abilities — Agents | done | component-LeaderAbilityModal, lib-leaderConstants |
-| [component-LeaderPanel-p43a](component-LeaderPanel-p43a.md) | `src/components/game/LeaderPanel.jsx` | 43a | Leader Card Abilities — Agents | planned | hook-useLeaders-p43a, component-LeaderAbilityModal |
-| [component-GameScreen-p43a](component-GameScreen-p43a.md) | `src/components/game/GameScreen.jsx` | 43a | Leader Card Abilities — Agents | planned | hook-useLeaders-p43a |
+| [component-LeaderPanel-p43a](component-LeaderPanel-p43a.md) | `src/components/game/LeaderPanel.jsx` | 43a | Leader Card Abilities — Agents | in-progress | hook-useLeaders-p43a, component-LeaderAbilityModal |
+| [component-GameScreen-p43a](component-GameScreen-p43a.md) | `src/components/game/GameScreen.jsx` | 43a | Leader Card Abilities — Agents | in-progress | hook-useLeaders-p43a |
 
 | [shared-leaderEffects-p43b](shared-leaderEffects-p43b.md) | `supabase/functions/_shared/leaderEffects.ts` | 43b | Leader Card Abilities — Heroes | done | shared-leaderEffects |
 | [shared-abilityHandlers-p43b](shared-abilityHandlers-p43b.md) | `supabase/functions/_shared/abilityHandlers.ts` | 43b | Leader Card Abilities — Heroes | planned | shared-leaderEffects-p43b |
 | [fn-game-resolve-ability-p43b](fn-game-resolve-ability-p43b.md) | `supabase/functions/game-resolve-ability/index.ts` | 43b | Leader Card Abilities — Heroes | planned | fn-game-resolve-ability-p43a, shared-leaderEffects-p43b, shared-abilityHandlers-p43b |
 | [fn-game-advance-phase-p43b](fn-game-advance-phase-p43b.md) | `supabase/functions/game-advance-phase/index.ts` | 43b | Leader Card Abilities — Heroes | planned | fn-game-advance-phase-p43a, migration-052-leader-abilities |
-| [component-LeaderAbilityModal-p43b](component-LeaderAbilityModal-p43b.md) | `src/components/game/LeaderAbilityModal.jsx` | 43b | Leader Card Abilities — Heroes | planned | component-LeaderAbilityModal, lib-leaderConstants |
+| [component-LeaderAbilityModal-p43b](component-LeaderAbilityModal-p43b.md) | `src/components/game/LeaderAbilityModal.jsx` | 43b | Leader Card Abilities — Heroes | done | component-LeaderAbilityModal, lib-leaderConstants |
 
 | [shared-commanderUnlock](shared-commanderUnlock.md) | `supabase/functions/_shared/commanderUnlock.ts` | 43c | Leader Card Abilities — Commander Passives | done | migration-052-leader-abilities |
 | [fn-game-unlock-commander](fn-game-unlock-commander.md) | `supabase/functions/game-unlock-commander/index.ts` | 43c | Leader Card Abilities — Commander Passives | done | shared-commanderUnlock, migration-052-leader-abilities |
