@@ -1195,3 +1195,124 @@ describe('give_promissory_to_opponent', () => {
     expect(updateMock).toHaveBeenCalledWith({ held_by_player_id: 'p1' })
   })
 })
+
+// ── Phase 40 ops ──────────────────────────────────────────────────────────────
+
+describe('repeal_law', () => {
+  function makeRepealDb({ lawRow = { id: 'law-1', agenda_id: 'agenda-1' }, lawError = null } = {}) {
+    const lawsUpdateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    const deckUpdateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }) })
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'p1', trade_goods: 0, commodities: 0, vp: 0, technologies: [], action_card_count: 0, command_tokens: {} }, error: null }) }) }),
+        }
+        if (table === 'game_laws') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: lawRow, error: lawError }) }) }) }),
+          update: lawsUpdateMock,
+        }
+        if (table === 'game_agenda_deck') return {
+          update: deckUpdateMock,
+        }
+        return {}
+      }),
+    }
+    return { db, lawsUpdateMock, deckUpdateMock }
+  }
+
+  it('sets is_repealed=true and deck state to repealed', async () => {
+    const { db, lawsUpdateMock, deckUpdateMock } = makeRepealDb()
+    await interpretEffects([{ op: 'repeal_law' }], {
+      ...CTX,
+      selections: { law_id: 'law-1' }
+    }, db)
+    expect(lawsUpdateMock).toHaveBeenCalledWith({ is_repealed: true })
+    expect(deckUpdateMock).toHaveBeenCalledWith({ state: 'repealed' })
+  })
+
+  it('409 missing law_id in selections', async () => {
+    const { db } = makeRepealDb()
+    await expect(
+      interpretEffects([{ op: 'repeal_law' }], { ...CTX, selections: {} }, db)
+    ).rejects.toThrow('law_id is required in selections')
+  })
+
+  it('409 law not found in game', async () => {
+    const { db } = makeRepealDb({ lawRow: null })
+    await expect(
+      interpretEffects([{ op: 'repeal_law' }], { ...CTX, selections: { law_id: 'law-missing' } }, db)
+    ).rejects.toThrow('Law not found in game')
+  })
+})
+
+describe('use_minister_of_war', () => {
+  const MINISTER_OF_WAR_LAW = { law_id: 'law-mow', name: 'Minister of War', elected_target: 'p1' }
+  const OTHER_LAW = { law_id: 'law-other', name: 'Some Other Law', elected_target: null }
+
+  function makeMowDb({ laws = [MINISTER_OF_WAR_LAW], planet = { id: 'planet-1', exhausted: false } } = {}) {
+    const lawsSelectMock = vi.fn().mockResolvedValue({ data: laws.map(l => ({
+      id: l.law_id,
+      elected_target: l.elected_target,
+      agendas: { name: l.name },
+      is_repealed: false,
+    })), error: null })
+    const planetUpdateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    const playerUpdateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    const db = {
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'game_players') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'p1', trade_goods: 0, commodities: 0, vp: 0, technologies: [], action_card_count: 0, command_tokens: {} }, error: null }) }) }),
+          update: playerUpdateMock,
+        }
+        if (table === 'game_laws') return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: lawsSelectMock,
+            }),
+          }),
+        }
+        if (table === 'game_player_planets') return {
+          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: planet, error: null }) }) }) }) }),
+          update: planetUpdateMock,
+        }
+        return {}
+      }),
+    }
+    return { db, planetUpdateMock, playerUpdateMock }
+  }
+
+  it('409 Minister of War not in play', async () => {
+    const { db } = makeMowDb({ laws: [OTHER_LAW] })
+    await expect(
+      interpretEffects([{ op: 'use_minister_of_war' }], { ...CTX, selections: { planet_name: 'Mecatol Rex' } }, db)
+    ).rejects.toThrow('Minister of War is not in play')
+  })
+
+  it('409 caller is not elected player', async () => {
+    const { db } = makeMowDb({ laws: [{ ...MINISTER_OF_WAR_LAW, elected_target: 'p2' }] })
+    await expect(
+      interpretEffects([{ op: 'use_minister_of_war' }], { ...CTX, selections: { planet_name: 'Mecatol Rex' } }, db)
+    ).rejects.toThrow('Only the elected player may use Minister of War')
+  })
+
+  it('409 planet not owned', async () => {
+    const { db } = makeMowDb({ planet: null })
+    await expect(
+      interpretEffects([{ op: 'use_minister_of_war' }], { ...CTX, selections: { planet_name: 'Mecatol Rex' } }, db)
+    ).rejects.toThrow('Planet not owned')
+  })
+
+  it('409 planet already exhausted', async () => {
+    const { db } = makeMowDb({ planet: { id: 'planet-1', exhausted: true } })
+    await expect(
+      interpretEffects([{ op: 'use_minister_of_war' }], { ...CTX, selections: { planet_name: 'Mecatol Rex' } }, db)
+    ).rejects.toThrow('Planet already exhausted')
+  })
+
+  it('success: exhausts planet and sets minister_of_war_unlocked=true', async () => {
+    const { db, planetUpdateMock, playerUpdateMock } = makeMowDb()
+    await interpretEffects([{ op: 'use_minister_of_war' }], { ...CTX, selections: { planet_name: 'Mecatol Rex' } }, db)
+    expect(planetUpdateMock).toHaveBeenCalledWith({ exhausted: true })
+    expect(playerUpdateMock).toHaveBeenCalledWith({ minister_of_war_unlocked: true })
+  })
+})

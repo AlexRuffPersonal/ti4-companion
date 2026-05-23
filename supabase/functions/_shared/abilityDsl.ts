@@ -1,5 +1,6 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { EXPLORATION_EFFECTS } from './explorationEffects.ts'
+import { getActiveLaws, LawError } from './lawEffects.ts'
 
 export interface ResolveContext {
   gameId: string
@@ -1169,6 +1170,65 @@ async function interpretOp(
       const dockPlanet = context.selections?.dock_planet as string
       if (!dockPlanet) throw dslError('dock_planet is required', 400)
       ;(context as Record<string, unknown>).dock_planet_override = dockPlanet
+      break
+    }
+
+    // ── Phase 40 ops ─────────────────────────────────────────────────────────────
+
+    case 'repeal_law': {
+      const lawId = context.selections?.law_id as string
+      if (!lawId) throw dslError('law_id is required in selections', 400)
+      const { data: lawRow, error: lawError } = await db
+        .from('game_laws')
+        .select('id, agenda_id')
+        .eq('id', lawId)
+        .eq('game_id', context.gameId)
+        .maybeSingle()
+      if (lawError) throw new Error(`repeal_law: query failed: ${lawError.message}`)
+      if (!lawRow) throw dslError('Law not found in game')
+      const law = lawRow as { id: string; agenda_id: string }
+      const { error: repealError } = await db
+        .from('game_laws')
+        .update({ is_repealed: true })
+        .eq('id', law.id)
+      if (repealError) throw new Error(`repeal_law: update failed: ${repealError.message}`)
+      const { error: deckError } = await db
+        .from('game_agenda_deck')
+        .update({ state: 'repealed' })
+        .eq('game_id', context.gameId)
+        .eq('agenda_id', law.agenda_id)
+      if (deckError) throw new Error(`repeal_law: deck update failed: ${deckError.message}`)
+      break
+    }
+
+    case 'use_minister_of_war': {
+      const laws = await getActiveLaws(db, context.gameId)
+      const mow = laws.find(l => l.name === 'Minister of War')
+      if (!mow) throw dslError('Minister of War is not in play')
+      if (mow.elected_target !== context.activatingPlayerId) throw dslError('Only the elected player may use Minister of War')
+      const mowPlanetName = context.selections?.planet_name as string
+      if (!mowPlanetName) throw dslError('planet_name is required in selections', 400)
+      const { data: mowPlanet, error: mowPlanetError } = await db
+        .from('game_player_planets')
+        .select('id, exhausted')
+        .eq('game_id', context.gameId)
+        .eq('player_id', context.activatingPlayerId)
+        .eq('planet_name', mowPlanetName)
+        .maybeSingle()
+      if (mowPlanetError) throw new Error(`use_minister_of_war: planet query failed: ${mowPlanetError.message}`)
+      if (!mowPlanet) throw dslError('Planet not owned')
+      const mowP = mowPlanet as { id: string; exhausted: boolean }
+      if (mowP.exhausted) throw dslError('Planet already exhausted')
+      const { error: exhaustError } = await db
+        .from('game_player_planets')
+        .update({ exhausted: true })
+        .eq('id', mowP.id)
+      if (exhaustError) throw new Error(`use_minister_of_war: exhaust failed: ${exhaustError.message}`)
+      const { error: unlockError } = await db
+        .from('game_players')
+        .update({ minister_of_war_unlocked: true })
+        .eq('id', context.activatingPlayerId)
+      if (unlockError) throw new Error(`use_minister_of_war: unlock failed: ${unlockError.message}`)
       break
     }
 
