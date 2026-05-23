@@ -163,8 +163,9 @@ export default function MyPanelSection({
           leaderModalOpen={leaders.leaderModalOpen}
           activeLeader={leaders.activeLeader}
           onConfirm={leaders.handleConfirm}
-          onClose={() => leaders.handleConfirm && leaders.setLeaderModalOpen?.(false)}
+          onClose={leaders.handleCloseLeaderModal}
           gamePlayers={allPlayers}
+          faction={player?.faction}
         />
       )}
 

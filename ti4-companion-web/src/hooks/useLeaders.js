@@ -82,6 +82,16 @@ export function useLeaders({ currentPlayer, gameId }) {
     setCommanderRerollWindow(null)
   }
 
+  function handleCloseLeaderModal() {
+    setLeaderModalOpen(false)
+    setActiveLeader(null)
+  }
+
+  function closeCommanderRerollModal() {
+    setCommanderRerollModalOpen(false)
+    setCommanderRerollWindow(null)
+  }
+
   return {
     agent,
     commander,
@@ -94,9 +104,11 @@ export function useLeaders({ currentPlayer, gameId }) {
     commanderRerollWindow,
     handleUseAbility,
     handleConfirm,
+    handleCloseLeaderModal,
     handleReactiveAgentWindow,
     handleCommanderPassiveWindow,
     handleCommanderRerollConfirm,
+    closeCommanderRerollModal,
     unlockCommander: (leaderId) => unlockCommanderFn(gameId, leaderId),
     unlockHero: (leaderId) => resolveAbilityFn(gameId, null, 'leader', leaderId, { unlock: true }),
     resolveLeaderAbility: (abilityDefinitionId, leaderId, selections) =>

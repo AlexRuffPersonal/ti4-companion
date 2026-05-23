@@ -353,8 +353,8 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-produce-units-p43a](fn-game-produce-units-p43a.md) | `supabase/functions/game-produce-units/index.ts` | 43a | Leader Card Abilities — Agents | planned | shared-leaderEffects |
 | [fn-game-assign-hits-p43a](fn-game-assign-hits-p43a.md) | `supabase/functions/game-assign-hits/index.ts` | 43a | Leader Card Abilities — Agents | planned | shared-leaderEffects |
 | [hook-useLeaders-p43a](hook-useLeaders-p43a.md) | `src/hooks/useLeaders.js` | 43a | Leader Card Abilities — Agents | done | component-LeaderAbilityModal, lib-leaderConstants |
-| [component-LeaderPanel-p43a](component-LeaderPanel-p43a.md) | `src/components/game/LeaderPanel.jsx` | 43a | Leader Card Abilities — Agents | in-progress | hook-useLeaders-p43a, component-LeaderAbilityModal |
-| [component-GameScreen-p43a](component-GameScreen-p43a.md) | `src/components/game/GameScreen.jsx` | 43a | Leader Card Abilities — Agents | in-progress | hook-useLeaders-p43a |
+| [component-LeaderPanel-p43a](component-LeaderPanel-p43a.md) | `src/components/game/LeaderPanel.jsx` | 43a | Leader Card Abilities — Agents | done | hook-useLeaders-p43a, component-LeaderAbilityModal |
+| [component-GameScreen-p43a](component-GameScreen-p43a.md) | `src/components/game/GameScreen.jsx` | 43a | Leader Card Abilities — Agents | done | hook-useLeaders-p43a |
 
 | [shared-leaderEffects-p43b](shared-leaderEffects-p43b.md) | `supabase/functions/_shared/leaderEffects.ts` | 43b | Leader Card Abilities — Heroes | done | shared-leaderEffects |
 | [shared-abilityHandlers-p43b](shared-abilityHandlers-p43b.md) | `supabase/functions/_shared/abilityHandlers.ts` | 43b | Leader Card Abilities — Heroes | planned | shared-leaderEffects-p43b |
@@ -382,8 +382,8 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-resolve-commander-reroll](fn-game-resolve-commander-reroll.md) | `supabase/functions/game-resolve-commander-reroll/index.ts` | 43c | Leader Card Abilities — Commander Passives | done | shared-leaderEffects-p43c, migration-052-leader-abilities |
 | [client-edgeFunctions-p43c](client-edgeFunctions-p43c.md) | `src/lib/edgeFunctions.js` | 43c | Leader Card Abilities — Commander Passives | done | fn-game-unlock-commander, fn-game-resolve-commander-reroll |
 | [hook-useLeaders-p43c](hook-useLeaders-p43c.md) | `src/hooks/useLeaders.js` | 43c | Leader Card Abilities — Commander Passives | done | client-edgeFunctions-p43c, hook-useLeaders-p43a |
-| [component-CommanderRerollModal](component-CommanderRerollModal.md) | `src/components/game/CommanderRerollModal.jsx` | 43c | Leader Card Abilities — Commander Passives | planned | hook-useLeaders-p43c |
-| [component-GameScreen-p43c](component-GameScreen-p43c.md) | `src/components/game/GameScreen.jsx` | 43c | Leader Card Abilities — Commander Passives | planned | hook-useLeaders-p43c, component-CommanderRerollModal |
+| [component-CommanderRerollModal](component-CommanderRerollModal.md) | `src/components/game/CommanderRerollModal.jsx` | 43c | Leader Card Abilities — Commander Passives | done | hook-useLeaders-p43c |
+| [component-GameScreen-p43c](component-GameScreen-p43c.md) | `src/components/game/GameScreen.jsx` | 43c | Leader Card Abilities — Commander Passives | done | hook-useLeaders-p43c, component-CommanderRerollModal |
 
 | [component-GameIcon](component-GameIcon.md) | `src/components/shared/GameIcon.jsx` | UI | SVG Icon Integration | done | — |
 | [component-TechCard-icon-integration](component-TechCard-icon-integration.md) | `src/components/game/TechCard.jsx` | UI | SVG Icon Integration | done | component-GameIcon |

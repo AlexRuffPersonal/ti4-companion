@@ -26,10 +26,21 @@ export const LEADER_SELECTION_CONFIG = {
       exclude: ['creuss_home', 'wormhole_nexus'],
     },
   },
+  'The Mahact Gene-Sorcerers': {
+    hero: {
+      needs_system: true,
+      count: 2,
+      label: ['Source system', 'Destination system'],
+      needs_target_player: true,
+    },
+  },
   'The Winnu': {
     hero: { needs_strategy_card: true },
   },
   'The Naalu Collective': {
-    hero: { needs_target_player: true, multi: true },
+    hero: { needs_target_player: true, multi: true, label: 'Force each player to give a promissory note' },
+  },
+  'The Yssaril Tribes': {
+    hero: { auto_multi_player: true, label: 'Each player reveals 1 action card' },
   },
 }

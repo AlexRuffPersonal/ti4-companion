@@ -40,6 +40,7 @@ import RulesModal from './RulesModal.jsx'
 import RiftTransitModal from './RiftTransitModal.jsx'
 import { useRiftTransit } from '../../hooks/useRiftTransit.js'
 import { useLeaders } from '../../hooks/useLeaders.js'
+import CommanderRerollModal from './CommanderRerollModal.jsx'
 
 export default function GameScreen({ userId }) {
   const { code } = useParams()
@@ -85,6 +86,23 @@ export default function GameScreen({ userId }) {
   const canUndo = isHost && game?.phase !== 'lobby'
 
   const handleUndo = async () => { await undoLastAction(game?.id) }
+
+  // Handle pending_window dispatching for leader windows
+  useEffect(() => {
+    const window = game?.pending_window
+    if (!window) return
+    switch (window.type) {
+      case 'reactive_agent':
+        leaders.handleReactiveAgentWindow(window)
+        break
+      case 'commander_passive':
+      case 'commander_reroll':
+        leaders.handleCommanderPassiveWindow(window)
+        break
+      default:
+        break
+    }
+  }, [game?.pending_window?.type]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const {
     activePay, responses, isMyTurnToRespond,
@@ -577,6 +595,14 @@ export default function GameScreen({ userId }) {
       )}
 
       <RulesModal isOpen={rulesModalOpen} onClose={() => setRulesModalOpen(false)} />
+
+      {leaders.commanderRerollModalOpen && leaders.commanderRerollWindow && (
+        <CommanderRerollModal
+          window={leaders.commanderRerollWindow}
+          onConfirm={leaders.handleCommanderRerollConfirm}
+          onClose={leaders.closeCommanderRerollModal}
+        />
+      )}
 
       {activeTransit && (
         <RiftTransitModal

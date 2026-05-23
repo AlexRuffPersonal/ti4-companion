@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import LeaderCard from './LeaderCard';
 import PlanetSelectionModal from './PlanetSelectionModal.jsx'
+import LeaderAbilityModal from './LeaderAbilityModal.jsx'
 
 export default function LeaderPanel({ agent, commander, hero, factionMech, leaderStatus, onUseAbility, onUnlock,
   planets = [], currentPlayerId, onDeployMech, onUseMechAbility,
-  leaderModalOpen, activeLeader, onConfirm, onClose, gamePlayers }) {
+  leaderModalOpen, activeLeader, onConfirm, onClose, gamePlayers, faction }) {
   const [showDeployModal, setShowDeployModal] = useState(false)
 
   function handleDeployConfirm(selected) {
@@ -52,6 +53,17 @@ export default function LeaderPanel({ agent, commander, hero, factionMech, leade
           scope="own"
           onConfirm={handleDeployConfirm}
           onClose={() => setShowDeployModal(false)}
+        />
+      )}
+
+      {leaderModalOpen && activeLeader && (
+        <LeaderAbilityModal
+          leader={activeLeader}
+          faction={faction}
+          leaderType={activeLeader.leader_type ?? activeLeader.leaderType}
+          gamePlayers={gamePlayers}
+          onConfirm={onConfirm}
+          onClose={onClose}
         />
       )}
     </div>
