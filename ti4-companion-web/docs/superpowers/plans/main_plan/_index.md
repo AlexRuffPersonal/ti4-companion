@@ -339,7 +339,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-resolve-exploration-card-p42](fn-game-resolve-exploration-card-p42.md) | `supabase/functions/game-resolve-exploration-card/index.ts` | 42 | Relic Card Effects A | planned | fn-game-resolve-exploration-card, shared-relicEffects-p42, shared-abilityDsl-p42 |
 | [client-edgeFunctions-p42](client-edgeFunctions-p42.md) | `src/lib/edgeFunctions.js` | 42 | Relic Card Effects A | done | fn-game-use-relic-p42 |
 | [component-DiscardBrowserModal](component-DiscardBrowserModal.md) | `src/components/game/DiscardBrowserModal.jsx` | 42 | Relic Card Effects A | done | client-edgeFunctions-p42 |
-| [component-RelicPanel-p42](component-RelicPanel-p42.md) | `src/components/game/RelicPanel.jsx` | 42 | Relic Card Effects A | in-progress | component-RelicPanel, component-DiscardBrowserModal, client-edgeFunctions-p42 |
+| [component-RelicPanel-p42](component-RelicPanel-p42.md) | `src/components/game/RelicPanel.jsx` | 42 | Relic Card Effects A | done | component-RelicPanel, component-DiscardBrowserModal, client-edgeFunctions-p42 |
 
 | [migration-052-leader-abilities](migration-052-leader-abilities.md) | `supabase/migrations/052_leader_abilities.sql` | 43a | Leader Card Abilities — Agents | done | — |
 | [lib-leaderConstants](lib-leaderConstants.md) | `src/lib/leaderConstants.js` | 43a | Leader Card Abilities — Agents | done | — |
