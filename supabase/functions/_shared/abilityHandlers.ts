@@ -1,4 +1,5 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { dslError } from './abilityDsl.ts'
 import type { ResolveContext } from './abilityDsl.ts'
 
 type HandlerFn = (context: ResolveContext, db: SupabaseClient) => Promise<void>
@@ -394,6 +395,26 @@ const handlers: Record<string, HandlerFn> = {
       throw err
     }
 
+    // Prevent swapping Creuss home or Wormhole Nexus (these are fixed reference systems)
+    // Simplified: prevent if either system has a creuss_home or nexus flag in game_system_state
+    const restrictedCheck = await db.from('game_system_state')
+      .select('system_key')
+      .eq('game_id', context.gameId)
+      .in('system_key', [key1, key2])
+      .eq('wormhole_nexus', true)
+    if (restrictedCheck.data && restrictedCheck.data.length > 0) {
+      throw dslError('Cannot swap Wormhole Nexus system', 409)
+    }
+    // Also check if either is the Creuss home system by checking game_players faction
+    const creussPlayer = await db.from('game_players')
+      .select('home_system_key')
+      .eq('game_id', context.gameId)
+      .eq('faction', "The Ghosts Of Creuss")
+      .maybeSingle()
+    if (creussPlayer.data && (key1 === creussPlayer.data.home_system_key || key2 === creussPlayer.data.home_system_key)) {
+      throw dslError('Cannot swap Creuss home system', 409)
+    }
+
     const tile1 = mapTiles[key1]
     const tile2 = mapTiles[key2]
     const updatedTiles = { ...mapTiles, [key1]: tile2, [key2]: tile1 }
@@ -462,6 +483,7 @@ const handlers: Record<string, HandlerFn> = {
         defender_player_id: targetPlayerId,
         combat_phase: 'pre_combat',
         no_retreat: true,
+        no_movement_abilities: true,
       })
 
     ;(context as Record<string, unknown>).combat_started = true
@@ -511,7 +533,7 @@ const handlers: Record<string, HandlerFn> = {
   titans_hero: async (context, db) => {
     const planetResult = await db
       .from('game_player_planets')
-      .select('id, resource_bonus, influence_bonus')
+      .select('id')
       .eq('game_id', context.gameId)
       .eq('planet_name', 'Elysium')
       .maybeSingle()
@@ -521,8 +543,10 @@ const handlers: Record<string, HandlerFn> = {
     await db
       .from('game_player_planets')
       .update({
-        resource_bonus: (planetResult.data.resource_bonus ?? 0) + 3,
-        influence_bonus: (planetResult.data.influence_bonus ?? 0) + 3,
+        titans_hero_attached: true,
+        resource_bonus: 3,
+        influence_bonus: 3,
+        space_cannon_override: '5(x3)',
       })
       .eq('id', planetResult.data.id)
   },
@@ -545,11 +569,41 @@ const handlers: Record<string, HandlerFn> = {
       return
     }
 
+    // Fetch map_tiles to compute adjacency
+    const gameResult = await db
+      .from('games')
+      .select('map_tiles')
+      .eq('id', context.gameId)
+      .maybeSingle()
+
+    const mapTiles = (gameResult.data?.map_tiles as Record<string, string>) ?? {}
+
+    // Axial hex neighbor offsets
+    const hexNeighborOffsets = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, -1], [-1, 1]]
+
+    // Compute all adjacent system keys that exist in map_tiles
+    const adjacentKeys = new Set<string>()
+    for (const tearKey of tearSystemKeys) {
+      const parts = tearKey.split(',')
+      const q = parseInt(parts[0], 10)
+      const r = parseInt(parts[1], 10)
+      if (isNaN(q) || isNaN(r)) continue
+      for (const [dq, dr] of hexNeighborOffsets) {
+        const neighborKey = `${q + dq},${r + dr}`
+        if (neighborKey in mapTiles && !tearSystemKeys.includes(neighborKey)) {
+          adjacentKeys.add(neighborKey)
+        }
+      }
+    }
+
+    // allTargetSystems = tear systems + their existing map_tile neighbors
+    const allTargetSystems = [...tearSystemKeys, ...adjacentKeys]
+
     const unitsResult = await db
       .from('game_player_units')
       .select('id, player_id, unit_type, system_key')
       .eq('game_id', context.gameId)
-      .in('system_key', tearSystemKeys)
+      .in('system_key', allTargetSystems)
       .neq('unit_type', 'fighter')
 
     const units = unitsResult.data ?? []
