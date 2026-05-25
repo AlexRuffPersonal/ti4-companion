@@ -65,6 +65,10 @@ async function dispatchExplorationOp(
       return 'relic_fragment'
     }
 
+    case 'hold_card': {
+      return 'relic_fragment'
+    }
+
     case 'conditional_mech_or_infantry': {
       const { data: units } = await dbClient
         .from('game_player_units')

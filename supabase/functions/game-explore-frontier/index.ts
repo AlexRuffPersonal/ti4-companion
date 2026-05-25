@@ -78,6 +78,10 @@ async function dispatchFrontierOp(
       return 'handled'
     }
 
+    case 'hold_card': {
+      return 'held'
+    }
+
     default: {
       await applyAbility([op], resolveContext, dbClient)
       return 'handled'
