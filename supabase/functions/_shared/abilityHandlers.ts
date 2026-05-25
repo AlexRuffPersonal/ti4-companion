@@ -358,6 +358,211 @@ const handlers: Record<string, HandlerFn> = {
       })
       .eq('id', targetPlayerId)
   },
+
+  // Phase 43b — Hero handlers
+
+  /**
+   * Creuss Riftwalker hero: swap two system tiles on the map.
+   * Requires selections.system_keys: [key1, key2].
+   */
+  creuss_riftwalker: async (context, db) => {
+    const sel = context.selections as { system_keys?: string[] }
+    const systemKeys = sel?.system_keys
+    if (!systemKeys || systemKeys.length !== 2) {
+      const err = new Error('system_keys must be an array of 2 system keys') as Error & { status?: number }
+      err.status = 400
+      throw err
+    }
+
+    const [key1, key2] = systemKeys
+
+    const gameResult = await db
+      .from('games')
+      .select('map_tiles')
+      .eq('id', context.gameId)
+      .maybeSingle()
+
+    const mapTiles = gameResult.data?.map_tiles as Record<string, string> | null
+    if (!mapTiles || !(key1 in mapTiles)) {
+      const err = new Error('System not found in map') as Error & { status?: number }
+      err.status = 409
+      throw err
+    }
+    if (!(key2 in mapTiles)) {
+      const err = new Error('System not found in map') as Error & { status?: number }
+      err.status = 409
+      throw err
+    }
+
+    const tile1 = mapTiles[key1]
+    const tile2 = mapTiles[key2]
+    const updatedTiles = { ...mapTiles, [key1]: tile2, [key2]: tile1 }
+
+    await db
+      .from('games')
+      .update({ map_tiles: updatedTiles })
+      .eq('id', context.gameId)
+  },
+
+  /**
+   * Mahact hero: move all activating player's units from a source space area
+   * to a destination system, then start combat against a target player.
+   */
+  mahact_hero: async (context, db) => {
+    const sel = context.selections as {
+      source_system_key?: string
+      dest_system_key?: string
+      target_player_id?: string
+    }
+
+    const sourceSystemKey = sel?.source_system_key
+    if (!sourceSystemKey) {
+      const err = new Error('source_system_key required') as Error & { status?: number }
+      err.status = 400
+      throw err
+    }
+
+    const destSystemKey = sel?.dest_system_key
+    if (!destSystemKey) {
+      const err = new Error('dest_system_key required') as Error & { status?: number }
+      err.status = 400
+      throw err
+    }
+
+    const targetPlayerId = sel?.target_player_id
+    if (!targetPlayerId) {
+      const err = new Error('target_player_id required') as Error & { status?: number }
+      err.status = 400
+      throw err
+    }
+
+    const unitsResult = await db
+      .from('game_player_units')
+      .select('id')
+      .eq('game_id', context.gameId)
+      .eq('player_id', context.activatingPlayerId)
+      .eq('system_key', sourceSystemKey)
+      .is('on_planet', null)
+
+    const unitIds = (unitsResult.data ?? []).map((u: { id: string }) => u.id)
+
+    for (const unitId of unitIds) {
+      await db
+        .from('game_player_units')
+        .update({ system_key: destSystemKey })
+        .eq('id', unitId)
+    }
+
+    await db
+      .from('game_combats')
+      .insert({
+        game_id: context.gameId,
+        system_key: destSystemKey,
+        attacker_player_id: context.activatingPlayerId,
+        defender_player_id: targetPlayerId,
+        combat_phase: 'pre_combat',
+        no_retreat: true,
+      })
+
+    ;(context as Record<string, unknown>).combat_started = true
+    ;(context as Record<string, unknown>).combat_system = destSystemKey
+  },
+
+  /**
+   * Letnev Darktalon Treilla hero: for this round, the Letnev player ignores
+   * fleet capacity limits.
+   */
+  letnev_darktalon: async (context, db) => {
+    const gameResult = await db
+      .from('games')
+      .select('game_round_flags')
+      .eq('id', context.gameId)
+      .maybeSingle()
+
+    const flags = (gameResult.data?.game_round_flags as Record<string, unknown>) ?? {}
+    await db
+      .from('games')
+      .update({ game_round_flags: { ...flags, letnev_no_fleet_limit: true } })
+      .eq('id', context.gameId)
+  },
+
+  /**
+   * Nomad Ahk-Syl Sish hero: this round, the Nomad flagship ignores
+   * activation tokens when moving.
+   */
+  nomad_ahk_syl: async (context, db) => {
+    const gameResult = await db
+      .from('games')
+      .select('game_round_flags')
+      .eq('id', context.gameId)
+      .maybeSingle()
+
+    const flags = (gameResult.data?.game_round_flags as Record<string, unknown>) ?? {}
+    await db
+      .from('games')
+      .update({ game_round_flags: { ...flags, nomad_flagship_ignores_tokens: true } })
+      .eq('id', context.gameId)
+  },
+
+  /**
+   * Titans Ul hero: attach hero card to Elysium, granting +3 resources and
+   * +3 influence. No-op if Elysium is not yet in game_player_planets.
+   */
+  titans_hero: async (context, db) => {
+    const planetResult = await db
+      .from('game_player_planets')
+      .select('id, resource_bonus, influence_bonus')
+      .eq('game_id', context.gameId)
+      .eq('planet_name', 'Elysium')
+      .maybeSingle()
+
+    if (!planetResult.data) return
+
+    await db
+      .from('game_player_planets')
+      .update({
+        resource_bonus: (planetResult.data.resource_bonus ?? 0) + 3,
+        influence_bonus: (planetResult.data.influence_bonus ?? 0) + 3,
+      })
+      .eq('id', planetResult.data.id)
+  },
+
+  /**
+   * Vuil'raith Rin hero: roll for all non-fighter ships in or adjacent to
+   * dimensional tear systems — ships roll ≤ 3 are captured.
+   */
+  vuil_raith_hero: async (context, db) => {
+    const tearResult = await db
+      .from('game_system_state')
+      .select('system_key')
+      .eq('game_id', context.gameId)
+      .eq('dimensional_tear', true)
+
+    const tearSystemKeys = (tearResult.data ?? []).map((r: { system_key: string }) => r.system_key)
+
+    if (tearSystemKeys.length === 0) {
+      ;(context as Record<string, unknown>).capture_results = []
+      return
+    }
+
+    const unitsResult = await db
+      .from('game_player_units')
+      .select('id, player_id, unit_type, system_key')
+      .eq('game_id', context.gameId)
+      .in('system_key', tearSystemKeys)
+      .neq('unit_type', 'fighter')
+
+    const units = unitsResult.data ?? []
+    const results: Array<{ player_id: string; unit_type: string; roll: number; captured: boolean }> = []
+
+    for (const unit of units as Array<{ id: string; player_id: string; unit_type: string; system_key: string }>) {
+      const roll = Math.floor(Math.random() * 10) + 1
+      const captured = roll <= 3
+      results.push({ player_id: unit.player_id, unit_type: unit.unit_type, roll, captured })
+    }
+
+    ;(context as Record<string, unknown>).capture_results = results
+  },
 }
 
 export function getHandler(name: string): HandlerFn {
