@@ -269,7 +269,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [migration-048-promissory-dsl](migration-048-promissory-dsl.md) | `supabase/migrations/048_promissory_dsl.sql` | 39a | Promissory Note DSL Effects | planned | migration-032-promissory-effects |
 | [shared-abilityDsl-p39a](shared-abilityDsl-p39a.md) | `supabase/functions/_shared/abilityDsl.ts` | 39a | Promissory Note DSL Effects | planned | migration-048-promissory-dsl |
 | [shared-promissoryHandlers-p39a](shared-promissoryHandlers-p39a.md) | `supabase/functions/_shared/promissoryHandlers.ts` | 39a | Promissory Note DSL Effects | done | shared-abilityDsl-p39a |
-| [shared-promissoryEnforcement-p39a](shared-promissoryEnforcement-p39a.md) | `supabase/functions/_shared/promissoryEnforcement.ts` | 39a | Promissory Note DSL Effects | planned | shared-promissoryHandlers-p39a |
+| [shared-promissoryEnforcement-p39a](shared-promissoryEnforcement-p39a.md) | `supabase/functions/_shared/promissoryEnforcement.ts` | 39a | Promissory Note DSL Effects | done | shared-promissoryHandlers-p39a |
 | [fn-game-play-promissory-note-p39a](fn-game-play-promissory-note-p39a.md) | `supabase/functions/game-play-promissory-note/index.ts` | 39a | Promissory Note DSL Effects | planned | shared-abilityDsl-p39a, shared-promissoryHandlers-p39a |
 
 | [fn-game-confirm-transaction-p39b](fn-game-confirm-transaction-p39b.md) | `supabase/functions/game-confirm-transaction/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |

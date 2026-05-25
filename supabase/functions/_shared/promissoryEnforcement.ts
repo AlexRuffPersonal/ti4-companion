@@ -16,6 +16,9 @@ export interface ActiveNotes {
   stymie: NoteEntry[]
   antivirus: NoteEntry[]
   giftOfPrescience: NoteEntry[]
+  tradeAgreement: NoteEntry[]
+  crucible: NoteEntry[]
+  strikeWingAmbuscade: NoteEntry[]
 }
 
 /**
@@ -33,6 +36,9 @@ function nameToKey(name: string): keyof ActiveNotes | null {
   if (normalized === 'stymie') return 'stymie'
   if (normalized === 'antivirus') return 'antivirus'
   if (normalized === 'gift of prescience') return 'giftOfPrescience'
+  if (normalized === 'trade agreement') return 'tradeAgreement'
+  if (normalized === 'crucible') return 'crucible'
+  if (normalized === 'strike wing ambuscade') return 'strikeWingAmbuscade'
   return null
 }
 
@@ -51,6 +57,9 @@ export async function getActiveNotes(gameId: string, db: SupabaseClient): Promis
     stymie: [],
     antivirus: [],
     giftOfPrescience: [],
+    tradeAgreement: [],
+    crucible: [],
+    strikeWingAmbuscade: [],
   }
 
   const { data, error } = await db
@@ -74,6 +83,36 @@ export async function getActiveNotes(gameId: string, db: SupabaseClient): Promis
   }
 
   return result
+}
+
+/**
+ * Returns all held (state='held') promissory notes matching the given note name for the game.
+ */
+export async function getHeldNotes(
+  gameId: string,
+  noteName: string,
+  db: SupabaseClient
+): Promise<NoteEntry[]> {
+  const { data, error } = await db
+    .from('game_player_promissory_notes')
+    .select('id, held_by_player_id, origin_player_id, promissory_notes(name)')
+    .eq('game_id', gameId)
+    .eq('state', 'held')
+
+  if (error) throw new Error(`Failed to load held notes: ${error.message}`)
+  if (!data) return []
+
+  const normalized = noteName.toLowerCase().replace(/\s+/g, ' ').trim()
+  return data
+    .filter((row) => {
+      const name = (row.promissory_notes as { name: string } | null)?.name ?? ''
+      return name.toLowerCase().replace(/\s+/g, ' ').trim() === normalized
+    })
+    .map((row) => ({
+      instanceId: row.id as string,
+      holderPlayerId: row.held_by_player_id as string,
+      ownerPlayerId: row.origin_player_id as string,
+    }))
 }
 
 /**
