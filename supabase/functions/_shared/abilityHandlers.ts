@@ -209,6 +209,155 @@ const handlers: Record<string, HandlerFn> = {
   vuil_production_limit_bypass: async (context, _db) => {
     context.freeFromLimitCount = (context.freeFromLimitCount ?? 0) + 2
   },
+
+  // Phase 43a — Agent handlers
+
+  /**
+   * Yssaril agent: copies all other agents' text. Display-only — no DB writes.
+   * Exhaust is handled by the game-resolve-ability caller.
+   */
+  ssruu_copies_agents: async (_context, _db) => {
+    // intentionally empty
+  },
+
+  /**
+   * Nekro agent: target player discards 1 action card OR spends 1 command token;
+   * Nekro gains 2 trade goods in either case.
+   */
+  nekro_malleon: async (context, db) => {
+    const sel = context.selections as {
+      chosen_player_id?: string
+      choice?: string
+      card_id?: string
+      token_bucket?: string
+    }
+
+    const targetPlayerId = sel?.chosen_player_id
+    if (!targetPlayerId) {
+      const err = new Error('chosen_player_id required') as Error & { status?: number }
+      err.status = 400
+      throw err
+    }
+
+    const choice = sel?.choice
+    if (!choice) {
+      const err = new Error('choice required') as Error & { status?: number }
+      err.status = 400
+      throw err
+    }
+
+    if (choice === 'action_card') {
+      const cardId = sel?.card_id
+      if (!cardId) {
+        const err = new Error('card_id required') as Error & { status?: number }
+        err.status = 400
+        throw err
+      }
+
+      const cardResult = await db
+        .from('game_action_card_deck')
+        .select('id')
+        .eq('id', cardId)
+        .eq('held_by_player_id', targetPlayerId)
+        .eq('state', 'hand')
+        .maybeSingle()
+
+      if (!cardResult.data) {
+        const err = new Error('Card not in target hand') as Error & { status?: number }
+        err.status = 409
+        throw err
+      }
+
+      await db
+        .from('game_action_card_deck')
+        .update({ state: 'discarded', held_by_player_id: null })
+        .eq('id', cardId)
+
+      const targetResult = await db
+        .from('game_players')
+        .select('action_card_count')
+        .eq('id', targetPlayerId)
+        .maybeSingle()
+
+      await db
+        .from('game_players')
+        .update({ action_card_count: Math.max(0, (targetResult.data?.action_card_count ?? 1) - 1) })
+        .eq('id', targetPlayerId)
+    } else if (choice === 'command_token') {
+      const bucket = sel?.token_bucket
+      if (!bucket) {
+        const err = new Error('token_bucket required') as Error & { status?: number }
+        err.status = 400
+        throw err
+      }
+
+      const playerResult = await db
+        .from('game_players')
+        .select('command_tokens')
+        .eq('id', targetPlayerId)
+        .maybeSingle()
+
+      const tokens = playerResult.data?.command_tokens as Record<string, number> | null
+      if (!tokens || (tokens[bucket] ?? 0) <= 0) {
+        const err = new Error('No command tokens in bucket') as Error & { status?: number }
+        err.status = 409
+        throw err
+      }
+
+      const newTokens = { ...tokens, [bucket]: tokens[bucket] - 1 }
+      await db
+        .from('game_players')
+        .update({ command_tokens: newTokens })
+        .eq('id', targetPlayerId)
+    }
+
+    // Both paths: Nekro gains 2 TG
+    const nekroResult = await db
+      .from('game_players')
+      .select('trade_goods')
+      .eq('id', context.activatingPlayerId)
+      .maybeSingle()
+
+    await db
+      .from('game_players')
+      .update({ trade_goods: (nekroResult.data?.trade_goods ?? 0) + 2 })
+      .eq('id', context.activatingPlayerId)
+  },
+
+  /**
+   * Vuil'raith agent: after target replenishes commodities, convert all of
+   * target's commodities to trade goods (and capture 1 unit — display only).
+   */
+  stillness_of_stars: async (context, db) => {
+    const sel = context.selections as { chosen_player_id?: string }
+    const targetPlayerId = sel?.chosen_player_id
+    if (!targetPlayerId) {
+      const err = new Error('chosen_player_id required') as Error & { status?: number }
+      err.status = 400
+      throw err
+    }
+
+    const playerResult = await db
+      .from('game_players')
+      .select('commodities, trade_goods')
+      .eq('id', targetPlayerId)
+      .maybeSingle()
+
+    const commodityValue = playerResult.data?.commodities ?? 0
+    if (commodityValue === 0) {
+      const err = new Error('Target has no commodities') as Error & { status?: number }
+      err.status = 409
+      throw err
+    }
+
+    await db
+      .from('game_players')
+      .update({
+        trade_goods: (playerResult.data?.trade_goods ?? 0) + commodityValue,
+        commodities: 0,
+      })
+      .eq('id', targetPlayerId)
+  },
 }
 
 export function getHandler(name: string): HandlerFn {
