@@ -255,7 +255,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [migration-047-strategy-card-effects](migration-047-strategy-card-effects.md) | `supabase/migrations/047_strategy_card_effects.sql` | 37 | Strategy Card Text & Ability Enforcement | done | migration-029-strategy-production |
 | [lib-strategyCardConstants](lib-strategyCardConstants.md) | `src/lib/strategyCardConstants.js` | 37 | Strategy Card Text & Ability Enforcement | done | — |
 | [shared-abilityDsl-p37](shared-abilityDsl-p37.md) | `supabase/functions/_shared/abilityDsl.ts` | 37 | Strategy Card Text & Ability Enforcement | done | migration-047-strategy-card-effects, shared-objectiveConditions |
-| [fn-game-play-strategy-card-p37](fn-game-play-strategy-card-p37.md) | `supabase/functions/game-play-strategy-card/index.ts` | 37 | Strategy Card Text & Ability Enforcement | planned | migration-047-strategy-card-effects, shared-abilityDsl-p37 |
+| [fn-game-play-strategy-card-p37](fn-game-play-strategy-card-p37.md) | `supabase/functions/game-play-strategy-card/index.ts` | 37 | Strategy Card Text & Ability Enforcement | done | migration-047-strategy-card-effects, shared-abilityDsl-p37 |
 | [fn-game-use-strategy-secondary-p37](fn-game-use-strategy-secondary-p37.md) | `supabase/functions/game-use-strategy-secondary/index.ts` | 37 | Strategy Card Text & Ability Enforcement | done | migration-047-strategy-card-effects, shared-abilityDsl-p37 |
 | [fn-game-produce-units-p37](fn-game-produce-units-p37.md) | `supabase/functions/game-produce-units/index.ts` | 37 | Strategy Card Text & Ability Enforcement | done | fn-game-use-strategy-secondary-p37 |
 | [hook-useStrategyCards-p37](hook-useStrategyCards-p37.md) | `src/hooks/useStrategyCards.js` | 37 | Strategy Card Text & Ability Enforcement | planned | fn-game-play-strategy-card-p37, fn-game-use-strategy-secondary-p37 |
@@ -270,7 +270,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [shared-abilityDsl-p39a](shared-abilityDsl-p39a.md) | `supabase/functions/_shared/abilityDsl.ts` | 39a | Promissory Note DSL Effects | planned | migration-048-promissory-dsl |
 | [shared-promissoryHandlers-p39a](shared-promissoryHandlers-p39a.md) | `supabase/functions/_shared/promissoryHandlers.ts` | 39a | Promissory Note DSL Effects | done | shared-abilityDsl-p39a |
 | [shared-promissoryEnforcement-p39a](shared-promissoryEnforcement-p39a.md) | `supabase/functions/_shared/promissoryEnforcement.ts` | 39a | Promissory Note DSL Effects | done | shared-promissoryHandlers-p39a |
-| [fn-game-play-promissory-note-p39a](fn-game-play-promissory-note-p39a.md) | `supabase/functions/game-play-promissory-note/index.ts` | 39a | Promissory Note DSL Effects | in-progress | shared-abilityDsl-p39a, shared-promissoryHandlers-p39a |
+| [fn-game-play-promissory-note-p39a](fn-game-play-promissory-note-p39a.md) | `supabase/functions/game-play-promissory-note/index.ts` | 39a | Promissory Note DSL Effects | done | shared-abilityDsl-p39a, shared-promissoryHandlers-p39a |
 
 | [fn-game-confirm-transaction-p39b](fn-game-confirm-transaction-p39b.md) | `supabase/functions/game-confirm-transaction/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
 | [fn-game-activate-system-p39b](fn-game-activate-system-p39b.md) | `supabase/functions/game-activate-system/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
