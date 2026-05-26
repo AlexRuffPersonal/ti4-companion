@@ -16,6 +16,10 @@ vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
   EVT_ADVANCE_PHASE: 'advance_phase',
 }))
 
+vi.mock('../../../supabase/functions/_shared/lawEffects.ts', () => ({
+  applyStatusPhaseLaws: vi.fn(async (_db, _gameId, updates) => updates),
+}))
+
 import { requireAuth } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-advance-phase/index.ts'

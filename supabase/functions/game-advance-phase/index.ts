@@ -2,6 +2,7 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { logEvent, EVT_ADVANCE_PHASE } from '../_shared/gameEvents.ts'
+import { applyStatusPhaseLaws } from '../_shared/lawEffects.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -74,6 +75,13 @@ export async function handler(req: Request): Promise<Response> {
       .eq('id', body.game_id)
     if (error) return errorResponse(`Update failed: ${error.message}`, 500)
 
+    // Reset Minister of War unlock at the start of each action phase
+    const { error: mowError } = await db
+      .from('game_players')
+      .update({ minister_of_war_unlocked: false })
+      .eq('game_id', body.game_id)
+    if (mowError) return errorResponse(`Failed to reset minister_of_war_unlocked: ${mowError.message}`, 500)
+
   } else if (game.phase === 'action') {
     // Action → Status: clear active player
     const { error: planetsError } = await db
@@ -136,6 +144,13 @@ export async function handler(req: Request): Promise<Response> {
     if (allPlayersError) return errorResponse('Database error', 500)
 
     // Per-player tech updates: Neural Motivator (action cards) + Hyper Metabolism (command tokens)
+    // Build playerUpdates array for token gains, then apply Executive Sanctions law cap
+    const rawPlayerUpdates = (allPlayers ?? []).map((player: { id: string; technologies?: string[]; command_tokens?: { tactic_total: number; fleet: number; strategy: number } }) => {
+      const hasHyperMetabolism = (player.technologies ?? []).includes('Hyper Metabolism')
+      return { playerId: player.id, tokenGain: hasHyperMetabolism ? 3 : 2 }
+    })
+    const playerUpdates = await applyStatusPhaseLaws(db, body.game_id, rawPlayerUpdates)
+
     for (const player of (allPlayers ?? [])) {
       const hasNeuralMotivator = (player.technologies ?? []).includes('Neural Motivator')
       const cardGain = hasNeuralMotivator ? 2 : 1
@@ -145,12 +160,12 @@ export async function handler(req: Request): Promise<Response> {
         .eq('id', player.id)
       if (cardError) return errorResponse(`Failed to update action cards: ${cardError.message}`, 500)
 
-      const hasHyperMetabolism = (player.technologies ?? []).includes('Hyper Metabolism')
-      const stratGain = hasHyperMetabolism ? 3 : 2
+      const update = playerUpdates.find((u: { playerId: string; tokenGain: number }) => u.playerId === player.id)
+      const tokenGain = update?.tokenGain ?? 2
       const tokens = player.command_tokens ?? { tactic_total: 0, fleet: 0, strategy: 0 }
       const { error: tokenError } = await db
         .from('game_players')
-        .update({ command_tokens: { ...tokens, strategy: (tokens.strategy ?? 0) + stratGain } })
+        .update({ command_tokens: { ...tokens, strategy: (tokens.strategy ?? 0) + tokenGain } })
         .eq('id', player.id)
       if (tokenError) return errorResponse(`Failed to update command tokens: ${tokenError.message}`, 500)
     }
