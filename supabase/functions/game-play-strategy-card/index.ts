@@ -3,6 +3,7 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { interpretEffects, ResolveContext } from '../_shared/abilityDsl.ts'
+import { applyCommanderPassives } from '../_shared/leaderEffects.ts'
 
 async function fetchTopAgendaCards(
   gameId: string,
@@ -265,7 +266,16 @@ export async function handler(req: Request): Promise<Response> {
     if (insertResponsesError) return errorResponse(`Failed to create responses: ${insertResponsesError.message}`, 500)
   }
 
-  return okResponse({ play_id: (play as Record<string, string>).id, ...extraResponse })
+  const { pendingWindows } = await applyCommanderPassives(
+    'STRATEGY_TOKEN_SPENT',
+    {
+      gameId: body.game_id as string,
+      activatingPlayerId: (player as Record<string, string>).id,
+    } as never,
+    db,
+  )
+
+  return okResponse({ play_id: (play as Record<string, string>).id, ...extraResponse, pending_window: pendingWindows[0] ?? undefined })
 }
 
 if (typeof Deno !== 'undefined') Deno.serve(handler)

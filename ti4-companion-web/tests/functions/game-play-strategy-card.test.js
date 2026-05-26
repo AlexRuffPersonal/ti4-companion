@@ -15,9 +15,14 @@ vi.mock('../../../supabase/functions/_shared/abilityDsl.ts', () => ({
   interpretEffects: vi.fn().mockResolvedValue(undefined),
 }))
 
+vi.mock('../../../supabase/functions/_shared/leaderEffects.ts', () => ({
+  applyCommanderPassives: vi.fn().mockResolvedValue({ inlineEffects: [], pendingWindows: [] }),
+}))
+
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { interpretEffects } from '../../../supabase/functions/_shared/abilityDsl.ts'
+import { applyCommanderPassives } from '../../../supabase/functions/_shared/leaderEffects.ts'
 import { handler } from '../../../supabase/functions/game-play-strategy-card/index.ts'
 
 const USER_ID = 'user-uuid'
@@ -336,6 +341,25 @@ describe('game-play-strategy-card', () => {
         [{ op: 'score_imperial_point' }],
         expect.anything(), expect.anything()
       )
+    })
+  })
+
+  describe('Muaat commander passive (STRATEGY_TOKEN_SPENT)', () => {
+    it('includes pending_window in response when commander passive fires', async () => {
+      const mockWindow = { trigger: 'STRATEGY_TOKEN_SPENT', effect: 'gain_trade_goods', faction: 'Muaat' }
+      applyCommanderPassives.mockResolvedValueOnce({ inlineEffects: [], pendingWindows: [mockWindow] })
+      const res = await handler(makeRequest({ game_id: GAME_ID, ability_definition_id: ABILITY_ID }))
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.pending_window).toEqual(mockWindow)
+    })
+
+    it('returns undefined pending_window when no commander passive fires', async () => {
+      applyCommanderPassives.mockResolvedValueOnce({ inlineEffects: [], pendingWindows: [] })
+      const res = await handler(makeRequest({ game_id: GAME_ID, ability_definition_id: ABILITY_ID }))
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.pending_window).toBeUndefined()
     })
   })
 
