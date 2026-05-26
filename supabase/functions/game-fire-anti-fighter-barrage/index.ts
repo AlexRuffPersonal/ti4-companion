@@ -2,6 +2,7 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { resolveUnitStats, type StatBlock } from '../_shared/techEffects.ts'
+import { applyCommanderPassives } from '../_shared/leaderEffects.ts'
 
 type UnitRow = { id: string; player_id: string; unit_type: string; count: number; system_key: string }
 type UnitDef = { name: string; afb: string | null }
@@ -171,6 +172,19 @@ export async function handler(req: Request): Promise<Response> {
   const { results: atkResults, hits: atkHits } = rollAfb(atkUnits ?? [], defMap, afbOverrides, effectivePlasmaScoringUnit)
   const { results: defResults, hits: defHits } = rollAfb(defUnits ?? [], defMap)
 
+  const { pendingWindows } = await applyCommanderPassives(
+    'UNIT_ABILITY_ROLL',
+    {
+      gameId: body.game_id,
+      activatingPlayerId: (player as Record<string, string>).id,
+      faction: '',
+      systemKey: combat.system_key as string,
+      currentDiceResults: atkResults,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any,
+    db,
+  )
+
   let nextPhase: string
   if (atkHits > 0) {
     nextPhase = 'afb_attacker_assign'
@@ -194,6 +208,7 @@ export async function handler(req: Request): Promise<Response> {
     barrage_defender_dice: defResults,
     barrage_defender_hits: defHits,
     phase: nextPhase,
+    ...(pendingWindows[0] !== undefined ? { pending_window: pendingWindows[0] } : {}),
   })
 }
 
