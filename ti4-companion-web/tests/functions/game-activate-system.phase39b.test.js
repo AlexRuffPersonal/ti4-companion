@@ -214,6 +214,8 @@ describe('game-activate-system Phase 39b — Ceasefire', () => {
     expect(res.status).toBe(409)
     const body = await res.json()
     expect(body.error).toMatch(/ceasefire/i)
+    // Note should be consumed (returned) before the 409 is sent
+    expect(returnNote).toHaveBeenCalledWith(NOTE_INSTANCE_ID, PLAYER_ID, expect.anything())
   })
 
   it('Ceasefire held, owner activates, holder has NO units in system → proceeds normally', async () => {

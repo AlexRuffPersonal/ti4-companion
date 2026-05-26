@@ -262,6 +262,7 @@ export async function handler(req: Request): Promise<Response> {
         (u: UnitRow) => u.player_id === note.holderPlayerId && u.system_key === body.system_key
       )
       if (holderUnitsInSystem) {
+        await returnNote(note.instanceId, note.ownerPlayerId, db)
         return errorResponse('Ceasefire is in effect', 409)
       }
     }
