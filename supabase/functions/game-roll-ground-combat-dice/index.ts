@@ -3,10 +3,12 @@ import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { resolveUnitStats } from '../_shared/techEffects.ts'
 import { logEvent, EVT_ROLL_GROUND_COMBAT_DICE } from '../_shared/gameEvents.ts'
+import { applyCommanderPassives } from '../_shared/leaderEffects.ts'
+import { getHandler } from '../_shared/abilityHandlers.ts'
 
 type UnitRow = { id: string; player_id: string; unit_type: string; count: number; system_key: string }
 type UnitDef = { name: string; combat: string | null; sustain_damage: boolean; planetary_shield?: boolean }
-type DieResult = { unit_type: string; roll: number; hit: boolean }
+type DieResult = { unit_type: string; roll: number; hit_on: number; hit: boolean }
 
 function parseStat(text: string): { value: number; dice: number } {
   const diceMatch = text.match(/\(x(\d+)\)/)
@@ -41,7 +43,7 @@ function rollDice(
       const roll = Math.ceil(Math.random() * 10)
       const hit = roll >= resolvedValue
       if (hit) hits++
-      results.push({ unit_type: unit.unit_type, roll, hit })
+      results.push({ unit_type: unit.unit_type, roll, hit_on: resolvedValue, hit })
     }
   }
   return { results, hits, valueMap }
@@ -201,6 +203,51 @@ export async function handler(req: Request): Promise<Response> {
   // ── Duranium Armor ────────────────────────────────────────────────────────────
   // Repair logic is triggered after hit assignment; handled by game-assign-hits.
 
+  // Phase 43c: apply COMBAT_ROLL commander passives (same pattern as space combat)
+  const combatRollContext = {
+    gameId: body.game_id,
+    activatingPlayerId: rollingPlayerId,
+    faction: '',
+    systemKey: combat.system_key,
+    currentDiceResults: results,
+    combatRollBonus: undefined as number | undefined,
+    pendingWindows: undefined as unknown[] | undefined,
+  }
+  const { inlineEffects, pendingWindows } = await applyCommanderPassives(
+    'COMBAT_ROLL',
+    combatRollContext as never,
+    db,
+  )
+
+  // Run inline handlers so they can mutate combatRollContext (e.g. set combatRollBonus)
+  for (const ie of inlineEffects) {
+    const effect = (ie as Record<string, unknown>).effect
+    if (typeof effect === 'string') {
+      try {
+        await getHandler(effect)(combatRollContext as never, db)
+      } catch {
+        // non-fatal — skip effect if handler not registered
+      }
+    }
+  }
+
+  // Merge pendingWindows from applyCommanderPassives and from inline handlers (e.g. Jol-Nar)
+  const allPendingWindows = [
+    ...pendingWindows,
+    ...(combatRollContext.pendingWindows ?? [])
+  ]
+
+  // Apply Winnu commander bonus: +combatRollBonus to each die result
+  if (combatRollContext.combatRollBonus !== undefined && combatRollContext.combatRollBonus !== 0) {
+    const bonus = combatRollContext.combatRollBonus
+    results = results.map((d: DieResult) => ({
+      ...d,
+      roll: d.roll + bonus,
+      hit: (d.roll + bonus) >= d.hit_on,
+    }))
+    hits = results.filter((d: DieResult) => d.hit).length
+  }
+
   const nextPhase = combat.phase === 'attacker_roll' ? 'defender_assign' : 'attacker_assign'
   const updatePayload = combat.phase === 'attacker_roll'
     ? { attacker_dice: results, attacker_hits: hits, phase: nextPhase }
@@ -217,7 +264,7 @@ export async function handler(req: Request): Promise<Response> {
     round: 0,
     phase: 'action',
   })
-  return okResponse({ phase: nextPhase, dice: results, hits })
+  return okResponse({ phase: nextPhase, dice: results, hits, ...(allPendingWindows[0] !== undefined ? { pending_window: allPendingWindows[0] } : {}) })
 }
 
 if (typeof Deno !== 'undefined') Deno.serve(handler)
