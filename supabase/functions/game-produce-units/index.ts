@@ -20,7 +20,7 @@ export async function handler(req: Request): Promise<Response> {
     return errorResponse('Internal server error', 500)
   }
 
-  let body: { game_id?: unknown; system_key?: unknown; units?: unknown; planet_exhausts?: unknown; selections?: unknown; trade_goods_spend?: unknown }
+  let body: { game_id?: unknown; system_key?: unknown; units?: unknown; planet_exhausts?: unknown; selections?: unknown; trade_goods_spend?: unknown; warfare_secondary?: unknown }
   try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
   if (!body.game_id || typeof body.game_id !== 'string') return errorResponse("'game_id' is required")
   if (!body.system_key || typeof body.system_key !== 'string') return errorResponse("'system_key' is required")
@@ -43,20 +43,43 @@ export async function handler(req: Request): Promise<Response> {
   if (gameError) return errorResponse('Database error', 500)
   if (!game) return errorResponse('Game not found', 404)
 
-  if (game.active_player_id !== player.id) return errorResponse('Not your turn', 409)
   if (game.phase !== 'action') return errorResponse('Not in action phase', 409)
 
-  // ACTIVATION
-  const { data: activation, error: activationError } = await db
-    .from('game_system_activations')
-    .select('id')
-    .eq('game_id', body.game_id)
-    .eq('player_id', (player as Record<string, unknown>).id)
-    .eq('system_key', body.system_key)
-    .eq('round', game.round)
-    .maybeSingle()
-  if (activationError) return errorResponse('Database error', 500)
-  if (!activation) return errorResponse('System not activated by you this round', 409)
+  if (body.warfare_secondary === true) {
+    const { data: warfarePlay, error: playError } = await db
+      .from('game_strategy_card_plays')
+      .select('id')
+      .eq('game_id', body.game_id)
+      .eq('card_number', 6)
+      .eq('status', 'active')
+      .eq('round', game.round)
+      .maybeSingle()
+    if (playError) return errorResponse('Database error', 500)
+    if (!warfarePlay) return errorResponse('No active Warfare play', 409)
+
+    const { data: usedResponse, error: responseError } = await db
+      .from('game_strategy_card_responses')
+      .select('id')
+      .eq('play_id', (warfarePlay as Record<string, unknown>).id)
+      .eq('player_id', (player as Record<string, unknown>).id)
+      .eq('status', 'used')
+      .maybeSingle()
+    if (responseError) return errorResponse('Database error', 500)
+    if (!usedResponse) return errorResponse('Warfare secondary not used', 409)
+  } else {
+    if (game.active_player_id !== player.id) return errorResponse('Not your turn', 409)
+
+    const { data: activation, error: activationError } = await db
+      .from('game_system_activations')
+      .select('id')
+      .eq('game_id', body.game_id)
+      .eq('player_id', (player as Record<string, unknown>).id)
+      .eq('system_key', body.system_key)
+      .eq('round', game.round)
+      .maybeSingle()
+    if (activationError) return errorResponse('Database error', 500)
+    if (!activation) return errorResponse('System not activated by you this round', 409)
+  }
 
   // TILE_ID
   const mapTiles = game.map_tiles as Record<string, { tile_id: string }> | null
