@@ -2,6 +2,8 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { logEvent, EVT_PLAY_PROMISSORY_NOTE } from '../_shared/gameEvents.ts'
+import { interpretEffects, type ResolveContext } from '../_shared/abilityDsl.ts'
+import { resolvePromissoryHandler } from '../_shared/promissoryHandlers.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -35,17 +37,40 @@ export async function handler(req: Request): Promise<Response> {
   if (noteRow.held_by_player_id !== player.id) return errorResponse('You do not hold this note', 403)
   if (noteRow.state !== 'held') return errorResponse('Note is not held', 409)
 
-  const { data: abilitySource } = await db
+  const { data: abilitySource, error: abilitySourceError } = await db
     .from('ability_sources')
     .select('ability_definition_id, ability_definitions(id, handler_key, effects)')
     .eq('source_type', 'promissory_note')
     .eq('source_id', noteRow.note_id)
     .maybeSingle()
 
+  if (abilitySourceError) return errorResponse('Database error', 500)
   if (!abilitySource) return errorResponse('No ability definition for this note', 404)
-  // Full ability resolution wired in Phase 30; for now we just track the play
-  // const _abilityDef = abilitySource.ability_definitions as Record<string, unknown>
-  // const _selections = body.selections ?? {}
+
+  const abilityDef = abilitySource.ability_definitions as { id: string; handler_key: string | null; effects: unknown[] } | null
+  const effects = abilityDef?.effects ?? []
+  const handlerKey = abilityDef?.handler_key ?? null
+  const selections = (body.selections ?? {}) as Record<string, unknown>
+
+  const ctx: ResolveContext = {
+    gameId: body.game_id,
+    activatingPlayerId: player.id,
+    noteInstanceId: body.note_instance_id,
+    noteOriginPlayerId: noteRow.origin_player_id,
+    selections,
+  }
+
+  try {
+    if (effects.length > 0) {
+      await interpretEffects(effects, ctx, db)
+    } else if (handlerKey) {
+      await resolvePromissoryHandler(handlerKey, ctx, db)
+    }
+  } catch (err: unknown) {
+    const e = err as Error & { status?: number }
+    const status = e.status === 501 ? 501 : e.status === 409 ? 409 : 500
+    return errorResponse(e.message ?? 'Internal server error', status)
+  }
 
   const { data: noteRefData, error: noteRefError } = await db
     .from('promissory_notes')

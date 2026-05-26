@@ -204,8 +204,14 @@ export async function handler(req: Request): Promise<Response> {
     }
   }
 
+  // Merge pendingWindows from applyCommanderPassives and from inline handlers (e.g. Jol-Nar)
+  const allPendingWindows = [
+    ...pendingWindows,
+    ...(combatRollContext.pendingWindows ?? [])
+  ]
+
   // Apply Winnu commander bonus: +combatRollBonus to each die result
-  if (combatRollContext.combatRollBonus) {
+  if (combatRollContext.combatRollBonus !== undefined && combatRollContext.combatRollBonus !== 0) {
     const bonus = combatRollContext.combatRollBonus
     results = results.map((d: DieResult) => ({
       ...d,
@@ -264,7 +270,7 @@ export async function handler(req: Request): Promise<Response> {
     phase: nextPhase,
     dice: results,
     hits,
-    ...(pendingWindows[0] !== undefined ? { pending_window: pendingWindows[0] } : {}),
+    ...(allPendingWindows[0] !== undefined ? { pending_window: allPendingWindows[0] } : {}),
   })
 }
 

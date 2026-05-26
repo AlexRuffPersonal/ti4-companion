@@ -261,6 +261,41 @@ describe('game-roll-combat-dice Phase 43c — commander passives', () => {
     expect(body.pending_window.faction).toBe('The Universities Of Jol-Nar')
   })
 
+  it('Jol-Nar commander — pending_window included when pushed by inline handler to context.pendingWindows', async () => {
+    // Test the case where an inline handler (like jol_nar_reroll_window) pushes directly to
+    // context.pendingWindows, rather than applyCommanderPassives returning it in pendingWindows
+    const jolNarWindow = {
+      type: 'commander_reroll',
+      player_id: PLAYER_ID,
+      dice: [],
+      faction: 'The Universities Of Jol-Nar',
+    }
+    applyCommanderPassives.mockResolvedValue({
+      inlineEffects: [{ faction: 'The Universities Of Jol-Nar', effect: 'jol_nar_reroll_window' }],
+      pendingWindows: [], // empty from applyCommanderPassives — comes via inline handler
+    })
+    getHandler.mockImplementation((name) => {
+      if (name === 'jol_nar_reroll_window') {
+        return vi.fn().mockImplementation((context) => {
+          context.pendingWindows = context.pendingWindows ?? []
+          context.pendingWindows.push(jolNarWindow)
+          return Promise.resolve()
+        })
+      }
+      return vi.fn().mockResolvedValue(undefined)
+    })
+
+    mockDbStandard()
+
+    const res = await handler(makeRequest({ game_id: GAME_ID, combat_id: COMBAT_ID }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+
+    expect(body.pending_window).toBeDefined()
+    expect(body.pending_window.type).toBe('commander_reroll')
+    expect(body.pending_window.faction).toBe('The Universities Of Jol-Nar')
+  })
+
   it('no pending_window in response when applyCommanderPassives returns empty pendingWindows', async () => {
     applyCommanderPassives.mockResolvedValue({ inlineEffects: [], pendingWindows: [] })
 
