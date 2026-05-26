@@ -26,6 +26,14 @@ export async function handler(req: Request): Promise<Response> {
   if (playerError) return errorResponse('Database error', 500)
   if (!player) return errorResponse('Player not found', 404)
 
+  const { data: game, error: gameError } = await db
+    .from('games')
+    .select('round')
+    .eq('id', body.game_id)
+    .maybeSingle()
+  if (gameError) return errorResponse('Database error', 500)
+  if (!game) return errorResponse('Game not found', 404)
+
   const { data: noteRow, error: noteRowError } = await db
     .from('game_player_promissory_notes')
     .select('id, state, held_by_player_id, note_id, origin_player_id')
@@ -79,32 +87,20 @@ export async function handler(req: Request): Promise<Response> {
     .maybeSingle()
   if (noteRefError) return errorResponse('Database error', 500)
 
-  let newState: string
+  let updateFields: Record<string, unknown>
   if (noteRefData?.into_play_area) {
-    newState = 'in_play'
-    // held_by_player_id unchanged
+    // Keep held_by_player_id unchanged; just mark in_play
+    updateFields = { state: 'in_play' }
   } else if (noteRefData?.purge_on_use) {
-    newState = 'discarded'
+    updateFields = { state: 'discarded' }
   } else {
     // Return to origin player as held
-    const { error: returnError } = await db.from('game_player_promissory_notes')
-      .update({ state: 'held', held_by_player_id: noteRow.origin_player_id })
-      .eq('id', body.note_instance_id)
-    if (returnError) return errorResponse('Database error', 500)
-    await logEvent(db, {
-      game_id: body.game_id,
-      player_id: player.id,
-      event_type: EVT_PLAY_PROMISSORY_NOTE,
-      payload: { player_id: player.id, note_id: body.note_instance_id, target_player_id: noteRow.origin_player_id },
-      round: 0,
-      phase: 'action',
-    })
-    return okResponse({ played: true })
+    updateFields = { state: 'held', held_by_player_id: noteRow.origin_player_id }
   }
 
   const { error: updateError } = await db
     .from('game_player_promissory_notes')
-    .update({ state: newState })
+    .update(updateFields)
     .eq('id', body.note_instance_id)
   if (updateError) return errorResponse('Database error', 500)
 
@@ -113,7 +109,7 @@ export async function handler(req: Request): Promise<Response> {
     player_id: player.id,
     event_type: EVT_PLAY_PROMISSORY_NOTE,
     payload: { player_id: player.id, note_id: body.note_instance_id, target_player_id: noteRow.origin_player_id },
-    round: 0,
+    round: game.round,
     phase: 'action',
   })
   return okResponse({ played: true })
