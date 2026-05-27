@@ -152,7 +152,7 @@ export async function handler(req: Request): Promise<Response> {
     // Load all players for tech effects + commodity replenishment
     const { data: allPlayers, error: allPlayersError } = await db
       .from('game_players')
-      .select('id, faction, technologies, action_card_count, command_tokens, commodities, trade_goods')
+      .select('id, faction, technologies, action_card_count, command_tokens, commodities, trade_goods, leaders')
       .eq('game_id', body.game_id)
     if (allPlayersError) return errorResponse('Database error', 500)
 
@@ -250,6 +250,17 @@ export async function handler(req: Request): Promise<Response> {
       .eq('game_id', body.game_id)
     if (exhaustedError) return errorResponse(`Failed to clear exhausted technologies: ${exhaustedError.message}`, 500)
 
+    // Ready exhausted agents
+    for (const player of (allPlayers ?? [])) {
+      if ((player.leaders as { agent?: string } | null)?.agent === 'exhausted') {
+        const { error: agentError } = await db
+          .from('game_players')
+          .update({ leaders: { ...(player.leaders as object), agent: 'unlocked' } })
+          .eq('id', player.id)
+        if (agentError) return errorResponse(`Failed to ready agent: ${agentError.message}`, 500)
+      }
+    }
+
     const { error: resetError } = await db
       .from('game_players')
       .update({ passed: false, strategy_card: null, strategy_card_2: null })
@@ -281,6 +292,15 @@ export async function handler(req: Request): Promise<Response> {
 
     const nextPhase = game.agenda_unlocked ? 'agenda' : 'strategy'
     const roundUpdate = game.agenda_unlocked ? game.round : game.round + 1
+
+    // Reset game_round_flags at end of round (status → strategy)
+    if (!game.agenda_unlocked) {
+      const { error: flagsError } = await db
+        .from('games')
+        .update({ game_round_flags: {} })
+        .eq('id', body.game_id)
+      if (flagsError) return errorResponse(`Failed to reset round flags: ${flagsError.message}`, 500)
+    }
 
     // Return Gift of Prescience notes at status phase END (they were in_play this round)
     const statusActiveNotes = await getActiveNotes(body.game_id, db)
