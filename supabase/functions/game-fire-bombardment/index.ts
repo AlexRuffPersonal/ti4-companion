@@ -118,13 +118,13 @@ export async function handler(req: Request): Promise<Response> {
     return errorResponse('No ground forces to bombard on this planet', 409)
   }
 
-  // Apply commander passives for BOMBARDMENT trigger (e.g. L1Z1X: skip planetary shield)
+  // Phase 43c: apply BOMBARDMENT commander passives
   const bombardmentContext: Record<string, unknown> = {
     gameId,
     activatingPlayerId: (player as Record<string, string>).id,
     faction: '',
   }
-  const { inlineEffects } = await applyCommanderPassives('BOMBARDMENT', bombardmentContext as any, db)
+  const { inlineEffects } = await applyCommanderPassives('BOMBARDMENT', bombardmentContext as never, db)
   const skipShield = inlineEffects.some((e: any) => e.effect === 'l1z1x_skip_planetary_shield')
 
   if (!skipShield) {
@@ -180,10 +180,10 @@ export async function handler(req: Request): Promise<Response> {
   const defMap = new Map((bombDefs ?? []).map((u: UnitDef) => [u.name, u]))
   const { results, hits } = rollBombardment(atkSpaceUnits ?? [], defMap)
 
-  // Apply commander passives for UNIT_ABILITY_ROLL trigger (e.g. Argent Flight: add_die, Jol-Nar: reroll window)
+  // Phase 43c: apply UNIT_ABILITY_ROLL commander passives
   const { pendingWindows } = await applyCommanderPassives(
     'UNIT_ABILITY_ROLL',
-    { ...bombardmentContext, currentDiceResults: results } as any,
+    { ...bombardmentContext, currentDiceResults: results } as never,
     db,
   )
 
