@@ -3,7 +3,7 @@ import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { checkAndEliminate } from '../_shared/eliminationHandler.ts'
 import { logEvent, EVT_ASSIGN_HITS } from '../_shared/gameEvents.ts'
-import { collectReactiveAgents } from '../_shared/leaderEffects.ts'
+import { collectReactiveAgents, applyCommanderPassives } from '../_shared/leaderEffects.ts'
 import { assertCombatHitAllowed, checkVpMaintenanceLaws, LawError } from '../_shared/lawEffects.ts'
 
 type Casualty = { unit_type: string; player_unit_id: string; action: 'destroy' | 'sustain' }
@@ -69,24 +69,20 @@ export async function handler(req: Request): Promise<Response> {
 
   // Validate casualties
   for (const c of casualties) {
+    // Check persistent law restrictions before allowing the casualty
+    try {
+      await assertCombatHitAllowed(db, body.game_id, c.unit_type)
+    } catch (err) {
+      if (err instanceof LawError) return errorResponse(err.message, 409)
+      throw err
+    }
+
     if (c.action === 'sustain') {
       const def = defMap.get(c.unit_type)
       if (!def?.sustain_damage) return errorResponse(`Cannot sustain ${c.unit_type}: no Sustain Damage ability`, 409)
       const unit = unitMap.get(c.player_unit_id)
       if (unit?.damaged) return errorResponse(`Cannot sustain ${c.unit_type}: unit is already damaged`, 409)
     }
-  }
-
-  // Phase 40: check Conventions of War for each destroy casualty before applying
-  try {
-    for (const c of casualties) {
-      if (c.action === 'destroy') {
-        await assertCombatHitAllowed(db, body.game_id, c.unit_type)
-      }
-    }
-  } catch (e) {
-    if (e instanceof LawError) return errorResponse(e.message, e.status)
-    throw e
   }
 
   // Apply casualties
@@ -154,6 +150,14 @@ export async function handler(req: Request): Promise<Response> {
     }
   }
 
+  // Phase 43c: apply SUSTAIN_DAMAGE commander passives (e.g. Letnev gain TG)
+  const hitContext: Record<string, unknown> = { gameId: body.game_id, activatingPlayerId: player.id, faction: '' }
+  let commanderPendingWindow: unknown = undefined
+  if (sustainDamageOccurred) {
+    const { pendingWindows: sustainWindows } = await applyCommanderPassives('SUSTAIN_DAMAGE', hitContext as never, db)
+    if (sustainWindows.length > 0) commanderPendingWindow = sustainWindows[0]
+  }
+
   // If this was defender_assign, advance to defender_roll
   if (isDefenderAssign) {
     await db.from('game_combats').update({ phase: 'defender_roll' }).eq('id', body.combat_id)
@@ -166,7 +170,7 @@ export async function handler(req: Request): Promise<Response> {
       round: 0,
       phase: 'action',
     })
-    return okResponse({ phase: 'defender_roll', eliminatedPlayerIds, ...(pendingWindows.length > 0 ? { pending_windows: pendingWindows } : {}) })
+    return okResponse({ phase: 'defender_roll', eliminatedPlayerIds, ...(pendingWindows.length > 0 ? { pending_windows: pendingWindows } : {}), ...(commanderPendingWindow ? { pending_window: commanderPendingWindow } : {}) })
   }
 
   // attacker_assign — check end-of-round conditions
@@ -209,7 +213,7 @@ export async function handler(req: Request): Promise<Response> {
       round: 0,
       phase: 'action',
     })
-    return okResponse({ status: 'complete', winner_player_id: winnerId, eliminatedPlayerIds, ...(pendingWindows.length > 0 ? { pending_windows: pendingWindows } : {}) })
+    return okResponse({ status: 'complete', winner_player_id: winnerId, eliminatedPlayerIds, ...(pendingWindows.length > 0 ? { pending_windows: pendingWindows } : {}), ...(commanderPendingWindow ? { pending_window: commanderPendingWindow } : {}) })
   }
 
   // Check for 0 ships on either side
@@ -239,17 +243,15 @@ export async function handler(req: Request): Promise<Response> {
       winner_player_id: winnerId,
     }).eq('id', body.combat_id)
 
-    // Phase 40: VP maintenance law check when attacker wins (defender eliminated from system)
-    // Query planets in the system to find current owners before attacker claims them
-    if (atkAlive > 0 && defAlive === 0) {
-      const { data: systemPlanets } = await db
-        .from('game_player_planets')
-        .select('player_id, planet_name')
-        .eq('game_id', body.game_id)
-        .eq('system_key', combat.system_key)
-      for (const planet of (systemPlanets ?? [])) {
-        await checkVpMaintenanceLaws(db, body.game_id as string, planet.player_id, planet.planet_name)
-      }
+    // Phase 43c: if attacker wins ground combat, fire PLANET_CONTROL_GAINED passive
+    const isGroundVictory = combat.combat_type === 'ground' && combat.planet_name && atkAlive > 0
+    if (isGroundVictory && !commanderPendingWindow) {
+      const { pendingWindows: planetWindows } = await applyCommanderPassives(
+        'PLANET_CONTROL_GAINED',
+        { ...hitContext, planetName: combat.planet_name } as never,
+        db,
+      )
+      if (planetWindows.length > 0) commanderPendingWindow = planetWindows[0]
     }
 
     const eliminatedPlayerIds = await checkAndEliminate(db, body.game_id as string)
@@ -261,7 +263,7 @@ export async function handler(req: Request): Promise<Response> {
       round: 0,
       phase: 'action',
     })
-    return okResponse({ status: 'complete', winner_player_id: winnerId, eliminatedPlayerIds, ...(pendingWindows.length > 0 ? { pending_windows: pendingWindows } : {}) })
+    return okResponse({ status: 'complete', winner_player_id: winnerId, eliminatedPlayerIds, ...(pendingWindows.length > 0 ? { pending_windows: pendingWindows } : {}), ...(commanderPendingWindow ? { pending_window: commanderPendingWindow } : {}) })
   }
 
   // Continue to next round
@@ -284,7 +286,7 @@ export async function handler(req: Request): Promise<Response> {
     round: 0,
     phase: 'action',
   })
-  return okResponse({ phase: 'attacker_roll', round: nextRound, eliminatedPlayerIds, ...(pendingWindows.length > 0 ? { pending_windows: pendingWindows } : {}) })
+  return okResponse({ phase: 'attacker_roll', round: nextRound, eliminatedPlayerIds, ...(pendingWindows.length > 0 ? { pending_windows: pendingWindows } : {}), ...(commanderPendingWindow ? { pending_window: commanderPendingWindow } : {}) })
 }
 
 if (typeof Deno !== 'undefined') Deno.serve(handler)

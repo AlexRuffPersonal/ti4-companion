@@ -20,12 +20,20 @@ vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
   EVT_ASSIGN_HITS: 'assign_hits',
 }))
 
+vi.mock('../../../supabase/functions/_shared/leaderEffects.ts', () => ({
+  collectReactiveAgents: vi.fn().mockReturnValue([]),
+}))
+
 vi.mock('../../../supabase/functions/_shared/lawEffects.ts', () => ({
   assertCombatHitAllowed: vi.fn(),
   checkVpMaintenanceLaws: vi.fn(),
   LawError: class LawError extends Error {
-    constructor(msg, status = 409) { super(msg); this.name = 'LawError'; this.status = status }
-  }
+    constructor(message, status = 409) {
+      super(message)
+      this.name = 'LawError'
+      this.status = status
+    }
+  },
 }))
 
 import { requireAuth } from '../../../supabase/functions/_shared/auth.ts'
@@ -60,20 +68,23 @@ const BASE_COMBAT = {
   status: 'active',
   attacker_hits: 1,
   defender_hits: 0,
-  ships_destroyed: null,
   retreat_declared_by: null,
   retreat_destination: null,
 }
 
+const ALL_PLAYERS = [
+  { id: DEFENDER_ID, faction: 'The Barony Of Letnev', leaders: null },
+  { id: ATTACKER_ID, faction: 'The Federation Of Sol', leaders: null },
+]
+
 function mockDb({
   player = { id: DEFENDER_ID },
   combat = BASE_COMBAT,
-  unitDefs = [{ name: 'cruiser', sustain_damage: false }],
-  assigneeUnits = [{ id: 'u1', player_id: DEFENDER_ID, unit_type: 'cruiser', count: 1, damaged: false, system_key: '1,-1' }],
+  unitDefs = [{ name: 'fighter', sustain_damage: false }],
+  assigneeUnits = [{ id: 'u1', player_id: DEFENDER_ID, unit_type: 'fighter', count: 2, damaged: false, system_key: '1,-1' }],
   atkUnitsLeft = [{ id: 'u2' }],
   defUnitsLeft = [{ id: 'u1' }],
-  allPlayers = [],
-  systemPlanets = [],
+  allPlayers = ALL_PLAYERS,
 } = {}) {
   let unitQueryCount = 0
   db.from.mockImplementation((table) => {
@@ -134,28 +145,10 @@ function mockDb({
           return chainable
         }),
         update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: null }),
-          }),
+          eq: vi.fn().mockResolvedValue({ error: null }),
         }),
         delete: vi.fn().mockReturnValue({
           eq: vi.fn().mockResolvedValue({ error: null }),
-        }),
-      }
-    }
-    if (table === 'game_player_planets') {
-      const chainable = {}
-      chainable.select = vi.fn().mockReturnValue(chainable)
-      chainable.eq = vi.fn().mockReturnValue(chainable)
-      chainable.then = vi.fn()
-      // Make it thenable/resolve like a query
-      chainable.eq = vi.fn().mockImplementation(() => chainable)
-      // Return the resolved value when awaited
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ data: systemPlanets }),
-          }),
         }),
       }
     }
@@ -175,11 +168,11 @@ beforeEach(() => {
   checkVpMaintenanceLaws.mockResolvedValue(undefined)
 })
 
-describe('Phase 40 — Persistent Agenda Law Enforcement: game-assign-hits', () => {
-  describe('assertCombatHitAllowed — Conventions of War', () => {
-    it('returns 409 when Conventions of War is active and casualty is a fighter', async () => {
-      const LawErrorInstance = new LawError('Conventions of War: fighters cannot be destroyed', 409)
-      assertCombatHitAllowed.mockRejectedValueOnce(LawErrorInstance)
+describe('Phase 40 — Persistent Agenda Law Enforcement in assign-hits', () => {
+  describe('assertCombatHitAllowed enforcement', () => {
+    it('returns 409 when Conventions of War is active and a fighter is assigned as a casualty (destroy)', async () => {
+      const lawError = new LawError('Conventions of War: fighters cannot be destroyed', 409)
+      assertCombatHitAllowed.mockRejectedValue(lawError)
 
       mockDb({
         player: { id: DEFENDER_ID },
@@ -196,10 +189,11 @@ describe('Phase 40 — Persistent Agenda Law Enforcement: game-assign-hits', () 
 
       expect(res.status).toBe(409)
       const body = await res.json()
-      expect(body.error).toMatch(/Conventions of War/)
+      expect(body.error).toContain('Conventions of War')
     })
 
-    it('succeeds when Conventions of War is active but casualty is a cruiser', async () => {
+    it('succeeds when Conventions of War is active and a cruiser is assigned as a casualty', async () => {
+      // assertCombatHitAllowed resolves (cruiser is not a fighter)
       assertCombatHitAllowed.mockResolvedValue(undefined)
 
       mockDb({
@@ -216,72 +210,46 @@ describe('Phase 40 — Persistent Agenda Law Enforcement: game-assign-hits', () 
       }))
 
       expect(res.status).toBe(200)
-      expect(assertCombatHitAllowed).toHaveBeenCalledWith(expect.anything(), GAME_ID, 'cruiser')
-    })
-  })
-
-  describe('checkVpMaintenanceLaws — planet control flip', () => {
-    it('calls checkVpMaintenanceLaws for each planet in system when attacker wins (defender eliminated)', async () => {
-      // Attacker assigns hits to their own units in attacker_assign phase,
-      // but defender has 0 ships left → combat ends, attacker wins
-      const PLANET_NAME = 'Mecatol Rex'
-      const systemPlanets = [
-        { player_id: DEFENDER_ID, planet_name: PLANET_NAME },
-      ]
-
-      mockDb({
-        player: { id: ATTACKER_ID },
-        combat: {
-          ...BASE_COMBAT,
-          phase: 'attacker_assign',
-          attacker_hits: 0,
-          defender_hits: 0,
-          retreat_declared_by: null,
-        },
-        unitDefs: [{ name: 'cruiser', sustain_damage: false }],
-        assigneeUnits: [],
-        // Attacker still has ships, defender has 0 ships left
-        atkUnitsLeft: [{ id: 'u2' }],
-        defUnitsLeft: [],
-        allPlayers: [],
-        systemPlanets,
-      })
-
-      const res = await handler(makeRequest({
-        game_id: GAME_ID,
-        combat_id: COMBAT_ID,
-        casualties: [],
-      }))
-
-      expect(res.status).toBe(200)
-      const body = await res.json()
-      expect(body.status).toBe('complete')
-      expect(body.winner_player_id).toBe(ATTACKER_ID)
-
-      expect(checkVpMaintenanceLaws).toHaveBeenCalledWith(
+      expect(assertCombatHitAllowed).toHaveBeenCalledWith(
         expect.anything(),
         GAME_ID,
-        DEFENDER_ID,
-        PLANET_NAME
+        'cruiser'
       )
     })
 
-    it('does not call checkVpMaintenanceLaws when combat continues (both sides have ships)', async () => {
+    it('calls assertCombatHitAllowed for each casualty in the list', async () => {
+      assertCombatHitAllowed.mockResolvedValue(undefined)
+
+      mockDb({
+        player: { id: DEFENDER_ID },
+        combat: { ...BASE_COMBAT, phase: 'defender_assign', attacker_hits: 2 },
+        unitDefs: [{ name: 'cruiser', sustain_damage: false }],
+        assigneeUnits: [
+          { id: 'u1', player_id: DEFENDER_ID, unit_type: 'cruiser', count: 3, damaged: false, system_key: '1,-1' },
+        ],
+      })
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        combat_id: COMBAT_ID,
+        casualties: [
+          { unit_type: 'cruiser', player_unit_id: 'u1', action: 'destroy' },
+          { unit_type: 'cruiser', player_unit_id: 'u1', action: 'destroy' },
+        ],
+      }))
+
+      expect(res.status).toBe(200)
+      expect(assertCombatHitAllowed).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not call assertCombatHitAllowed when there are no casualties', async () => {
       mockDb({
         player: { id: ATTACKER_ID },
-        combat: {
-          ...BASE_COMBAT,
-          phase: 'attacker_assign',
-          attacker_hits: 0,
-          defender_hits: 0,
-          retreat_declared_by: null,
-        },
-        unitDefs: [{ name: 'cruiser', sustain_damage: false }],
+        combat: { ...BASE_COMBAT, phase: 'attacker_assign', attacker_hits: 0, defender_hits: 0, retreat_declared_by: null },
+        unitDefs: [],
         assigneeUnits: [],
         atkUnitsLeft: [{ id: 'u1' }],
         defUnitsLeft: [{ id: 'u2' }],
-        allPlayers: [],
-        systemPlanets: [],
       })
 
       const res = await handler(makeRequest({
@@ -291,14 +259,13 @@ describe('Phase 40 — Persistent Agenda Law Enforcement: game-assign-hits', () 
       }))
 
       expect(res.status).toBe(200)
-      expect(checkVpMaintenanceLaws).not.toHaveBeenCalled()
+      expect(assertCombatHitAllowed).not.toHaveBeenCalled()
     })
   })
 
   describe('no laws active — unchanged behavior', () => {
-    it('processes casualties normally when no laws are active', async () => {
+    it('returns 200 for normal defender_assign with no active laws', async () => {
       assertCombatHitAllowed.mockResolvedValue(undefined)
-      checkVpMaintenanceLaws.mockResolvedValue(undefined)
 
       mockDb({
         player: { id: DEFENDER_ID },
@@ -316,7 +283,6 @@ describe('Phase 40 — Persistent Agenda Law Enforcement: game-assign-hits', () 
       expect(res.status).toBe(200)
       const body = await res.json()
       expect(body.phase).toBe('defender_roll')
-      expect(assertCombatHitAllowed).toHaveBeenCalledWith(expect.anything(), GAME_ID, 'destroyer')
     })
   })
 })

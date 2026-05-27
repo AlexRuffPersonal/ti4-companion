@@ -14,10 +14,14 @@ vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
   logEvent: vi.fn().mockResolvedValue(undefined),
   EVT_FIRE_SPACE_CANNON: 'fire_space_cannon',
 }))
+vi.mock('../../../supabase/functions/_shared/leaderEffects.ts', () => ({
+  applyCommanderPassives: vi.fn().mockResolvedValue({ inlineEffects: [], pendingWindows: [] }),
+}))
 
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { logEvent } from '../../../supabase/functions/_shared/gameEvents.ts'
+import { applyCommanderPassives } from '../../../supabase/functions/_shared/leaderEffects.ts'
 import { handler } from '../../../supabase/functions/game-fire-space-cannon/index.ts'
 
 const USER_ID = 'user-uuid'
@@ -262,5 +266,44 @@ describe('game-fire-space-cannon', () => {
     const res = await handler(makeRequest({ game_id: GAME_ID, combat_id: COMBAT_ID, pass: false }))
     expect(res.status).toBe(200)
     expect(logEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ event_type: 'fire_space_cannon' }))
+  })
+})
+
+describe('game-fire-space-cannon Phase 43c — Argent Flight commander: extra die on space cannon', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockDb()
+    requireAuth.mockResolvedValue(USER_ID)
+    applyCommanderPassives.mockResolvedValue({ inlineEffects: [], pendingWindows: [] })
+  })
+
+  it('Argent Flight commander unlocked — pending_window for add_die included in response', async () => {
+    applyCommanderPassives.mockResolvedValue({
+      inlineEffects: [],
+      pendingWindows: [{
+        game_id: GAME_ID,
+        trigger: 'UNIT_ABILITY_ROLL',
+        faction: 'The Argent Flight',
+        player_id: PLAYER_ID,
+        effect: [{ op: 'add_die', target: 'chosen_unit' }],
+      }],
+    })
+
+    const res = await handler(makeRequest({ game_id: GAME_ID, combat_id: COMBAT_ID, pass: false }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.pending_window).toBeDefined()
+    expect(body.pending_window.faction).toBe('The Argent Flight')
+    expect(body.pending_window.trigger).toBe('UNIT_ABILITY_ROLL')
+    expect(body.pending_window.effect).toEqual([{ op: 'add_die', target: 'chosen_unit' }])
+  })
+
+  it('no commanders unlocked — no pending_window in response', async () => {
+    applyCommanderPassives.mockResolvedValue({ inlineEffects: [], pendingWindows: [] })
+
+    const res = await handler(makeRequest({ game_id: GAME_ID, combat_id: COMBAT_ID, pass: false }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.pending_window).toBeUndefined()
   })
 })

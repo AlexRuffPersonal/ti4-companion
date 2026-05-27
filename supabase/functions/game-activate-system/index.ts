@@ -3,9 +3,8 @@ import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { logEvent, EVT_ACTIVATE_SYSTEM } from '../_shared/gameEvents.ts'
 import { AGENT_REACTIVE_TRIGGERS, applyCommanderPassives } from '../_shared/leaderEffects.ts'
-import { getHeldNotes, getActiveNotes, returnNote } from '../_shared/promissoryEnforcement.ts'
 import { getHandler } from '../_shared/abilityHandlers.ts'
-import type { CombatResolveContext } from '../_shared/abilityDsl.ts'
+import { getHeldNotes, getActiveNotes, returnNote } from '../_shared/promissoryEnforcement.ts'
 
 type UnitRow = { player_id: string; unit_type: string; count: number; system_key: string }
 type ScDef = { name: string; space_cannon: string }
@@ -54,7 +53,7 @@ export async function handler(req: Request): Promise<Response> {
 
   const { data: player, error: playerError } = await db
     .from('game_players')
-    .select('id, faction, command_tokens, technologies, exhausted_technologies, trade_goods, promissory_notes, leaders')
+    .select('id, command_tokens, technologies, exhausted_technologies, trade_goods, promissory_notes, faction, leaders')
     .eq('game_id', body.game_id)
     .eq('user_id', userId)
     .maybeSingle()
@@ -85,21 +84,16 @@ export async function handler(req: Request): Promise<Response> {
 
   if ((activations ?? []).length >= tacticTotal) return errorResponse('No tactic tokens available', 409)
 
-  const alreadyActivated = (activations ?? []).some((a: { system_key: string }) => a.system_key === body.system_key)
-  const isMahact = (player as PlayerRow).faction === 'The Mahact Gene-Sorcerers'
-    && ((player as PlayerRow).leaders?.commander === 'unlocked')
-
-  if (isMahact && alreadyActivated) {
-    const ctx = {
-      gameId: body.game_id,
-      activatingPlayerId: player.id,
-      systemKey: body.system_key,
-      side: 'attacker',
-      combatId: '',
-    } as CombatResolveContext
-    await getHandler('mahact_il_na_viroset')(ctx, db)
-    // fall through — skip the 409, allow re-activation
-  } else if (alreadyActivated) {
+  const leaders = (player.leaders ?? {}) as Record<string, string>
+  const isMahact = player.faction === 'The Mahact Gene-Sorcerers' && leaders.commander === 'unlocked'
+  const alreadyActivatedThisSystem = (activations ?? []).some(
+    (a: { system_key: string }) => a.system_key === body.system_key
+  )
+  if (isMahact && alreadyActivatedThisSystem) {
+    const resolveCtx = { gameId: body.game_id, activatingPlayerId: player.id, systemKey: body.system_key }
+    await getHandler('mahact_il_na_viroset')(resolveCtx as any, db)
+    // don't return 409 — fall through to proceed with activation
+  } else if (alreadyActivatedThisSystem) {
     return errorResponse('System already activated by you this round', 409)
   }
 
@@ -378,23 +372,23 @@ export async function handler(req: Request): Promise<Response> {
     }
   }
 
-  // Apply SYSTEM_ACTIVATED commander passives
+  const reactiveAgentWindow = reactiveAgents.length > 0
+    ? { type: 'reactive_agent', eligible: reactiveAgents, context: { trigger: 'SYSTEM_ACTIVATED', system_key: body.system_key } }
+    : undefined
+
+  // Apply SYSTEM_ACTIVATED commander passives (Arborec, Yssaril, etc.)
   const { pendingWindows: commanderWindows } = await applyCommanderPassives(
     'SYSTEM_ACTIVATED',
-    { gameId: body.game_id, activatingPlayerId: player.id, systemKey: body.system_key, faction: (player as PlayerRow).faction ?? '' },
+    { gameId: body.game_id, activatingPlayerId: player.id, systemKey: body.system_key, faction: player.faction as string ?? '' },
     db,
   )
 
-  // Merge reactive agent windows and commander passive windows; return first
-  const allPendingWindows: unknown[] = []
-  if (reactiveAgents.length > 0) {
-    allPendingWindows.push({ type: 'reactive_agent', eligible: reactiveAgents, context: { trigger: 'SYSTEM_ACTIVATED', system_key: body.system_key } })
-  }
-  for (const w of commanderWindows) {
-    allPendingWindows.push({ type: 'commander_passive', ...w })
-  }
+  const allWindows = [
+    ...(reactiveAgentWindow ? [reactiveAgentWindow] : []),
+    ...commanderWindows,
+  ]
 
-  return okResponse({ activated: true, combat_id: combatId, pending_window: allPendingWindows[0] ?? undefined })
+  return okResponse({ activated: true, combat_id: combatId, pending_window: allWindows[0] ?? undefined })
 }
 
 if (typeof Deno !== 'undefined') Deno.serve(handler)

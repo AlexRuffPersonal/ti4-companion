@@ -22,14 +22,7 @@ vi.mock('../../../supabase/functions/_shared/promissoryEnforcement.ts', () => ({
     supportForThrone: [], alliance: [], tradeConvoys: [], promiseOfProtection: [],
     bloodPact: [], darkPact: [], stymie: [], antivirus: [], giftOfPrescience: [],
     tradeAgreement: [], crucible: [], strikeWingAmbuscade: [],
-  })
-vi.mock('../../../supabase/functions/_shared/leaderEffects.ts', () => ({
-  AGENT_REACTIVE_TRIGGERS: {},
-  applyCommanderPassives: vi.fn().mockResolvedValue({ inlineEffects: [], pendingWindows: [] }),
-}))
-vi.mock('../../../supabase/functions/_shared/abilityHandlers.ts', () => ({
-  getHandler: vi.fn().mockReturnValue(vi.fn().mockResolvedValue(undefined)),
-})),
+  }),
   returnNote: vi.fn().mockResolvedValue(undefined),
 }))
 
