@@ -314,7 +314,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-LobbyScreen-p39](component-LobbyScreen-p39.md) | `src/components/game/LobbyScreen.jsx` | 39 | In-App Map Draft | planned | component-DraftPanel, hook-useDraft, client-edgeFunctions-p39 |
 
 | [migration-049-law-enforcement](migration-049-law-enforcement.md) | `supabase/migrations/049_law_enforcement.sql` | 40 | Persistent Agenda Law Enforcement | planned | — |
-| [fn-game-resolve-agenda-p40](fn-game-resolve-agenda-p40.md) | `supabase/functions/game-resolve-agenda/index.ts` | 40 | Persistent Agenda Law Enforcement | in-progress | migration-049-law-enforcement |
+| [fn-game-resolve-agenda-p40](fn-game-resolve-agenda-p40.md) | `supabase/functions/game-resolve-agenda/index.ts` | 40 | Persistent Agenda Law Enforcement | done | migration-049-law-enforcement |
 | [shared-lawEffects](shared-lawEffects.md) | `supabase/functions/_shared/lawEffects.ts` | 40 | Persistent Agenda Law Enforcement | planned | migration-049-law-enforcement |
 | [shared-abilityDsl-p40](shared-abilityDsl-p40.md) | `supabase/functions/_shared/abilityDsl.ts` | 40 | Persistent Agenda Law Enforcement | planned | shared-lawEffects |
 | [fn-game-produce-units-p40](fn-game-produce-units-p40.md) | `supabase/functions/game-produce-units/index.ts` | 40 | Persistent Agenda Law Enforcement | planned | shared-lawEffects |
