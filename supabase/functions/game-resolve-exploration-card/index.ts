@@ -243,12 +243,7 @@ export async function handler(req: Request): Promise<Response> {
   }
 
   if (resolveContext.gainedRelicName) {
-    try {
-      await applyOnGainRelicEffect(resolveContext.gainedRelicName, game_id, player_id, db)
-    } catch (e) {
-      const err = e as Error & { status?: number }
-      return errorResponse(err.message ?? 'Failed to apply relic effect', err.status ?? 500)
-    }
+    await applyOnGainRelicEffect(resolveContext.gainedRelicName, game_id, player_id, db)
   }
 
   if (signalType === 'relic_fragment') {

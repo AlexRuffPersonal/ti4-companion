@@ -9,7 +9,7 @@ function validate(record: unknown, index: number): string | null {
   return null
 }
 
-export async function handler(req: Request): Promise<Response> {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
   try {
     await requireServiceRole(req)
@@ -39,12 +39,9 @@ export async function handler(req: Request): Promise<Response> {
     sustain_damage: r.sustain_damage ?? false,
     planetary_shield: r.planetary_shield ?? false,
     abilities: r.abilities ?? [],
-    effects: r.effects ?? [],
   }))
   const { error: insertError } = await db.from('units').insert(rows)
   if (insertError) return errorResponse(`Insert failed: ${insertError.message}`, 500)
 
   return okResponse({ imported: (body.records as object[]).length })
-}
-
-if (typeof Deno !== 'undefined') Deno.serve(handler)
+})

@@ -3,6 +3,7 @@ import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { logEvent, EVT_ADVANCE_PHASE } from '../_shared/gameEvents.ts'
 import { applyStatusPhaseLaws } from '../_shared/lawEffects.ts'
+import { getHeldNotes, getActiveNotes, returnNote } from '../_shared/promissoryEnforcement.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -59,19 +60,46 @@ export async function handler(req: Request): Promise<Response> {
       if (windowError) return errorResponse(`Update failed: ${windowError.message}`, 500)
     }
 
-    const { data: players, error: playersError } = await db
-      .from('game_players')
-      .select('id, strategy_card')
-      .eq('game_id', body.game_id)
-      .not('strategy_card', 'is', null)
-      .order('strategy_card', { ascending: true })
-      .limit(1)
-    if (playersError) return errorResponse('Database error', 500)
-    const firstPlayer = players?.[0] ?? null
+    // Check for Scepter of Dominion (held) — 39b: detect and return; placement handled client-side
+    try {
+      const scepterNotes = await getHeldNotes(body.game_id, 'Scepter of Dominion', db)
+      for (const note of scepterNotes) {
+        await returnNote(note.instanceId, note.ownerPlayerId, db)
+      }
+    } catch (e) {
+      return errorResponse(`Scepter of Dominion check failed: ${(e as Error).message}`, 500)
+    }
+
+    // Check for Gift of Prescience (in_play) — holder goes first (initiative 0)
+    let giftOfPrescienceHolderId: string | null = null
+    try {
+      const activeNotes = await getActiveNotes(body.game_id, db)
+      if (activeNotes.giftOfPrescience.length > 0) {
+        giftOfPrescienceHolderId = activeNotes.giftOfPrescience[0].holderPlayerId
+      }
+    } catch (e) {
+      return errorResponse(`Gift of Prescience check failed: ${(e as Error).message}`, 500)
+    }
+
+    let firstPlayerId: string | null = null
+    if (giftOfPrescienceHolderId !== null) {
+      // Gift of Prescience holder plays first (initiative 0)
+      firstPlayerId = giftOfPrescienceHolderId
+    } else {
+      const { data: players, error: playersError } = await db
+        .from('game_players')
+        .select('id, strategy_card')
+        .eq('game_id', body.game_id)
+        .not('strategy_card', 'is', null)
+        .order('strategy_card', { ascending: true })
+        .limit(1)
+      if (playersError) return errorResponse('Database error', 500)
+      firstPlayerId = players?.[0]?.id ?? null
+    }
 
     const { error } = await db
       .from('games')
-      .update({ phase: 'action', active_player_id: firstPlayer?.id ?? null })
+      .update({ phase: 'action', active_player_id: firstPlayerId })
       .eq('id', body.game_id)
     if (error) return errorResponse(`Update failed: ${error.message}`, 500)
 
@@ -136,12 +164,20 @@ export async function handler(req: Request): Promise<Response> {
       .eq('game_id', body.game_id)
     if (planetsError) return errorResponse(`Failed to ready planets: ${planetsError.message}`, 500)
 
-    // Load all players for tech effects
+    // Load all players for tech effects and commodity replenishment
     const { data: allPlayers, error: allPlayersError } = await db
       .from('game_players')
-      .select('id, technologies, action_card_count, command_tokens')
+      .select('id, technologies, action_card_count, command_tokens, faction, commodities, trade_goods')
       .eq('game_id', body.game_id)
     if (allPlayersError) return errorResponse('Database error', 500)
+
+    // Pre-load held Trade Agreement notes for commodity replenishment step
+    let tradeAgreementNotes: Awaited<ReturnType<typeof getHeldNotes>> = []
+    try {
+      tradeAgreementNotes = await getHeldNotes(body.game_id, 'Trade Agreement', db)
+    } catch (e) {
+      return errorResponse(`Trade Agreement check failed: ${(e as Error).message}`, 500)
+    }
 
     // Per-player tech updates: Neural Motivator (action cards) + Hyper Metabolism (command tokens)
     // Build playerUpdates array for token gains, then apply Executive Sanctions law cap
@@ -168,6 +204,58 @@ export async function handler(req: Request): Promise<Response> {
         .update({ command_tokens: { ...tokens, strategy: (tokens.strategy ?? 0) + tokenGain } })
         .eq('id', player.id)
       if (tokenError) return errorResponse(`Failed to update command tokens: ${tokenError.message}`, 500)
+
+      // Replenish commodities to faction cap
+      const { data: faction, error: factionError } = await db
+        .from('factions')
+        .select('commodities')
+        .eq('name', player.faction)
+        .maybeSingle()
+      if (factionError) return errorResponse(`Failed to load faction: ${factionError.message}`, 500)
+      const commodityCap = (faction as Record<string, number> | null)?.commodities ?? (player.commodities ?? 0)
+      const { error: commError } = await db
+        .from('game_players')
+        .update({ commodities: commodityCap })
+        .eq('id', player.id)
+      if (commError) return errorResponse(`Failed to replenish commodities: ${commError.message}`, 500)
+
+      // Trade Agreement (held): if note owner = this player, transfer commodities to holder
+      const taNote = tradeAgreementNotes.find((n) => n.ownerPlayerId === player.id)
+      if (taNote) {
+        const { data: holderData, error: holderError } = await db
+          .from('game_players')
+          .select('trade_goods')
+          .eq('id', taNote.holderPlayerId)
+          .maybeSingle()
+        if (holderError) return errorResponse(`Failed to load holder: ${holderError.message}`, 500)
+        const holderTg = (holderData as Record<string, number> | null)?.trade_goods ?? 0
+        // Transfer: owner commodities → 0, holder trade_goods += commodity cap
+        const { error: ownerZeroError } = await db
+          .from('game_players')
+          .update({ commodities: 0 })
+          .eq('id', player.id)
+        if (ownerZeroError) return errorResponse(`Failed to transfer commodities: ${ownerZeroError.message}`, 500)
+        const { error: holderTgError } = await db
+          .from('game_players')
+          .update({ trade_goods: holderTg + commodityCap })
+          .eq('id', taNote.holderPlayerId)
+        if (holderTgError) return errorResponse(`Failed to update holder trade goods: ${holderTgError.message}`, 500)
+        try {
+          await returnNote(taNote.instanceId, taNote.ownerPlayerId, db)
+        } catch (e) {
+          return errorResponse(`Failed to return Trade Agreement: ${(e as Error).message}`, 500)
+        }
+      }
+    }
+
+    // Return Gift of Prescience at end of status phase
+    try {
+      const activeNotes = await getActiveNotes(body.game_id, db)
+      for (const note of activeNotes.giftOfPrescience) {
+        await returnNote(note.instanceId, note.ownerPlayerId, db)
+      }
+    } catch (e) {
+      return errorResponse(`Gift of Prescience return failed: ${(e as Error).message}`, 500)
     }
 
     // Check for Bioplasmosis

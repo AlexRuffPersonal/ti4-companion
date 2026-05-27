@@ -20,6 +20,16 @@ vi.mock('../../../supabase/functions/_shared/lawEffects.ts', () => ({
   applyStatusPhaseLaws: vi.fn(async (_db, _gameId, updates) => updates),
 }))
 
+vi.mock('../../../supabase/functions/_shared/promissoryEnforcement.ts', () => ({
+  getHeldNotes: vi.fn().mockResolvedValue([]),
+  getActiveNotes: vi.fn().mockResolvedValue({
+    supportForThrone: [], alliance: [], tradeConvoys: [], promiseOfProtection: [],
+    bloodPact: [], darkPact: [], stymie: [], antivirus: [], giftOfPrescience: [],
+    tradeAgreement: [], crucible: [], strikeWingAmbuscade: [],
+  }),
+  returnNote: vi.fn().mockResolvedValue(undefined),
+}))
+
 import { requireAuth } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-advance-phase/index.ts'
@@ -69,6 +79,14 @@ function makeStatusMock(players) {
               eq: vi.fn().mockResolvedValue({ data: players, error: null }),
             }
           }
+          // holder trade_goods select
+          if (cols.includes('trade_goods') && !cols.includes('action_card_count')) {
+            return {
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: { trade_goods: 0 }, error: null }),
+              }),
+            }
+          }
           // Fallback (shouldn't be hit in status phase)
           return {
             eq: vi.fn().mockReturnValue({
@@ -89,6 +107,15 @@ function makeStatusMock(players) {
     if (table === 'game_player_planets') {
       return {
         update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+      }
+    }
+    if (table === 'factions') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: { commodities: 3 }, error: null }),
+          }),
+        }),
       }
     }
     return {

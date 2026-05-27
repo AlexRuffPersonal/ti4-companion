@@ -142,7 +142,7 @@ export async function handler(req: Request): Promise<Response> {
 
   const { error: updateError } = await db
     .from('game_exploration_decks')
-    .update({ state: 'drawn', resolved_by_player_id: player_id, planet_name, system_key: systemKey })
+    .update({ state: 'drawn', resolved_by_player_id: player_id, system_key: systemKey })
     .eq('id', card.id)
   if (updateError) return errorResponse('Database error', 500)
 

@@ -4,6 +4,7 @@ import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/err
 import { checkAndEliminate } from '../_shared/eliminationHandler.ts'
 import { logEvent, EVT_ASSIGN_HITS } from '../_shared/gameEvents.ts'
 import { collectReactiveAgents } from '../_shared/leaderEffects.ts'
+import { assertCombatHitAllowed, checkVpMaintenanceLaws, LawError } from '../_shared/lawEffects.ts'
 
 type Casualty = { unit_type: string; player_unit_id: string; action: 'destroy' | 'sustain' }
 type UnitRow = { id: string; player_id: string; unit_type: string; count: number; damaged: boolean; system_key: string }
@@ -74,6 +75,18 @@ export async function handler(req: Request): Promise<Response> {
       const unit = unitMap.get(c.player_unit_id)
       if (unit?.damaged) return errorResponse(`Cannot sustain ${c.unit_type}: unit is already damaged`, 409)
     }
+  }
+
+  // Phase 40: check Conventions of War for each destroy casualty before applying
+  try {
+    for (const c of casualties) {
+      if (c.action === 'destroy') {
+        await assertCombatHitAllowed(db, body.game_id, c.unit_type)
+      }
+    }
+  } catch (e) {
+    if (e instanceof LawError) return errorResponse(e.message, e.status)
+    throw e
   }
 
   // Apply casualties
@@ -225,6 +238,20 @@ export async function handler(req: Request): Promise<Response> {
       status: 'complete',
       winner_player_id: winnerId,
     }).eq('id', body.combat_id)
+
+    // Phase 40: VP maintenance law check when attacker wins (defender eliminated from system)
+    // Query planets in the system to find current owners before attacker claims them
+    if (atkAlive > 0 && defAlive === 0) {
+      const { data: systemPlanets } = await db
+        .from('game_player_planets')
+        .select('player_id, planet_name')
+        .eq('game_id', body.game_id)
+        .eq('system_key', combat.system_key)
+      for (const planet of (systemPlanets ?? [])) {
+        await checkVpMaintenanceLaws(db, body.game_id as string, planet.player_id, planet.planet_name)
+      }
+    }
+
     const eliminatedPlayerIds = await checkAndEliminate(db, body.game_id as string)
     await logEvent(db, {
       game_id: body.game_id,

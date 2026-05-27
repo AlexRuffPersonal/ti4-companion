@@ -19,6 +19,16 @@ vi.mock('../../../supabase/functions/_shared/lawEffects.ts', () => ({
   applyStatusPhaseLaws: vi.fn(async (_db, _gameId, updates) => updates),
 }))
 
+vi.mock('../../../supabase/functions/_shared/promissoryEnforcement.ts', () => ({
+  getHeldNotes: vi.fn().mockResolvedValue([]),
+  getActiveNotes: vi.fn().mockResolvedValue({
+    supportForThrone: [], alliance: [], tradeConvoys: [], promiseOfProtection: [],
+    bloodPact: [], darkPact: [], stymie: [], antivirus: [], giftOfPrescience: [],
+    tradeAgreement: [], crucible: [], strikeWingAmbuscade: [],
+  }),
+  returnNote: vi.fn().mockResolvedValue(undefined),
+}))
+
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { logEvent } from '../../../supabase/functions/_shared/gameEvents.ts'
@@ -52,12 +62,40 @@ function mockDb({ game = { id: GAME_ID, host_user_id: HOST_ID, phase: 'status', 
     }
     if (table === 'game_players') {
       return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            not: vi.fn().mockReturnValue({ order: vi.fn().mockReturnValue({ limit: vi.fn().mockResolvedValue({ data: [], error: null }) }) }),
-          }),
+        select: vi.fn().mockImplementation((cols) => {
+          if (cols && cols.includes('action_card_count')) {
+            // Full player load for status phase
+            return {
+              eq: vi.fn().mockResolvedValue({
+                data: [{ id: 'p1', technologies: [], action_card_count: 0, command_tokens: { tactic_total: 3, fleet: 3, strategy: 0 }, faction: 'Test Faction', commodities: 3, trade_goods: 0 }],
+                error: null,
+              }),
+            }
+          }
+          if (cols && cols.includes('trade_goods') && !cols.includes('action_card_count')) {
+            // holder trade_goods select
+            return {
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: { trade_goods: 0 }, error: null }),
+              }),
+            }
+          }
+          return {
+            eq: vi.fn().mockReturnValue({
+              not: vi.fn().mockReturnValue({ order: vi.fn().mockReturnValue({ limit: vi.fn().mockResolvedValue({ data: [], error: null }) }) }),
+            }),
+          }
         }),
         update: playersUpdateMock,
+      }
+    }
+    if (table === 'factions') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: { commodities: 3 }, error: null }),
+          }),
+        }),
       }
     }
     if (table === 'game_player_planets') {
@@ -75,6 +113,7 @@ function mockDb({ game = { id: GAME_ID, host_user_id: HOST_ID, phase: 'status', 
         update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
       }
     }
+    return { update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }) }
   })
   return { updateMock, playersUpdateMock, legendaryUpdateMock }
 }

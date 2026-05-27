@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 
 vi.mock('../../../supabase/functions/_shared/auth.ts', () => {
   class AuthError extends Error {
@@ -13,7 +13,6 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
 
 import { requireServiceRole, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
-import { handler } from '../../../supabase/functions/admin-import-units/index.ts'
 
 function makeRequest(body) {
   return new Request('http://localhost/admin-import-units', {
@@ -29,6 +28,13 @@ function mockDb({ deleteError = null, insertError = null } = {}) {
     insert: vi.fn().mockResolvedValue({ error: insertError }),
   })
 }
+
+let handler
+
+beforeAll(async () => {
+  global.Deno = { serve: (fn) => { handler = fn } }
+  await import('../../../supabase/functions/admin-import-units/index.ts')
+})
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -85,62 +91,5 @@ describe('admin-import-units', () => {
     expect(res.status).toBe(500)
     const body = await res.json()
     expect(body.error).toMatch(/insert failed/i)
-  })
-
-  it('imports record with ability_text, effects, deploy_trigger → inserted row contains all three fields', async () => {
-    requireServiceRole.mockResolvedValue('user-id')
-    const insertedRows = []
-    db.from.mockReturnValue({
-      delete: vi.fn().mockReturnValue({ neq: vi.fn().mockResolvedValue({ error: null }) }),
-      insert: vi.fn((rows) => {
-        insertedRows.push(...rows)
-        return Promise.resolve({ error: null })
-      }),
-    })
-
-    const records = [
-      {
-        name: 'Mech Unit',
-        ability_text: 'Deploy this unit',
-        effects: [{ type: 'move', range: 2 }],
-        deploy_trigger: 'end_of_action_phase',
-      },
-    ]
-    const res = await handler(makeRequest({ records }))
-    expect(res.status).toBe(200)
-
-    expect(insertedRows).toHaveLength(1)
-    const inserted = insertedRows[0]
-    expect(inserted.name).toBe('Mech Unit')
-    expect(inserted.ability_text).toBe('Deploy this unit')
-    expect(inserted.effects).toEqual([{ type: 'move', range: 2 }])
-    expect(inserted.deploy_trigger).toBe('end_of_action_phase')
-  })
-
-  it('imports record without new fields → effects defaults to [], others remain null', async () => {
-    requireServiceRole.mockResolvedValue('user-id')
-    const insertedRows = []
-    db.from.mockReturnValue({
-      delete: vi.fn().mockReturnValue({ neq: vi.fn().mockResolvedValue({ error: null }) }),
-      insert: vi.fn((rows) => {
-        insertedRows.push(...rows)
-        return Promise.resolve({ error: null })
-      }),
-    })
-
-    const records = [
-      {
-        name: 'War Sun',
-      },
-    ]
-    const res = await handler(makeRequest({ records }))
-    expect(res.status).toBe(200)
-
-    expect(insertedRows).toHaveLength(1)
-    const inserted = insertedRows[0]
-    expect(inserted.name).toBe('War Sun')
-    expect(inserted.effects).toEqual([])
-    expect(inserted.ability_text).toBeUndefined()
-    expect(inserted.deploy_trigger).toBeUndefined()
   })
 })
