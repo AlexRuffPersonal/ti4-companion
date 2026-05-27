@@ -1,104 +1,87 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// Mock the shared modules
+const GAME_ID = 'game-uuid'
+const PLAYER_ID = 'player-uuid'
+
+// Mock applyAbility before importing applyOnGainRelicEffect
 vi.mock('../../../supabase/functions/_shared/abilityDsl.ts', () => ({
   applyAbility: vi.fn(),
 }))
 
-vi.mock('../../../supabase/functions/_shared/relicEffects.ts', () => ({
-  applyOnGainRelicEffect: vi.fn(),
-}))
-
-import { applyAbility } from '../../../supabase/functions/_shared/abilityDsl.ts'
 import { applyOnGainRelicEffect } from '../../../supabase/functions/_shared/relicEffects.ts'
+import { applyAbility } from '../../../supabase/functions/_shared/abilityDsl.ts'
 
-const GAME_ID = 'game-uuid'
-const PLAYER_ID = 'player-uuid'
+const applyAbilityMock = vi.mocked(applyAbility)
 
-describe('game-use-relic-fragment-p42: applyOnGainRelicEffect integration', () => {
+// Helper: build a mock db with proper chain methods and tracked calls
+function makeDb({ initialVp = 5 } = {}) {
+  const selectChain = {
+    eq: vi.fn().mockReturnValue({
+      maybeSingle: vi.fn().mockResolvedValue({
+        data: { vp: initialVp },
+        error: null,
+      }),
+    }),
+  }
+
+  const updateChain = {
+    eq: vi.fn().mockResolvedValue({ error: null }),
+  }
+
+  const updateMock = vi.fn().mockReturnValue(updateChain)
+
+  const db = {
+    from: vi.fn().mockImplementation((table) => {
+      if (table === 'game_players') {
+        return {
+          select: vi.fn().mockReturnValue(selectChain),
+          update: updateMock,
+        }
+      }
+      return {}
+    }),
+  }
+
+  return { db, updateMock, updateChain, selectChain }
+}
+
+describe('game-use-relic-fragment-p42: applyOnGainRelicEffect', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('calls applyOnGainRelicEffect when context.gainedRelicName is "The Obsidian"', async () => {
-    // Setup: applyAbility sets context.gainedRelicName to "The Obsidian"
-    applyAbility.mockImplementation((ops, context, db) => {
-      context.gainedRelicName = 'The Obsidian'
-      return Promise.resolve()
-    })
+  it('gaining The Obsidian calls draw_secret_objective via applyOnGainRelicEffect', async () => {
+    const { db } = makeDb()
 
-    // Simulate the function behavior
-    const ops = [{ op: 'gain_relic' }]
-    const context = { gameId: GAME_ID, activatingPlayerId: PLAYER_ID }
-    const db = {}
+    await applyOnGainRelicEffect('The Obsidian', GAME_ID, PLAYER_ID, db)
 
-    await applyAbility(ops, context, db)
-    if (context.gainedRelicName) {
-      await applyOnGainRelicEffect(context.gainedRelicName, GAME_ID, PLAYER_ID, db)
-    }
-
-    expect(applyOnGainRelicEffect).toHaveBeenCalledWith('The Obsidian', GAME_ID, PLAYER_ID, db)
+    // Verify that applyAbility was called with draw_secret_objective
+    expect(applyAbilityMock).toHaveBeenCalledWith(
+      [{ op: 'draw_secret_objective' }],
+      expect.objectContaining({ gameId: GAME_ID, activatingPlayerId: PLAYER_ID }),
+      db
+    )
   })
 
-  it('calls applyOnGainRelicEffect when context.gainedRelicName is "Shard Of The Throne"', async () => {
-    // Setup: applyAbility sets context.gainedRelicName to "Shard Of The Throne"
-    applyAbility.mockImplementation((ops, context, db) => {
-      context.gainedRelicName = 'Shard Of The Throne'
-      return Promise.resolve()
-    })
+  it('gaining Shard Of The Throne awards 1 VP', async () => {
+    const { db, updateMock, updateChain } = makeDb({ initialVp: 5 })
 
-    // Simulate the function behavior
-    const ops = [{ op: 'gain_relic' }]
-    const context = { gameId: GAME_ID, activatingPlayerId: PLAYER_ID }
-    const db = {}
+    await applyOnGainRelicEffect('Shard Of The Throne', GAME_ID, PLAYER_ID, db)
 
-    await applyAbility(ops, context, db)
-    if (context.gainedRelicName) {
-      await applyOnGainRelicEffect(context.gainedRelicName, GAME_ID, PLAYER_ID, db)
-    }
-
-    expect(applyOnGainRelicEffect).toHaveBeenCalledWith('Shard Of The Throne', GAME_ID, PLAYER_ID, db)
+    // Verify VP was incremented from 5 to 6
+    expect(updateMock).toHaveBeenCalledWith({ vp: 6 })
+    expect(updateChain.eq).toHaveBeenCalledWith('id', PLAYER_ID)
   })
 
-  it('does NOT call applyOnGainRelicEffect when context.gainedRelicName is undefined', async () => {
-    // Setup: applyAbility does not set context.gainedRelicName
-    applyAbility.mockImplementation((ops, context, db) => {
-      // context.gainedRelicName is undefined
-      return Promise.resolve()
-    })
+  it('gaining other relic (e.g. Dominus Orb) does not call applyAbility or update VP', async () => {
+    const { db, updateMock } = makeDb({ initialVp: 5 })
 
-    // Simulate the function behavior
-    const ops = [{ op: 'gain_relic' }]
-    const context = { gameId: GAME_ID, activatingPlayerId: PLAYER_ID }
-    const db = {}
+    await applyOnGainRelicEffect('Dominus Orb', GAME_ID, PLAYER_ID, db)
 
-    await applyAbility(ops, context, db)
-    if (context.gainedRelicName) {
-      await applyOnGainRelicEffect(context.gainedRelicName, GAME_ID, PLAYER_ID, db)
-    }
+    // Verify applyAbility was NOT called (no special on-gain effect)
+    expect(applyAbilityMock).not.toHaveBeenCalled()
 
-    expect(applyOnGainRelicEffect).not.toHaveBeenCalled()
-  })
-
-  it('does NOT call applyOnGainRelicEffect for "Dominus Orb" (no special on-gain effect)', async () => {
-    // Setup: applyAbility sets context.gainedRelicName to "Dominus Orb"
-    applyAbility.mockImplementation((ops, context, db) => {
-      context.gainedRelicName = 'Dominus Orb'
-      return Promise.resolve()
-    })
-
-    // Simulate the function behavior
-    const ops = [{ op: 'gain_relic' }]
-    const context = { gameId: GAME_ID, activatingPlayerId: PLAYER_ID }
-    const db = {}
-
-    await applyAbility(ops, context, db)
-    if (context.gainedRelicName) {
-      await applyOnGainRelicEffect(context.gainedRelicName, GAME_ID, PLAYER_ID, db)
-    }
-
-    // applyOnGainRelicEffect will be called, but it will no-op for this relic
-    // (That's tested in relicEffects.ts, not here)
-    expect(applyOnGainRelicEffect).toHaveBeenCalledWith('Dominus Orb', GAME_ID, PLAYER_ID, db)
+    // Verify no VP update
+    expect(updateMock).not.toHaveBeenCalled()
   })
 })
