@@ -350,7 +350,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-resolve-ability-p43a](fn-game-resolve-ability-p43a.md) | `supabase/functions/game-resolve-ability/index.ts` | 43a | Leader Card Abilities — Agents | done | shared-leaderEffects, shared-abilityDsl-p43a, shared-abilityHandlers-p43a |
 | [fn-game-advance-phase-p43a](fn-game-advance-phase-p43a.md) | `supabase/functions/game-advance-phase/index.ts` | 43a | Leader Card Abilities — Agents | planned | migration-052-leader-abilities, shared-leaderEffects |
 | [fn-game-activate-system-p43a](fn-game-activate-system-p43a.md) | `supabase/functions/game-activate-system/index.ts` | 43a | Leader Card Abilities — Agents | done | shared-leaderEffects |
-| [fn-game-produce-units-p43a](fn-game-produce-units-p43a.md) | `supabase/functions/game-produce-units/index.ts` | 43a | Leader Card Abilities — Agents | in-progress | shared-leaderEffects |
+| [fn-game-produce-units-p43a](fn-game-produce-units-p43a.md) | `supabase/functions/game-produce-units/index.ts` | 43a | Leader Card Abilities — Agents | done | shared-leaderEffects |
 | [fn-game-assign-hits-p43a](fn-game-assign-hits-p43a.md) | `supabase/functions/game-assign-hits/index.ts` | 43a | Leader Card Abilities — Agents | planned | shared-leaderEffects |
 | [hook-useLeaders-p43a](hook-useLeaders-p43a.md) | `src/hooks/useLeaders.js` | 43a | Leader Card Abilities — Agents | planned | component-LeaderAbilityModal, lib-leaderConstants |
 | [component-LeaderPanel-p43a](component-LeaderPanel-p43a.md) | `src/components/game/LeaderPanel.jsx` | 43a | Leader Card Abilities — Agents | planned | hook-useLeaders-p43a, component-LeaderAbilityModal |
