@@ -257,3 +257,24 @@ describe('game-advance-phase — Phase 43a game_round_flags reset', () => {
     expect(flagsReset).toBeUndefined()
   })
 })
+
+// ─── PHASE 43B HERO ROUND FLAGS CLEARED ────────────────────────────────────────
+
+describe('game-advance-phase — Phase 43b hero round flags cleared at round end', () => {
+  it('game_round_flags with hero flags reset to {} on status → strategy', async () => {
+    const { gamesUpdateCalls } = makeStatusMock({
+      players: [],
+      gameOverrides: {
+        game_round_flags: { letnev_no_fleet_limit: true, nomad_flagship_ignores_tokens: true },
+        agenda_unlocked: false,
+      },
+    })
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    expect(res.status).toBe(200)
+    const flagsReset = gamesUpdateCalls.find(
+      c => c.game_round_flags !== undefined &&
+        Object.keys(c.game_round_flags).length === 0
+    )
+    expect(flagsReset).toBeDefined()
+  })
+})
