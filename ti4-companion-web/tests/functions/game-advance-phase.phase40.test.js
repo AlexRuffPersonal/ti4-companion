@@ -151,9 +151,8 @@ beforeEach(() => {
 // ─── EXECUTIVE SANCTIONS ──────────────────────────────────────────────────────
 
 describe('game-advance-phase — Phase 40 Executive Sanctions token cap', () => {
-  it('Executive Sanctions active: tokenGain capped at 3 even with Hyper Metabolism', async () => {
-    // Player with Hyper Metabolism would normally get +3; Executive Sanctions caps at 3 (no change here)
-    // but a player without HM gets +2 normally; we test that Executive Sanctions is APPLIED (mock caps it)
+  it('Executive Sanctions active: DB write uses tokenGain returned by applyStatusPhaseLaws', async () => {
+    // applyStatusPhaseLaws is called with the computed updates; the value it returns is used for DB writes
     const players = [
       {
         id: PLAYER_A,
@@ -162,10 +161,8 @@ describe('game-advance-phase — Phase 40 Executive Sanctions token cap', () => 
         command_tokens: { tactic_total: 3, fleet: 3, strategy: 0 },
       },
     ]
-    // Mock Executive Sanctions active: applyStatusPhaseLaws caps tokenGain at 3
-    applyStatusPhaseLaws.mockImplementation(async (_db, _gameId, updates) =>
-      updates.map(p => ({ ...p, tokenGain: Math.min(p.tokenGain, 3) }))
-    )
+    // Mock: pass through (no cap needed here — we just verify the returned value drives the DB write)
+    applyStatusPhaseLaws.mockImplementation(async (_db, _gameId, updates) => updates)
     const { gamePlayersUpdateCalls } = makeStatusMock(players)
     const res = await handler(makeRequest({ game_id: GAME_ID }))
     expect(res.status).toBe(200)
@@ -174,7 +171,7 @@ describe('game-advance-phase — Phase 40 Executive Sanctions token cap', () => 
       GAME_ID,
       expect.arrayContaining([expect.objectContaining({ playerId: PLAYER_A })])
     )
-    // tokenGain 2, cap 3 → still 2; strategy was 0, so strategy = 0 + 2 = 2
+    // tokenGain 2 (no Hyper Metabolism), strategy was 0, so strategy = 0 + 2 = 2
     const tokenUpdate = gamePlayersUpdateCalls.find(c => c.command_tokens !== undefined)
     expect(tokenUpdate.command_tokens.strategy).toBe(2)
   })
@@ -188,12 +185,8 @@ describe('game-advance-phase — Phase 40 Executive Sanctions token cap', () => 
         command_tokens: { tactic_total: 3, fleet: 3, strategy: 0 },
       },
     ]
-    // Mock: Executive Sanctions caps at 3, even if underlying gain would be higher
-    applyStatusPhaseLaws.mockImplementation(async (_db, _gameId, updates) =>
-      updates.map(p => ({ ...p, tokenGain: Math.min(p.tokenGain, 3) }))
-    )
-    // Spy: verify the returned (possibly capped) array is used for DB writes
-    // We override the mock to return tokenGain=3 even though normal gain is 2
+    // Mock: Executive Sanctions caps at 3 — return tokenGain=3 even though normal gain is 2,
+    // verifying the returned (capped) array is used for DB writes
     applyStatusPhaseLaws.mockImplementationOnce(async (_db, _gameId, _updates) => [
       { playerId: PLAYER_A, tokenGain: 3 },
     ])
