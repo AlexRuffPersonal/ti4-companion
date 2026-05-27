@@ -85,21 +85,34 @@ function mockDb({
   bombDefs = BASE_BOMB_DEFS,
   insertedCombat = { id: 'combat-new' },
   insertError = null,
+  commanderPlayers = [],
 } = {}) {
   let gpuCallCount = 0
   let unitsCallCount = 0
   let gcCallCount = 0
+  let gpCallCount = 0
 
   db.from.mockImplementation((table) => {
     if (table === 'game_players') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
+      gpCallCount++
+      if (gpCallCount === 1) {
+        // First call: auth check — .select('id').eq().eq().maybeSingle()
+        return {
+          select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: player }),
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: player }),
+              }),
             }),
           }),
-        }),
+        }
+      } else {
+        // Subsequent calls: applyCommanderPassives — .select('id, faction, leaders').eq('game_id', ...) → array
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: commanderPlayers }),
+          }),
+        }
       }
     }
 
@@ -239,21 +252,34 @@ function mockDbWithShield({
   bombDefs = BASE_BOMB_DEFS,
   insertedCombat = { id: 'combat-new' },
   insertError = null,
+  commanderPlayers = [],
 } = {}) {
   let gpuCallCount = 0
   let unitsCallCount = 0
   let gcCallCount = 0
+  let gpCallCount = 0
 
   db.from.mockImplementation((table) => {
     if (table === 'game_players') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
+      gpCallCount++
+      if (gpCallCount === 1) {
+        // First call: auth check — .select('id').eq().eq().maybeSingle()
+        return {
+          select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: player }),
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: player }),
+              }),
             }),
           }),
-        }),
+        }
+      } else {
+        // Subsequent calls: applyCommanderPassives — .select('id, faction, leaders').eq('game_id', ...) → array
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: commanderPlayers }),
+          }),
+        }
       }
     }
     if (table === 'games') {
@@ -736,6 +762,97 @@ describe('game-fire-bombardment', () => {
     const body = await res.json()
     expect(body.combat_id).toBe('combat-ws')
     expect(body.hits).toBe(3) // 3 dice all hit
+
+    randomSpy.mockRestore()
+  })
+})
+
+// Phase 43c tests: Commander Passives
+
+describe('game-fire-bombardment Phase 43c — L1Z1X commander: skip planetary shield', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    requireAuth.mockResolvedValue(USER_ID)
+  })
+
+  it('L1Z1X commander unlocked — bombardment proceeds despite Planetary Shield (no 409)', async () => {
+    const l1z1xPlayer = {
+      id: PLAYER_ID,
+      faction: 'The L1Z1X Mindnet',
+      leaders: { commander: 'unlocked' },
+    }
+
+    // Shield is present but L1Z1X commander unlocked — should skip shield check
+    mockDbWithShield({
+      shieldDefs: [{ name: 'pds' }],
+      warSunDefs: [],
+      commanderPlayers: [l1z1xPlayer],
+    })
+
+    const randomSpy = vi.spyOn(Math, 'random')
+    randomSpy.mockReturnValue(0.3) // miss
+
+    const res = await handler(makeRequest(BASE_BODY))
+    // Should NOT return 409 — L1Z1X commander bypasses planetary shield
+    expect(res.status).toBe(200)
+
+    randomSpy.mockRestore()
+  })
+
+  it('no commander unlocked — planetary shield still blocks bombardment (409)', async () => {
+    mockDbWithShield({
+      shieldDefs: [{ name: 'pds' }],
+      warSunDefs: [],
+      commanderPlayers: [], // no commanders unlocked
+    })
+
+    const res = await handler(makeRequest(BASE_BODY))
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body.error).toMatch(/planetary shield/i)
+  })
+})
+
+describe('game-fire-bombardment Phase 43c — Argent Flight commander: extra die on bombardment', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    requireAuth.mockResolvedValue(USER_ID)
+  })
+
+  it('Argent Flight commander unlocked — pending_window for add_die included in response', async () => {
+    const argentPlayer = {
+      id: PLAYER_ID,
+      faction: 'The Argent Flight',
+      leaders: { commander: 'unlocked' },
+    }
+
+    mockDb({ commanderPlayers: [argentPlayer] })
+
+    const randomSpy = vi.spyOn(Math, 'random')
+    randomSpy.mockReturnValue(0.3) // miss
+
+    const res = await handler(makeRequest(BASE_BODY))
+    expect(res.status).toBe(200)
+
+    const body = await res.json()
+    expect(body.pending_window).toBeDefined()
+    expect(body.pending_window.faction).toBe('The Argent Flight')
+    expect(body.pending_window.trigger).toBe('UNIT_ABILITY_ROLL')
+    expect(body.pending_window.effect).toEqual([{ op: 'add_die', target: 'chosen_unit' }])
+
+    randomSpy.mockRestore()
+  })
+
+  it('no commanders unlocked — no pending_window in response', async () => {
+    mockDb({ commanderPlayers: [] })
+
+    const randomSpy = vi.spyOn(Math, 'random')
+    randomSpy.mockReturnValue(0.3)
+
+    const res = await handler(makeRequest(BASE_BODY))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.pending_window).toBeUndefined()
 
     randomSpy.mockRestore()
   })
