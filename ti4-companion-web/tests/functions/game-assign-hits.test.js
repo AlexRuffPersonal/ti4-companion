@@ -473,6 +473,7 @@ describe('game-assign-hits Phase 43c — Naaz-Rokha commander: explore on planet
       return { inlineEffects: [], pendingWindows: [] }
     })
 
+    // attacker_assign: hitsToAssign = combat.defender_hits = 0; send empty casualties
     mockDb({
       player: { id: ATTACKER_ID },
       combat: {
@@ -480,20 +481,20 @@ describe('game-assign-hits Phase 43c — Naaz-Rokha commander: explore on planet
         combat_type: 'ground',
         planet_name: 'mecatol_rex',
         phase: 'attacker_assign',
-        attacker_hits: 1,
+        attacker_hits: 0,
         defender_hits: 0,
         attacker_player_id: ATTACKER_ID,
         defender_player_id: DEFENDER_ID,
       },
-      unitDefs: [{ name: 'infantry', sustain_damage: false }],
-      assigneeUnits: [{ id: 'u-def', player_id: ATTACKER_ID, unit_type: 'infantry', count: 1, damaged: false, system_key: '1,-1' }],
+      unitDefs: [],
+      assigneeUnits: [],
       atkUnitsLeft: [{ id: 'u-atk-left' }],
       defUnitsLeft: [],
     })
 
     const res = await handler(makeRequest({
       game_id: GAME_ID, combat_id: COMBAT_ID,
-      casualties: [{ unit_type: 'infantry', player_unit_id: 'u-def', action: 'destroy' }],
+      casualties: [],
     }))
     expect(res.status).toBe(200)
     const body = await res.json()
