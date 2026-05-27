@@ -119,10 +119,6 @@ function makeStatusMock({ players, gameOverrides = {} } = {}) {
 beforeEach(() => {
   vi.clearAllMocks()
   requireAuth.mockResolvedValue(HOST_ID)
-  // Reset promissoryEnforcement mocks to defaults each test
-  const { getHeldNotes, getActiveNotes, returnNote } = vi.getMockImplementation
-    ? {} : {}
-  // Re-apply defaults via dynamic import — mocks already set at module level
 })
 
 // ─── AGENT READYING ───────────────────────────────────────────────────────────
@@ -169,7 +165,7 @@ describe('game-advance-phase — Phase 43a agent readying', () => {
     expect(res.status).toBe(200)
     // No update should carry leaders set from exhausted → unlocked for this player
     const agentUnlockUpdate = gamePlayersUpdateCalls.find(
-      c => c.leaders !== undefined && c.leaders.agent === 'unlocked' && c.leaders.commander === 'locked'
+      c => c.leaders !== undefined && c.leaders.agent === 'unlocked'
     )
     expect(agentUnlockUpdate).toBeUndefined()
   })

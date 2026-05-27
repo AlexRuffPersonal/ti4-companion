@@ -17,10 +17,18 @@ vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
   logEvent: vi.fn().mockResolvedValue(undefined),
   EVT_CAST_VOTES: 'cast_votes',
 }))
+vi.mock('../../../supabase/functions/_shared/leaderEffects.ts', () => ({
+  applyCommanderPassives: vi.fn().mockResolvedValue({ inlineEffects: [], pendingWindows: [] }),
+}))
+vi.mock('../../../supabase/functions/_shared/abilityHandlers.ts', () => ({
+  getHandler: vi.fn().mockReturnValue(vi.fn().mockResolvedValue(undefined)),
+}))
 
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { logEvent } from '../../../supabase/functions/_shared/gameEvents.ts'
+import { applyCommanderPassives } from '../../../supabase/functions/_shared/leaderEffects.ts'
+import { getHandler } from '../../../supabase/functions/_shared/abilityHandlers.ts'
 import { handler } from '../../../supabase/functions/game-cast-votes/index.ts'
 
 const GAME_ID = 'game-uuid'
@@ -98,12 +106,12 @@ function mockDb({
     }
     if (table === 'game_players') {
       // The select string determines which query path we're in:
-      // 1. 'id, technologies, exhausted_technologies, trade_goods, vote_prevented' → caller lookup
+      // 1. 'id, technologies, ...trade_goods, vote_prevented, faction, leaders' → caller lookup
       // 2. 'id, technologies, exhausted_technologies' → opponents lookup (.eq game_id, awaitable)
       // 3. 'id' → all-players count (.eq game_id, awaitable)
       return {
         select: vi.fn().mockImplementation((selectStr) => {
-          if (selectStr === 'id, technologies, exhausted_technologies, trade_goods, vote_prevented') {
+          if (selectStr === 'id, technologies, exhausted_technologies, trade_goods, vote_prevented, faction, leaders') {
             // Caller lookup: chainable with .eq('user_id') then .maybeSingle()
             return {
               eq: vi.fn().mockReturnValue({
@@ -420,5 +428,110 @@ describe('Phase 30 tech effects', () => {
     const res = await handler(makeRequest({ game_id: GAME_ID, choice: 'For', vote_count: 2 }))
     expect(res.status).toBe(200)
     expect(logEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ event_type: 'cast_votes' }))
+  })
+})
+
+describe('game-cast-votes Phase 43c — Xxcha commander: extra vote per exhausted planet', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    applyCommanderPassives.mockResolvedValue({ inlineEffects: [], pendingWindows: [] })
+    getHandler.mockReturnValue(vi.fn().mockResolvedValue(undefined))
+    requireAuth.mockResolvedValue(VOTER_USER_ID)
+    mockDb()
+  })
+
+  it('Xxcha commander unlocked — extraVotes added from exhausted planet count', async () => {
+    // Simulate xxcha_extra_vote_per_planet handler adding 3 extra votes (3 exhausted planets)
+    applyCommanderPassives.mockResolvedValue({
+      inlineEffects: [{ faction: 'The Xxcha Kingdom', effect: 'xxcha_extra_vote_per_planet' }],
+      pendingWindows: [],
+    })
+    getHandler.mockReturnValue(vi.fn().mockImplementation(async (context) => {
+      context.extraVotes = (context.extraVotes ?? 0) + 3
+    }))
+
+    mockDb({
+      callerPlayer: {
+        id: VOTER_PLAYER_ID,
+        technologies: [],
+        exhausted_technologies: [],
+        trade_goods: 0,
+        vote_prevented: false,
+        faction: 'The Xxcha Kingdom',
+        leaders: { commander: 'unlocked' },
+      },
+    })
+
+    const res = await handler(makeRequest({
+      game_id: GAME_ID, choice: 'For', vote_count: 5,
+      selections: { exhausted_planet_count: 3 },
+    }))
+    expect(res.status).toBe(200)
+    expect(upsertVotesMock).toHaveBeenCalledWith(
+      expect.objectContaining({ vote_count: 8 }),
+      expect.anything(),
+    )
+  })
+
+  it('Xxcha commander — vote prevention immunity overrides vote_prevented flag', async () => {
+    mockDb({
+      callerPlayer: {
+        id: VOTER_PLAYER_ID,
+        technologies: [],
+        exhausted_technologies: [],
+        trade_goods: 0,
+        vote_prevented: true,
+        faction: 'The Xxcha Kingdom',
+        leaders: { commander: 'unlocked' },
+      },
+    })
+
+    const res = await handler(makeRequest({ game_id: GAME_ID, choice: 'For', vote_count: 3 }))
+    // Should proceed (200), NOT return 409 due to vote prevention
+    expect(res.status).toBe(200)
+  })
+})
+
+describe('game-cast-votes Phase 43c — Hacan commander: trade goods to votes', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    applyCommanderPassives.mockResolvedValue({ inlineEffects: [], pendingWindows: [] })
+    getHandler.mockReturnValue(vi.fn().mockResolvedValue(undefined))
+    requireAuth.mockResolvedValue(VOTER_USER_ID)
+    mockDb()
+  })
+
+  it('Hacan commander — trade_goods_spent adds 2 votes per TG spent', async () => {
+    // Simulate hacan_trade_good_votes handler: 2 TG spent → +4 votes
+    applyCommanderPassives.mockResolvedValue({
+      inlineEffects: [{ faction: 'The Emirates Of Hacan', effect: 'hacan_trade_good_votes' }],
+      pendingWindows: [],
+    })
+    getHandler.mockReturnValue(vi.fn().mockImplementation(async (context) => {
+      // 2 TGs spent → 4 extra votes
+      context.extraVotes = (context.extraVotes ?? 0) + 4
+    }))
+
+    mockDb({
+      callerPlayer: {
+        id: VOTER_PLAYER_ID,
+        technologies: [],
+        exhausted_technologies: [],
+        trade_goods: 4,
+        vote_prevented: false,
+        faction: 'The Emirates Of Hacan',
+        leaders: { commander: 'unlocked' },
+      },
+    })
+
+    const res = await handler(makeRequest({
+      game_id: GAME_ID, choice: 'For', vote_count: 5,
+      selections: { trade_goods_spent: 2 },
+    }))
+    expect(res.status).toBe(200)
+    expect(upsertVotesMock).toHaveBeenCalledWith(
+      expect.objectContaining({ vote_count: 9 }),
+      expect.anything(),
+    )
   })
 })
