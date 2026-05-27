@@ -279,10 +279,7 @@ describe('game-resolve-agenda (Phase 40)', () => {
       }),
     }
 
-    const result = await handler(req)
-
-    // Log the response for debugging
-    console.log('Handler response:', result)
+    await handler(req)
 
     // Verify that insert was called with the correct data
     expect(insertMock).toHaveBeenCalledWith(expect.objectContaining({
