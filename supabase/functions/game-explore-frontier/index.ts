@@ -10,7 +10,6 @@ type FrontierCardRow = {
   name: string
   state: string
   deck_position: number
-  purge?: boolean
 }
 
 type FrontierContext = {
@@ -94,10 +93,13 @@ async function dispatchFrontierOp(
     case 'choice': {
       const options = op.options as Op[][]
       const chosen = options[ctx.choice ?? 0] ?? []
+      let innerResult: 'handled' | 'held' | 'purge' = 'handled'
       for (const innerOp of chosen) {
-        await dispatchFrontierOp(innerOp, ctx, resolveContext, dbClient)
+        const r = await dispatchFrontierOp(innerOp, ctx, resolveContext, dbClient)
+        if (r === 'purge') innerResult = 'purge'
+        else if (r === 'held' && innerResult !== 'purge') innerResult = 'held'
       }
-      return 'handled'
+      return innerResult
     }
 
     default: {
@@ -218,8 +220,6 @@ export async function handler(req: Request): Promise<Response> {
 
   let held = false
   let purge = false
-  // Also check card.purge flag for cards like Mirage, Gamma Relay, Gamma Wormhole
-  if (card.purge) purge = true
 
   try {
     for (const op of ops) {
