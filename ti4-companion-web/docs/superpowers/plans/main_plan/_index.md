@@ -290,7 +290,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [shared-promissoryHandlers-p39c](shared-promissoryHandlers-p39c.md) | `supabase/functions/_shared/promissoryHandlers.ts` | 39c | Promissory Note DSL Effects | planned | shared-promissoryHandlers-p39a, fn-game-confirm-transaction-p39b, fn-game-activate-system-p39b, fn-game-advance-phase-p39b, fn-game-end-turn-p39b |
 
 | [migration-050-mech-abilities](migration-050-mech-abilities.md) | `supabase/migrations/050_mech_abilities.sql` | 39 | Mech Unit Card Abilities | planned | — |
-| [fn-admin-import-units-mech](fn-admin-import-units-mech.md) | `supabase/functions/admin-import-units/index.ts` | 39 | Mech Unit Card Abilities | planned | migration-050-mech-abilities |
+| [fn-admin-import-units-mech](fn-admin-import-units-mech.md) | `supabase/functions/admin-import-units/index.ts` | 39 | Mech Unit Card Abilities | done | migration-050-mech-abilities |
 | [lib-importSchemas-mech](lib-importSchemas-mech.md) | `src/lib/importSchemas.js` | 39 | Mech Unit Card Abilities | planned | migration-050-mech-abilities |
 | [fn-game-resolve-ability-mech](fn-game-resolve-ability-mech.md) | `supabase/functions/game-resolve-ability/index.ts` | 39 | Mech Unit Card Abilities | planned | migration-050-mech-abilities |
 | [fn-game-deploy-mech](fn-game-deploy-mech.md) | `supabase/functions/game-deploy-mech/index.ts` | 39 | Mech Unit Card Abilities | planned | migration-050-mech-abilities |
@@ -326,7 +326,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [migration-051-exploration-fixes](migration-051-exploration-fixes.md) | `supabase/migrations/051_exploration_fixes.sql` | 41 | Exploration Full Validation | planned | — |
 | [shared-abilityDsl-p39](shared-abilityDsl-p39.md) | `supabase/functions/_shared/abilityDsl.ts` | 41 | Exploration Full Validation | planned | migration-051-exploration-fixes, shared-abilityDsl |
 | [shared-explorationEffects-p39](shared-explorationEffects-p39.md) | `supabase/functions/_shared/explorationEffects.ts` | 41 | Exploration Full Validation | planned | shared-explorationEffects, shared-abilityDsl-p39 |
-| [fn-game-explore-planet-p39](fn-game-explore-planet-p39.md) | `supabase/functions/game-explore-planet/index.ts` | 41 | Exploration Full Validation | done | fn-game-explore-planet, migration-051-exploration-fixes |
+| [fn-game-explore-planet-p39](fn-game-explore-planet-p39.md) | `supabase/functions/game-explore-planet/index.ts` | 41 | Exploration Full Validation | planned | fn-game-explore-planet, migration-051-exploration-fixes |
 | [fn-game-explore-frontier-p39](fn-game-explore-frontier-p39.md) | `supabase/functions/game-explore-frontier/index.ts` | 41 | Exploration Full Validation | planned | fn-game-explore-frontier, migration-051-exploration-fixes, shared-explorationEffects-p39 |
 | [fn-game-resolve-exploration-card-p39](fn-game-resolve-exploration-card-p39.md) | `supabase/functions/game-resolve-exploration-card/index.ts` | 41 | Exploration Full Validation | planned | fn-game-resolve-exploration-card, migration-051-exploration-fixes, shared-explorationEffects-p39, shared-abilityDsl-p39 |
 | [fn-game-use-enigmatic-device](fn-game-use-enigmatic-device.md) | `supabase/functions/game-use-enigmatic-device/index.ts` | 41 | Exploration Full Validation | planned | migration-051-exploration-fixes, shared-abilityDsl |
