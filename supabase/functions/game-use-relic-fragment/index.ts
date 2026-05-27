@@ -109,7 +109,12 @@ export async function handler(req: Request): Promise<Response> {
     const context = { gameId: game_id, activatingPlayerId: player_id }
     await applyAbility([{ op: 'gain_relic' }], context, db)
     if (context.gainedRelicName) {
-      await applyOnGainRelicEffect(context.gainedRelicName, game_id, player_id, db)
+      try {
+        await applyOnGainRelicEffect(context.gainedRelicName, game_id, player_id, db)
+      } catch (e) {
+        const err = e as Error & { status?: number }
+        return errorResponse(err.message ?? 'Failed to apply relic effect', err.status ?? 500)
+      }
     }
   } catch (e: unknown) {
     const err = e as Error & { status?: number }
