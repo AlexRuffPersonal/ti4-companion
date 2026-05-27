@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('../../../supabase/functions/_shared/auth.ts', () => {
   class AuthError extends Error {
@@ -13,6 +13,7 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
 
 import { requireServiceRole, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
+import { handler } from '../../../supabase/functions/admin-import-units/index.ts'
 
 function makeRequest(body) {
   return new Request('http://localhost/admin-import-units', {
@@ -28,13 +29,6 @@ function mockDb({ deleteError = null, insertError = null } = {}) {
     insert: vi.fn().mockResolvedValue({ error: insertError }),
   })
 }
-
-let handler
-
-beforeAll(async () => {
-  global.Deno = { serve: (fn) => { handler = fn } }
-  await import('../../../supabase/functions/admin-import-units/index.ts')
-})
 
 beforeEach(() => {
   vi.clearAllMocks()
