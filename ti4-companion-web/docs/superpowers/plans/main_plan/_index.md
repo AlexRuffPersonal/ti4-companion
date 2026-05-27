@@ -359,7 +359,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [shared-leaderEffects-p43b](shared-leaderEffects-p43b.md) | `supabase/functions/_shared/leaderEffects.ts` | 43b | Leader Card Abilities — Heroes | done | shared-leaderEffects |
 | [shared-abilityHandlers-p43b](shared-abilityHandlers-p43b.md) | `supabase/functions/_shared/abilityHandlers.ts` | 43b | Leader Card Abilities — Heroes | done | shared-leaderEffects-p43b |
 | [fn-game-resolve-ability-p43b](fn-game-resolve-ability-p43b.md) | `supabase/functions/game-resolve-ability/index.ts` | 43b | Leader Card Abilities — Heroes | done | fn-game-resolve-ability-p43a, shared-leaderEffects-p43b, shared-abilityHandlers-p43b |
-| [fn-game-advance-phase-p43b](fn-game-advance-phase-p43b.md) | `supabase/functions/game-advance-phase/index.ts` | 43b | Leader Card Abilities — Heroes | in-progress | fn-game-advance-phase-p43a, migration-052-leader-abilities |
+| [fn-game-advance-phase-p43b](fn-game-advance-phase-p43b.md) | `supabase/functions/game-advance-phase/index.ts` | 43b | Leader Card Abilities — Heroes | done | fn-game-advance-phase-p43a, migration-052-leader-abilities |
 | [component-LeaderAbilityModal-p43b](component-LeaderAbilityModal-p43b.md) | `src/components/game/LeaderAbilityModal.jsx` | 43b | Leader Card Abilities — Heroes | planned | component-LeaderAbilityModal, lib-leaderConstants |
 
 | [shared-commanderUnlock](shared-commanderUnlock.md) | `supabase/functions/_shared/commanderUnlock.ts` | 43c | Leader Card Abilities — Commander Passives | planned | migration-052-leader-abilities |
@@ -411,4 +411,3 @@ Phases 24+ are listed in suggested implementation order. Phases 17–23 have spe
 | 31 | System Tile & Planet Detail View | Low | Spec files added to main table above. |
 | 32 | Game Event Log | High | Spec files added to main table above. |
 | 33 | Bot Players + Undo | High | Spec files added to main table above. |
-   
