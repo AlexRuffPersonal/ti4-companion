@@ -1,6 +1,8 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { applyCommanderPassives } from '../_shared/leaderEffects.ts'
+import { getHandler } from '../_shared/abilityHandlers.ts'
 
 type UnitRow = { id: string; player_id: string; unit_type: string; count: number }
 type UnitDef = { name: string; bombardment?: string | null; space_cannon?: string | null }
@@ -130,8 +132,53 @@ export async function handler(req: Request): Promise<Response> {
     .maybeSingle()
   if (!tile) return errorResponse('Tile not found', 404)
 
-  // PLANET_EXISTS
-  const planetDef = (tile.planets as Array<{ name: string }>)?.find(p => p.name === planetName)
+  // Phase 43c: apply GROUND_COMBAT_START commander passives before planet eligibility check
+  const groundCombatContext: Record<string, unknown> = {
+    gameId: gameId,
+    activatingPlayerId: (player as Record<string, string>).id,
+    systemKey: systemKey,
+    sardakkExtendedCommit: false,
+  }
+  const { inlineEffects: gcInlineEffects, pendingWindows: gcPendingWindows } =
+    await applyCommanderPassives('GROUND_COMBAT_START', groundCombatContext as never, db)
+  for (const ie of gcInlineEffects) {
+    const effect = (ie as Record<string, unknown>).effect
+    if (typeof effect === 'string') {
+      try { await getHandler(effect)(groundCombatContext as never, db) } catch { /* non-fatal */ }
+    }
+  }
+
+  // PLANET_EXISTS — with Sardakk extended commitment, also allow planets from adjacent systems
+  let planetDef = (tile.planets as Array<{ name: string }>)?.find(p => p.name === planetName)
+  if (!planetDef && groundCombatContext.sardakkExtendedCommit) {
+    // Check adjacent systems for the planet
+    const [q, r] = systemKey.split(',').map(Number)
+    const neighbourOffsets = [[1,0],[-1,0],[0,1],[0,-1],[1,-1],[-1,1]]
+    const mapTilesAdj = (game.map_tiles as Record<string, { tile_id: number }>)
+    for (const [dq, dr] of neighbourOffsets) {
+      const adjKey = `${q+dq},${r+dr}`
+      const adjTileRef = mapTilesAdj[adjKey]
+      if (!adjTileRef) continue
+      // Check player doesn't have own command token in adjacent system
+      const { data: adjActivation } = await db
+        .from('game_system_activations')
+        .select('id')
+        .eq('game_id', gameId)
+        .eq('system_key', adjKey)
+        .eq('player_id', (player as Record<string, string>).id)
+        .eq('round', game.round)
+        .maybeSingle()
+      if (adjActivation) continue // skip systems with own token
+      const { data: adjTile } = await db
+        .from('tiles')
+        .select('planets')
+        .eq('id', adjTileRef.tile_id)
+        .maybeSingle()
+      if (!adjTile) continue
+      const found = (adjTile.planets as Array<{ name: string }>)?.find(p => p.name === planetName)
+      if (found) { planetDef = found; break }
+    }
+  }
   if (!planetDef) return errorResponse('Planet not found in system', 409)
 
   // Bombardment guard: if attacker has bombardment-capable ships, they must resolve bombardment first
@@ -219,7 +266,10 @@ export async function handler(req: Request): Promise<Response> {
       .select('id')
       .maybeSingle()
 
-    return okResponse({ combat_id: (inserted as Record<string, string>).id })
+    return okResponse({
+      combat_id: (inserted as Record<string, string>).id,
+      ...(gcPendingWindows.length > 0 && { pending_window: gcPendingWindows[0] }),
+    })
   } else {
     // No defenders — claim the planet
     await claimPlanet(gameId, (player as Record<string, string>).id, planetName, tileId)
@@ -230,7 +280,11 @@ export async function handler(req: Request): Promise<Response> {
       systemKey,
       game as { custodians_claimed: boolean },
     )
-    return okResponse({ claimed: true, ...(custodiansAwarded && { custodians_claimed: true }) })
+    return okResponse({
+      claimed: true,
+      ...(custodiansAwarded && { custodians_claimed: true }),
+      ...(gcPendingWindows.length > 0 && { pending_window: gcPendingWindows[0] }),
+    })
   }
 }
 

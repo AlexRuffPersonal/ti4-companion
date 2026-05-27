@@ -4,6 +4,7 @@ import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/err
 import { interpretEffects, ResolveContext } from '../_shared/abilityDsl.ts'
 import { getHandler } from '../_shared/abilityHandlers.ts'
 import { logEvent, EVT_RESOLVE_ABILITY } from '../_shared/gameEvents.ts'
+import { AGENT_ABILITIES, HERO_ABILITIES, AGENT_REACTIVE_TRIGGERS } from '../_shared/leaderEffects.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -138,6 +139,67 @@ export async function handler(req: Request): Promise<Response> {
     }
   }
 
+  // Leader (agent / hero) activation branch
+  if (body.source_type === 'leader' && body.source_id) {
+    const { data: leaderRow, error: leaderError } = await db
+      .from('leaders')
+      .select('id, faction, leader_type')
+      .eq('id', body.source_id)
+      .maybeSingle()
+    if (leaderError) return errorResponse('Database error', 500)
+    if (!leaderRow) return errorResponse('Leader not found', 404)
+
+    const lr = leaderRow as Record<string, string>
+    const { data: gpLeaders, error: gpLeadersError } = await db
+      .from('game_players')
+      .select('leaders')
+      .eq('id', (player as Record<string, string>).id)
+      .maybeSingle()
+    if (gpLeadersError) return errorResponse('Database error', 500)
+    const leaders = ((gpLeaders as Record<string, unknown> | null)?.leaders ?? {}) as Record<string, string>
+
+    if (lr.leader_type === 'agent') {
+      if (leaders.agent === 'exhausted') return errorResponse('Agent is already exhausted', 409)
+      const ops = AGENT_ABILITIES[lr.faction]
+      try {
+        if (typeof ops === 'string') {
+          const handlerFn = getHandler(ops)
+          await handlerFn(context, db)
+        } else {
+          await interpretEffects(ops ?? [], context, db)
+        }
+      } catch (e: unknown) {
+        const err = e as Error & { status?: number }
+        return errorResponse(err.message ?? 'Resolution failed', err.status === 409 ? 409 : 500)
+      }
+      await db.from('game_players')
+        .update({ leaders: { ...leaders, agent: 'exhausted' } })
+        .eq('id', (player as Record<string, string>).id)
+    }
+
+    if (lr.leader_type === 'hero') {
+      if (leaders.hero !== 'unlocked') return errorResponse('Hero not unlocked', 409)
+      const ops = HERO_ABILITIES[lr.faction]
+      try {
+        if (typeof ops === 'string') {
+          const handlerFn = getHandler(ops)
+          await handlerFn(context, db)
+        } else {
+          await interpretEffects(ops ?? [], context, db)
+        }
+      } catch (e: unknown) {
+        const err = e as Error & { status?: number }
+        return errorResponse(err.message ?? 'Resolution failed', err.status === 409 ? 409 : 500)
+      }
+      if (lr.faction !== 'The Titans Of Ul') {
+        await db.from('game_players')
+          .update({ leaders: { ...leaders, hero: 'purged' } })
+          .eq('id', (player as Record<string, string>).id)
+      }
+      // Titans: hero handler attaches card to Elysium instead; no purge write here
+    }
+  }
+
   // Phase 30: Temporal Command Suite (Nomad) — triggers when any agent is exhausted
   if (ab.exhausts_source && body.source_type === 'leader' && body.source_id) {
     const { data: allPlayers } = await db.from('game_players')
@@ -179,6 +241,36 @@ export async function handler(req: Request): Promise<Response> {
     }
   }
 
+  // Check for reactive agent windows (only when a leader is being activated)
+  const trigger = ((body.selections ?? {}) as Record<string, unknown>).trigger as string | undefined
+  const reactiveAgents: { player_id: string; faction: string; agent_id: string }[] = []
+
+  if (body.source_type === 'leader' && body.source_id) {
+    const { data: allGamePlayers } = await db
+      .from('game_players')
+      .select('id, faction, leaders')
+      .eq('game_id', body.game_id)
+
+    for (const gp of (allGamePlayers ?? [])) {
+      const gpRow = gp as Record<string, unknown>
+      if ((gpRow.id as string) === (player as Record<string, string>).id) continue
+      const gpLeaders = (gpRow.leaders ?? {}) as Record<string, string>
+      if (gpLeaders.agent !== 'unlocked') continue
+      const gpFaction = gpRow.faction as string
+      const triggers = AGENT_REACTIVE_TRIGGERS[gpFaction]
+      if (!triggers || !trigger || !triggers.includes(trigger as never)) continue
+      const { data: agentLeader } = await db
+        .from('leaders')
+        .select('id')
+        .eq('faction', gpFaction)
+        .eq('leader_type', 'agent')
+        .maybeSingle()
+      if (agentLeader) {
+        reactiveAgents.push({ player_id: gpRow.id as string, faction: gpFaction, agent_id: (agentLeader as Record<string, string>).id })
+      }
+    }
+  }
+
   await logEvent(db, {
     game_id: body.game_id,
     player_id: (player as Record<string, string>).id,
@@ -187,6 +279,18 @@ export async function handler(req: Request): Promise<Response> {
     round: 0,
     phase: 'action',
   })
+
+  if (reactiveAgents.length > 0) {
+    return okResponse({
+      resolved: true,
+      pending_window: {
+        type: 'reactive_agent',
+        eligible: reactiveAgents,
+        context: { trigger, ...((body.selections ?? {}) as Record<string, unknown>) },
+      },
+    })
+  }
+
   return okResponse({ resolved: true })
 }
 

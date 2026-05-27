@@ -1,6 +1,8 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { applyCommanderPassives } from '../_shared/leaderEffects.ts'
+import { getHandler } from '../_shared/abilityHandlers.ts'
 
 type UnitOrder = { unit_type: string; count: number; on_planet?: string | null }
 type UnitDef = { name: string; cost: number; production: string | null; unit_type: string | null }
@@ -81,6 +83,26 @@ export async function handler(req: Request): Promise<Response> {
     if (!activation) return errorResponse('System not activated by you this round', 409)
   }
 
+  // Phase 43c: apply PRODUCTION commander passives before capacity/cost calculation
+  const productionContext: Record<string, unknown> = {
+    gameId: body.game_id,
+    activatingPlayerId: (player as Record<string, unknown>).id,
+    systemKey: body.system_key,
+    unitTypes: (body.units as Array<{ unit_type: string }>).map(u => u.unit_type),
+    freeFromLimitCount: 0,
+    flagshipCostOverride: undefined as number | undefined,
+    extraFightersFreeOfLimit: 0,
+    extraInfantryFree: 0,
+  }
+  const { inlineEffects: prodInlineEffects, pendingWindows: prodPendingWindows } =
+    await applyCommanderPassives('PRODUCTION', productionContext as never, db)
+  for (const ie of prodInlineEffects) {
+    const effect = (ie as Record<string, unknown>).effect
+    if (typeof effect === 'string') {
+      try { await getHandler(effect)(productionContext as never, db) } catch { /* non-fatal */ }
+    }
+  }
+
   // TILE_ID
   const mapTiles = game.map_tiles as Record<string, { tile_id: string }> | null
   const tileEntry = mapTiles?.[body.system_key]
@@ -151,7 +173,11 @@ export async function handler(req: Request): Promise<Response> {
   if (totalCapacity === 0) return errorResponse('No production-capable units in system', 409)
 
   const totalToProduce = unitOrders.reduce((sum, u) => sum + u.count, 0)
-  if (totalToProduce > totalCapacity) return errorResponse('Exceeds production capacity', 409)
+  const freeFromLimit = (productionContext.freeFromLimitCount as number) ?? 0
+  const extraFightersFree = (productionContext.extraFightersFreeOfLimit as number) ?? 0
+  const fightersOrdered = unitOrders.filter(u => u.unit_type === 'fighter').reduce((s, u) => s + u.count, 0)
+  const adjustedToProduce = Math.max(0, totalToProduce - freeFromLimit - Math.min(extraFightersFree, fightersOrdered))
+  if (adjustedToProduce > totalCapacity) return errorResponse('Exceeds production capacity', 409)
 
   // Validate resource payment
   const planetExhausts = (body.planet_exhausts ?? []) as string[]
@@ -185,7 +211,17 @@ export async function handler(req: Request): Promise<Response> {
   for (const order of unitOrders) {
     const def = defMap.get(order.unit_type)
     if (!def) return errorResponse(`Unknown unit type: ${order.unit_type}`, 409)
-    totalCost += (def.cost ?? 0) * order.count
+    let unitCost = def.cost ?? 0
+    if (order.unit_type === 'flagship' && (productionContext.flagshipCostOverride as number | undefined) !== undefined) {
+      unitCost = productionContext.flagshipCostOverride as number
+    }
+    totalCost += unitCost * order.count
+  }
+  // Yin Omar passive: 1 free infantry
+  const extraInfantryFree = (productionContext.extraInfantryFree as number) ?? 0
+  if (extraInfantryFree > 0) {
+    const infantryDef = defMap.get('infantry')
+    totalCost = Math.max(0, totalCost - (infantryDef?.cost ?? 0) * extraInfantryFree)
   }
 
   // Tech effects on cost
@@ -384,7 +420,10 @@ export async function handler(req: Request): Promise<Response> {
     }
   }
 
-  return okResponse({ produced: true })
+  return okResponse({
+    produced: true,
+    ...(prodPendingWindows.length > 0 && { pending_window: prodPendingWindows[0] }),
+  })
 }
 
 if (typeof Deno !== 'undefined') Deno.serve(handler)

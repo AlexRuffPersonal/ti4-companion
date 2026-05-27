@@ -1,6 +1,7 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { applyCommanderPassives } from '../_shared/leaderEffects.ts'
 
 type ShipCargo = { unit_type: string; system_key: string; count: number }
 type Ship = { unit_type: string; origin_system_key: string; path: string[]; cargo: ShipCargo[] }
@@ -14,7 +15,7 @@ function axialNeighbours(key: string): string[] {
   ]
 }
 
-Deno.serve(async (req: Request) => {
+export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
 
   let userId: string
@@ -112,6 +113,14 @@ Deno.serve(async (req: Request) => {
     return (aTile.wormholes ?? []).some((w: string) => (bTile.wormholes ?? []).includes(w))
   }
 
+  function isWormholeConnection(a: string, b: string): boolean {
+    if (axialNeighbours(a).includes(b)) return false
+    const aTile = getTileInfo(a)
+    const bTile = getTileInfo(b)
+    if (!aTile || !bTile) return false
+    return (aTile.wormholes ?? []).some((w: string) => (bTile.wormholes ?? []).includes(w))
+  }
+
   // Enemy-occupied systems
   const enemyPresence = new Set(
     spaceUnits
@@ -119,7 +128,8 @@ Deno.serve(async (req: Request) => {
       .map((u: { system_key: string }) => u.system_key)
   )
 
-  // Validate each ship
+  // Validate each ship; track wormhole transits
+  let wormholesTransited = false
   for (const ship of ships) {
     const def = unitDefs.get(ship.unit_type)
     if (!def) return errorResponse(`Unknown unit type: ${ship.unit_type}`, 400)
@@ -148,6 +158,8 @@ Deno.serve(async (req: Request) => {
       if (!isAdjacent(prevKey, hop)) {
         return errorResponse(`Hop ${hop} is not adjacent to ${prevKey}`, 409)
       }
+
+      if (isWormholeConnection(prevKey, hop)) wormholesTransited = true
 
       const hopTile = getTileInfo(hop)
       const hopAnoms = hopTile?.anomalies ?? []
@@ -276,5 +288,24 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  return okResponse({ moved: true, units_removed: excessRemovals })
-})
+  // Apply SHIPS_MOVED commander passives
+  const { pendingWindows } = await applyCommanderPassives(
+    'SHIPS_MOVED',
+    {
+      gameId: body.game_id,
+      activatingPlayerId: player.id,
+      systemKey: body.active_system_key,
+      movedShips: ships,
+      wormholesTransited,
+    } as never,
+    db,
+  )
+
+  return okResponse({
+    moved: true,
+    units_removed: excessRemovals,
+    ...(pendingWindows.length > 0 && { pending_window: pendingWindows[0] }),
+  })
+}
+
+if (typeof Deno !== 'undefined') Deno.serve(handler)
