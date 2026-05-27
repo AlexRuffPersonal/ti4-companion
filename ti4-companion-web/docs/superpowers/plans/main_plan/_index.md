@@ -335,7 +335,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [shared-relicEffects-p42](shared-relicEffects-p42.md) | `supabase/functions/_shared/relicEffects.ts` | 42 | Relic Card Effects A | planned | shared-relicEffects, shared-abilityDsl |
 | [shared-abilityDsl-p42](shared-abilityDsl-p42.md) | `supabase/functions/_shared/abilityDsl.ts` | 42 | Relic Card Effects A | planned | shared-abilityDsl, shared-relicEffects-p42 |
 | [fn-game-use-relic-p42](fn-game-use-relic-p42.md) | `supabase/functions/game-use-relic/index.ts` | 42 | Relic Card Effects A | planned | fn-game-use-relic, shared-relicEffects-p42, shared-abilityDsl-p42 |
-| [fn-game-use-relic-fragment-p42](fn-game-use-relic-fragment-p42.md) | `supabase/functions/game-use-relic-fragment/index.ts` | 42 | Relic Card Effects A | planned | fn-game-use-relic-fragment, shared-relicEffects-p42, shared-abilityDsl-p42 |
+| [fn-game-use-relic-fragment-p42](fn-game-use-relic-fragment-p42.md) | `supabase/functions/game-use-relic-fragment/index.ts` | 42 | Relic Card Effects A | in-progress | fn-game-use-relic-fragment, shared-relicEffects-p42, shared-abilityDsl-p42 |
 | [fn-game-resolve-exploration-card-p42](fn-game-resolve-exploration-card-p42.md) | `supabase/functions/game-resolve-exploration-card/index.ts` | 42 | Relic Card Effects A | planned | fn-game-resolve-exploration-card, shared-relicEffects-p42, shared-abilityDsl-p42 |
 | [client-edgeFunctions-p42](client-edgeFunctions-p42.md) | `src/lib/edgeFunctions.js` | 42 | Relic Card Effects A | planned | fn-game-use-relic-p42 |
 | [component-DiscardBrowserModal](component-DiscardBrowserModal.md) | `src/components/game/DiscardBrowserModal.jsx` | 42 | Relic Card Effects A | planned | client-edgeFunctions-p42 |
@@ -350,7 +350,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-resolve-ability-p43a](fn-game-resolve-ability-p43a.md) | `supabase/functions/game-resolve-ability/index.ts` | 43a | Leader Card Abilities — Agents | done | shared-leaderEffects, shared-abilityDsl-p43a, shared-abilityHandlers-p43a |
 | [fn-game-advance-phase-p43a](fn-game-advance-phase-p43a.md) | `supabase/functions/game-advance-phase/index.ts` | 43a | Leader Card Abilities — Agents | planned | migration-052-leader-abilities, shared-leaderEffects |
 | [fn-game-activate-system-p43a](fn-game-activate-system-p43a.md) | `supabase/functions/game-activate-system/index.ts` | 43a | Leader Card Abilities — Agents | done | shared-leaderEffects |
-| [fn-game-produce-units-p43a](fn-game-produce-units-p43a.md) | `supabase/functions/game-produce-units/index.ts` | 43a | Leader Card Abilities — Agents | planned | shared-leaderEffects |
+| [fn-game-produce-units-p43a](fn-game-produce-units-p43a.md) | `supabase/functions/game-produce-units/index.ts` | 43a | Leader Card Abilities — Agents | in-progress | shared-leaderEffects |
 | [fn-game-assign-hits-p43a](fn-game-assign-hits-p43a.md) | `supabase/functions/game-assign-hits/index.ts` | 43a | Leader Card Abilities — Agents | planned | shared-leaderEffects |
 | [hook-useLeaders-p43a](hook-useLeaders-p43a.md) | `src/hooks/useLeaders.js` | 43a | Leader Card Abilities — Agents | planned | component-LeaderAbilityModal, lib-leaderConstants |
 | [component-LeaderPanel-p43a](component-LeaderPanel-p43a.md) | `src/components/game/LeaderPanel.jsx` | 43a | Leader Card Abilities — Agents | planned | hook-useLeaders-p43a, component-LeaderAbilityModal |

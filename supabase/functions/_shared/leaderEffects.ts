@@ -255,6 +255,7 @@ export const AGENT_REACTIVE_TRIGGERS: Record<string, CommanderTrigger[]> = {
   'The Barony Of Letnev':  ['GROUND_COMBAT_START'],
   'The Federation Of Sol': ['GROUND_COMBAT_START'],
   'The Yssaril Tribes':    ['SYSTEM_ACTIVATED'],
+  'The Winnu':             ['PRODUCTION'],
 }
 
 export interface PendingWindow {

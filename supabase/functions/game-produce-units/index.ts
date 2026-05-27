@@ -1,7 +1,7 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
-import { applyCommanderPassives } from '../_shared/leaderEffects.ts'
+import { applyCommanderPassives, AGENT_REACTIVE_TRIGGERS } from '../_shared/leaderEffects.ts'
 import { getHandler } from '../_shared/abilityHandlers.ts'
 
 type UnitOrder = { unit_type: string; count: number; on_planet?: string | null }
@@ -418,6 +418,43 @@ export async function handler(req: Request): Promise<Response> {
         .update({ trade_goods: ((player as Record<string, unknown>).trade_goods as number) + 1 })
         .eq('id', (player as Record<string, unknown>).id)
     }
+  }
+
+  // Check for reactive agent windows triggered by PRODUCTION
+  const reactiveAgents: { player_id: string; faction: string; agent_id: string }[] = []
+  const { data: allGamePlayers } = await db
+    .from('game_players')
+    .select('id, faction, leaders')
+    .eq('game_id', body.game_id)
+    .neq('id', (player as Record<string, unknown>).id)
+
+  for (const gp of (allGamePlayers ?? [])) {
+    const gpRow = gp as Record<string, unknown>
+    const gpLeaders = (gpRow.leaders ?? {}) as Record<string, string>
+    if (gpLeaders.agent !== 'unlocked') continue
+    const gpFaction = gpRow.faction as string
+    const triggers = AGENT_REACTIVE_TRIGGERS[gpFaction]
+    if (!triggers || !triggers.includes('PRODUCTION')) continue
+    const { data: agentLeader } = await db
+      .from('leaders')
+      .select('id')
+      .eq('faction', gpFaction)
+      .eq('leader_type', 'agent')
+      .maybeSingle()
+    if (agentLeader) {
+      reactiveAgents.push({ player_id: gpRow.id as string, faction: gpFaction, agent_id: (agentLeader as Record<string, string>).id })
+    }
+  }
+
+  if (reactiveAgents.length > 0) {
+    return okResponse({
+      produced: true,
+      pending_window: {
+        type: 'reactive_agent',
+        eligible: reactiveAgents,
+        context: { trigger: 'PRODUCTION', system_key: body.system_key },
+      },
+    })
   }
 
   return okResponse({
