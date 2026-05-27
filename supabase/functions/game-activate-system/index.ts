@@ -284,7 +284,9 @@ export async function handler(req: Request): Promise<Response> {
 
   // --- Promissory Note Enforcement: Post-activation checks ---
 
-  // Greyfire Mutagen (Model D, held): block faction abilities of note owner
+  // Greyfire Mutagen (Model D, held): block faction abilities of note owner.
+  // This trigger is unconditional per spec — the note is consumed on ANY activation in the game
+  // while it is held, regardless of who holds it or who is activating.
   const greyfireNotes = await getHeldNotes(body.game_id, 'Greyfire Mutagen', db)
   for (const note of greyfireNotes) {
     if (activationId) {
@@ -310,7 +312,7 @@ export async function handler(req: Request): Promise<Response> {
 
   // Model B in_play return checks
   const activeNotes = await getActiveNotes(body.game_id, db)
-  const modelBKeys = ['tradeConvoys', 'promiseOfProtection', 'bloodPact', 'darkPact', 'stymie', 'antivirus'] as const
+  const modelBKeys = ['tradeConvoys', 'promiseOfProtection', 'bloodPact', 'darkPact', 'stymie', 'antivirus'] as const // crucible is Model D (handled above via getHeldNotes)
   for (const key of modelBKeys) {
     for (const note of activeNotes[key]) {
       if (note.holderPlayerId === player.id) {
