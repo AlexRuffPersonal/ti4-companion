@@ -3,6 +3,7 @@ import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { EXPLORATION_EFFECTS, Op } from '../_shared/explorationEffects.ts'
 import { applyAbility, ResolveContext } from '../_shared/abilityDsl.ts'
+import { applyOnGainRelicEffect } from '../_shared/relicEffects.ts'
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 type ExplorationCardRow = {
@@ -239,6 +240,10 @@ export async function handler(req: Request): Promise<Response> {
       const err = e as Error & { status?: number }
       return errorResponse(err.message, err.status ?? 409)
     }
+  }
+
+  if (resolveContext.gainedRelicName) {
+    await applyOnGainRelicEffect(resolveContext.gainedRelicName, game_id, player_id, db)
   }
 
   if (signalType === 'relic_fragment') {

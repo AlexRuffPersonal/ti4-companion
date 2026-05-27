@@ -256,6 +256,18 @@ export const AGENT_REACTIVE_TRIGGERS: Record<string, CommanderTrigger[]> = {
   'The Federation Of Sol': ['GROUND_COMBAT_START'],
   'The Yssaril Tribes':    ['SYSTEM_ACTIVATED'],
   'The Winnu':             ['PRODUCTION'],
+  'The Titans Of Ul':      ['SUSTAIN_DAMAGE'],
+}
+
+export function collectReactiveAgents(
+  players: Record<string, unknown>[],
+  trigger: CommanderTrigger,
+  excludeId: string,
+): { player_id: string; faction: string }[] {
+  return players
+    .filter(p => (p.id as string) !== excludeId && (p.leaders as Record<string, string> | null)?.agent === 'unlocked')
+    .filter(p => AGENT_REACTIVE_TRIGGERS[p.faction as string]?.includes(trigger))
+    .map(p => ({ player_id: p.id as string, faction: p.faction as string }))
 }
 
 export interface PendingWindow {

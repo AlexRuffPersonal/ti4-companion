@@ -67,17 +67,27 @@ function mockDb({
   defUnitsLeft = [{ id: 'u1' }],
   updateError = null,
   onGameCombatsUpdate = null, // callback when game_combats.update is called
+  allPlayers = [],
 } = {}) {
   let queryCount = 0
   db.from.mockImplementation((table) => {
     if (table === 'game_players') {
       return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
+        select: vi.fn().mockImplementation((fields) => {
+          if (fields === 'id, faction, leaders') {
+            // allPlayers query: .eq('game_id', ...) → resolves array
+            return {
+              eq: vi.fn().mockResolvedValue({ data: allPlayers }),
+            }
+          }
+          // Player lookup: .eq('game_id').eq('user_id').maybeSingle()
+          return {
             eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: player, error: playerError }),
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: player, error: playerError }),
+              }),
             }),
-          }),
+          }
         }),
       }
     }
