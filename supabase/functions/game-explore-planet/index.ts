@@ -137,9 +137,12 @@ export async function handler(req: Request): Promise<Response> {
     if (!card) return errorResponse('Exploration deck empty', 409)
   }
 
+  const mapTiles = (game.map_tiles ?? {}) as Record<string, { tile_id: string }>
+  const systemKey = Object.entries(mapTiles).find(([, v]) => v.tile_id === planet.tile_id)?.[0] ?? null
+
   const { error: updateError } = await db
     .from('game_exploration_decks')
-    .update({ state: 'drawn', resolved_by_player_id: player_id })
+    .update({ state: 'drawn', resolved_by_player_id: player_id, system_key: systemKey })
     .eq('id', card.id)
   if (updateError) return errorResponse('Database error', 500)
 
