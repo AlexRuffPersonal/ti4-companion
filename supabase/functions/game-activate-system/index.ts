@@ -379,7 +379,7 @@ export async function handler(req: Request): Promise<Response> {
   // Apply SYSTEM_ACTIVATED commander passives (Arborec, Yssaril, etc.)
   const { pendingWindows: commanderWindows } = await applyCommanderPassives(
     'SYSTEM_ACTIVATED',
-    { gameId: body.game_id, activatingPlayerId: player.id, systemKey: body.system_key, faction: player.faction as string ?? '' },
+    { gameId: body.game_id, activatingPlayerId: player.id, systemKey: body.system_key, faction: (player.faction ?? '') as string },
     db,
   )
 

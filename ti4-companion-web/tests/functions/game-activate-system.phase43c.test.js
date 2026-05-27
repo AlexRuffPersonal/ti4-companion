@@ -62,7 +62,6 @@ function makeRequest(body) {
 function mockDb({
   player = { id: PLAYER_ID, command_tokens: { tactic_total: 3, fleet: 2, strategy: 1 }, faction: null, leaders: null },
   activations = [],
-  alreadyActivatedToken = null,
 } = {}) {
   const mahactHandlerMock = vi.fn().mockResolvedValue(undefined)
   getHandler.mockReturnValue(mahactHandlerMock)
