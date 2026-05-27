@@ -65,12 +65,10 @@ function mockDb({
     if (table === 'game_players') {
       return {
         select: vi.fn().mockImplementation((cols) => {
-          // Reactive agent check: fetches id, faction, leaders for all players in game excluding activating player
+          // Reactive agent check: fetches id, faction, leaders for all players in game
           if (cols === 'id, faction, leaders') {
             return {
-              eq: vi.fn().mockReturnValue({
-                neq: vi.fn().mockResolvedValue({ data: otherPlayers, error: null }),
-              }),
+              eq: vi.fn().mockResolvedValue({ data: otherPlayers, error: null }),
             }
           }
           // Original player fetch: id, technologies, exhausted_technologies, trade_goods

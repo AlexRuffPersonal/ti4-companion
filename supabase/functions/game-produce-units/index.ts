@@ -426,10 +426,10 @@ export async function handler(req: Request): Promise<Response> {
     .from('game_players')
     .select('id, faction, leaders')
     .eq('game_id', body.game_id)
-    .neq('id', (player as Record<string, unknown>).id)
 
   for (const gp of (allGamePlayers ?? [])) {
     const gpRow = gp as Record<string, unknown>
+    if ((gpRow.id as string) === (player as Record<string, unknown>).id) continue
     const gpLeaders = (gpRow.leaders ?? {}) as Record<string, string>
     if (gpLeaders.agent !== 'unlocked') continue
     const gpFaction = gpRow.faction as string

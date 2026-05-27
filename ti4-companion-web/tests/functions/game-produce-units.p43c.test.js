@@ -60,12 +60,17 @@ function mockDb({
   db.from.mockImplementation((table) => {
     if (table === 'game_players') {
       return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
+        select: vi.fn().mockImplementation((cols) => {
+          if (cols === 'id, faction, leaders') {
+            return { eq: vi.fn().mockResolvedValue({ data: [], error: null }) }
+          }
+          return {
             eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }),
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }),
+              }),
             }),
-          }),
+          }
         }),
         update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
       }
