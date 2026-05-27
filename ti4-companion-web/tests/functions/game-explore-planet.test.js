@@ -404,4 +404,48 @@ describe('game-explore-planet', () => {
     }
     expect(allUpdates).not.toContainEqual({ exhausted: false })
   })
+
+  it('stores system_key on the drawn card row', async () => {
+    mockDb({
+      game: { phase: 2, active_player_id: PLAYER_ID, map_tiles: { '2,1': { tile_id: TILE_ID } } },
+    })
+    const res = await handler(makeRequest(baseBody()))
+    expect(res.status).toBe(200)
+    const deckUpdateCalls = []
+    for (const call of db.from.mock.calls) {
+      if (call[0] === 'game_exploration_decks') {
+        const fromResult = db.from.mock.results[db.from.mock.calls.indexOf(call)]
+        if (fromResult?.value?.update?.mock?.calls?.length) {
+          for (const uc of fromResult.value.update.mock.calls) {
+            deckUpdateCalls.push(uc[0])
+          }
+        }
+      }
+    }
+    const drawnUpdate = deckUpdateCalls.find((u) => u.state === 'drawn')
+    expect(drawnUpdate).toBeDefined()
+    expect(drawnUpdate.system_key).toBe('2,1')
+  })
+
+  it('stores null system_key when planet tile not found in map', async () => {
+    mockDb({
+      game: { phase: 2, active_player_id: PLAYER_ID, map_tiles: {} },
+    })
+    const res = await handler(makeRequest(baseBody()))
+    expect(res.status).toBe(200)
+    const deckUpdateCalls = []
+    for (const call of db.from.mock.calls) {
+      if (call[0] === 'game_exploration_decks') {
+        const fromResult = db.from.mock.results[db.from.mock.calls.indexOf(call)]
+        if (fromResult?.value?.update?.mock?.calls?.length) {
+          for (const uc of fromResult.value.update.mock.calls) {
+            deckUpdateCalls.push(uc[0])
+          }
+        }
+      }
+    }
+    const drawnUpdate = deckUpdateCalls.find((u) => u.state === 'drawn')
+    expect(drawnUpdate).toBeDefined()
+    expect(drawnUpdate.system_key).toBeNull()
+  })
 })
