@@ -314,7 +314,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-LobbyScreen-p39](component-LobbyScreen-p39.md) | `src/components/game/LobbyScreen.jsx` | 39 | In-App Map Draft | planned | component-DraftPanel, hook-useDraft, client-edgeFunctions-p39 |
 
 | [migration-049-law-enforcement](migration-049-law-enforcement.md) | `supabase/migrations/049_law_enforcement.sql` | 40 | Persistent Agenda Law Enforcement | planned | — |
-| [fn-game-resolve-agenda-p40](fn-game-resolve-agenda-p40.md) | `supabase/functions/game-resolve-agenda/index.ts` | 40 | Persistent Agenda Law Enforcement | planned | migration-049-law-enforcement |
+| [fn-game-resolve-agenda-p40](fn-game-resolve-agenda-p40.md) | `supabase/functions/game-resolve-agenda/index.ts` | 40 | Persistent Agenda Law Enforcement | in-progress | migration-049-law-enforcement |
 | [shared-lawEffects](shared-lawEffects.md) | `supabase/functions/_shared/lawEffects.ts` | 40 | Persistent Agenda Law Enforcement | planned | migration-049-law-enforcement |
 | [shared-abilityDsl-p40](shared-abilityDsl-p40.md) | `supabase/functions/_shared/abilityDsl.ts` | 40 | Persistent Agenda Law Enforcement | planned | shared-lawEffects |
 | [fn-game-produce-units-p40](fn-game-produce-units-p40.md) | `supabase/functions/game-produce-units/index.ts` | 40 | Persistent Agenda Law Enforcement | planned | shared-lawEffects |
@@ -372,7 +372,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-commit-ground-forces-p43c](fn-game-commit-ground-forces-p43c.md) | `supabase/functions/game-commit-ground-forces/index.ts` | 43c | Leader Card Abilities — Commander Passives | done | shared-leaderEffects-p43c, shared-abilityHandlers-p43c |
 | [fn-game-roll-combat-dice-p43c](fn-game-roll-combat-dice-p43c.md) | `supabase/functions/game-roll-combat-dice/index.ts` | 43c | Leader Card Abilities — Commander Passives | done | shared-leaderEffects-p43c, shared-abilityHandlers-p43c |
 | [fn-game-roll-ground-combat-dice-p43c](fn-game-roll-ground-combat-dice-p43c.md) | `supabase/functions/game-roll-ground-combat-dice/index.ts` | 43c | Leader Card Abilities — Commander Passives | done | shared-leaderEffects-p43c, shared-abilityHandlers-p43c, fn-game-roll-combat-dice-p43c |
-| [fn-game-fire-bombardment-p43c](fn-game-fire-bombardment-p43c.md) | `supabase/functions/game-fire-bombardment/index.ts` | 43c | Leader Card Abilities — Commander Passives | in-progress | shared-leaderEffects-p43c, shared-abilityHandlers-p43c |
+| [fn-game-fire-bombardment-p43c](fn-game-fire-bombardment-p43c.md) | `supabase/functions/game-fire-bombardment/index.ts` | 43c | Leader Card Abilities — Commander Passives | done | shared-leaderEffects-p43c, shared-abilityHandlers-p43c |
 | [fn-game-fire-space-cannon-p43c](fn-game-fire-space-cannon-p43c.md) | `supabase/functions/game-fire-space-cannon/index.ts` | 43c | Leader Card Abilities — Commander Passives | planned | shared-leaderEffects-p43c, shared-abilityHandlers-p43c |
 | [fn-game-fire-anti-fighter-barrage-p43c](fn-game-fire-anti-fighter-barrage-p43c.md) | `supabase/functions/game-fire-anti-fighter-barrage/index.ts` | 43c | Leader Card Abilities — Commander Passives | done | shared-leaderEffects-p43c, shared-abilityHandlers-p43c |
 | [fn-game-activate-system-p43c](fn-game-activate-system-p43c.md) | `supabase/functions/game-activate-system/index.ts` | 43c | Leader Card Abilities — Commander Passives | planned | shared-leaderEffects-p43c, shared-abilityHandlers-p43c, fn-game-activate-system-p43a |
