@@ -3,6 +3,7 @@ import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { applyCommanderPassives } from '../_shared/leaderEffects.ts'
 import { getHandler } from '../_shared/abilityHandlers.ts'
+import { getHeldNotes, returnNote } from '../_shared/promissoryEnforcement.ts'
 
 type UnitRow = { id: string; player_id: string; unit_type: string; count: number }
 type UnitDef = { name: string; bombardment?: string | null; space_cannon?: string | null }
@@ -81,7 +82,7 @@ export async function handler(req: Request): Promise<Response> {
     return errorResponse('Internal server error', 500)
   }
 
-  let body: { game_id?: unknown; system_key?: unknown; planet_name?: unknown; troop_count?: unknown }
+  let body: { game_id?: unknown; system_key?: unknown; planet_name?: unknown; troop_count?: unknown; saar_retreat_planet?: unknown }
   try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
   if (!body.game_id || typeof body.game_id !== 'string') return errorResponse("'game_id' is required")
   if (!body.system_key || typeof body.system_key !== 'string') return errorResponse("'system_key' is required")
@@ -239,9 +240,42 @@ export async function handler(req: Request): Promise<Response> {
     })
   }
 
-  if ((defenders ?? []).length > 0) {
+  // Ragh's Call: if invader holds it, eject Saar's ground forces from invaded planet
+  const raghsNotes = await getHeldNotes(gameId, "Ragh's Call", db)
+  let remainingDefenders = [...(defenders ?? [])] as UnitRow[]
+  const saarRetreatPlanet = typeof body.saar_retreat_planet === 'string' ? body.saar_retreat_planet : undefined
+  for (const note of raghsNotes) {
+    if (note.holderPlayerId !== (player as Record<string, string>).id) continue
+    if (saarRetreatPlanet) {
+      const { data: retreatPlanetRow } = await db
+        .from('game_player_planets')
+        .select('tile_id')
+        .eq('game_id', gameId)
+        .eq('planet_name', saarRetreatPlanet)
+        .eq('player_id', note.ownerPlayerId)
+        .maybeSingle()
+      const retreatTileId = (retreatPlanetRow as { tile_id: number } | null)?.tile_id
+      const mapTiles = game.map_tiles as Record<string, { tile_id: number }>
+      const retreatSystemKey = retreatTileId !== undefined
+        ? Object.entries(mapTiles).find(([, v]) => v.tile_id === retreatTileId)?.[0]
+        : undefined
+      if (retreatSystemKey) {
+        await db
+          .from('game_player_units')
+          .update({ system_key: retreatSystemKey, on_planet: saarRetreatPlanet })
+          .eq('game_id', gameId)
+          .eq('system_key', systemKey)
+          .eq('on_planet', planetName)
+          .eq('player_id', note.ownerPlayerId)
+      }
+    }
+    remainingDefenders = remainingDefenders.filter(d => d.player_id !== note.ownerPlayerId)
+    await returnNote(note.instanceId, note.ownerPlayerId, db)
+  }
+
+  if (remainingDefenders.length > 0) {
     // Determine initial combat phase: check if defender has SCD units
-    const defTypes = [...new Set((defenders as UnitRow[]).map(u => u.unit_type))]
+    const defTypes = [...new Set(remainingDefenders.map(u => u.unit_type))]
 
     const { data: scdDefs } = await db
       .from('units')
@@ -259,7 +293,7 @@ export async function handler(req: Request): Promise<Response> {
         combat_type: 'ground',
         planet_name: planetName,
         attacker_player_id: (player as Record<string, string>).id,
-        defender_player_id: (defenders as UnitRow[])[0].player_id,
+        defender_player_id: remainingDefenders[0].player_id,
         phase: initialPhase,
         round: game.round,
       })

@@ -10,6 +10,16 @@ vi.mock('../../../supabase/functions/_shared/auth.ts', () => {
 vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
   db: { from: vi.fn() },
 }))
+vi.mock('../../../supabase/functions/_shared/leaderEffects.ts', () => ({
+  applyCommanderPassives: vi.fn().mockResolvedValue({ inlineEffects: [], pendingWindows: [] }),
+}))
+vi.mock('../../../supabase/functions/_shared/abilityHandlers.ts', () => ({
+  getHandler: vi.fn().mockReturnValue(vi.fn().mockResolvedValue(undefined)),
+}))
+vi.mock('../../../supabase/functions/_shared/promissoryEnforcement.ts', () => ({
+  getHeldNotes: vi.fn().mockResolvedValue([]),
+  returnNote: vi.fn().mockResolvedValue(undefined),
+}))
 
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
