@@ -78,19 +78,21 @@ export async function handler(req: Request): Promise<Response> {
   if (planetError2) return errorResponse(`Failed to claim planet: ${planetError2.message}`, 500)
 
   if (body.unit_type === 'mech') {
-    const { data: planetRecord } = await db
+    const { data: planetRecord, error: planetError } = await db
       .from('game_player_planets')
       .select('attachments')
       .eq('game_id', body.game_id)
       .eq('player_id', player.id)
       .eq('planet_name', body.planet_name)
       .maybeSingle()
+    if (planetError) return errorResponse('Database error', 500)
     const planetAttachments = (planetRecord as { attachments?: string[] } | null)?.attachments ?? []
     if (planetAttachments.length > 0) {
-      const { data: attachmentRecords } = await db
+      const { data: attachmentRecords, error: attachmentError } = await db
         .from('attachments')
         .select('name')
         .in('id', planetAttachments)
+      if (attachmentError) return errorResponse('Database error', 500)
       const attachmentNames = (attachmentRecords as Array<{ name: string }> | null)?.map(a => a.name) ?? []
       if (attachmentNames.includes('Demilitarized Zone')) {
         return errorResponse('Cannot place a mech on a Demilitarized Zone planet', 409)
