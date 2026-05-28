@@ -121,29 +121,32 @@ async function dispatchExplorationOp(
     }
 
     case 'ready_current_planet': {
-      await dbClient
+      const { error: readyError } = await dbClient
         .from('game_player_planets')
         .update({ exhausted: false })
         .eq('game_id', ctx.gameId)
         .eq('player_id', ctx.playerId)
         .eq('planet_name', ctx.planetName)
+      if (readyError) return errorResponse('Database error', 500)
       return 'handled'
     }
 
     case 'clear_planet_units_and_structures': {
       // Demilitarized Zone: remove space dock and PDS from planet, then delete all units on it
-      await dbClient
+      const { error: clearPlanetError } = await dbClient
         .from('game_player_planets')
         .update({ space_dock_unit_id: null, pds_count: 0 })
         .eq('game_id', ctx.gameId)
         .eq('player_id', ctx.playerId)
         .eq('planet_name', ctx.planetName)
-      await dbClient
+      if (clearPlanetError) return errorResponse('Database error', 500)
+      const { error: clearUnitsError } = await dbClient
         .from('game_player_units')
         .delete()
         .eq('game_id', ctx.gameId)
         .eq('player_id', ctx.playerId)
         .eq('on_planet', ctx.planetName)
+      if (clearUnitsError) return errorResponse('Database error', 500)
       return 'handled'
     }
 
@@ -157,10 +160,11 @@ async function dispatchExplorationOp(
         .eq('state', 'deck')
         .maybeSingle()
       if (relicRow) {
-        await dbClient
+        const { error: relicUpdateError } = await dbClient
           .from('game_relic_deck')
           .update({ state: 'held', held_by_player_id: ctx.playerId })
           .eq('id', (relicRow as { id: string }).id)
+        if (relicUpdateError) return errorResponse('Database error', 500)
       }
       // silently skip if relic not in deck
       return 'handled'
@@ -180,7 +184,7 @@ async function dispatchExplorationOp(
       if (existingMech && existingMech.count >= 1) {
         return errorResponse('Planet already has a mech', 409)
       }
-      await dbClient
+      const { error: mechUpsertError } = await dbClient
         .from('game_player_units')
         .upsert({
           game_id: ctx.gameId,
@@ -190,6 +194,7 @@ async function dispatchExplorationOp(
           on_planet: ctx.planetName,
           count: 1,
         }, { onConflict: 'game_id,player_id,unit_type,on_planet' })
+      if (mechUpsertError) return errorResponse('Database error', 500)
       return 'handled'
     }
 
@@ -328,21 +333,24 @@ async function dispatchExplorationOp(
           .eq('system_key', ctx.systemKey)
           .maybeSingle()
         if (existing) {
-          await dbClient
+          const { error: mirageStateError } = await dbClient
             .from('game_system_state')
             .update({ has_mirage: true })
             .eq('id', (existing as { id: string }).id)
+          if (mirageStateError) return errorResponse('Database error', 500)
         } else {
-          await dbClient
+          const { error: mirageInsertError } = await dbClient
             .from('game_system_state')
             .insert({ game_id: ctx.gameId, system_key: ctx.systemKey, has_mirage: true })
+          if (mirageInsertError) return errorResponse('Database error', 500)
         }
-        await dbClient
+        const { error: miragePlanetError } = await dbClient
           .from('game_player_planets')
           .upsert(
             { game_id: ctx.gameId, player_id: ctx.playerId, planet_name: 'mirage', system_key: ctx.systemKey, exhausted: false },
             { onConflict: 'game_id,player_id,planet_name' }
           )
+        if (miragePlanetError) return errorResponse('Database error', 500)
       }
       return 'handled'
     }
