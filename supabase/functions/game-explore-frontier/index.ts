@@ -16,8 +16,8 @@ type FrontierContext = {
   gameId: string
   playerId: string
   systemKey: string
-  choice: null
-  removeInfantry: false
+  choice: number | null
+  removeInfantry: boolean
 }
 
 async function drawTopFrontierCard(game_id: string): Promise<FrontierCardRow | null> {
@@ -38,6 +38,7 @@ async function drawTopFrontierCard(game_id: string): Promise<FrontierCardRow | n
  * Dispatch frontier-specific ops.
  * Returns 'handled' if fully resolved here,
  *         'held'    if the card should be kept in held state (not discarded),
+ *         'purge'   if the card should be purged (removed from game),
  *         or throws/falls through to applyAbility for generic ops.
  */
 async function dispatchFrontierOp(
@@ -45,17 +46,24 @@ async function dispatchFrontierOp(
   ctx: FrontierContext,
   resolveContext: ResolveContext,
   dbClient: SupabaseClient
-): Promise<'handled' | 'held'> {
+): Promise<'handled' | 'held' | 'purge'> {
   switch (op.op) {
     case 'place_mirage': {
-      const { error } = await dbClient
+      const { error: systemError } = await dbClient
+        .from('game_system_state')
+        .upsert(
+          { game_id: ctx.gameId, system_key: ctx.systemKey, has_mirage: true },
+          { onConflict: 'game_id,system_key' }
+        )
+      if (systemError) throw Object.assign(new Error('Database error'), { status: 500 })
+      const { error: planetError } = await dbClient
         .from('game_player_planets')
         .upsert(
           { game_id: ctx.gameId, player_id: ctx.playerId, planet_name: 'mirage', tile_id: null, exhausted: false, explored: false },
           { onConflict: 'game_id,player_id,planet_name' }
         )
-      if (error) throw Object.assign(new Error('Database error'), { status: 500 })
-      return 'handled'
+      if (planetError) throw Object.assign(new Error('Database error'), { status: 500 })
+      return 'purge'
     }
 
     case 'place_map_token': {
@@ -78,6 +86,22 @@ async function dispatchFrontierOp(
       return 'handled'
     }
 
+    case 'hold_card': {
+      return 'held'
+    }
+
+    case 'choice': {
+      const options = op.options as Op[][]
+      const chosen = options[ctx.choice ?? 0] ?? []
+      let innerResult: 'handled' | 'held' | 'purge' = 'handled'
+      for (const innerOp of chosen) {
+        const r = await dispatchFrontierOp(innerOp, ctx, resolveContext, dbClient)
+        if (r === 'purge') innerResult = 'purge'
+        else if (r === 'held' && innerResult !== 'purge') innerResult = 'held'
+      }
+      return innerResult
+    }
+
     default: {
       await applyAbility([op], resolveContext, dbClient)
       return 'handled'
@@ -96,7 +120,7 @@ export async function handler(req: Request): Promise<Response> {
     return errorResponse('Internal server error', 500)
   }
 
-  let body: { game_id?: unknown; player_id?: unknown; system_key?: unknown }
+  let body: { game_id?: unknown; player_id?: unknown; system_key?: unknown; choice?: unknown }
   try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
 
   if (!body.game_id || typeof body.game_id !== 'string') return errorResponse("'game_id' is required")
@@ -106,6 +130,7 @@ export async function handler(req: Request): Promise<Response> {
   const gameId = body.game_id
   const playerId = body.player_id
   const systemKey = body.system_key
+  const choice = typeof body.choice === 'number' ? body.choice : null
 
   const { data: game, error: gameError } = await db
     .from('games')
@@ -177,7 +202,7 @@ export async function handler(req: Request): Promise<Response> {
     gameId,
     playerId,
     systemKey,
-    choice: null,
+    choice,
     removeInfantry: false,
   }
 
@@ -186,11 +211,21 @@ export async function handler(req: Request): Promise<Response> {
     activatingPlayerId: playerId,
   }
 
+  // Store system_key on drawn card row for audit/consistency
+  const { error: sysKeyError } = await db
+    .from('game_exploration_decks')
+    .update({ state: 'drawn', resolved_by_player_id: playerId, system_key: systemKey })
+    .eq('id', card.id)
+  if (sysKeyError) return errorResponse('Database error', 500)
+
   let held = false
+  let purge = false
+
   try {
     for (const op of ops) {
       const result = await dispatchFrontierOp(op, ctx, resolveContext, db)
       if (result === 'held') held = true
+      if (result === 'purge') purge = true
     }
   } catch (e) {
     const err = e as Error & { status?: number }
@@ -203,6 +238,12 @@ export async function handler(req: Request): Promise<Response> {
       .update({ state: 'held', resolved_by_player_id: playerId })
       .eq('id', card.id)
     if (holdError) return errorResponse('Database error', 500)
+  } else if (purge) {
+    const { error: purgeError } = await db
+      .from('game_exploration_decks')
+      .update({ state: 'purged', resolved_by_player_id: null })
+      .eq('id', card.id)
+    if (purgeError) return errorResponse('Database error', 500)
   } else {
     const { error: discardError } = await db
       .from('game_exploration_decks')

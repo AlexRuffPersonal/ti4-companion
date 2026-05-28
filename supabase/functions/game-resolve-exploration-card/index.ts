@@ -3,6 +3,7 @@ import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { EXPLORATION_EFFECTS, Op } from '../_shared/explorationEffects.ts'
 import { applyAbility, ResolveContext } from '../_shared/abilityDsl.ts'
+import { applyOnGainRelicEffect } from '../_shared/relicEffects.ts'
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 type ExplorationCardRow = {
@@ -62,6 +63,10 @@ async function dispatchExplorationOp(
     }
 
     case 'gain_relic_fragment': {
+      return 'relic_fragment'
+    }
+
+    case 'hold_card': {
       return 'relic_fragment'
     }
 
@@ -234,6 +239,15 @@ export async function handler(req: Request): Promise<Response> {
     } catch (e) {
       const err = e as Error & { status?: number }
       return errorResponse(err.message, err.status ?? 409)
+    }
+  }
+
+  if (resolveContext.gainedRelicName) {
+    try {
+      await applyOnGainRelicEffect(resolveContext.gainedRelicName, game_id, player_id, db)
+    } catch (e) {
+      const err = e as Error & { status?: number }
+      return errorResponse(err.message ?? 'Failed to apply relic effect', err.status ?? 500)
     }
   }
 

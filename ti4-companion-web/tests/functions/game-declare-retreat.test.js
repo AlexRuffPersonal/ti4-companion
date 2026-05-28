@@ -71,6 +71,7 @@ function mockDb({
   game = { map_tiles: MAP_TILES },
   retreatingPlayerTechs = [],
   unitsInDest = [{ id: 'unit-1' }],
+  allShipsInDest = [],
   planetsInDest = [],
   updateError = null,
 } = {}) {
@@ -123,16 +124,32 @@ function mockDb({
       }
     }
     if (table === 'game_player_units') {
+      // Build a chainable mock that tracks whether player_id eq was called
+      // DET path: eq(game_id).eq(system_key).is(on_planet, null) → resolves allShipsInDest
+      // Non-DET path: eq(game_id).eq(system_key).eq(player_id).is(on_planet, null).limit(1) → resolves unitsInDest
+      const isChain = vi.fn().mockReturnValue({
+        limit: vi.fn().mockResolvedValue({ data: unitsInDest, error: null }),
+      })
+      // For DET path, the chain is eq→eq→is (resolves to allShipsInDest directly from is())
+      const detIsChain = vi.fn().mockResolvedValue({ data: allShipsInDest, error: null })
+      const innerEqForPlayerCheck = vi.fn().mockReturnValue({
+        is: isChain,
+      })
+      // Second eq (system_key) — may be followed by player_id eq (non-DET) or is() (DET)
+      const secondEq = vi.fn((field) => {
+        if (field === 'player_id') {
+          return { is: isChain }
+        }
+        // field === 'system_key' — next call will be eq(player_id) OR is(on_planet)
+        return {
+          eq: innerEqForPlayerCheck,
+          is: detIsChain,
+        }
+      })
       return {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                is: vi.fn().mockReturnValue({
-                  limit: vi.fn().mockResolvedValue({ data: unitsInDest, error: null }),
-                }),
-              }),
-            }),
+            eq: secondEq,
           }),
         }),
       }
@@ -253,12 +270,12 @@ describe('game-declare-retreat', () => {
     expect(body.error).toMatch(/not adjacent/i)
   })
 
-  it('GIVEN Dark Energy Tap destination 2 hops away EXPECT retreat accepted', async () => {
+  it('GIVEN Dark Energy Tap destination 2 hops away EXPECT 409 (range stays 1 hop)', async () => {
     mockDb({ retreatingPlayerTechs: ['Dark Energy Tap'] })
     const res = await handler(makeRequest({ game_id: GAME_ID, combat_id: COMBAT_ID, destination: TWO_HOP_DEST }))
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(409)
     const body = await res.json()
-    expect(body.retreat_destination).toBe(TWO_HOP_DEST)
+    expect(body.error).toMatch(/not adjacent/i)
   })
 
   it('GIVEN Dark Energy Tap destination 3 hops away EXPECT 409', async () => {
@@ -267,5 +284,44 @@ describe('game-declare-retreat', () => {
     expect(res.status).toBe(409)
     const body = await res.json()
     expect(body.error).toMatch(/not adjacent/i)
+  })
+
+  // DET empty-system retreat
+  it('GIVEN DET destination 1 hop destination completely empty EXPECT 200', async () => {
+    mockDb({ retreatingPlayerTechs: ['Dark Energy Tap'], allShipsInDest: [] })
+    const res = await handler(makeRequest({ game_id: GAME_ID, combat_id: COMBAT_ID, destination: ONE_HOP_DEST }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.retreat_declared_by).toBe(PLAYER_ID)
+    expect(body.retreat_destination).toBe(ONE_HOP_DEST)
+  })
+
+  it('GIVEN DET destination 1 hop destination has any ships EXPECT 409', async () => {
+    mockDb({ retreatingPlayerTechs: ['Dark Energy Tap'], allShipsInDest: [{ id: 'enemy-ship' }] })
+    const res = await handler(makeRequest({ game_id: GAME_ID, combat_id: COMBAT_ID, destination: ONE_HOP_DEST }))
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body.error).toMatch(/must be empty/i)
+  })
+
+  // Non-DET regressions
+  it('GIVEN no DET destination 1 hop own units in dest EXPECT 200', async () => {
+    mockDb({ retreatingPlayerTechs: [], unitsInDest: [{ id: 'unit-1' }], planetsInDest: [] })
+    const res = await handler(makeRequest({ game_id: GAME_ID, combat_id: COMBAT_ID, destination: ONE_HOP_DEST }))
+    expect(res.status).toBe(200)
+  })
+
+  it('GIVEN no DET destination 1 hop own planets in dest EXPECT 200', async () => {
+    mockDb({ retreatingPlayerTechs: [], unitsInDest: [], planetsInDest: [{ id: 'planet-1' }] })
+    const res = await handler(makeRequest({ game_id: GAME_ID, combat_id: COMBAT_ID, destination: ONE_HOP_DEST }))
+    expect(res.status).toBe(200)
+  })
+
+  it('GIVEN no DET destination 1 hop no own presence EXPECT 409', async () => {
+    mockDb({ retreatingPlayerTechs: [], unitsInDest: [], planetsInDest: [] })
+    const res = await handler(makeRequest({ game_id: GAME_ID, combat_id: COMBAT_ID, destination: ONE_HOP_DEST }))
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body.error).toMatch(/no presence/i)
   })
 })

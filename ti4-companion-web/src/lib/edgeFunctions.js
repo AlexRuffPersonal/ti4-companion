@@ -93,11 +93,30 @@ export const resolveAbility = (gameId, abilityDefinitionId, sourceType, sourceId
     selections,
   })
 
-export const unlockCommander = (gameId, abilityDefinitionId) =>
-  callFunction('game-unlock-commander', {
+// Phase 39 — Mech Unit Card Abilities
+export const deployMech = (gameId, unitId, systemKey, targetPlanetName, replacingInfantry = false) =>
+  callFunction('game-deploy-mech', {
     game_id: gameId,
-    ability_definition_id: abilityDefinitionId,
+    unit_id: unitId,
+    system_key: systemKey,
+    target_planet_name: targetPlanetName,
+    replacing_infantry: replacingInfantry,
   })
+
+export const resolveMechAbility = (gameId, unitId, selections = {}) =>
+  callFunction('game-resolve-ability', {
+    game_id: gameId,
+    source_type: 'mech',
+    source_id: unitId,
+    selections,
+  })
+
+export const unlockCommander = (gameId, leaderId) =>
+  callFunction('game-unlock-commander', { game_id: gameId, leader_id: leaderId })
+
+// Phase 43c — Commander Passives
+export const resolveCommanderReroll = (gameId, combatId, rerollIndices) =>
+  callFunction('game-resolve-commander-reroll', { game_id: gameId, combat_id: combatId, reroll_indices: rerollIndices })
 
 export const discardSecretObjective = (gameId, objectiveId) =>
   callFunction('game-discard-secret-objective', { game_id: gameId, objective_id: objectiveId })
@@ -221,8 +240,18 @@ export const exploreFrontier = (gameId, playerId, systemKey) =>
 export const useRelicFragment = (gameId, playerId, fragmentIds) =>
   callFunction('game-use-relic-fragment', { game_id: gameId, player_id: playerId, fragment_ids: fragmentIds })
 
-export const useRelic = (gameId, playerId, relicId, choice) =>
-  callFunction('game-use-relic', { game_id: gameId, player_id: playerId, relic_id: relicId, choice })
+export const useRelic = (gameId, playerId, relicId, opts = {}) =>
+  callFunction('game-use-relic', {
+    game_id: gameId,
+    player_id: playerId,
+    relic_id: relicId,
+    choice: opts.choice,
+    use_type: opts.useType,
+    planet_name: opts.planetName,
+    deck_type: opts.deckType,
+    card_ids: opts.cardIds,
+    technology_name: opts.technologyName,
+  })
 
 // Phase 20
 export const playCombatActionCard = (gameId, combatId, cardId, targets) =>
@@ -256,5 +285,25 @@ export const removeBot = (gameId, botPlayerId) =>
 
 export const undoLastAction = (gameId) =>
   callFunction('game-undo', { game_id: gameId })
+
+// Phase 41
+export const useEnigmaticDevice = (gameId, playerId, cardId, resourcePlanetNames, technologyName) =>
+  callFunction('game-use-enigmatic-device', {
+    game_id: gameId,
+    player_id: playerId,
+    card_id: cardId,
+    resource_planet_names: resourcePlanetNames,
+    technology_name: technologyName,
+  })
+
+// Phase 39 — In-App Map Draft
+export const startDraft = (gameId, mode) =>
+  callFunction('game-start-draft', { game_id: gameId, mode })
+
+export const draftPickSlice = (gameId, sliceId) =>
+  callFunction('game-draft-pick-slice', { game_id: gameId, slice_id: sliceId })
+
+export const draftPlaceTile = (gameId, tileNumber, position, rotation = 0) =>
+  callFunction('game-draft-place-tile', { game_id: gameId, tile_number: tileNumber, position, rotation })
 
 export { callFunction }

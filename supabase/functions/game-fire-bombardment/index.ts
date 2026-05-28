@@ -1,6 +1,7 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { applyCommanderPassives } from '../_shared/leaderEffects.ts'
 
 type UnitRow = { id: string; player_id: string; unit_type: string; count: number; system_key: string }
 type UnitDef = { name: string; bombardment: string | null }
@@ -117,31 +118,42 @@ export async function handler(req: Request): Promise<Response> {
     return errorResponse('No ground forces to bombard on this planet', 409)
   }
 
-  // Planetary Shield check
-  const defTypes = [...new Set((defenderUnits ?? []).map((u: UnitRow) => u.unit_type))]
-  const { data: shieldDefs } = await db
-    .from('units')
-    .select('name')
-    .in('name', defTypes.length > 0 ? defTypes : ['__none__'])
-    .eq('planetary_shield', true)
+  // Phase 43c: apply BOMBARDMENT commander passives
+  const bombardmentContext: Record<string, unknown> = {
+    gameId,
+    activatingPlayerId: (player as Record<string, string>).id,
+    faction: '',
+  }
+  const { inlineEffects } = await applyCommanderPassives('BOMBARDMENT', bombardmentContext as never, db)
+  const skipShield = inlineEffects.some((e: any) => e.effect === 'l1z1x_skip_planetary_shield')
 
-  if ((shieldDefs ?? []).length > 0) {
-    // War Suns negate Planetary Shield
-    const { data: atkSpaceUnitsForShield } = await db
-      .from('game_player_units')
-      .select('id, player_id, unit_type, count, system_key')
-      .eq('game_id', gameId)
-      .eq('system_key', systemKey)
-      .eq('player_id', (player as Record<string, string>).id)
-      .is('on_planet', null)
-    const atkTypesForShield = [...new Set((atkSpaceUnitsForShield ?? []).map((u: UnitRow) => u.unit_type))]
-    const { data: warSunDefs } = await db
+  if (!skipShield) {
+    // Planetary Shield check
+    const defTypes = [...new Set((defenderUnits ?? []).map((u: UnitRow) => u.unit_type))]
+    const { data: shieldDefs } = await db
       .from('units')
       .select('name')
-      .eq('name', 'war_sun')
-      .in('name', atkTypesForShield.length > 0 ? atkTypesForShield : ['__none__'])
-    if ((warSunDefs ?? []).length === 0) {
-      return errorResponse('Planetary Shield is active — cannot bombard', 409)
+      .in('name', defTypes.length > 0 ? defTypes : ['__none__'])
+      .eq('planetary_shield', true)
+
+    if ((shieldDefs ?? []).length > 0) {
+      // War Suns negate Planetary Shield
+      const { data: atkSpaceUnitsForShield } = await db
+        .from('game_player_units')
+        .select('id, player_id, unit_type, count, system_key')
+        .eq('game_id', gameId)
+        .eq('system_key', systemKey)
+        .eq('player_id', (player as Record<string, string>).id)
+        .is('on_planet', null)
+      const atkTypesForShield = [...new Set((atkSpaceUnitsForShield ?? []).map((u: UnitRow) => u.unit_type))]
+      const { data: warSunDefs } = await db
+        .from('units')
+        .select('name')
+        .eq('name', 'war_sun')
+        .in('name', atkTypesForShield.length > 0 ? atkTypesForShield : ['__none__'])
+      if ((warSunDefs ?? []).length === 0) {
+        return errorResponse('Planetary Shield is active — cannot bombard', 409)
+      }
     }
   }
 
@@ -168,6 +180,13 @@ export async function handler(req: Request): Promise<Response> {
   const defMap = new Map((bombDefs ?? []).map((u: UnitDef) => [u.name, u]))
   const { results, hits } = rollBombardment(atkSpaceUnits ?? [], defMap)
 
+  // Phase 43c: apply UNIT_ABILITY_ROLL commander passives
+  const { pendingWindows } = await applyCommanderPassives(
+    'UNIT_ABILITY_ROLL',
+    { ...bombardmentContext, currentDiceResults: results } as never,
+    db,
+  )
+
   const defenderId = (defenderUnits as UnitRow[])[0].player_id
   const phase = hits > 0 ? 'bombardment_assign' : 'complete'
 
@@ -189,7 +208,12 @@ export async function handler(req: Request): Promise<Response> {
     .maybeSingle()
   if (insertError) return errorResponse(`Insert failed: ${insertError.message}`, 500)
 
-  return okResponse({ combat_id: (inserted as Record<string, string>).id, dice: results, hits })
+  return okResponse({
+    combat_id: (inserted as Record<string, string>).id,
+    dice: results,
+    hits,
+    pending_window: pendingWindows[0] ?? undefined,
+  })
 }
 
 if (typeof Deno !== 'undefined') Deno.serve(handler)

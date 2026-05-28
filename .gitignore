@@ -1,6 +1,7 @@
 .superpowers/
 .worktrees/
 .claude/
+.claire/worktrees/*/
 supabase/.temp/
 Mistakes within Supabase.txt
 node_modules/

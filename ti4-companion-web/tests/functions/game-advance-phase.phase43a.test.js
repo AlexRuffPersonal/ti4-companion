@@ -16,6 +16,16 @@ vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
   EVT_ADVANCE_PHASE: 'advance_phase',
 }))
 
+vi.mock('../../../supabase/functions/_shared/lawEffects.ts', () => ({
+  applyStatusPhaseLaws: vi.fn(async (_db, _gameId, updates) => updates),
+}))
+
+vi.mock('../../../supabase/functions/_shared/promissoryEnforcement.ts', () => ({
+  getHeldNotes: vi.fn().mockResolvedValue([]),
+  getActiveNotes: vi.fn().mockResolvedValue({ giftOfPrescience: [] }),
+  returnNote: vi.fn().mockResolvedValue(undefined),
+}))
+
 import { requireAuth } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-advance-phase/index.ts'
@@ -64,9 +74,7 @@ function makeStatusMock({ players, gameOverrides = {} } = {}) {
       return {
         select: vi.fn().mockImplementation((cols) => {
           if (cols.includes('action_card_count')) {
-            return {
-              eq: vi.fn().mockResolvedValue({ data: players ?? [], error: null }),
-            }
+            return { eq: vi.fn().mockResolvedValue({ data: players ?? [], error: null }) }
           }
           return {
             eq: vi.fn().mockReturnValue({
@@ -84,14 +92,25 @@ function makeStatusMock({ players, gameOverrides = {} } = {}) {
         }),
       }
     }
-    if (table === 'game_player_planets') {
+    if (table === 'factions') {
       return {
-        update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: { commodities: 3 }, error: null }),
+          }),
+        }),
       }
     }
-    return {
-      update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+    if (table === 'game_player_planets') {
+      return { update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }) }
     }
+    if (table === 'game_player_legendary_cards') {
+      return { update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }) }
+    }
+    if (table === 'game_player_units') {
+      return { update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }) }
+    }
+    return { update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }) }
   })
 
   return { gamesUpdateCalls, gamePlayersUpdateCalls }
@@ -109,9 +128,12 @@ describe('game-advance-phase — Phase 43a agent readying', () => {
     const players = [
       {
         id: PLAYER_A,
+        faction: null,
         technologies: [],
         action_card_count: 0,
         command_tokens: { tactic_total: 3, fleet: 3, strategy: 0 },
+        commodities: 0,
+        trade_goods: 0,
         leaders: { agent: 'exhausted', commander: 'locked', hero: 'locked' },
       },
     ]
@@ -125,42 +147,49 @@ describe('game-advance-phase — Phase 43a agent readying', () => {
     expect(agentUpdate.leaders.agent).toBe('unlocked')
   })
 
-  it('player with leaders.agent=unlocked is not updated with exhausted condition', async () => {
+  it('player with leaders.agent=unlocked is not updated with agent readying', async () => {
     const players = [
       {
         id: PLAYER_B,
+        faction: null,
         technologies: [],
         action_card_count: 0,
         command_tokens: { tactic_total: 3, fleet: 3, strategy: 0 },
+        commodities: 0,
+        trade_goods: 0,
         leaders: { agent: 'unlocked', commander: 'locked', hero: 'locked' },
       },
     ]
     const { gamePlayersUpdateCalls } = makeStatusMock({ players })
     const res = await handler(makeRequest({ game_id: GAME_ID }))
     expect(res.status).toBe(200)
-    // No update should carry an agent field set from 'exhausted'
+    // No update should carry leaders set from exhausted → unlocked for this player
     const agentUnlockUpdate = gamePlayersUpdateCalls.find(
-      c => c.leaders !== undefined && c.leaders.agent === 'unlocked' && c.leaders.commander === 'locked'
+      c => c.leaders !== undefined && c.leaders.agent === 'unlocked'
     )
-    // The only way this fires is if an 'exhausted' agent was readied; PLAYER_B had unlocked already
-    // so no such update should occur
     expect(agentUnlockUpdate).toBeUndefined()
   })
 
-  it('exhausted agent is readied while already-unlocked agent is unchanged', async () => {
+  it('only exhausted agent player gets the leaders update, not already-unlocked player', async () => {
     const players = [
       {
         id: PLAYER_A,
+        faction: null,
         technologies: [],
         action_card_count: 0,
         command_tokens: { tactic_total: 3, fleet: 3, strategy: 0 },
+        commodities: 0,
+        trade_goods: 0,
         leaders: { agent: 'exhausted', commander: 'locked', hero: 'locked' },
       },
       {
         id: PLAYER_B,
+        faction: null,
         technologies: [],
         action_card_count: 0,
         command_tokens: { tactic_total: 3, fleet: 3, strategy: 0 },
+        commodities: 0,
+        trade_goods: 0,
         leaders: { agent: 'unlocked', commander: 'locked', hero: 'locked' },
       },
     ]
@@ -182,9 +211,12 @@ describe('game-advance-phase — Phase 43a game_round_flags reset', () => {
     const players = [
       {
         id: PLAYER_A,
+        faction: null,
         technologies: [],
         action_card_count: 0,
         command_tokens: { tactic_total: 3, fleet: 3, strategy: 0 },
+        commodities: 0,
+        trade_goods: 0,
         leaders: null,
       },
     ]
@@ -194,9 +226,7 @@ describe('game-advance-phase — Phase 43a game_round_flags reset', () => {
     })
     const res = await handler(makeRequest({ game_id: GAME_ID }))
     expect(res.status).toBe(200)
-    const flagsReset = gamesUpdateCalls.find(
-      c => c.game_round_flags !== undefined
-    )
+    const flagsReset = gamesUpdateCalls.find(c => c.game_round_flags !== undefined)
     expect(flagsReset).toBeDefined()
     expect(flagsReset.game_round_flags).toEqual({})
   })
@@ -205,9 +235,12 @@ describe('game-advance-phase — Phase 43a game_round_flags reset', () => {
     const players = [
       {
         id: PLAYER_A,
+        faction: null,
         technologies: [],
         action_card_count: 0,
         command_tokens: { tactic_total: 3, fleet: 3, strategy: 0 },
+        commodities: 0,
+        trade_goods: 0,
         leaders: null,
       },
     ]
@@ -220,9 +253,7 @@ describe('game-advance-phase — Phase 43a game_round_flags reset', () => {
     })
     const res = await handler(makeRequest({ game_id: GAME_ID }))
     expect(res.status).toBe(200)
-    const flagsReset = gamesUpdateCalls.find(
-      c => c.game_round_flags !== undefined
-    )
+    const flagsReset = gamesUpdateCalls.find(c => c.game_round_flags !== undefined)
     expect(flagsReset).toBeUndefined()
   })
 })

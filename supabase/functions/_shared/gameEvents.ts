@@ -26,6 +26,7 @@ export const EVT_REVEAL_OBJECTIVE = 'reveal_objective'
 export const EVT_DRAW_AGENDA = 'draw_agenda'
 export const EVT_PLAY_PROMISSORY_NOTE = 'play_promissory_note'
 export const EVT_UNDO = 'undo'
+export const EVT_DEPLOY_MECH = 'deploy_mech'
 
 // Informational events (no reversible state; undo skips these)
 export const INFORMATIONAL_EVENTS = new Set([EVT_ROLL_COMBAT_DICE, EVT_ROLL_GROUND_COMBAT_DICE])

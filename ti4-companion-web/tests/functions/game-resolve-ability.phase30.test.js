@@ -120,6 +120,7 @@ function mockDbFull({
   leaderRow = { player_id: AGENT_OWNER_ID },
 } = {}) {
   let gamePlayersCallCount = 0
+  let leadersCallCount = 0
   db.from.mockImplementation((table) => {
     if (table === 'game_players') {
       gamePlayersCallCount++
@@ -133,13 +134,36 @@ function mockDbFull({
               }),
             }),
           }),
+          update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        }
+      } else if (gamePlayersCallCount === 2) {
+        // Second: player leaders JSONB fetch from new leader branch
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { leaders: { agent: 'unlocked', hero: 'locked', commander: 'locked' } },
+                error: null,
+              }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        }
+      } else if (gamePlayersCallCount === 3) {
+        // Third: game_players UPDATE for agent state (update mock)
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+          update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
         }
       } else {
-        // Second: allPlayers lookup for TCS check (select id,technologies,exhausted_technologies, eq game_id)
+        // Fourth+: allPlayers lookup for TCS check (select id,technologies,exhausted_technologies, eq game_id)
         return {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockResolvedValue({ data: allPlayers, error: null }),
           }),
+          update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
         }
       }
     }
@@ -160,6 +184,32 @@ function mockDbFull({
               eq: vi.fn().mockReturnValue({
                 maybeSingle: vi.fn().mockResolvedValue({ data: { id: SOURCE_ID }, error: null }),
               }),
+            }),
+          }),
+        }),
+      }
+    }
+    if (table === 'leaders') {
+      leadersCallCount++
+      if (leadersCallCount === 1) {
+        // First: leader reference row lookup by id
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: SOURCE_ID, faction: 'The Nomad', leader_type: 'agent' },
+                error: null,
+              }),
+            }),
+          }),
+        }
+      }
+      // Subsequent: reactive agent per-faction lookup
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'rl-uuid' }, error: null }),
             }),
           }),
         }),

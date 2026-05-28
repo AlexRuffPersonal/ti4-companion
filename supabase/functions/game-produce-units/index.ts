@@ -1,6 +1,9 @@
 import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
+import { applyCommanderPassives, AGENT_REACTIVE_TRIGGERS } from '../_shared/leaderEffects.ts'
+import { getHandler } from '../_shared/abilityHandlers.ts'
+import { assertProductionAllowed, LawError } from '../_shared/lawEffects.ts'
 
 type UnitOrder = { unit_type: string; count: number; on_planet?: string | null }
 type UnitDef = { name: string; cost: number; production: string | null; unit_type: string | null }
@@ -20,7 +23,7 @@ export async function handler(req: Request): Promise<Response> {
     return errorResponse('Internal server error', 500)
   }
 
-  let body: { game_id?: unknown; system_key?: unknown; units?: unknown; planet_exhausts?: unknown; selections?: unknown; trade_goods_spend?: unknown }
+  let body: { game_id?: unknown; system_key?: unknown; units?: unknown; planet_exhausts?: unknown; selections?: unknown; trade_goods_spend?: unknown; warfare_secondary?: unknown }
   try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
   if (!body.game_id || typeof body.game_id !== 'string') return errorResponse("'game_id' is required")
   if (!body.system_key || typeof body.system_key !== 'string') return errorResponse("'system_key' is required")
@@ -43,20 +46,63 @@ export async function handler(req: Request): Promise<Response> {
   if (gameError) return errorResponse('Database error', 500)
   if (!game) return errorResponse('Game not found', 404)
 
-  if (game.active_player_id !== player.id) return errorResponse('Not your turn', 409)
   if (game.phase !== 'action') return errorResponse('Not in action phase', 409)
 
-  // ACTIVATION
-  const { data: activation, error: activationError } = await db
-    .from('game_system_activations')
-    .select('id')
-    .eq('game_id', body.game_id)
-    .eq('player_id', (player as Record<string, unknown>).id)
-    .eq('system_key', body.system_key)
-    .eq('round', game.round)
-    .maybeSingle()
-  if (activationError) return errorResponse('Database error', 500)
-  if (!activation) return errorResponse('System not activated by you this round', 409)
+  if (body.warfare_secondary === true) {
+    const { data: warfarePlay, error: playError } = await db
+      .from('game_strategy_card_plays')
+      .select('id')
+      .eq('game_id', body.game_id)
+      .eq('card_number', 6)
+      .eq('status', 'active')
+      .eq('round', game.round)
+      .maybeSingle()
+    if (playError) return errorResponse('Database error', 500)
+    if (!warfarePlay) return errorResponse('No active Warfare play', 409)
+
+    const { data: usedResponse, error: responseError } = await db
+      .from('game_strategy_card_responses')
+      .select('id')
+      .eq('play_id', (warfarePlay as Record<string, unknown>).id)
+      .eq('player_id', (player as Record<string, unknown>).id)
+      .eq('status', 'used')
+      .maybeSingle()
+    if (responseError) return errorResponse('Database error', 500)
+    if (!usedResponse) return errorResponse('Warfare secondary not used', 409)
+  } else {
+    if (game.active_player_id !== player.id) return errorResponse('Not your turn', 409)
+
+    const { data: activation, error: activationError } = await db
+      .from('game_system_activations')
+      .select('id')
+      .eq('game_id', body.game_id)
+      .eq('player_id', (player as Record<string, unknown>).id)
+      .eq('system_key', body.system_key)
+      .eq('round', game.round)
+      .maybeSingle()
+    if (activationError) return errorResponse('Database error', 500)
+    if (!activation) return errorResponse('System not activated by you this round', 409)
+  }
+
+  // Phase 43c: apply PRODUCTION commander passives before capacity/cost calculation
+  const productionContext: Record<string, unknown> = {
+    gameId: body.game_id,
+    activatingPlayerId: (player as Record<string, unknown>).id,
+    systemKey: body.system_key,
+    unitTypes: (body.units as Array<{ unit_type: string }>).map(u => u.unit_type),
+    freeFromLimitCount: 0,
+    flagshipCostOverride: undefined as number | undefined,
+    extraFightersFreeOfLimit: 0,
+    extraInfantryFree: 0,
+  }
+  const { inlineEffects: prodInlineEffects, pendingWindows: prodPendingWindows } =
+    await applyCommanderPassives('PRODUCTION', productionContext as never, db)
+  for (const ie of prodInlineEffects) {
+    const effect = (ie as Record<string, unknown>).effect
+    if (typeof effect === 'string') {
+      try { await getHandler(effect)(productionContext as never, db) } catch { /* non-fatal */ }
+    }
+  }
 
   // TILE_ID
   const mapTiles = game.map_tiles as Record<string, { tile_id: string }> | null
@@ -73,6 +119,17 @@ export async function handler(req: Request): Promise<Response> {
 
   // Fetch unit definitions for all requested unit types
   const unitOrders = body.units as UnitOrder[]
+
+  // Phase 40: Law enforcement — fail fast before any DB writes
+  for (const order of unitOrders) {
+    try {
+      await assertProductionAllowed(db, body.game_id, order.unit_type)
+    } catch (err) {
+      if (err instanceof LawError) return errorResponse(err.message, 409)
+      throw err
+    }
+  }
+
   const unitNames = [...new Set(unitOrders.map(u => u.unit_type))]
   const { data: unitDefs, error: unitDefError } = await db
     .from('units')
@@ -128,7 +185,11 @@ export async function handler(req: Request): Promise<Response> {
   if (totalCapacity === 0) return errorResponse('No production-capable units in system', 409)
 
   const totalToProduce = unitOrders.reduce((sum, u) => sum + u.count, 0)
-  if (totalToProduce > totalCapacity) return errorResponse('Exceeds production capacity', 409)
+  const freeFromLimit = (productionContext.freeFromLimitCount as number) ?? 0
+  const extraFightersFree = (productionContext.extraFightersFreeOfLimit as number) ?? 0
+  const fightersOrdered = unitOrders.filter(u => u.unit_type === 'fighter').reduce((s, u) => s + u.count, 0)
+  const adjustedToProduce = Math.max(0, totalToProduce - freeFromLimit - Math.min(extraFightersFree, fightersOrdered))
+  if (adjustedToProduce > totalCapacity) return errorResponse('Exceeds production capacity', 409)
 
   // Validate resource payment
   const planetExhausts = (body.planet_exhausts ?? []) as string[]
@@ -162,7 +223,17 @@ export async function handler(req: Request): Promise<Response> {
   for (const order of unitOrders) {
     const def = defMap.get(order.unit_type)
     if (!def) return errorResponse(`Unknown unit type: ${order.unit_type}`, 409)
-    totalCost += (def.cost ?? 0) * order.count
+    let unitCost = def.cost ?? 0
+    if (order.unit_type === 'flagship' && (productionContext.flagshipCostOverride as number | undefined) !== undefined) {
+      unitCost = productionContext.flagshipCostOverride as number
+    }
+    totalCost += unitCost * order.count
+  }
+  // Yin Omar passive: 1 free infantry
+  const extraInfantryFree = (productionContext.extraInfantryFree as number) ?? 0
+  if (extraInfantryFree > 0) {
+    const infantryDef = defMap.get('infantry')
+    totalCost = Math.max(0, totalCost - (infantryDef?.cost ?? 0) * extraInfantryFree)
   }
 
   // Tech effects on cost
@@ -361,7 +432,47 @@ export async function handler(req: Request): Promise<Response> {
     }
   }
 
-  return okResponse({ produced: true })
+  // Check for reactive agent windows triggered by PRODUCTION
+  const reactiveAgents: { player_id: string; faction: string; agent_id: string }[] = []
+  const { data: allGamePlayers } = await db
+    .from('game_players')
+    .select('id, faction, leaders')
+    .eq('game_id', body.game_id)
+
+  for (const gp of (allGamePlayers ?? [])) {
+    const gpRow = gp as Record<string, unknown>
+    if ((gpRow.id as string) === (player as Record<string, unknown>).id) continue
+    const gpLeaders = (gpRow.leaders ?? {}) as Record<string, string>
+    if (gpLeaders.agent !== 'unlocked') continue
+    const gpFaction = gpRow.faction as string
+    const triggers = AGENT_REACTIVE_TRIGGERS[gpFaction]
+    if (!triggers || !triggers.includes('PRODUCTION')) continue
+    const { data: agentLeader } = await db
+      .from('leaders')
+      .select('id')
+      .eq('faction', gpFaction)
+      .eq('leader_type', 'agent')
+      .maybeSingle()
+    if (agentLeader) {
+      reactiveAgents.push({ player_id: gpRow.id as string, faction: gpFaction, agent_id: (agentLeader as Record<string, string>).id })
+    }
+  }
+
+  if (reactiveAgents.length > 0) {
+    return okResponse({
+      produced: true,
+      pending_window: {
+        type: 'reactive_agent',
+        eligible: reactiveAgents,
+        context: { trigger: 'PRODUCTION', system_key: body.system_key },
+      },
+    })
+  }
+
+  return okResponse({
+    produced: true,
+    ...(prodPendingWindows.length > 0 && { pending_window: prodPendingWindows[0] }),
+  })
 }
 
 if (typeof Deno !== 'undefined') Deno.serve(handler)

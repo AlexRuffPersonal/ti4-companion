@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { supabase } from '../../lib/supabase.js'
 import HexMap from './HexMap.jsx'
 import SystemActionModal from './SystemActionModal.jsx'
 import SystemInfoModal from './SystemInfoModal.jsx'
@@ -70,7 +71,7 @@ export default function GalaxyTab({
   gameId, mapTiles, tileData, activations, allPlanets, systemUnits,
   activatedSystems, myActivations, planetOwnership, activeCombat, myPlayerId,
   players, currentPlayer, game, unitDefs, myTokenSystems, planetStaticMap,
-  activateSystem, landTroops, exploration,
+  activateSystem, landTroops, exploration, onOpenProduction,
 }) {
   const [selectedSystemKey, setSelectedSystemKey] = useState(null)
   const [custodiansClaimed, setCustodiansClaimed] = useState(false)
@@ -105,11 +106,33 @@ export default function GalaxyTab({
   const showGroundCombat = groundCombatActive || completedCombat?.combat_type === 'ground'
   const displayCombat = completedCombat ?? combat
 
+  // Derive planets owned by current player
+  const myPlanets = (allPlanets ?? []).filter(p => p.player_id === currentPlayer?.id)
+
   // Derive the active system for the current player
   const activeSystemActivation = myActivations
     ? activations.find(a => myActivations.has?.(a.system_key) || myActivations.has(a.system_key))
     : null
   const activeSystemKey = activeSystemActivation?.system_key ?? null
+
+  // Frontier token state for active system (Dark Energy Tap)
+  const [activeSystemHasFrontierToken, setActiveSystemHasFrontierToken] = useState(false)
+
+  useEffect(() => {
+    if (!activeSystemKey || !gameId) {
+      setActiveSystemHasFrontierToken(false)
+      return
+    }
+    supabase
+      .from('game_system_state')
+      .select('has_frontier_token')
+      .eq('game_id', gameId)
+      .eq('system_key', activeSystemKey)
+      .maybeSingle()
+      .then(({ data }) => setActiveSystemHasFrontierToken(data?.has_frontier_token ?? false))
+  }, [activeSystemKey, gameId])
+
+  const hasDarkEnergyTap = (currentPlayer?.technologies ?? []).includes('Dark Energy Tap')
 
   // movementStep: active player has an activation but no combat is active
   const activationDone = isActivePlayer && activeSystemKey !== null
@@ -141,6 +164,18 @@ export default function GalaxyTab({
       console.error('Land troops error:', e)
     }
     setSelectedSystemKey(null)
+  }
+
+  async function handleExploreFrontier(systemKey) {
+    try {
+      const result = await exploration.exploreFrontier(systemKey)
+      if (result?.card_name) {
+        setSelectedPlanet({ planet_name: null, isFrontier: true, card_name: result.card_name })
+        setShowExplorationModal(true)
+      }
+    } catch (e) {
+      console.error('Frontier explore error:', e)
+    }
   }
 
   const selectedTileInfo = selectedSystemKey
@@ -179,6 +214,13 @@ export default function GalaxyTab({
           onClose={() => setSelectedSystemKey(null)}
           custodiansClaimed={custodiansClaimed}
           onInfo={() => setInfoSystemKey(selectedSystemKey)}
+          myPlanets={myPlanets}
+          systemUnits={systemUnits}
+          unitDefs={unitDefs}
+          onOpenProduction={onOpenProduction}
+          hasFrontierToken={activeSystemHasFrontierToken}
+          hasDarkEnergyTap={hasDarkEnergyTap}
+          onExploreFrontier={handleExploreFrontier}
         />
       )}
 

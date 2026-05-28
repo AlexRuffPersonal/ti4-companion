@@ -16,6 +16,16 @@ vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
   EVT_ACTIVATE_SYSTEM: 'activate_system',
 }))
 
+vi.mock('../../../supabase/functions/_shared/promissoryEnforcement.ts', () => ({
+  getHeldNotes: vi.fn().mockResolvedValue([]),
+  getActiveNotes: vi.fn().mockResolvedValue({
+    supportForThrone: [], alliance: [], tradeConvoys: [], promiseOfProtection: [],
+    bloodPact: [], darkPact: [], stymie: [], antivirus: [], giftOfPrescience: [],
+    tradeAgreement: [], crucible: [], strikeWingAmbuscade: [],
+  }),
+  returnNote: vi.fn().mockResolvedValue(undefined),
+}))
+
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-activate-system/index.ts'
@@ -43,7 +53,9 @@ function mockDb({
   tiles = [{ id: 'tile-a', wormhole: null }],
   combatInsertId = COMBAT_ID,
 } = {}) {
-  const activationInsertMock = vi.fn().mockResolvedValue({ error: null })
+  const activationInsertMock = vi.fn().mockReturnValue({
+    select: vi.fn().mockResolvedValue({ data: [{ id: 'activation-uuid' }], error: null }),
+  })
   const combatInsertMock = vi.fn().mockReturnValue({
     select: vi.fn().mockResolvedValue({ data: [{ id: combatInsertId }], error: null }),
   })

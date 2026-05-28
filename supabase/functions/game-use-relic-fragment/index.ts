@@ -2,6 +2,7 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { applyAbility } from '../_shared/abilityDsl.ts'
+import { applyOnGainRelicEffect } from '../_shared/relicEffects.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -105,7 +106,16 @@ export async function handler(req: Request): Promise<Response> {
 
   // Draw a relic
   try {
-    await applyAbility([{ op: 'gain_relic' }], { gameId: game_id, activatingPlayerId: player_id }, db)
+    const context = { gameId: game_id, activatingPlayerId: player_id }
+    await applyAbility([{ op: 'gain_relic' }], context, db)
+    if (context.gainedRelicName) {
+      try {
+        await applyOnGainRelicEffect(context.gainedRelicName, game_id, player_id, db)
+      } catch (e) {
+        const err = e as Error & { status?: number }
+        return errorResponse(err.message ?? 'Failed to apply relic effect', err.status ?? 500)
+      }
+    }
   } catch (e: unknown) {
     const err = e as Error & { status?: number }
     return errorResponse(err.message ?? 'Failed to gain relic', err.status === 409 ? 409 : 500)

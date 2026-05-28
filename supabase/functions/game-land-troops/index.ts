@@ -3,6 +3,7 @@ import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { checkAndEliminate } from '../_shared/eliminationHandler.ts'
 import { logEvent, EVT_LAND_TROOPS } from '../_shared/gameEvents.ts'
+import { assertMovementAllowed, checkVpMaintenanceLaws, LawError } from '../_shared/lawEffects.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -66,6 +67,22 @@ export async function handler(req: Request): Promise<Response> {
   const planetExists = planets.some(p => p.name === body.planet_name)
   if (!planetExists) return errorResponse(`Planet "${body.planet_name}" not found in system`, 409)
 
+  const { data: existingOwner, error: ownerError } = await db
+    .from('game_player_planets')
+    .select('player_id')
+    .eq('game_id', body.game_id)
+    .eq('planet_name', body.planet_name)
+    .maybeSingle()
+  if (ownerError) return errorResponse('Database error', 500)
+  const previousOwnerId = (existingOwner as { player_id: string } | null)?.player_id ?? null
+
+  try {
+    await assertMovementAllowed(db, body.game_id as string, body.planet_name as string)
+  } catch (err) {
+    if (err instanceof LawError) return errorResponse(err.message, 409)
+    throw err
+  }
+
   const { error: planetError2 } = await db
     .from('game_player_planets')
     .upsert({
@@ -76,6 +93,15 @@ export async function handler(req: Request): Promise<Response> {
       exhausted: true,
     }, { onConflict: 'game_id,planet_name' })
   if (planetError2) return errorResponse(`Failed to claim planet: ${planetError2.message}`, 500)
+
+  if (previousOwnerId !== null && previousOwnerId !== player.id) {
+    try {
+      await checkVpMaintenanceLaws(db, body.game_id as string, previousOwnerId, body.planet_name as string)
+    } catch (err) {
+      if (err instanceof LawError) return errorResponse(err.message, 409)
+      return errorResponse('Failed to apply VP maintenance law', 500)
+    }
+  }
 
   const { data: existingUnit } = await db
     .from('game_player_units')

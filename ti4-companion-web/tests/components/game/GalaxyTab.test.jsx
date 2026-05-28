@@ -1,7 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import GalaxyTab from '../../../src/components/game/GalaxyTab.jsx'
 import { useCombat } from '../../../src/hooks/useCombat.js'
+
+vi.mock('../../../src/lib/supabase.js', () => ({
+  supabase: {
+    from: vi.fn(() => ({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+    })),
+  },
+}))
 
 vi.mock('../../../src/components/game/HexMap.jsx', () => ({
   default: ({ onSelectSystem }) => (
@@ -12,11 +22,17 @@ vi.mock('../../../src/components/game/HexMap.jsx', () => ({
 }))
 
 vi.mock('../../../src/components/game/SystemActionModal.jsx', () => ({
-  default: ({ systemKey, onClose, onInfo }) => (
+  default: ({ systemKey, onClose, onInfo, hasFrontierToken, hasDarkEnergyTap, onExploreFrontier, myPlanets }) => (
     <div data-testid="system-modal">
       <span>{systemKey}</span>
       <button onClick={onClose}>Close Modal</button>
       {onInfo && <button onClick={onInfo}>Info</button>}
+      {hasFrontierToken && <span data-testid="has-frontier-token">frontier</span>}
+      {hasDarkEnergyTap && <span data-testid="has-det">det</span>}
+      {myPlanets && <span data-testid="my-planets-count">{myPlanets.length}</span>}
+      {onExploreFrontier && (
+        <button data-testid="explore-frontier-btn" onClick={() => onExploreFrontier(systemKey)}>Explore Frontier</button>
+      )}
     </div>
   ),
 }))
@@ -424,5 +440,76 @@ describe('GalaxyTab — SystemInfoModal (Phase 31)', () => {
     const planetStaticMap = new Map([['Mecatol Rex', { resources: 0, influence: 6 }]])
     render(<GalaxyTab {...BASE_PROPS} planetStaticMap={planetStaticMap} />)
     expect(screen.getByTestId('hex-map')).toBeInTheDocument()
+  })
+})
+
+describe('GalaxyTab — Dark Energy Tap (Phase 38)', () => {
+  let supabaseMock
+
+  beforeEach(async () => {
+    useCombat.mockReturnValue({ ...DEFAULT_COMBAT_MOCK })
+    const mod = await import('../../../src/lib/supabase.js')
+    supabaseMock = mod.supabase
+    supabaseMock.from.mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+    })
+  })
+
+  it('passes hasFrontierToken=true to SystemActionModal when active system has_frontier_token', async () => {
+    supabaseMock.from.mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: { has_frontier_token: true } }),
+    })
+    const props = {
+      ...BASE_PROPS,
+      gameId: 'g1',
+      activations: [{ system_key: '1,-1', player_id: 'p1' }],
+      myActivations: new Set(['1,-1']),
+      game: { ...GAME, active_player_id: 'p1' },
+      currentPlayer: { ...CURRENT_PLAYER, id: 'p1' },
+    }
+    render(<GalaxyTab {...props} />)
+    fireEvent.click(screen.getByText('Select Hex'))
+    await waitFor(() => expect(screen.getByTestId('has-frontier-token')).toBeInTheDocument())
+  })
+
+  it('passes hasDarkEnergyTap=true to SystemActionModal when currentPlayer has Dark Energy Tap', () => {
+    render(<GalaxyTab
+      {...BASE_PROPS}
+      currentPlayer={{ ...CURRENT_PLAYER, technologies: ['Dark Energy Tap'] }}
+    />)
+    fireEvent.click(screen.getByText('Select Hex'))
+    expect(screen.getByTestId('has-det')).toBeInTheDocument()
+  })
+
+  it('passes myPlanets derived from allPlanets filtered by currentPlayer.id', () => {
+    const allPlanets = [
+      { planet_name: 'Wellon', player_id: 'p1' },
+      { planet_name: 'Vefut II', player_id: 'p2' },
+    ]
+    render(<GalaxyTab {...BASE_PROPS} allPlanets={allPlanets} currentPlayer={{ ...CURRENT_PLAYER, id: 'p1' }} />)
+    fireEvent.click(screen.getByText('Select Hex'))
+    expect(screen.getByTestId('my-planets-count').textContent).toBe('1')
+  })
+
+  it('calls exploration.exploreFrontier and opens ExplorationModal on handleExploreFrontier', async () => {
+    const exploreFrontier = vi.fn().mockResolvedValue({ card_name: 'Nebula' })
+    const exploration = {
+      allPlanetState: [],
+      canExplore: vi.fn(() => false),
+      explorePlanet: vi.fn(),
+      resolveExplorationCard: vi.fn(),
+      exploreFrontier,
+    }
+    render(<GalaxyTab {...BASE_PROPS} exploration={exploration} />)
+    fireEvent.click(screen.getByText('Select Hex'))
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('explore-frontier-btn'))
+    })
+    await waitFor(() => expect(exploreFrontier).toHaveBeenCalledWith('1,-1'))
+    await waitFor(() => expect(screen.getByTestId('exploration-modal')).toBeInTheDocument())
   })
 })

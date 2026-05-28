@@ -56,6 +56,7 @@ function mockDb({
   updateError = null,
   attackerTechs = [],
   destroyerDefRow = null,
+  commanderPlayers = [],
 } = {}) {
   let unitsCallCount = 0
   let gamePlayersCallCount = 0
@@ -76,13 +77,20 @@ function mockDb({
             }),
           }),
         }
-      } else {
+      } else if (thisCall === 2) {
         // Second call: attacker techs — .select('technologies').eq('id').maybeSingle()
         return {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
               maybeSingle: vi.fn().mockResolvedValue({ data: { technologies: attackerTechs } }),
             }),
+          }),
+        }
+      } else {
+        // Third call: applyCommanderPassives — .select('id, faction, leaders').eq('game_id', ...) → array
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: commanderPlayers }),
           }),
         }
       }
@@ -250,12 +258,19 @@ describe('game-fire-anti-fighter-barrage', () => {
               }),
             }),
           }
-        } else {
+        } else if (gamePlayersCallCount === 2) {
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
                 maybeSingle: vi.fn().mockResolvedValue({ data: { technologies: [] } }),
               }),
+            }),
+          }
+        } else {
+          // Third call: applyCommanderPassives — no unlocked commanders
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ data: [] }),
             }),
           }
         }
@@ -395,12 +410,19 @@ describe('game-fire-anti-fighter-barrage', () => {
               }),
             }),
           }
-        } else {
+        } else if (gamePlayersCallCount2 === 2) {
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
                 maybeSingle: vi.fn().mockResolvedValue({ data: { technologies: [] } }),
               }),
+            }),
+          }
+        } else {
+          // Third call: applyCommanderPassives — no unlocked commanders
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ data: [] }),
             }),
           }
         }
@@ -569,6 +591,106 @@ describe('game-fire-anti-fighter-barrage', () => {
     // Exactly 1 die rolled (base, no bonus)
     expect(body.barrage_attacker_dice).toHaveLength(1)
     expect(body.barrage_attacker_hits).toBe(0)
+
+    randomSpy.mockRestore()
+  })
+
+  // Phase 43c tests: Commander Passives
+
+  it('Phase 43c: Argent Flight commander unlocked — pending_window add_die emitted', async () => {
+    const atkUnits = [
+      { id: 'u1', player_id: ATTACKER_ID, unit_type: 'Destroyer', count: 1, system_key: '1,-1' },
+    ]
+    const defUnits = []
+    const unitDefs = [{ name: 'Destroyer', afb: '9' }]
+    const destroyerDefRow = { name: 'Destroyer', combat: 8, move: 2, capacity: 1, afb: '9', space_cannon: null, bombardment: null }
+
+    const argentPlayer = {
+      id: ATTACKER_ID,
+      faction: 'The Argent Flight',
+      leaders: { commander: 'unlocked' },
+    }
+
+    mockDb({
+      atkUnits,
+      defUnits,
+      unitDefs,
+      attackerTechs: [],
+      destroyerDefRow,
+      commanderPlayers: [argentPlayer],
+    })
+
+    const randomSpy = vi.spyOn(Math, 'random')
+    randomSpy.mockReturnValueOnce(0.4)
+
+    const res = await handler(makeRequest({ game_id: GAME_ID, combat_id: COMBAT_ID }))
+    expect(res.status).toBe(200)
+
+    const body = await res.json()
+    expect(body.pending_window).toBeDefined()
+    expect(body.pending_window.faction).toBe('The Argent Flight')
+    expect(body.pending_window.trigger).toBe('UNIT_ABILITY_ROLL')
+    expect(body.pending_window.effect).toEqual([{ op: 'add_die', target: 'chosen_unit' }])
+
+    randomSpy.mockRestore()
+  })
+
+  it('Phase 43c: Jol-Nar commander unlocked — pending_window commander_reroll emitted', async () => {
+    const atkUnits = [
+      { id: 'u1', player_id: ATTACKER_ID, unit_type: 'Destroyer', count: 1, system_key: '1,-1' },
+    ]
+    const defUnits = []
+    const unitDefs = [{ name: 'Destroyer', afb: '9' }]
+    const destroyerDefRow = { name: 'Destroyer', combat: 8, move: 2, capacity: 1, afb: '9', space_cannon: null, bombardment: null }
+
+    const jolNarPlayer = {
+      id: ATTACKER_ID,
+      faction: 'The Universities Of Jol-Nar',
+      leaders: { commander: 'unlocked' },
+    }
+
+    mockDb({
+      atkUnits,
+      defUnits,
+      unitDefs,
+      attackerTechs: [],
+      destroyerDefRow,
+      commanderPlayers: [jolNarPlayer],
+    })
+
+    const randomSpy = vi.spyOn(Math, 'random')
+    randomSpy.mockReturnValueOnce(0.4)
+
+    const res = await handler(makeRequest({ game_id: GAME_ID, combat_id: COMBAT_ID }))
+    expect(res.status).toBe(200)
+
+    const body = await res.json()
+    expect(body.pending_window).toBeDefined()
+    expect(body.pending_window.faction).toBe('The Universities Of Jol-Nar')
+    expect(body.pending_window.trigger).toBe('UNIT_ABILITY_ROLL')
+    expect(body.pending_window.effect).toBe('jol_nar_reroll_window')
+
+    randomSpy.mockRestore()
+  })
+
+  it('Phase 43c: no commanders unlocked — no pending_window in response', async () => {
+    const atkUnits = [
+      { id: 'u1', player_id: ATTACKER_ID, unit_type: 'Destroyer', count: 1, system_key: '1,-1' },
+    ]
+    const defUnits = []
+    const unitDefs = [{ name: 'Destroyer', afb: '9' }]
+    const destroyerDefRow = { name: 'Destroyer', combat: 8, move: 2, capacity: 1, afb: '9', space_cannon: null, bombardment: null }
+
+    mockDb({ atkUnits, defUnits, unitDefs, attackerTechs: [], destroyerDefRow, commanderPlayers: [] })
+
+    const randomSpy = vi.spyOn(Math, 'random')
+    randomSpy.mockReturnValueOnce(0.4)
+
+    const res = await handler(makeRequest({ game_id: GAME_ID, combat_id: COMBAT_ID }))
+    expect(res.status).toBe(200)
+
+    const body = await res.json()
+    expect(body.pending_window).toBeUndefined()
 
     randomSpy.mockRestore()
   })

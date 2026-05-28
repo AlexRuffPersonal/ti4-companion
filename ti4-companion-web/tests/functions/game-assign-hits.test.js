@@ -20,9 +20,21 @@ vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
   EVT_ASSIGN_HITS: 'assign_hits',
 }))
 
+vi.mock('../../../supabase/functions/_shared/leaderEffects.ts', () => ({
+  applyCommanderPassives: vi.fn().mockResolvedValue({ inlineEffects: [], pendingWindows: [] }),
+  collectReactiveAgents: vi.fn().mockReturnValue([]),
+}))
+
+vi.mock('../../../supabase/functions/_shared/lawEffects.ts', () => ({
+  assertCombatHitAllowed: vi.fn().mockResolvedValue(undefined),
+  checkVpMaintenanceLaws: vi.fn().mockResolvedValue(undefined),
+  LawError: class LawError extends Error { constructor(msg) { super(msg); this.name = 'LawError' } },
+}))
+
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { checkAndEliminate } from '../../../supabase/functions/_shared/eliminationHandler.ts'
+import { applyCommanderPassives } from '../../../supabase/functions/_shared/leaderEffects.ts'
 import { handler } from '../../../supabase/functions/game-assign-hits/index.ts'
 
 const USER_ID = 'user-uuid'
@@ -67,17 +79,27 @@ function mockDb({
   defUnitsLeft = [{ id: 'u1' }],
   updateError = null,
   onGameCombatsUpdate = null, // callback when game_combats.update is called
+  allPlayers = [],
 } = {}) {
   let queryCount = 0
   db.from.mockImplementation((table) => {
     if (table === 'game_players') {
       return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
+        select: vi.fn().mockImplementation((fields) => {
+          if (fields === 'id, faction, leaders') {
+            // allPlayers query: .eq('game_id', ...) → resolves array
+            return {
+              eq: vi.fn().mockResolvedValue({ data: allPlayers }),
+            }
+          }
+          // Player lookup: .eq('game_id').eq('user_id').maybeSingle()
+          return {
             eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: player, error: playerError }),
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: player, error: playerError }),
+              }),
             }),
-          }),
+          }
         }),
       }
     }
@@ -365,5 +387,120 @@ describe('game-assign-hits', () => {
     const updateCalls = db.from('game_combats').update.mock.calls
     const shipUpdateCall = updateCalls.find(call => call[0]?.ships_destroyed)
     expect(shipUpdateCall).toBeUndefined()
+  })
+})
+
+describe('game-assign-hits Phase 43c — Letnev commander: TG on sustain', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    applyCommanderPassives.mockResolvedValue({ inlineEffects: [], pendingWindows: [] })
+    requireAuth.mockResolvedValue(USER_ID)
+  })
+
+  it('sustain damage occurs — SUSTAIN_DAMAGE passive fires and pending_window returned', async () => {
+    const letnevWindow = {
+      game_id: GAME_ID,
+      trigger: 'SUSTAIN_DAMAGE',
+      faction: 'The Barony Of Letnev',
+      player_id: DEFENDER_ID,
+      effect: [{ op: 'gain_trade_goods', amount: 1 }],
+    }
+    applyCommanderPassives.mockImplementation(async (trigger) => {
+      if (trigger === 'SUSTAIN_DAMAGE') {
+        return { inlineEffects: [], pendingWindows: [letnevWindow] }
+      }
+      return { inlineEffects: [], pendingWindows: [] }
+    })
+
+    mockDb({
+      player: { id: DEFENDER_ID },
+      combat: { ...BASE_COMBAT, phase: 'defender_assign', attacker_hits: 1 },
+      unitDefs: [{ name: 'cruiser', sustain_damage: true }],
+      assigneeUnits: [{ id: 'u1', player_id: DEFENDER_ID, unit_type: 'cruiser', count: 1, damaged: false, system_key: '1,-1' }],
+    })
+
+    const res = await handler(makeRequest({
+      game_id: GAME_ID, combat_id: COMBAT_ID,
+      casualties: [{ unit_type: 'cruiser', player_unit_id: 'u1', action: 'sustain' }],
+    }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.pending_window).toBeDefined()
+    expect(body.pending_window.faction).toBe('The Barony Of Letnev')
+    expect(body.pending_window.trigger).toBe('SUSTAIN_DAMAGE')
+    expect(applyCommanderPassives).toHaveBeenCalledWith('SUSTAIN_DAMAGE', expect.objectContaining({ gameId: GAME_ID }), expect.anything())
+  })
+
+  it('no sustain damage — SUSTAIN_DAMAGE passive does not fire', async () => {
+    mockDb({
+      player: { id: DEFENDER_ID },
+      combat: { ...BASE_COMBAT, phase: 'defender_assign', attacker_hits: 1 },
+      unitDefs: [{ name: 'cruiser', sustain_damage: false }],
+      assigneeUnits: [{ id: 'u1', player_id: DEFENDER_ID, unit_type: 'cruiser', count: 2, damaged: false, system_key: '1,-1' }],
+    })
+
+    const res = await handler(makeRequest({
+      game_id: GAME_ID, combat_id: COMBAT_ID,
+      casualties: [{ unit_type: 'cruiser', player_unit_id: 'u1', action: 'destroy' }],
+    }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.pending_window).toBeUndefined()
+    const sustainCall = applyCommanderPassives.mock.calls.find(([t]) => t === 'SUSTAIN_DAMAGE')
+    expect(sustainCall).toBeUndefined()
+  })
+})
+
+describe('game-assign-hits Phase 43c — Naaz-Rokha commander: explore on planet gain', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    applyCommanderPassives.mockResolvedValue({ inlineEffects: [], pendingWindows: [] })
+    requireAuth.mockResolvedValue(USER_ID)
+  })
+
+  it('attacker wins ground combat — PLANET_CONTROL_GAINED passive fires and pending_window returned', async () => {
+    const naazWindow = {
+      game_id: GAME_ID,
+      trigger: 'PLANET_CONTROL_GAINED',
+      faction: 'The Naaz-Rokha Alliance',
+      player_id: ATTACKER_ID,
+      effect: [{ op: 'explore_planet_free' }],
+    }
+    applyCommanderPassives.mockImplementation(async (trigger) => {
+      if (trigger === 'PLANET_CONTROL_GAINED') {
+        return { inlineEffects: [], pendingWindows: [naazWindow] }
+      }
+      return { inlineEffects: [], pendingWindows: [] }
+    })
+
+    // attacker_assign: hitsToAssign = combat.defender_hits = 0; send empty casualties
+    mockDb({
+      player: { id: ATTACKER_ID },
+      combat: {
+        ...BASE_COMBAT,
+        combat_type: 'ground',
+        planet_name: 'mecatol_rex',
+        phase: 'attacker_assign',
+        attacker_hits: 0,
+        defender_hits: 0,
+        attacker_player_id: ATTACKER_ID,
+        defender_player_id: DEFENDER_ID,
+      },
+      unitDefs: [],
+      assigneeUnits: [],
+      atkUnitsLeft: [{ id: 'u-atk-left' }],
+      defUnitsLeft: [],
+    })
+
+    const res = await handler(makeRequest({
+      game_id: GAME_ID, combat_id: COMBAT_ID,
+      casualties: [],
+    }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.pending_window).toBeDefined()
+    expect(body.pending_window.faction).toBe('The Naaz-Rokha Alliance')
+    expect(body.pending_window.trigger).toBe('PLANET_CONTROL_GAINED')
+    expect(applyCommanderPassives).toHaveBeenCalledWith('PLANET_CONTROL_GAINED', expect.objectContaining({ gameId: GAME_ID, planetName: 'mecatol_rex' }), expect.anything())
   })
 })

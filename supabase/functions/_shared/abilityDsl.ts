@@ -1,4 +1,6 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { EXPLORATION_EFFECTS } from './explorationEffects.ts'
+import { getActiveLaws, LawError } from './lawEffects.ts'
 
 export interface ResolveContext {
   gameId: string
@@ -11,6 +13,10 @@ export interface ResolveContext {
   ignorePrerequisite?: boolean
   gameRound?: number
   strategyPlayId?: string
+  gainedRelicName?: string
+  drawnExplorationCard?: Record<string, unknown>
+  noteInstanceId?: string
+  noteOriginPlayerId?: string
 }
 
 export interface CombatResolveContext extends ResolveContext {
@@ -339,22 +345,27 @@ async function interpretOp(
     }
 
     case 'take_from_discard': {
-      const cardId = (context.selections as Record<string, unknown>)?.card_id as string
-      if (!cardId) throw dslError('card_id is required in selections')
-      const { data: card, error: findError } = await db.from('game_action_card_deck')
-        .select('id')
-        .eq('id', cardId)
-        .eq('game_id', context.gameId)
-        .eq('state', 'discard')
-        .maybeSingle()
-      if (findError) throw new Error(`take_from_discard: query failed: ${findError.message}`)
-      if (!card) throw dslError('Card not found in discard')
-      const { error } = await db.from('game_action_card_deck')
-        .update({ state: 'held', held_by_player_id: context.activatingPlayerId, deck_position: null })
-        .eq('id', cardId)
-      if (error) throw new Error(`take_from_discard: update failed: ${error.message}`)
+      const selections = context.selections as Record<string, unknown>
+      const cardIds: string[] = (selections?.card_ids as string[]) ?? (selections?.card_id ? [selections.card_id as string] : [])
+      const maxCount = (op.count as number) ?? cardIds.length
+      const idsToTake = cardIds.slice(0, maxCount)
+      if (idsToTake.length === 0) throw dslError('card_id or card_ids is required in selections')
+      for (const cardId of idsToTake) {
+        const { data: card, error: findError } = await db.from('game_action_card_deck')
+          .select('id')
+          .eq('id', cardId)
+          .eq('game_id', context.gameId)
+          .eq('state', 'discard')
+          .maybeSingle()
+        if (findError) throw new Error(`take_from_discard: query failed: ${findError.message}`)
+        if (!card) throw dslError(`Card ${cardId} not found in discard`)
+        const { error } = await db.from('game_action_card_deck')
+          .update({ state: 'held', held_by_player_id: context.activatingPlayerId, deck_position: null })
+          .eq('id', cardId)
+        if (error) throw new Error(`take_from_discard: update failed: ${error.message}`)
+      }
       const { error: countError } = await db.from('game_players')
-        .update({ action_card_count: (player.action_card_count as number ?? 0) + 1 })
+        .update({ action_card_count: (player.action_card_count as number ?? 0) + idsToTake.length })
         .eq('id', context.activatingPlayerId)
       if (countError) throw new Error(`take_from_discard: count update failed: ${countError.message}`)
       break
@@ -522,7 +533,45 @@ async function interpretOp(
     }
 
     case 'explore_planet': {
-      // Stub — delegates to exploration system (implemented in Phase 17)
+      const planetName = (context.selections as Record<string, unknown>)?.planet_name as string
+      const deckType = (context.selections as Record<string, unknown>)?.deck_type as string
+      if (!planetName) throw dslError('planet_name is required in selections')
+      if (!deckType) throw dslError('deck_type is required in selections')
+      // Validate player controls the planet
+      const { data: controlledPlanet, error: controlError } = await db
+        .from('game_player_planets')
+        .select('id')
+        .eq('game_id', context.gameId)
+        .eq('player_id', context.activatingPlayerId)
+        .eq('planet_name', planetName)
+        .maybeSingle()
+      if (controlError) throw new Error(`explore_planet: planet query failed: ${controlError.message}`)
+      if (!controlledPlanet) throw dslError('Player does not control this planet')
+      // Draw top card from exploration deck
+      const { data: topCard, error: deckError } = await db
+        .from('game_exploration_decks')
+        .select('id, name, deck_type')
+        .eq('game_id', context.gameId)
+        .eq('deck_type', deckType)
+        .eq('state', 'deck')
+        .order('deck_position', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+      if (deckError) throw new Error(`explore_planet: deck query failed: ${deckError.message}`)
+      if (!topCard) throw dslError('Exploration deck is empty')
+      const card = topCard as Record<string, unknown>
+      // Mark card as resolved
+      const { error: resolveError } = await db
+        .from('game_exploration_decks')
+        .update({ state: 'resolved', resolved_by_player_id: context.activatingPlayerId, deck_position: null })
+        .eq('id', card.id as string)
+      if (resolveError) throw new Error(`explore_planet: card resolve failed: ${resolveError.message}`)
+      // Apply exploration effects if known
+      const effects = EXPLORATION_EFFECTS[card.name as string]
+      if (effects) {
+        await interpretEffects(effects, context, db)
+      }
+      context.drawnExplorationCard = card
       break
     }
 
@@ -530,7 +579,7 @@ async function interpretOp(
       // Draw the top relic from the relic deck and assign it to the player
       const { data: topRelic, error: deckError } = await db
         .from('game_relic_deck')
-        .select('id')
+        .select('id, relic_id')
         .eq('game_id', context.gameId)
         .eq('state', 'deck')
         .order('deck_position', { ascending: true })
@@ -538,11 +587,21 @@ async function interpretOp(
         .maybeSingle()
       if (deckError) throw new Error(`gain_relic: deck query failed: ${deckError.message}`)
       if (!topRelic) break  // Empty relic deck — silently skip
+      const topRelicRow = topRelic as Record<string, string>
       const { error: updateError } = await db
         .from('game_relic_deck')
         .update({ state: 'held', held_by_player_id: context.activatingPlayerId, deck_position: null })
-        .eq('id', (topRelic as Record<string, string>).id)
+        .eq('id', topRelicRow.id)
       if (updateError) throw new Error(`gain_relic: update failed: ${updateError.message}`)
+      // Fetch relic name and set on context for on-gain effects
+      const { data: relicDef, error: relicDefError } = await db
+        .from('relics')
+        .select('name')
+        .eq('id', topRelicRow.relic_id)
+        .maybeSingle()
+      if (!relicDefError && relicDef) {
+        context.gainedRelicName = (relicDef as Record<string, string>).name
+      }
       break
     }
 
@@ -845,6 +904,331 @@ async function interpretOp(
         scored_by: [...scoredBy, context.activatingPlayerId]
       }).eq('id', objectiveId)
       await db.from('game_players').update({ vp: (player.vp as number) + points }).eq('id', context.activatingPlayerId)
+      break
+    }
+
+    case 'convert_all_commodities': {
+      const count = player.commodities as number
+      if (count > 0) {
+        const { error } = await db.from('game_players')
+          .update({ commodities: 0, trade_goods: (player.trade_goods as number) + count })
+          .eq('id', context.activatingPlayerId)
+        if (error) throw new Error(`convert_all_commodities failed: ${error.message}`)
+      }
+      break
+    }
+
+    case 'spend_commodities': {
+      const amount = op.amount as number
+      if ((player.commodities as number) < amount) throw dslError('Insufficient commodities')
+      const { error } = await db.from('game_players')
+        .update({ commodities: (player.commodities as number) - amount })
+        .eq('id', context.activatingPlayerId)
+      if (error) throw new Error(`spend_commodities failed: ${error.message}`)
+      break
+    }
+
+    case 'gain_command_token_choice': {
+      const bucket = (context.selections?.command_token_bucket as string) ?? 'tactic_total'
+      if (!['tactic_total', 'fleet', 'strategy'].includes(bucket)) throw dslError('Invalid command token bucket')
+      const tokens = { ...(player.command_tokens ?? {}) as Record<string, number> }
+      tokens[bucket] = (tokens[bucket] ?? 0) + 1
+      const { error } = await db.from('game_players')
+        .update({ command_tokens: tokens })
+        .eq('id', context.activatingPlayerId)
+      if (error) throw new Error(`gain_command_token_choice failed: ${error.message}`)
+      break
+    }
+
+    case 'purge_relic_fragments': {
+      const fragmentType = context.selections?.fragment_type as string | undefined
+      if (!fragmentType || !['cultural', 'hazardous', 'industrial'].includes(fragmentType)) {
+        throw dslError('fragment_type must be cultural, hazardous, or industrial', 400)
+      }
+      const count = op.count as number
+      const { data: fragments, error: fragError } = await db
+        .from('game_exploration_decks')
+        .select('id')
+        .eq('game_id', context.gameId)
+        .eq('resolved_by_player_id', context.activatingPlayerId)
+        .eq('relic_fragment_type', fragmentType)
+        .eq('state', 'held')
+        .limit(count)
+      if (fragError) throw new Error(`purge_relic_fragments: query failed: ${fragError.message}`)
+      const rows = (fragments ?? []) as Array<{ id: string }>
+      if (rows.length < count) throw dslError('Insufficient relic fragments')
+      const ids = rows.map(r => r.id)
+      const { error: updateError } = await db
+        .from('game_exploration_decks')
+        .update({ state: 'discarded', resolved_by_player_id: null })
+        .in('id', ids)
+      if (updateError) throw new Error(`purge_relic_fragments: update failed: ${updateError.message}`)
+      break
+    }
+
+    // ── Phase 43a ops ────────────────────────────────────────────────────────
+
+    case 'reclaim_command_tokens': {
+      // Fetch and delete all activation rows for this player across the board
+      const { data: activations, error: actFetchError } = await db
+        .from('game_system_activations')
+        .select('id')
+        .eq('game_id', context.gameId)
+        .eq('player_id', context.activatingPlayerId)
+      if (actFetchError) throw new Error(`reclaim_command_tokens: fetch failed: ${actFetchError.message}`)
+      const actRows = (activations ?? []) as Array<{ id: string }>
+      if (actRows.length > 0) {
+        const ids = actRows.map(r => r.id)
+        const { error: deleteError } = await db
+          .from('game_system_activations')
+          .delete()
+          .in('id', ids)
+        if (deleteError) throw new Error(`reclaim_command_tokens: delete failed: ${deleteError.message}`)
+      }
+      break
+    }
+
+    case 'produce_in_systems_with_ground_forces': {
+      // Arborec hero: produce units in any system containing player's ground forces
+      const { data: groundForceRows, error: gfError } = await db
+        .from('game_player_units')
+        .select('system_key')
+        .eq('game_id', context.gameId)
+        .eq('player_id', context.activatingPlayerId)
+        .in('unit_type', ['infantry', 'mech'])
+        .not('on_planet', 'is', null)
+      if (gfError) throw new Error(`produce_in_systems_with_ground_forces: query failed: ${gfError.message}`)
+      const validSystems = new Set(
+        ((groundForceRows ?? []) as Array<{ system_key: string }>).map(r => r.system_key)
+      )
+      const produceList = (context.selections?.produce_list ?? []) as Array<{ system_key: string; unit_type: string; count: number }>
+      for (const entry of produceList) {
+        if (!validSystems.has(entry.system_key)) throw dslError('System has no ground forces')
+        const { data: existing, error: existError } = await db
+          .from('game_player_units')
+          .select('id, count')
+          .eq('game_id', context.gameId)
+          .eq('player_id', context.activatingPlayerId)
+          .eq('system_key', entry.system_key)
+          .eq('unit_type', entry.unit_type)
+          .is('on_planet', null)
+          .maybeSingle()
+        if (existError) throw new Error(`produce_in_systems_with_ground_forces: unit query failed: ${existError.message}`)
+        if (existing) {
+          const { error } = await db
+            .from('game_player_units')
+            .update({ count: ((existing as { count: number }).count ?? 0) + entry.count })
+            .eq('id', (existing as { id: string }).id)
+          if (error) throw new Error(`produce_in_systems_with_ground_forces: update failed: ${error.message}`)
+        } else {
+          const { error } = await db
+            .from('game_player_units')
+            .insert({ game_id: context.gameId, player_id: context.activatingPlayerId, system_key: entry.system_key, unit_type: entry.unit_type, on_planet: null, count: entry.count })
+          if (error) throw new Error(`produce_in_systems_with_ground_forces: insert failed: ${error.message}`)
+        }
+      }
+      break
+    }
+
+    case 'produce_units_free': {
+      // Hacan hero: flag downstream production as free (no resource cost)
+      ;(context as Record<string, unknown>).free_production = true
+      break
+    }
+
+    case 'explore_planet_free': {
+      // Naaz-Rokha commander: scaffold — set flag for caller to handle exploration
+      const planetName = context.selections?.planet_name as string
+      if (!planetName) throw dslError('planet_name is required', 400)
+      const { data: controlled, error: controlError } = await db
+        .from('game_player_planets')
+        .select('id')
+        .eq('game_id', context.gameId)
+        .eq('player_id', context.activatingPlayerId)
+        .eq('planet_name', planetName)
+        .maybeSingle()
+      if (controlError) throw new Error(`explore_planet_free: query failed: ${controlError.message}`)
+      if (!controlled) throw dslError('Planet not controlled')
+      // Set flag for caller to handle the actual card draw
+      ;(context as Record<string, unknown>).explore_planet_name = planetName
+      break
+    }
+
+    case 'replace_ship': {
+      // Arborec agent: replace a non-fighter ship with one costing at most 2 more
+      const targetPlayerId = context.selections?.chosen_player_id as string
+      const sourceSystemKey = context.selections?.system_key as string
+      const oldUnitType = context.selections?.old_unit_type as string
+      const newUnitType = context.selections?.new_unit_type as string
+      if (!targetPlayerId || !sourceSystemKey || !oldUnitType || !newUnitType) {
+        throw dslError('chosen_player_id, system_key, old_unit_type, and new_unit_type are required', 400)
+      }
+      // Fetch unit definitions for cost comparison
+      const { data: oldDef, error: oldDefError } = await db
+        .from('units')
+        .select('cost')
+        .eq('name', oldUnitType)
+        .maybeSingle()
+      if (oldDefError || !oldDef) throw new Error(`replace_ship: old unit def not found for ${oldUnitType}`)
+      const { data: newDef, error: newDefError } = await db
+        .from('units')
+        .select('cost')
+        .eq('name', newUnitType)
+        .maybeSingle()
+      if (newDefError || !newDef) throw new Error(`replace_ship: new unit def not found for ${newUnitType}`)
+      if ((newDef as { cost: number }).cost > (oldDef as { cost: number }).cost + 2) {
+        throw dslError('New unit must cost at most 2 more')
+      }
+      // Fetch the source unit row
+      const { data: sourceUnit, error: sourceError } = await db
+        .from('game_player_units')
+        .select('id, count')
+        .eq('game_id', context.gameId)
+        .eq('player_id', targetPlayerId)
+        .eq('system_key', sourceSystemKey)
+        .eq('unit_type', oldUnitType)
+        .is('on_planet', null)
+        .maybeSingle()
+      if (sourceError) throw new Error(`replace_ship: source query failed: ${sourceError.message}`)
+      if (!sourceUnit) throw dslError('Source unit not found')
+      // Decrement old unit (delete if count drops to 0)
+      const oldCount = (sourceUnit as { count: number }).count
+      if (oldCount <= 1) {
+        const { error: deleteError } = await db
+          .from('game_player_units')
+          .delete()
+          .eq('id', (sourceUnit as { id: string }).id)
+        if (deleteError) throw new Error(`replace_ship: delete old unit failed: ${deleteError.message}`)
+      } else {
+        const { error: decrementError } = await db
+          .from('game_player_units')
+          .update({ count: oldCount - 1 })
+          .eq('id', (sourceUnit as { id: string }).id)
+        if (decrementError) throw new Error(`replace_ship: decrement failed: ${decrementError.message}`)
+      }
+      // Upsert new unit in same system
+      const { data: existingNew, error: existNewError } = await db
+        .from('game_player_units')
+        .select('id, count')
+        .eq('game_id', context.gameId)
+        .eq('player_id', targetPlayerId)
+        .eq('system_key', sourceSystemKey)
+        .eq('unit_type', newUnitType)
+        .is('on_planet', null)
+        .maybeSingle()
+      if (existNewError) throw new Error(`replace_ship: new unit query failed: ${existNewError.message}`)
+      if (existingNew) {
+        const { error } = await db
+          .from('game_player_units')
+          .update({ count: ((existingNew as { count: number }).count ?? 0) + 1 })
+          .eq('id', (existingNew as { id: string }).id)
+        if (error) throw new Error(`replace_ship: new unit update failed: ${error.message}`)
+      } else {
+        const { error } = await db
+          .from('game_player_units')
+          .insert({ game_id: context.gameId, player_id: targetPlayerId, system_key: sourceSystemKey, unit_type: newUnitType, on_planet: null, count: 1 })
+        if (error) throw new Error(`replace_ship: new unit insert failed: ${error.message}`)
+      }
+      break
+    }
+
+    case 'give_promissory_to_opponent': {
+      // Mentak commander: opponent gives 1 promissory note to activating player
+      const opponentId = context.selections?.chosen_player_id as string
+      const noteId = context.selections?.note_id as string
+      if (!opponentId || !noteId) throw dslError('chosen_player_id and note_id are required', 400)
+      const { data: note, error: noteError } = await db
+        .from('game_player_promissory_notes')
+        .select('id')
+        .eq('id', noteId)
+        .eq('held_by_player_id', opponentId)
+        .eq('state', 'hand')
+        .maybeSingle()
+      if (noteError) throw new Error(`give_promissory_to_opponent: query failed: ${noteError.message}`)
+      if (!note) throw dslError('Note not found in opponent hand')
+      const { error: transferError } = await db
+        .from('game_player_promissory_notes')
+        .update({ held_by_player_id: context.activatingPlayerId })
+        .eq('id', noteId)
+      if (transferError) throw new Error(`give_promissory_to_opponent: transfer failed: ${transferError.message}`)
+      break
+    }
+
+    case 'increase_move': {
+      // Validate ship_id is present
+      if (!context.selections?.ship_id) throw dslError('increase_move: ship_id is required', 400)
+      // Set move override flag for caller to compute actual max move
+      ;(context as Record<string, unknown>).move_override = {
+        ship_id: context.selections?.ship_id,
+        move: 'MAX',
+      }
+      break
+    }
+
+    case 'produce_at_any_space_dock': {
+      // Set dock planet override for caller to handle
+      const dockPlanet = context.selections?.dock_planet as string
+      if (!dockPlanet) throw dslError('dock_planet is required', 400)
+      ;(context as Record<string, unknown>).dock_planet_override = dockPlanet
+      break
+    }
+
+    // ── Phase 40 ops ─────────────────────────────────────────────────────────────
+
+    case 'repeal_law': {
+      const lawId = context.selections?.law_id as string
+      if (!lawId) throw dslError('law_id is required in selections', 400)
+      const { data: lawRow, error: lawError } = await db
+        .from('game_laws')
+        .select('id, agenda_id')
+        .eq('id', lawId)
+        .eq('game_id', context.gameId)
+        .maybeSingle()
+      if (lawError) throw new Error(`repeal_law: query failed: ${lawError.message}`)
+      if (!lawRow) throw dslError('Law not found in game')
+      const law = lawRow as { id: string; agenda_id: string }
+      const { error: repealError } = await db
+        .from('game_laws')
+        .update({ is_repealed: true })
+        .eq('id', law.id)
+      if (repealError) throw new Error(`repeal_law: update failed: ${repealError.message}`)
+      const { error: deckError } = await db
+        .from('game_agenda_deck')
+        .update({ state: 'repealed' })
+        .eq('game_id', context.gameId)
+        .eq('agenda_id', law.agenda_id)
+      if (deckError) throw new Error(`repeal_law: deck update failed: ${deckError.message}`)
+      break
+    }
+
+    case 'use_minister_of_war': {
+      const laws = await getActiveLaws(db, context.gameId)
+      const mow = laws.find(l => l.name === 'Minister of War')
+      if (!mow) throw dslError('Minister of War is not in play')
+      if (mow.elected_target !== context.activatingPlayerId) throw dslError('Only the elected player may use Minister of War')
+      const mowPlanetName = context.selections?.planet_name as string
+      if (!mowPlanetName) throw dslError('planet_name is required in selections', 400)
+      const { data: mowPlanet, error: mowPlanetError } = await db
+        .from('game_player_planets')
+        .select('id, exhausted')
+        .eq('game_id', context.gameId)
+        .eq('player_id', context.activatingPlayerId)
+        .eq('planet_name', mowPlanetName)
+        .maybeSingle()
+      if (mowPlanetError) throw new Error(`use_minister_of_war: planet query failed: ${mowPlanetError.message}`)
+      if (!mowPlanet) throw dslError('Planet not owned')
+      const mowP = mowPlanet as { id: string; exhausted: boolean }
+      if (mowP.exhausted) throw dslError('Planet already exhausted')
+      const { error: exhaustError } = await db
+        .from('game_player_planets')
+        .update({ exhausted: true })
+        .eq('id', mowP.id)
+      if (exhaustError) throw new Error(`use_minister_of_war: exhaust failed: ${exhaustError.message}`)
+      const { error: unlockError } = await db
+        .from('game_players')
+        .update({ minister_of_war_unlocked: true })
+        .eq('id', context.activatingPlayerId)
+      if (unlockError) throw new Error(`use_minister_of_war: unlock failed: ${unlockError.message}`)
       break
     }
 

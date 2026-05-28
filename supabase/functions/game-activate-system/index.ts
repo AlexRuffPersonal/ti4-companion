@@ -2,6 +2,9 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { logEvent, EVT_ACTIVATE_SYSTEM } from '../_shared/gameEvents.ts'
+import { AGENT_REACTIVE_TRIGGERS, applyCommanderPassives } from '../_shared/leaderEffects.ts'
+import { getHandler } from '../_shared/abilityHandlers.ts'
+import { getHeldNotes, getActiveNotes, returnNote } from '../_shared/promissoryEnforcement.ts'
 
 type UnitRow = { player_id: string; unit_type: string; count: number; system_key: string }
 type ScDef = { name: string; space_cannon: string }
@@ -14,6 +17,8 @@ type PlayerRow = {
   trade_goods?: number
   promissory_notes?: unknown[]
   command_tokens?: Record<string, number>
+  faction?: string
+  leaders?: Record<string, string>
 }
 
 function parseDiceCount(text: string): number {
@@ -48,7 +53,7 @@ export async function handler(req: Request): Promise<Response> {
 
   const { data: player, error: playerError } = await db
     .from('game_players')
-    .select('id, command_tokens, technologies, exhausted_technologies, trade_goods, promissory_notes')
+    .select('id, command_tokens, technologies, exhausted_technologies, trade_goods, promissory_notes, faction, leaders')
     .eq('game_id', body.game_id)
     .eq('user_id', userId)
     .maybeSingle()
@@ -78,7 +83,17 @@ export async function handler(req: Request): Promise<Response> {
   if (activationError) return errorResponse('Database error', 500)
 
   if ((activations ?? []).length >= tacticTotal) return errorResponse('No tactic tokens available', 409)
-  if ((activations ?? []).some((a: { system_key: string }) => a.system_key === body.system_key)) {
+
+  const leaders = (player.leaders ?? {}) as Record<string, string>
+  const isMahact = player.faction === 'The Mahact Gene-Sorcerers' && leaders.commander === 'unlocked'
+  const alreadyActivatedThisSystem = (activations ?? []).some(
+    (a: { system_key: string }) => a.system_key === body.system_key
+  )
+  if (isMahact && alreadyActivatedThisSystem) {
+    const resolveCtx = { gameId: body.game_id, activatingPlayerId: player.id, systemKey: body.system_key }
+    await getHandler('mahact_il_na_viroset')(resolveCtx as any, db)
+    // don't return 409 — fall through to proceed with activation
+  } else if (alreadyActivatedThisSystem) {
     return errorResponse('System already activated by you this round', 409)
   }
 
@@ -113,10 +128,10 @@ export async function handler(req: Request): Promise<Response> {
 
   const relevantSystems = [body.system_key, ...neighborKeys, ...whConnected]
 
-  // Load all players once — used for Chaos Mapping check and reactive tech effects
+  // Load all players once — used for Chaos Mapping check, reactive tech effects, and reactive agent windows
   const { data: allGamePlayers } = await db
     .from('game_players')
-    .select('id, technologies, exhausted_technologies, trade_goods, promissory_notes')
+    .select('id, technologies, exhausted_technologies, trade_goods, promissory_notes, faction, leaders')
     .eq('game_id', body.game_id)
 
   // Single fetch: all space units for this game
@@ -248,7 +263,23 @@ export async function handler(req: Request): Promise<Response> {
     }
   }
 
-  const { error: insertError } = await db
+  // --- Promissory Note Enforcement: Ceasefire (Model D, held) ---
+  // Check before inserting the activation row so we can 409 early
+  const ceasefireNotes = await getHeldNotes(body.game_id, 'Ceasefire', db)
+  for (const note of ceasefireNotes) {
+    if (note.ownerPlayerId === player.id) {
+      // Check if holder has units in the activated system
+      const holderUnitsInSystem = (allSpaceUnits ?? []).some(
+        (u: UnitRow) => u.player_id === note.holderPlayerId && u.system_key === body.system_key
+      )
+      if (holderUnitsInSystem) {
+        await returnNote(note.instanceId, note.ownerPlayerId, db)
+        return errorResponse('Ceasefire is in effect', 409)
+      }
+    }
+  }
+
+  const { data: insertedRows, error: insertError } = await db
     .from('game_system_activations')
     .insert({
       game_id: body.game_id,
@@ -257,7 +288,55 @@ export async function handler(req: Request): Promise<Response> {
       round: game.round,
       token_owner_id: player.id,
     })
+    .select('id')
   if (insertError) return errorResponse(`Failed to activate system: ${insertError.message}`, 500)
+
+  const activationId = insertedRows?.[0]?.id ?? null
+
+  // --- Promissory Note Enforcement: Post-activation checks ---
+
+  // Greyfire Mutagen (Model D, held): block faction abilities of note owner.
+  // This trigger is unconditional per spec — the note is consumed on ANY activation in the game
+  // while it is held, regardless of who holds it or who is activating.
+  const greyfireNotes = await getHeldNotes(body.game_id, 'Greyfire Mutagen', db)
+  for (const note of greyfireNotes) {
+    if (activationId) {
+      await db
+        .from('game_system_activations')
+        .update({ faction_abilities_blocked_player_id: note.ownerPlayerId })
+        .eq('id', activationId)
+    }
+    await returnNote(note.instanceId, note.ownerPlayerId, db)
+  }
+
+  // Crucible (Model D, held): holder activating their own system grants gravity rift immunity
+  const crucibleNotes = await getHeldNotes(body.game_id, 'Crucible', db)
+  for (const note of crucibleNotes) {
+    if (note.holderPlayerId === player.id && activationId) {
+      await db
+        .from('game_system_activations')
+        .update({ gravity_rift_immune_player_id: note.holderPlayerId })
+        .eq('id', activationId)
+      await returnNote(note.instanceId, note.ownerPlayerId, db)
+    }
+  }
+
+  // Model B in_play return checks
+  const activeNotes = await getActiveNotes(body.game_id, db)
+  const modelBKeys = ['tradeConvoys', 'promiseOfProtection', 'bloodPact', 'darkPact', 'stymie', 'antivirus'] as const // crucible is Model D (handled above via getHeldNotes)
+  for (const key of modelBKeys) {
+    for (const note of activeNotes[key]) {
+      if (note.holderPlayerId === player.id) {
+        // Check if owner has units in the activated system
+        const ownerUnitsInSystem = (allSpaceUnits ?? []).some(
+          (u: UnitRow) => u.player_id === note.ownerPlayerId && u.system_key === body.system_key
+        )
+        if (ownerUnitsInSystem) {
+          await returnNote(note.instanceId, note.ownerPlayerId, db)
+        }
+      }
+    }
+  }
 
   await logEvent(db, {
     game_id: body.game_id,
@@ -267,7 +346,49 @@ export async function handler(req: Request): Promise<Response> {
     round: game.round,
     phase: 'action',
   })
-  return okResponse({ activated: true, combat_id: combatId })
+
+  // Check for reactive agents triggered by SYSTEM_ACTIVATED
+  // Reuse allGamePlayers (already fetched above); filter out the activating player
+  type LeaderRow = { id: string }
+  const reactiveAgents: Array<{ player_id: string; faction: string; agent_id: string }> = []
+
+  for (const otherPlayer of (allGamePlayers ?? []) as PlayerRow[]) {
+    if (otherPlayer.id === player.id) continue
+    const leaders = (otherPlayer.leaders ?? {}) as Record<string, string>
+    if (leaders.agent !== 'unlocked') continue
+    const faction = otherPlayer.faction ?? ''
+    if (!AGENT_REACTIVE_TRIGGERS[faction]?.includes('SYSTEM_ACTIVATED')) continue
+
+    const { data: leaderRow } = await db
+      .from('leaders')
+      .select('id')
+      .eq('faction', faction)
+      .eq('leader_type', 'agent')
+      .maybeSingle()
+
+    const leader = leaderRow as LeaderRow | null
+    if (leader) {
+      reactiveAgents.push({ player_id: otherPlayer.id, faction, agent_id: leader.id })
+    }
+  }
+
+  const reactiveAgentWindow = reactiveAgents.length > 0
+    ? { type: 'reactive_agent', eligible: reactiveAgents, context: { trigger: 'SYSTEM_ACTIVATED', system_key: body.system_key } }
+    : undefined
+
+  // Apply SYSTEM_ACTIVATED commander passives (Arborec, Yssaril, etc.)
+  const { pendingWindows: commanderWindows } = await applyCommanderPassives(
+    'SYSTEM_ACTIVATED',
+    { gameId: body.game_id, activatingPlayerId: player.id, systemKey: body.system_key, faction: (player.faction ?? '') as string },
+    db,
+  )
+
+  const allWindows = [
+    ...(reactiveAgentWindow ? [reactiveAgentWindow] : []),
+    ...commanderWindows,
+  ]
+
+  return okResponse({ activated: true, combat_id: combatId, pending_window: allWindows[0] ?? undefined })
 }
 
 if (typeof Deno !== 'undefined') Deno.serve(handler)

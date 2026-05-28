@@ -9,6 +9,12 @@ vi.mock('../../../supabase/functions/_shared/auth.ts', () => {
 vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
   db: { from: vi.fn() },
 }))
+vi.mock('../../../supabase/functions/_shared/lawEffects.ts', () => ({
+  assertProductionAllowed: vi.fn().mockResolvedValue(undefined),
+  LawError: class LawError extends Error {
+    constructor(msg, status = 409) { super(msg); this.name = 'LawError'; this.status = status }
+  },
+}))
 
 import { requireAuth } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
@@ -75,12 +81,17 @@ function mockDb({
   db.from.mockImplementation((table) => {
     if (table === 'game_players') {
       return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
+        select: vi.fn().mockImplementation((cols) => {
+          if (cols === 'id, faction, leaders') {
+            return { eq: vi.fn().mockResolvedValue({ data: [], error: null }) }
+          }
+          return {
             eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }),
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }),
+              }),
             }),
-          }),
+          }
         }),
         update: vi.fn().mockImplementation((args) => {
           calls.gamePlayersUpdate.push(args)

@@ -304,6 +304,20 @@ describe('game-explore-frontier', () => {
     )
   })
 
+  it('stores system_key on drawn card row', async () => {
+    mockDb({ card: makeCard({ name: 'Lost Crew' }) })
+    const res = await handler(makeRequest(baseBody()))
+    expect(res.status).toBe(200)
+
+    // The second call to game_exploration_decks is the update({state:'drawn',...})
+    const deckCallIndices = db.from.mock.calls.reduce((acc, c, i) => (c[0] === 'game_exploration_decks' ? [...acc, i] : acc), [])
+    expect(deckCallIndices.length).toBeGreaterThanOrEqual(2)
+    const drawnUpdateMock = db.from.mock.results[deckCallIndices[1]].value
+    expect(drawnUpdateMock.update).toHaveBeenCalledWith(
+      expect.objectContaining({ state: 'drawn', system_key: SYSTEM_KEY, resolved_by_player_id: PLAYER_ID })
+    )
+  })
+
   it('applies relic fragment op for Unknown Relic Fragment', async () => {
     mockDb({ card: makeCard({ name: 'Unknown Relic Fragment' }) })
     const res = await handler(makeRequest(baseBody()))
@@ -311,10 +325,11 @@ describe('game-explore-frontier', () => {
     const body = await res.json()
     expect(body.card_name).toBe('Unknown Relic Fragment')
 
+    // Call order: [0]=select(draw), [1]=update(drawn), [2]=update(held)
     const deckCallIndices = db.from.mock.calls.reduce((acc, c, i) => (c[0] === 'game_exploration_decks' ? [...acc, i] : acc), [])
-    expect(deckCallIndices.length).toBeGreaterThanOrEqual(2)
-    const deckUpdateMock = db.from.mock.results[deckCallIndices[1]].value
-    expect(deckUpdateMock.update).toHaveBeenCalledWith({ state: 'held', resolved_by_player_id: PLAYER_ID })
+    expect(deckCallIndices.length).toBeGreaterThanOrEqual(3)
+    const finalUpdateMock = db.from.mock.results[deckCallIndices[2]].value
+    expect(finalUpdateMock.update).toHaveBeenCalledWith({ state: 'held', resolved_by_player_id: PLAYER_ID })
   })
 
   it('applies place_mirage op and sets Mirage in game_player_planets', async () => {
@@ -333,6 +348,57 @@ describe('game-explore-frontier', () => {
     )
   })
 
+  it('sets has_mirage=true in game_system_state for Mirage card', async () => {
+    mockDb({ card: makeCard({ name: 'Mirage' }) })
+    const res = await handler(makeRequest(baseBody()))
+    expect(res.status).toBe(200)
+
+    // At least one upsert to game_system_state should include has_mirage:true
+    const systemStateCalls = db.from.mock.calls
+      .map((c, i) => ({ table: c[0], i }))
+      .filter((x) => x.table === 'game_system_state')
+    const upsertWithMirage = systemStateCalls.some((sc) => {
+      const mock = db.from.mock.results[sc.i].value
+      const calls = mock.upsert?.mock?.calls ?? []
+      return calls.some((args) => args[0]?.has_mirage === true)
+    })
+    expect(upsertWithMirage).toBe(true)
+  })
+
+  it('sets card state=purged for Mirage (not discarded)', async () => {
+    mockDb({ card: makeCard({ name: 'Mirage' }) })
+    const res = await handler(makeRequest(baseBody()))
+    expect(res.status).toBe(200)
+
+    // Call order: [0]=select(draw), [1]=update(drawn), [2]=update(purged)
+    const deckCallIndices = db.from.mock.calls.reduce((acc, c, i) => (c[0] === 'game_exploration_decks' ? [...acc, i] : acc), [])
+    expect(deckCallIndices.length).toBeGreaterThanOrEqual(3)
+    const finalUpdateMock = db.from.mock.results[deckCallIndices[2]].value
+    expect(finalUpdateMock.update).toHaveBeenCalledWith({ state: 'purged', resolved_by_player_id: null })
+  })
+
+  it('resolves Merchant Station choice=0 via replenish_commodities', async () => {
+    mockDb({ card: makeCard({ name: 'Merchant Station' }) })
+    const res = await handler(makeRequest(baseBody({ choice: 0 })))
+    expect(res.status).toBe(200)
+    expect(applyAbility).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ op: 'replenish_commodities' })]),
+      expect.anything(),
+      expect.anything()
+    )
+  })
+
+  it('resolves Merchant Station choice=1 via convert_all_commodities', async () => {
+    mockDb({ card: makeCard({ name: 'Merchant Station' }) })
+    const res = await handler(makeRequest(baseBody({ choice: 1 })))
+    expect(res.status).toBe(200)
+    expect(applyAbility).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ op: 'convert_all_commodities' })]),
+      expect.anything(),
+      expect.anything()
+    )
+  })
+
   it('applies place_map_token for Ion Storm', async () => {
     mockDb({ card: makeCard({ name: 'Ion Storm' }) })
     const res = await handler(makeRequest(baseBody()))
@@ -345,23 +411,25 @@ describe('game-explore-frontier', () => {
       .filter((x) => x.table === 'game_system_state')
     expect(systemStateCalls.length).toBeGreaterThanOrEqual(2)
 
-    const upsertMock = db.from.mock.results[systemStateCalls[1].i].value
-    expect(upsertMock.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({ ion_storm: true }),
-      expect.anything()
-    )
+    const upsertWithIonStorm = systemStateCalls.some((sc) => {
+      const mock = db.from.mock.results[sc.i].value
+      const calls = mock.upsert?.mock?.calls ?? []
+      return calls.some((args) => args[0]?.ion_storm === true)
+    })
+    expect(upsertWithIonStorm).toBe(true)
   })
 
-  it('keeps Enigmatic Device in held state', async () => {
+  it('keeps Enigmatic Device in held state via hold_card op', async () => {
     mockDb({ card: makeCard({ name: 'Enigmatic Device' }) })
     const res = await handler(makeRequest(baseBody()))
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.card_name).toBe('Enigmatic Device')
 
+    // Call order: [0]=select(draw), [1]=update(drawn), [2]=update(held)
     const deckCallIndices = db.from.mock.calls.reduce((acc, c, i) => (c[0] === 'game_exploration_decks' ? [...acc, i] : acc), [])
-    expect(deckCallIndices.length).toBeGreaterThanOrEqual(2)
-    const deckUpdateMock = db.from.mock.results[deckCallIndices[1]].value
-    expect(deckUpdateMock.update).toHaveBeenCalledWith({ state: 'held', resolved_by_player_id: PLAYER_ID })
+    expect(deckCallIndices.length).toBeGreaterThanOrEqual(3)
+    const finalUpdateMock = db.from.mock.results[deckCallIndices[2]].value
+    expect(finalUpdateMock.update).toHaveBeenCalledWith({ state: 'held', resolved_by_player_id: PLAYER_ID })
   })
 })

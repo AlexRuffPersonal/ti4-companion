@@ -82,16 +82,54 @@ export async function handler(req: Request): Promise<Response> {
     const effect = agenda.effect_json as { op: string; amount?: number; tech?: string }
 
     if (effect.op === 'award_vp' && electedTarget) {
-      const { data: target } = await db.from('game_players').select('vp').eq('id', electedTarget).maybeSingle()
-      if (target) {
-        await db.from('game_players').update({ vp: target.vp + (effect.amount ?? 1) }).eq('id', electedTarget)
+      let targetPlayerId = electedTarget
+      // For planet-elect laws, look up the player who controls the planet
+      if (agenda.elect_type === 'planet') {
+        const { data: planetControl } = await db
+          .from('game_player_planets')
+          .select('player_id')
+          .eq('game_id', body.game_id)
+          .eq('planet_name', electedTarget)
+          .maybeSingle()
+        if (planetControl) {
+          targetPlayerId = planetControl.player_id
+        } else {
+          // Planet not controlled by anyone, skip VP award
+          targetPlayerId = null
+        }
+      }
+
+      if (targetPlayerId) {
+        const { data: target } = await db.from('game_players').select('vp').eq('id', targetPlayerId).maybeSingle()
+        if (target) {
+          await db.from('game_players').update({ vp: target.vp + (effect.amount ?? 1) }).eq('id', targetPlayerId)
+        }
       }
     }
 
     if (effect.op === 'remove_vp' && electedTarget) {
-      const { data: target } = await db.from('game_players').select('vp').eq('id', electedTarget).maybeSingle()
-      if (target) {
-        await db.from('game_players').update({ vp: Math.max(0, target.vp - (effect.amount ?? 1)) }).eq('id', electedTarget)
+      let targetPlayerId = electedTarget
+      // For planet-elect laws, look up the player who controls the planet
+      if (agenda.elect_type === 'planet') {
+        const { data: planetControl } = await db
+          .from('game_player_planets')
+          .select('player_id')
+          .eq('game_id', body.game_id)
+          .eq('planet_name', electedTarget)
+          .maybeSingle()
+        if (planetControl) {
+          targetPlayerId = planetControl.player_id
+        } else {
+          // Planet not controlled by anyone, skip VP removal
+          targetPlayerId = null
+        }
+      }
+
+      if (targetPlayerId) {
+        const { data: target } = await db.from('game_players').select('vp').eq('id', targetPlayerId).maybeSingle()
+        if (target) {
+          await db.from('game_players').update({ vp: Math.max(0, target.vp - (effect.amount ?? 1)) }).eq('id', targetPlayerId)
+        }
       }
     }
 
@@ -115,11 +153,13 @@ export async function handler(req: Request): Promise<Response> {
 
   // Insert law record if applicable
   if (isLaw) {
+    const electedPlanetName = agenda.elect_type === 'planet' ? electedTarget : null
     await db.from('game_laws').insert({
       game_id: body.game_id,
       agenda_id: body.agenda_id,
       round_enacted: game.round,
       elected_target: electedTarget,
+      elected_planet_name: electedPlanetName,
       is_repealed: false,
       host_applies_manually: !agenda.tractable,
     })

@@ -16,6 +16,14 @@ vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
   EVT_PLAY_PROMISSORY_NOTE: 'play_promissory_note',
 }))
 
+vi.mock('../../../supabase/functions/_shared/abilityDsl.ts', () => ({
+  interpretEffects: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('../../../supabase/functions/_shared/promissoryHandlers.ts', () => ({
+  resolvePromissoryHandler: vi.fn().mockResolvedValue(undefined),
+}))
+
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-play-promissory-note/index.ts'

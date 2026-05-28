@@ -3,6 +3,8 @@ import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { getNextPlayer } from '../_shared/player-order.ts'
 import { logEvent, EVT_CAST_VOTES } from '../_shared/gameEvents.ts'
+import { applyCommanderPassives } from '../_shared/leaderEffects.ts'
+import { getHandler } from '../_shared/abilityHandlers.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -30,14 +32,17 @@ export async function handler(req: Request): Promise<Response> {
 
   const { data: callerPlayer } = await db
     .from('game_players')
-    .select('id, technologies, exhausted_technologies, trade_goods, vote_prevented')
+    .select('id, technologies, exhausted_technologies, trade_goods, vote_prevented, faction, leaders')
     .eq('game_id', body.game_id)
     .eq('user_id', userId)
     .maybeSingle()
   if (!callerPlayer) {
     return errorResponse('It is not your turn to vote', 403)
   }
-  if ((callerPlayer as { vote_prevented?: boolean }).vote_prevented) {
+  // Phase 43c: Xxcha commander grants immunity to vote prevention
+  const callerLeaders = (callerPlayer as Record<string, unknown>).leaders as Record<string, string> | null
+  const xxchaCommanderUnlocked = (callerPlayer as Record<string, unknown>).faction === 'The Xxcha Kingdom' && callerLeaders?.commander === 'unlocked'
+  if ((callerPlayer as { vote_prevented?: boolean }).vote_prevented && !xxchaCommanderUnlocked) {
     return errorResponse('Your vote has been prevented', 409)
   }
   if (callerPlayer.id !== game.agenda_vote_current_player_id) {
@@ -86,6 +91,24 @@ export async function handler(req: Request): Promise<Response> {
   const selections = (typeof body.selections === 'object' && body.selections !== null) ? body.selections as Record<string, unknown> : {}
   if (!abstain && callerTechs.includes('Predictive Intelligence') && selections.use_predictive === true) {
     voteCount += 3
+  }
+
+  // Phase 43c: apply CAST_VOTES commander passives (Xxcha extra vote per planet, Hacan TG votes)
+  const castContext: Record<string, unknown> = {
+    gameId: body.game_id,
+    activatingPlayerId: callerPlayer.id,
+    faction: (callerPlayer as Record<string, unknown>).faction ?? '',
+    selections,
+    extraVotes: 0,
+  }
+  if (!abstain) {
+    const { inlineEffects } = await applyCommanderPassives('CAST_VOTES', castContext as never, db)
+    for (const effect of inlineEffects) {
+      const effectKey = (effect as Record<string, unknown>).effect
+      if (typeof effectKey === 'string') {
+        try { await getHandler(effectKey)(castContext as never, db) } catch { /* non-fatal */ }
+      }
+    }
   }
 
   if (!abstain && voteCount > 0) {
@@ -143,6 +166,9 @@ export async function handler(req: Request): Promise<Response> {
       // vote not yet cast; caller re-submits after window resolves
     }
   }
+
+  // Add commander passive extra votes to the final vote count
+  voteCount += ((castContext.extraVotes as number) ?? 0)
 
   const { error: upsertError } = await db
     .from('game_agenda_votes')

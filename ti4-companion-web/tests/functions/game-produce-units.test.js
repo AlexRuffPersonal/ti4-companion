@@ -11,6 +11,13 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
   db: { from: vi.fn() },
 }))
 
+vi.mock('../../../supabase/functions/_shared/lawEffects.ts', () => ({
+  assertProductionAllowed: vi.fn().mockResolvedValue(undefined),
+  LawError: class LawError extends Error {
+    constructor(msg, status = 409) { super(msg); this.name = 'LawError'; this.status = status }
+  },
+}))
+
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-produce-units/index.ts'
@@ -40,6 +47,8 @@ const ALL_UNIT_DEFS = [
   { name: 'Infantry', cost: 0.5, production: null, unit_type: 'ground' },
 ]
 
+const WARFARE_PLAY_ID = 'warfare-play-uuid'
+
 function mockDb({
   player = { id: PLAYER_ID },
   game = DEFAULT_GAME,
@@ -49,16 +58,23 @@ function mockDb({
   ownedPlanets = [{ planet_name: 'Mecatol Rex' }],
   enemyUnits = [],
   existingUnit = null,
+  warfarePlay = { id: WARFARE_PLAY_ID },
+  warfareResponse = { id: 'response-uuid' },
 } = {}) {
   db.from.mockImplementation((table) => {
     if (table === 'game_players') {
       return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
+        select: vi.fn().mockImplementation((cols) => {
+          if (cols === 'id, faction, leaders') {
+            return { eq: vi.fn().mockResolvedValue({ data: [], error: null }) }
+          }
+          return {
             eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }),
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }),
+              }),
             }),
-          }),
+          }
         }),
       }
     }
@@ -67,6 +83,34 @@ function mockDb({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             maybeSingle: vi.fn().mockResolvedValue({ data: game, error: null }),
+          }),
+        }),
+      }
+    }
+    if (table === 'game_strategy_card_plays') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({ data: warfarePlay, error: null }),
+                }),
+              }),
+            }),
+          }),
+        }),
+      }
+    }
+    if (table === 'game_strategy_card_responses') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: warfareResponse, error: null }),
+              }),
+            }),
           }),
         }),
       }
@@ -278,6 +322,48 @@ describe('game-produce-units', () => {
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.produced).toBe(true)
+  })
+
+  describe('warfare_secondary path', () => {
+    const warfareBody = {
+      game_id: GAME_ID,
+      system_key: SYSTEM_KEY,
+      units: [{ unit_type: 'Carrier', count: 1 }],
+      planet_exhausts: ['Mecatol Rex'],
+      warfare_secondary: true,
+    }
+
+    it('returns 200 when warfare_secondary=true with valid play and used response', async () => {
+      mockDb({ game: { ...DEFAULT_GAME, active_player_id: 'other-player' } })
+      const res = await handler(makeRequest(warfareBody))
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.produced).toBe(true)
+    })
+
+    it('returns 409 when warfare_secondary=true but no active Warfare play', async () => {
+      mockDb({ warfarePlay: null })
+      const res = await handler(makeRequest(warfareBody))
+      expect(res.status).toBe(409)
+      const body = await res.json()
+      expect(body.error).toMatch(/No active Warfare play/)
+    })
+
+    it('returns 409 when warfare_secondary=true but player has no used response', async () => {
+      mockDb({ warfareResponse: null })
+      const res = await handler(makeRequest(warfareBody))
+      expect(res.status).toBe(409)
+      const body = await res.json()
+      expect(body.error).toMatch(/Warfare secondary not used/)
+    })
+
+    it('returns 409 for active_player check when warfare_secondary=false (default)', async () => {
+      mockDb({ game: { ...DEFAULT_GAME, active_player_id: 'other-player' } })
+      const res = await handler(makeRequest({ ...warfareBody, warfare_secondary: false }))
+      expect(res.status).toBe(409)
+      const body = await res.json()
+      expect(body.error).toMatch(/Not your turn/)
+    })
   })
 
   it('increments count on existing unit row', async () => {

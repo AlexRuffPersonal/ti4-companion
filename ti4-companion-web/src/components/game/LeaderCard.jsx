@@ -1,11 +1,14 @@
-export default function LeaderCard({ leader, status, onUseAbility, onUnlock, isMech = false }) {
+import GameIcon from '../shared/GameIcon.jsx'
+
+export default function LeaderCard({ leader, status, onUseAbility, onUnlock, isMech = false, onDeploy, onUseMechAbility }) {
   if (!leader) return null;
 
   const abilityText = leader.ability_text || leader.text;
   const isPurged = status === 'purged';
 
   const typeBadge = leader.leader_type && (
-    <span className="label uppercase text-xs px-1 py-0.5 border border-border rounded">
+    <span className="label uppercase text-xs px-1 py-0.5 border border-border rounded flex items-center gap-1">
+      <GameIcon category="leaders" name={leader.leader_type} size={12} alt={leader.leader_type} />
       {leader.leader_type}
     </span>
   );
@@ -30,45 +33,70 @@ export default function LeaderCard({ leader, status, onUseAbility, onUnlock, isM
 
   let actionButton = null;
   if (isMech) {
-    actionButton = null;
+    const hasDeploy = !!leader.deploy_trigger;
+    const hasActiveEffect = Array.isArray(leader.effects) && leader.effects.length > 0;
+    if (hasDeploy || hasActiveEffect) {
+      actionButton = (
+        <div className="mt-auto pt-1 flex gap-2">
+          {hasDeploy && (
+            <button className="btn-ghost text-xs" onClick={onDeploy}>DEPLOY</button>
+          )}
+          {hasActiveEffect && (
+            <button className="btn-primary text-xs" onClick={onUseMechAbility}>USE ABILITY</button>
+          )}
+        </div>
+      );
+    }
   } else if (leader.leader_type === 'agent') {
     if (status === 'unlocked') {
       actionButton = (
-        <button className="btn-primary text-xs" onClick={() => onUseAbility(leader)}>
-          USE ABILITY
-        </button>
+        <div className="mt-auto pt-1">
+          <button className="btn-primary text-xs" onClick={() => onUseAbility(leader)}>
+            USE ABILITY
+          </button>
+        </div>
       );
     } else if (status === 'exhausted') {
       actionButton = (
-        <button className="btn-primary text-xs" disabled>
-          USE ABILITY
-        </button>
+        <div className="mt-auto pt-1">
+          <button className="btn-primary text-xs" disabled>
+            USE ABILITY
+          </button>
+        </div>
       );
     }
   } else if (leader.leader_type === 'commander') {
     if (status === 'locked') {
       actionButton = (
-        <button className="btn-ghost text-xs" onClick={() => onUnlock(leader)}>
-          CHECK UNLOCK
-        </button>
+        <div className="mt-auto pt-1">
+          <button className="btn-ghost text-xs" onClick={() => onUnlock(leader)}>
+            CHECK UNLOCK
+          </button>
+        </div>
       );
     } else if (status === 'unlocked') {
       actionButton = (
-        <p className="text-xs italic text-muted">Passive — always active</p>
+        <div className="mt-auto pt-1">
+          <p className="text-xs italic text-muted">Passive — always active</p>
+        </div>
       );
     }
   } else if (leader.leader_type === 'hero') {
     if (status === 'locked') {
       actionButton = (
-        <button className="btn-ghost text-xs" onClick={() => onUnlock(leader)}>
-          CHECK UNLOCK
-        </button>
+        <div className="mt-auto pt-1">
+          <button className="btn-ghost text-xs" onClick={() => onUnlock(leader)}>
+            CHECK UNLOCK
+          </button>
+        </div>
       );
     } else if (status === 'unlocked') {
       actionButton = (
-        <button className="btn-primary text-xs" onClick={() => onUseAbility(leader)}>
-          USE ABILITY
-        </button>
+        <div className="mt-auto pt-1">
+          <button className="btn-primary text-xs" onClick={() => onUseAbility(leader)}>
+            USE ABILITY
+          </button>
+        </div>
       );
     }
   }
@@ -102,9 +130,7 @@ export default function LeaderCard({ leader, status, onUseAbility, onUnlock, isM
       {!isMech && status === 'locked' && leader.unlock_criteria && (
         <p className="text-xs text-muted italic">{leader.unlock_criteria}</p>
       )}
-      {!isPurged && actionButton && (
-        <div className="mt-auto pt-1">{actionButton}</div>
-      )}
+      {!isPurged && actionButton}
     </div>
   );
 }

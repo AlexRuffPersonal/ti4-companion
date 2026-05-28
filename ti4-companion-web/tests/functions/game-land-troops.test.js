@@ -18,6 +18,17 @@ vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
   logEvent: vi.fn().mockResolvedValue(undefined),
   EVT_LAND_TROOPS: 'land_troops',
 }))
+vi.mock('../../../supabase/functions/_shared/lawEffects.ts', () => ({
+  assertMovementAllowed: vi.fn().mockResolvedValue(undefined),
+  checkVpMaintenanceLaws: vi.fn().mockResolvedValue(undefined),
+  LawError: class LawError extends Error {
+    constructor(message, status = 409) {
+      super(message)
+      this.name = 'LawError'
+      this.status = status
+    }
+  },
+}))
 
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
@@ -133,6 +144,13 @@ function mockDb({
     }
     if (table === 'game_player_planets') {
       return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+            }),
+          }),
+        }),
         upsert: planetUpsertMock,
       }
     }

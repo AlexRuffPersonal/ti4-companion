@@ -2,6 +2,8 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { logEvent, EVT_RESEARCH_TECH } from '../_shared/gameEvents.ts'
+import { applyCommanderPassives } from '../_shared/leaderEffects.ts'
+import { getHandler } from '../_shared/abilityHandlers.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -100,6 +102,21 @@ export async function handler(req: Request): Promise<Response> {
     }
   }
 
+  // Phase 43c: apply TECH_RESEARCHED commander passives before prerequisite check
+  const techResearchContext: Record<string, unknown> = {
+    gameId: body.game_id,
+    activatingPlayerId: player.id,
+    ignoreOnePrerequisite: false,
+  }
+  const { inlineEffects: techInlineEffects, pendingWindows: techPendingWindows } =
+    await applyCommanderPassives('TECH_RESEARCHED', techResearchContext as never, db)
+  for (const ie of techInlineEffects) {
+    const effect = (ie as Record<string, unknown>).effect
+    if (typeof effect === 'string') {
+      try { await getHandler(effect)(techResearchContext as never, db) } catch { /* non-fatal */ }
+    }
+  }
+
   // Validate prerequisites (unless bypassed by flag, AIDA, or Inheritance Systems)
   const skipPrereqs = bypassPrerequisites || useAiDevAlgo || useInheritance
   if (!skipPrereqs) {
@@ -138,11 +155,19 @@ export async function handler(req: Request): Promise<Response> {
     const prereqs = (tech.prerequisites ?? {}) as Record<string, number>
     const remainingPlanets = [...planetsToExhaust]
 
+    let yinOmarUsed = false
     for (const [colour, needed] of Object.entries(prereqs)) {
       const deficit = needed - (heldCounts[colour] ?? 0)
       if (deficit <= 0) continue
 
       let remaining = deficit
+
+      // Yin Omar passive: ignore one prerequisite colour (applied once, to first deficit found)
+      if (techResearchContext.ignoreOnePrerequisite && !yinOmarUsed) {
+        yinOmarUsed = true
+        remaining = Math.max(0, remaining - 1)
+        if (remaining <= 0) continue
+      }
 
       // Consume matching-specialty planets from the pool
       const used: number[] = []
@@ -224,7 +249,10 @@ export async function handler(req: Request): Promise<Response> {
     round: 0,
     phase: 'action',
   })
-  return okResponse({ researched: true })
+  return okResponse({
+    researched: true,
+    ...(techPendingWindows.length > 0 && { pending_window: techPendingWindows[0] }),
+  })
 }
 
 if (typeof Deno !== 'undefined') Deno.serve(handler)

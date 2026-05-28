@@ -16,6 +16,20 @@ vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
   EVT_ADVANCE_PHASE: 'advance_phase',
 }))
 
+vi.mock('../../../supabase/functions/_shared/lawEffects.ts', () => ({
+  applyStatusPhaseLaws: vi.fn(async (_db, _gameId, updates) => updates),
+}))
+
+vi.mock('../../../supabase/functions/_shared/promissoryEnforcement.ts', () => ({
+  getHeldNotes: vi.fn().mockResolvedValue([]),
+  getActiveNotes: vi.fn().mockResolvedValue({
+    supportForThrone: [], alliance: [], tradeConvoys: [], promiseOfProtection: [],
+    bloodPact: [], darkPact: [], stymie: [], antivirus: [], giftOfPrescience: [],
+    tradeAgreement: [], crucible: [], strikeWingAmbuscade: [],
+  }),
+  returnNote: vi.fn().mockResolvedValue(undefined),
+}))
+
 import { requireAuth } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-advance-phase/index.ts'

@@ -185,4 +185,78 @@ describe('useStrategyCards', () => {
     await act(() => result.current.passSecondary())
     expect(passStrategySecondary).toHaveBeenCalledWith(GAME_ID, PLAY_ID)
   })
+
+  it('agendaPeekCards set from playPrimary response when peek_cards present', async () => {
+    const peekCards = [{ id: 'a1', name: 'Political Favor', text: 'text' }]
+    playStrategyCard.mockResolvedValue({ play_id: 'p1', peek_cards: peekCards })
+
+    const { result } = renderHook(() => useStrategyCards(GAME_ID, MY_PLAYER_ID))
+
+    await act(async () => {
+      await result.current.playPrimary('politics-ability', {})
+    })
+    expect(result.current.agendaPeekCards).toEqual(peekCards)
+  })
+
+  it('clearAgendaPeekCards resets agendaPeekCards to null', async () => {
+    playStrategyCard.mockResolvedValue({ peek_cards: [{ id: 'a1' }] })
+
+    const { result } = renderHook(() => useStrategyCards(GAME_ID, MY_PLAYER_ID))
+
+    await act(async () => {
+      await result.current.playPrimary('politics-ability', {})
+    })
+    expect(result.current.agendaPeekCards).not.toBeNull()
+
+    act(() => { result.current.clearAgendaPeekCards() })
+    expect(result.current.agendaPeekCards).toBeNull()
+  })
+
+  it('warfareHomeSystemKey set from useSecondary response when home_system_key present', async () => {
+    useStrategySecondary.mockResolvedValue({ responded: true, home_system_key: '2,3' })
+
+    const { result } = renderHook(() => useStrategyCards(GAME_ID, MY_PLAYER_ID))
+
+    const playsHandler = mockPlaysChannel.on.mock.calls[0][2]
+    act(() => { playsHandler({ new: ACTIVE_PLAY }) })
+    await waitFor(() => expect(result.current.activePay).toEqual(ACTIVE_PLAY))
+
+    await act(async () => {
+      await result.current.useSecondary('warfare-secondary', {})
+    })
+    expect(result.current.warfareHomeSystemKey).toBe('2,3')
+  })
+
+  it('fetchAgendaTopCards queries game_agenda_deck and returns mapped cards', async () => {
+    const agendaRows = [
+      { agenda_cards: { id: 'a1', name: 'Political Favor', text: 'text1' } },
+      { agenda_cards: { id: 'a2', name: 'Assassinate', text: 'text2' } },
+    ]
+    supabase.from.mockImplementation((table) => {
+      if (table === 'game_agenda_deck') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockResolvedValue({ data: agendaRows }),
+                }),
+              }),
+            }),
+          }),
+        }
+      }
+      return { select: vi.fn().mockReturnThis() }
+    })
+
+    const { result } = renderHook(() => useStrategyCards(GAME_ID, MY_PLAYER_ID))
+    let cards
+    await act(async () => {
+      cards = await result.current.fetchAgendaTopCards()
+    })
+    expect(cards).toEqual([
+      { id: 'a1', name: 'Political Favor', text: 'text1' },
+      { id: 'a2', name: 'Assassinate', text: 'text2' },
+    ])
+  })
 })

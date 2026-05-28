@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { evaluateCondition } from '../../lib/objectiveEvaluator.js'
+import GameIcon from '../shared/GameIcon.jsx'
 import StrategyCardPanel from './StrategyCardPanel.jsx'
 import LeaderPanel from './LeaderPanel.jsx'
 import ExplorationModal from './ExplorationModal.jsx'
@@ -8,6 +9,8 @@ import RelicPanel from './RelicPanel.jsx'
 import LegendaryCardPanel from './LegendaryCardPanel.jsx'
 import TechCard from './TechCard.jsx'
 import { useTechnologies } from '../../hooks/useTechnologies.js'
+
+const TOKEN_ICONS = { tactic_total: 'tactic', fleet: 'fleet', strategy: 'strategy' }
 
 export default function MyPanelSection({
   player, planets, isActive, game,
@@ -64,6 +67,7 @@ export default function MyPanelSection({
         ].map(({ key, label }) => (
           <div key={key} className="text-center">
             <p className="label text-xs">{label}</p>
+            <GameIcon category="tokens" name={TOKEN_ICONS[key]} size={22} alt={label} />
             {isStatusPhase ? (
               <div className="flex items-center gap-1">
                 <button
@@ -97,6 +101,7 @@ export default function MyPanelSection({
         <div className="border-l border-border pl-6 flex gap-6">
           <div className="text-center">
             <p className="label text-xs">COMMOD.</p>
+            <GameIcon category="economy" name="commodity" size={22} alt="commodity" />
             <div className="flex items-center gap-1">
               <button className="counter-btn" onClick={() => onUpdateCommodities(Math.max(0, player.commodities - 1))}>−</button>
               <span className="font-display text-bright text-lg">{player.commodities}</span>
@@ -105,6 +110,7 @@ export default function MyPanelSection({
           </div>
           <div className="text-center">
             <p className="label text-xs">TRADE</p>
+            <GameIcon category="economy" name="trade-good" size={22} alt="trade good" />
             <div className="flex items-center gap-1">
               <button className="counter-btn" onClick={() => onUpdateTradeGoods(Math.max(0, player.trade_goods - 1))}>−</button>
               <span className="font-display text-bright text-lg">{player.trade_goods}</span>
@@ -149,6 +155,17 @@ export default function MyPanelSection({
               : leaders.unlockHero(leader.id)
           }
           onUseAbility={(leader) => leaders.resolveLeaderAbility(leader.ability_definition_id, leader.id, {})}
+          planets={planets}
+          currentPlayerId={player?.id}
+          onDeployMech={(unitId, systemKey, planetName, replacingInfantry) =>
+            leaders.deployMech(unitId, systemKey, planetName, replacingInfantry)}
+          onUseMechAbility={(mech) => leaders.resolveMechAbility(mech.id, {})}
+          leaderModalOpen={leaders.leaderModalOpen}
+          activeLeader={leaders.activeLeader}
+          onConfirm={leaders.handleConfirm}
+          onClose={leaders.handleCloseLeaderModal}
+          gamePlayers={allPlayers}
+          faction={player?.faction}
         />
       )}
 
@@ -217,8 +234,11 @@ export default function MyPanelSection({
                     </span>
                     {staticInfo && (
                       <>
-                        <span className="text-muted text-xs shrink-0">
-                          {staticInfo.resources}/{staticInfo.influence}
+                        <span className="flex items-center gap-0.5 text-xs shrink-0">
+                          <GameIcon category="planet" name="resource" size={12} alt="resource" />
+                          <span>{staticInfo.resources}</span>
+                          <GameIcon category="planet" name="influence" size={12} alt="influence" />
+                          <span>{staticInfo.influence}</span>
                         </span>
                         {staticInfo.tech_specialty &&
                           <span className={`text-xs px-1 rounded font-mono tech-chip-${staticInfo.tech_specialty}`}>

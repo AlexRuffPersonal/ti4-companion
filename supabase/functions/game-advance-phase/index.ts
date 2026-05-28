@@ -2,6 +2,8 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { logEvent, EVT_ADVANCE_PHASE } from '../_shared/gameEvents.ts'
+import { applyStatusPhaseLaws } from '../_shared/lawEffects.ts'
+import { getHeldNotes, getActiveNotes, returnNote } from '../_shared/promissoryEnforcement.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -29,6 +31,8 @@ export async function handler(req: Request): Promise<Response> {
   if (!['strategy', 'action', 'status'].includes(game.phase)) {
     return errorResponse(`Cannot advance from phase: ${game.phase}`, 409)
   }
+
+  const responseExtras: Record<string, unknown> = {}
 
   if (game.phase === 'strategy') {
     // Strategy → Action: set active player to lowest strategy_card
@@ -58,21 +62,41 @@ export async function handler(req: Request): Promise<Response> {
       if (windowError) return errorResponse(`Update failed: ${windowError.message}`, 500)
     }
 
-    const { data: players, error: playersError } = await db
-      .from('game_players')
-      .select('id, strategy_card')
-      .eq('game_id', body.game_id)
-      .not('strategy_card', 'is', null)
-      .order('strategy_card', { ascending: true })
-      .limit(1)
-    if (playersError) return errorResponse('Database error', 500)
-    const firstPlayer = players?.[0] ?? null
+    // Check for Gift of Prescience (in_play) — holder picks at initiative 0
+    const strategyActiveNotes = await getActiveNotes(body.game_id, db)
+    const giftEntries = strategyActiveNotes.giftOfPrescience
+    let firstPlayer: { id: string } | null = null
+    if (giftEntries.length > 0) {
+      // Gift of Prescience holder goes first (initiative 0)
+      firstPlayer = { id: giftEntries[0].holderPlayerId }
+      responseExtras.gift_of_prescience_holder_id = giftEntries[0].holderPlayerId
+      // Naalu (owner) loses their Telepathic ability — holder now has the initiative 0 benefit instead
+      responseExtras.gift_of_prescience_owner_id = giftEntries[0].ownerPlayerId
+      responseExtras.naalu_telepathic_skipped = true
+    } else {
+      const { data: players, error: playersError } = await db
+        .from('game_players')
+        .select('id, strategy_card')
+        .eq('game_id', body.game_id)
+        .not('strategy_card', 'is', null)
+        .order('strategy_card', { ascending: true })
+        .limit(1)
+      if (playersError) return errorResponse('Database error', 500)
+      firstPlayer = players?.[0] ?? null
+    }
 
     const { error } = await db
       .from('games')
       .update({ phase: 'action', active_player_id: firstPlayer?.id ?? null })
       .eq('id', body.game_id)
     if (error) return errorResponse(`Update failed: ${error.message}`, 500)
+
+    // Reset Minister of War unlock at the start of each action phase
+    const { error: mowError } = await db
+      .from('game_players')
+      .update({ minister_of_war_unlocked: false })
+      .eq('game_id', body.game_id)
+    if (mowError) return errorResponse(`Failed to reset minister_of_war_unlocked: ${mowError.message}`, 500)
 
   } else if (game.phase === 'action') {
     // Action → Status: clear active player
@@ -128,14 +152,24 @@ export async function handler(req: Request): Promise<Response> {
       .eq('game_id', body.game_id)
     if (planetsError) return errorResponse(`Failed to ready planets: ${planetsError.message}`, 500)
 
-    // Load all players for tech effects
+    // Load all players for tech effects + commodity replenishment
     const { data: allPlayers, error: allPlayersError } = await db
       .from('game_players')
-      .select('id, technologies, action_card_count, command_tokens, leaders')
+      .select('id, faction, technologies, action_card_count, command_tokens, commodities, trade_goods, leaders')
       .eq('game_id', body.game_id)
     if (allPlayersError) return errorResponse('Database error', 500)
 
+    // Load Trade Agreement held notes once for the whole status phase replenish step
+    const tradeAgreementNotes = await getHeldNotes(body.game_id, 'Trade Agreement', db)
+
     // Per-player tech updates: Neural Motivator (action cards) + Hyper Metabolism (command tokens)
+    // Build playerUpdates array for token gains, then apply Executive Sanctions law cap
+    const rawPlayerUpdates = (allPlayers ?? []).map((player: { id: string; technologies?: string[]; command_tokens?: { tactic_total: number; fleet: number; strategy: number } }) => {
+      const hasHyperMetabolism = (player.technologies ?? []).includes('Hyper Metabolism')
+      return { playerId: player.id, tokenGain: hasHyperMetabolism ? 3 : 2 }
+    })
+    const playerUpdates = await applyStatusPhaseLaws(db, body.game_id, rawPlayerUpdates)
+
     for (const player of (allPlayers ?? [])) {
       const hasNeuralMotivator = (player.technologies ?? []).includes('Neural Motivator')
       const cardGain = hasNeuralMotivator ? 2 : 1
@@ -145,14 +179,59 @@ export async function handler(req: Request): Promise<Response> {
         .eq('id', player.id)
       if (cardError) return errorResponse(`Failed to update action cards: ${cardError.message}`, 500)
 
-      const hasHyperMetabolism = (player.technologies ?? []).includes('Hyper Metabolism')
-      const stratGain = hasHyperMetabolism ? 3 : 2
+      const update = playerUpdates.find((u: { playerId: string; tokenGain: number }) => u.playerId === player.id)
+      const tokenGain = update?.tokenGain ?? 2
       const tokens = player.command_tokens ?? { tactic_total: 0, fleet: 0, strategy: 0 }
       const { error: tokenError } = await db
         .from('game_players')
-        .update({ command_tokens: { ...tokens, strategy: (tokens.strategy ?? 0) + stratGain } })
+        .update({ command_tokens: { ...tokens, strategy: (tokens.strategy ?? 0) + tokenGain } })
         .eq('id', player.id)
       if (tokenError) return errorResponse(`Failed to update command tokens: ${tokenError.message}`, 500)
+
+      // Replenish commodities to faction max
+      if (player.faction) {
+        const { data: factionRow, error: factionError } = await db
+          .from('factions')
+          .select('commodities')
+          .eq('name', player.faction)
+          .maybeSingle()
+        if (factionError) return errorResponse(`Failed to load faction data: ${factionError.message}`, 500)
+        const commodityMax = (factionRow as { commodities: number } | null)?.commodities ?? 0
+
+        // Trade Agreement: if this player owns a held note, transfer commodities to holder instead of replenishing
+        const taNote = tradeAgreementNotes.find((n) => n.ownerPlayerId === player.id)
+        if (taNote && commodityMax > 0) {
+          // Write commodities: 0 directly (skip replenish → transfer in one write)
+          const { error: ownerCommError } = await db
+            .from('game_players')
+            .update({ commodities: 0 })
+            .eq('id', player.id)
+          if (ownerCommError) return errorResponse(`Failed to transfer owner commodities: ${ownerCommError.message}`, 500)
+          // Find holder's current trade_goods
+          const holderData = (allPlayers ?? []).find((p: { id: string }) => p.id === taNote.holderPlayerId)
+          const holderTg = (holderData as { trade_goods?: number } | undefined)?.trade_goods ?? 0
+          // Holder gains trade_goods equal to commodity_max
+          const { error: holderTgError } = await db
+            .from('game_players')
+            .update({ trade_goods: holderTg + commodityMax })
+            .eq('id', taNote.holderPlayerId)
+          if (holderTgError) return errorResponse(`Failed to update holder trade goods: ${holderTgError.message}`, 500)
+          // Return the note to owner
+          try {
+            await returnNote(taNote.instanceId, taNote.ownerPlayerId, db)
+          } catch (e: unknown) {
+            const message = e instanceof Error ? e.message : String(e)
+            return errorResponse('Failed to return note: ' + message, 500)
+          }
+        } else {
+          // Normal replenishment (no Trade Agreement in play for this player)
+          const { error: commError } = await db
+            .from('game_players')
+            .update({ commodities: commodityMax })
+            .eq('id', player.id)
+          if (commError) return errorResponse(`Failed to replenish commodities: ${commError.message}`, 500)
+        }
+      }
     }
 
     // Check for Bioplasmosis
@@ -233,6 +312,28 @@ export async function handler(req: Request): Promise<Response> {
       if (flagsError) return errorResponse(`Failed to reset round flags: ${flagsError.message}`, 500)
     }
 
+    // Return Gift of Prescience notes at status phase END (they were in_play this round)
+    const statusPhaseActiveNotes = await getActiveNotes(body.game_id, db)
+    for (const giftEntry of statusPhaseActiveNotes.giftOfPrescience) {
+      try {
+        await returnNote(giftEntry.instanceId, giftEntry.ownerPlayerId, db)
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e)
+        return errorResponse('Failed to return note: ' + message, 500)
+      }
+    }
+
+    // Detect Scepter of Dominion (held) at strategy phase start — flag in response, 39c handles returnNote
+    if (nextPhase === 'strategy') {
+      const scepterNotes = await getHeldNotes(body.game_id, 'Scepter of Dominion', db)
+      if (scepterNotes.length > 0) {
+        responseExtras.scepter_of_dominion_holders = scepterNotes.map((n) => ({
+          instanceId: n.instanceId,
+          holderPlayerId: n.holderPlayerId,
+        }))
+      }
+    }
+
     // Reset vote_prevented when transitioning into agenda phase
     if (game.agenda_unlocked) {
       const { error: votePreventedError } = await db
@@ -262,7 +363,7 @@ export async function handler(req: Request): Promise<Response> {
     round: roundAfter,
     phase: phaseAfter,
   })
-  return okResponse({ advanced: true })
+  return okResponse({ advanced: true, ...responseExtras })
 }
 
 if (typeof Deno !== 'undefined') Deno.serve(handler)

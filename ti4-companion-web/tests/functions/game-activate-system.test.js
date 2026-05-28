@@ -15,6 +15,16 @@ vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
   EVT_ACTIVATE_SYSTEM: 'activate_system',
 }))
 
+vi.mock('../../../supabase/functions/_shared/promissoryEnforcement.ts', () => ({
+  getHeldNotes: vi.fn().mockResolvedValue([]),
+  getActiveNotes: vi.fn().mockResolvedValue({
+    supportForThrone: [], alliance: [], tradeConvoys: [], promiseOfProtection: [],
+    bloodPact: [], darkPact: [], stymie: [], antivirus: [], giftOfPrescience: [],
+    tradeAgreement: [], crucible: [], strikeWingAmbuscade: [],
+  }),
+  returnNote: vi.fn().mockResolvedValue(undefined),
+}))
+
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { logEvent } from '../../../supabase/functions/_shared/gameEvents.ts'
@@ -43,7 +53,9 @@ function mockDb({
   activationError = null,
   insertError = null,
 } = {}) {
-  insertMock = vi.fn().mockResolvedValue({ error: insertError })
+  insertMock = vi.fn().mockReturnValue({
+    select: vi.fn().mockResolvedValue({ data: [{ id: 'activation-uuid' }], error: insertError }),
+  })
   db.from.mockImplementation((table) => {
     if (table === 'game_players') {
       return {

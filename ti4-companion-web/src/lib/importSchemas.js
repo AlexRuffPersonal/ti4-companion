@@ -326,7 +326,27 @@ const importSchemas = {
         type: 'TEXT array',
         default : [],
         description: 'An array of any abilities'
-      }
+      },
+      {
+        name: 'ability_text',
+        required: false,
+        type: 'text',
+        description: 'Full rules text for the mech\'s unique ability. null for generic units.',
+      },
+      {
+        name: 'effects',
+        required: false,
+        type: 'JSONB array',
+        default: '[]',
+        description: 'DSL ops array for server-enforced mech ability resolution. Empty array for mechs with no automated effects.',
+      },
+      {
+        name: 'deploy_trigger',
+        required: false,
+        type: 'text',
+        values: ['ground_combat_start', 'after_tech_research', 'after_retreat', 'after_produce', 'after_exploration'],
+        description: 'When this mech may be deployed. null for mechs that cannot be deployed via ability.',
+      },
     ],
   },
 

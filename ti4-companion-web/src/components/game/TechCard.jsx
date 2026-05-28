@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import { EXHAUSTABLE_TECHS, ACTION_TECHS } from '../../lib/techConstants.js'
+import GameIcon from '../shared/GameIcon.jsx'
 
-// Prereq dot colours are keyed by the colour strings from tech.prerequisites object keys,
-// which remain 'green'/'blue'/'yellow'/'red' regardless of the technology_type field.
-const COLOUR_DOT = {
-  green:  'bg-success',
-  blue:   'bg-plasma',
-  yellow: 'bg-warning',
-  red:    'bg-danger',
+const TECH_TYPE_ICON = {
+  green: 'biotic',
+  blue: 'propulsion',
+  yellow: 'cybernetic',
+  red: 'warfare',
 }
 
 const STATUS_BORDER = {
@@ -33,19 +32,7 @@ export default function TechCard({ tech, isOwnTree, isSelected, onSelect, onConf
   const borderClass = STATUS_BORDER[tech.status] ?? STATUS_BORDER.unavailable
   const canResearch = isOwnTree && isSelected && tech.status !== 'held' && tech.status !== 'unavailable'
 
-  // Build prereq dots: filled for satisfied, empty for missing
-  const prereqs = tech.prerequisites ?? {}
-  const dots = []
-  for (const [colour, needed] of Object.entries(prereqs)) {
-    const missing = tech.missingPrereqs?.find(m => m.colour === colour)?.count ?? 0
-    const satisfied = needed - missing
-    for (let i = 0; i < satisfied; i++) {
-      dots.push({ colour, filled: true })
-    }
-    for (let i = 0; i < missing; i++) {
-      dots.push({ colour, filled: false })
-    }
-  }
+  const typeIconName = TECH_TYPE_ICON[tech.technology_type]
 
   return (
     <div
@@ -53,24 +40,11 @@ export default function TechCard({ tech, isOwnTree, isSelected, onSelect, onConf
       className={`rounded-md border-2 p-2 cursor-pointer transition-all ${borderClass} ${isSelected ? 'ring-2 ring-offset-1 ring-gold' : ''} ${isExhausted ? 'opacity-50 rotate-6' : ''}`}
       onClick={() => onSelect(tech.id)}
     >
-      {/* Prereq dots */}
-      {dots.length > 0 && (
-        <div className="flex gap-1 mb-1">
-          {dots.map((dot, i) =>
-            dot.filled ? (
-              <span
-                key={i}
-                data-testid="prereq-dot-filled"
-                className={`w-2.5 h-2.5 rounded-full ${COLOUR_DOT[dot.colour] ?? 'bg-muted'}`}
-              />
-            ) : (
-              <span
-                key={i}
-                data-testid="prereq-dot-empty"
-                className={`w-2.5 h-2.5 rounded-full border border-current opacity-40`}
-              />
-            )
-          )}
+      {/* Tech type icon row */}
+      {typeIconName && (
+        <div data-testid="tech-type-icon-row" className="flex items-center gap-1 mb-1">
+          <GameIcon category="tech" name={typeIconName} size={16} alt={typeIconName} />
+          <span data-testid="tech-type-label">{typeIconName.toUpperCase()}</span>
         </div>
       )}
 

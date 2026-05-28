@@ -91,30 +91,42 @@ export async function handler(req: Request): Promise<Response> {
     .eq('id', combat.retreat_declared_by ?? player.id)
     .maybeSingle()
   const hasDarkEnergyTap = ((retreatingPlayer as { technologies?: string[] } | null)?.technologies ?? []).includes('Dark Energy Tap')
-  const maxHops = hasDarkEnergyTap ? 2 : 1
+  const maxHops = 1
 
   if (!isWithinHops(combat.system_key, body.destination, maxHops, mapTiles, [])) {
     return errorResponse('Destination is not adjacent to the combat system', 409)
   }
 
-  // Check player has presence in destination (ships in space area)
-  const { data: unitsInDest } = await db
-    .from('game_player_units').select('id')
-    .eq('game_id', body.game_id)
-    .eq('system_key', body.destination)
-    .eq('player_id', player.id)
-    .is('on_planet', null)
-    .limit(1)
+  if (hasDarkEnergyTap) {
+    // DET: destination must be completely empty — no ships from any player
+    const { data: allShipsInDest } = await db
+      .from('game_player_units').select('id')
+      .eq('game_id', body.game_id)
+      .eq('system_key', body.destination)
+      .is('on_planet', null)
+    if ((allShipsInDest ?? []).length > 0) {
+      return errorResponse('Destination must be empty for Dark Energy Tap retreat', 409)
+    }
+  } else {
+    // Standard: player must have presence in destination (ships in space area or controlled planets)
+    const { data: unitsInDest } = await db
+      .from('game_player_units').select('id')
+      .eq('game_id', body.game_id)
+      .eq('system_key', body.destination)
+      .eq('player_id', player.id)
+      .is('on_planet', null)
+      .limit(1)
 
-  const { data: planetsInDest } = await db
-    .from('game_player_planets').select('id')
-    .eq('game_id', body.game_id)
-    .eq('system_key', body.destination)
-    .eq('player_id', player.id)
-    .limit(1)
+    const { data: planetsInDest } = await db
+      .from('game_player_planets').select('id')
+      .eq('game_id', body.game_id)
+      .eq('system_key', body.destination)
+      .eq('player_id', player.id)
+      .limit(1)
 
-  if ((unitsInDest ?? []).length === 0 && (planetsInDest ?? []).length === 0) {
-    return errorResponse('No presence in destination system: no units or controlled planets', 409)
+    if ((unitsInDest ?? []).length === 0 && (planetsInDest ?? []).length === 0) {
+      return errorResponse('No presence in destination system: no units or controlled planets', 409)
+    }
   }
 
   // Check CC availability in reinforcements (tactic_total = unspent reinforcement CCs)

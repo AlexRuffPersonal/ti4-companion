@@ -2,9 +2,22 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { playStrategyCard, useStrategySecondary, passStrategySecondary } from '../lib/edgeFunctions.js'
 
+async function fetchAgendaTopCards(gameId) {
+  const { data } = await supabase
+    .from('game_agenda_deck')
+    .select('agenda_cards(id, name, text)')
+    .eq('game_id', gameId)
+    .eq('state', 'deck')
+    .order('deck_position', { ascending: true })
+    .limit(2)
+  return ((data ?? []).map((row) => row.agenda_cards).filter(Boolean))
+}
+
 export function useStrategyCards(gameId, myPlayerId) {
   const [activePay, setActivePay] = useState(null)
   const [responses, setResponses] = useState([])
+  const [agendaPeekCards, setAgendaPeekCards] = useState(null)
+  const [warfareHomeSystemKey, setWarfareHomeSystemKey] = useState(null)
 
   // Subscribe to active play for this game
   useEffect(() => {
@@ -74,9 +87,21 @@ export function useStrategyCards(gameId, myPlayerId) {
     activePay,
     responses,
     isMyTurnToRespond,
-    playPrimary: (abilityId, selections) => playStrategyCard(gameId, abilityId, selections),
-    useSecondary: (abilityId, selections) =>
-      useStrategySecondary(gameId, activePay?.id, abilityId, selections),
+    agendaPeekCards,
+    clearAgendaPeekCards: () => setAgendaPeekCards(null),
+    warfareHomeSystemKey,
+    clearWarfareHomeSystemKey: () => setWarfareHomeSystemKey(null),
+    fetchAgendaTopCards: () => fetchAgendaTopCards(gameId),
+    playPrimary: async (abilityId, selections) => {
+      const result = await playStrategyCard(gameId, abilityId, selections)
+      if (result?.peek_cards) setAgendaPeekCards(result.peek_cards)
+      return result
+    },
+    useSecondary: async (abilityId, selections) => {
+      const result = await useStrategySecondary(gameId, activePay?.id, abilityId, selections)
+      if (result?.home_system_key) setWarfareHomeSystemKey(result.home_system_key)
+      return result
+    },
     passSecondary: () => passStrategySecondary(gameId, activePay?.id),
   }
 }

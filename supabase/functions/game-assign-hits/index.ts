@@ -3,6 +3,8 @@ import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { checkAndEliminate } from '../_shared/eliminationHandler.ts'
 import { logEvent, EVT_ASSIGN_HITS } from '../_shared/gameEvents.ts'
+import { collectReactiveAgents, applyCommanderPassives } from '../_shared/leaderEffects.ts'
+import { assertCombatHitAllowed, checkVpMaintenanceLaws, LawError } from '../_shared/lawEffects.ts'
 
 type Casualty = { unit_type: string; player_unit_id: string; action: 'destroy' | 'sustain' }
 type UnitRow = { id: string; player_id: string; unit_type: string; count: number; damaged: boolean; system_key: string }
@@ -17,7 +19,7 @@ export async function handler(req: Request): Promise<Response> {
     return errorResponse('Internal server error', 500)
   }
 
-  let body: { game_id?: unknown; combat_id?: unknown; casualties?: unknown }
+  let body: { game_id?: unknown; combat_id?: unknown; casualties?: unknown; phase?: unknown }
   try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
   if (!body.game_id || typeof body.game_id !== 'string') return errorResponse("'game_id' is required")
   if (!body.combat_id || typeof body.combat_id !== 'string') return errorResponse("'combat_id' is required")
@@ -67,6 +69,16 @@ export async function handler(req: Request): Promise<Response> {
 
   // Validate casualties
   for (const c of casualties) {
+    // Check persistent law restrictions before allowing the casualty (destroy only — sustain is not a destruction)
+    if (c.action === 'destroy') {
+      try {
+        await assertCombatHitAllowed(db, body.game_id, c.unit_type)
+      } catch (err) {
+        if (err instanceof LawError) return errorResponse(err.message, 409)
+        throw err
+      }
+    }
+
     if (c.action === 'sustain') {
       const def = defMap.get(c.unit_type)
       if (!def?.sustain_damage) return errorResponse(`Cannot sustain ${c.unit_type}: no Sustain Damage ability`, 409)
@@ -97,6 +109,13 @@ export async function handler(req: Request): Promise<Response> {
     }
   }
 
+  // Fetch all game players for reactive agent checks
+  const { data: allPlayers } = await db
+    .from('game_players').select('id, faction, leaders')
+    .eq('game_id', body.game_id)
+
+  const sustainDamageOccurred = casualties.some(c => c.action === 'sustain')
+
   // Track ships destroyed for objective condition evaluation
   const totalDestroyed = new Map<string, number>() // unitType → count destroyed
   for (const [unitId, removeCount] of destroyCounts.entries()) {
@@ -117,6 +136,30 @@ export async function handler(req: Request): Promise<Response> {
     await db.from('game_combats').update({ ships_destroyed: updatedShipsDestroyed }).eq('id', body.combat_id)
   }
 
+  // Collect reactive agent windows
+  const pendingWindows: { type: string; player_id: string; faction: string }[] = []
+  const players = (allPlayers ?? []) as Record<string, unknown>[]
+  if (sustainDamageOccurred) {
+    const sustainAgents = collectReactiveAgents(players, 'SUSTAIN_DAMAGE', player.id)
+    for (const a of sustainAgents) {
+      pendingWindows.push({ type: 'reactive_agent', ...a })
+    }
+  }
+  if (body.phase === 'ground_combat_start') {
+    const gcAgents = collectReactiveAgents(players, 'GROUND_COMBAT_START', player.id)
+    for (const a of gcAgents) {
+      pendingWindows.push({ type: 'reactive_agent', ...a })
+    }
+  }
+
+  // Phase 43c: apply SUSTAIN_DAMAGE commander passives (e.g. Letnev gain TG)
+  const hitContext: Record<string, unknown> = { gameId: body.game_id, activatingPlayerId: player.id, faction: '' }
+  let commanderPendingWindow: unknown = undefined
+  if (sustainDamageOccurred) {
+    const { pendingWindows: sustainWindows } = await applyCommanderPassives('SUSTAIN_DAMAGE', hitContext as never, db)
+    if (sustainWindows.length > 0) commanderPendingWindow = sustainWindows[0]
+  }
+
   // If this was defender_assign, advance to defender_roll
   if (isDefenderAssign) {
     await db.from('game_combats').update({ phase: 'defender_roll' }).eq('id', body.combat_id)
@@ -129,7 +172,7 @@ export async function handler(req: Request): Promise<Response> {
       round: 0,
       phase: 'action',
     })
-    return okResponse({ phase: 'defender_roll', eliminatedPlayerIds })
+    return okResponse({ phase: 'defender_roll', eliminatedPlayerIds, ...(pendingWindows.length > 0 ? { pending_windows: pendingWindows } : {}), ...(commanderPendingWindow ? { pending_window: commanderPendingWindow } : {}) })
   }
 
   // attacker_assign — check end-of-round conditions
@@ -172,7 +215,7 @@ export async function handler(req: Request): Promise<Response> {
       round: 0,
       phase: 'action',
     })
-    return okResponse({ status: 'complete', winner_player_id: winnerId, eliminatedPlayerIds })
+    return okResponse({ status: 'complete', winner_player_id: winnerId, eliminatedPlayerIds, ...(pendingWindows.length > 0 ? { pending_windows: pendingWindows } : {}), ...(commanderPendingWindow ? { pending_window: commanderPendingWindow } : {}) })
   }
 
   // Check for 0 ships on either side
@@ -201,6 +244,21 @@ export async function handler(req: Request): Promise<Response> {
       status: 'complete',
       winner_player_id: winnerId,
     }).eq('id', body.combat_id)
+
+    // Phase 43c: if attacker wins ground combat, fire PLANET_CONTROL_GAINED passive
+    const isGroundVictory = combat.combat_type === 'ground' && combat.planet_name && atkAlive > 0
+    if (isGroundVictory) {
+      await checkVpMaintenanceLaws(db, body.game_id, combat.defender_player_id, combat.planet_name)
+    }
+    if (isGroundVictory && !commanderPendingWindow) {
+      const { pendingWindows: planetWindows } = await applyCommanderPassives(
+        'PLANET_CONTROL_GAINED',
+        { ...hitContext, planetName: combat.planet_name } as never,
+        db,
+      )
+      if (planetWindows.length > 0) commanderPendingWindow = planetWindows[0]
+    }
+
     const eliminatedPlayerIds = await checkAndEliminate(db, body.game_id as string)
     await logEvent(db, {
       game_id: body.game_id,
@@ -210,7 +268,7 @@ export async function handler(req: Request): Promise<Response> {
       round: 0,
       phase: 'action',
     })
-    return okResponse({ status: 'complete', winner_player_id: winnerId, eliminatedPlayerIds })
+    return okResponse({ status: 'complete', winner_player_id: winnerId, eliminatedPlayerIds, ...(pendingWindows.length > 0 ? { pending_windows: pendingWindows } : {}), ...(commanderPendingWindow ? { pending_window: commanderPendingWindow } : {}) })
   }
 
   // Continue to next round
@@ -233,7 +291,7 @@ export async function handler(req: Request): Promise<Response> {
     round: 0,
     phase: 'action',
   })
-  return okResponse({ phase: 'attacker_roll', round: nextRound, eliminatedPlayerIds })
+  return okResponse({ phase: 'attacker_roll', round: nextRound, eliminatedPlayerIds, ...(pendingWindows.length > 0 ? { pending_windows: pendingWindows } : {}), ...(commanderPendingWindow ? { pending_window: commanderPendingWindow } : {}) })
 }
 
 if (typeof Deno !== 'undefined') Deno.serve(handler)

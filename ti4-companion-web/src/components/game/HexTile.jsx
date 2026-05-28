@@ -1,3 +1,5 @@
+import { SvgImageIcon } from '../shared/GameIcon.jsx'
+
 function hexPolygonPoints(size) {
   return [0, 60, 120, 180, 240, 300]
     .map(deg => {
@@ -16,18 +18,27 @@ export default function HexTile({ systemKey, tileNumber, planets, activations, u
     borderColour = p?.colour ?? '#4a5568'
   }
 
-  const infantryCount = units
-    .filter(u => u.unit_type === 'infantry')
-    .reduce((sum, u) => sum + (u.count ?? 0), 0)
-  const mechCount = pokEnabled
-    ? units.filter(u => u.unit_type === 'mech').reduce((sum, u) => sum + (u.count ?? 0), 0)
-    : 0
+  // Space unit aggregation
+  const spaceUnitCounts = {}
+  for (const unit of units.filter(u => u.on_planet === null || u.on_planet === undefined)) {
+    if (!spaceUnitCounts[unit.unit_type]) spaceUnitCounts[unit.unit_type] = 0
+    spaceUnitCounts[unit.unit_type] += unit.count ?? 0
+  }
 
-  const badgeParts = []
-  if (infantryCount > 0) badgeParts.push(`${infantryCount}I`)
-  if (mechCount > 0) badgeParts.push(`${mechCount}M`)
-  const badgeText = badgeParts.join(' ')
-  const badgeWidth = Math.max(20, badgeText.length * 5.5 + 6)
+  // Per-planet ground aggregation
+  const groundByPlanet = {}
+  for (const unit of units.filter(u => u.on_planet != null)) {
+    if (unit.unit_type === 'infantry' || (pokEnabled && unit.unit_type === 'mech')) {
+      if (!groundByPlanet[unit.on_planet]) groundByPlanet[unit.on_planet] = { infantry: 0, mech: 0 }
+      groundByPlanet[unit.on_planet][unit.unit_type] = (groundByPlanet[unit.on_planet][unit.unit_type] ?? 0) + (unit.count ?? 0)
+    }
+  }
+  const groundEntries = Object.entries(groundByPlanet).filter(([, counts]) => counts.infantry > 0 || counts.mech > 0)
+
+  const spaceUnitEntries = Object.entries(spaceUnitCounts)
+  const hasSpaceUnits = spaceUnitEntries.length > 0
+
+  const y_space = size * 0.30
 
   return (
     <g
@@ -71,14 +82,48 @@ export default function HexTile({ systemKey, tileNumber, planets, activations, u
         )
       })}
 
-      {badgeText && (
-        <g transform={`translate(0,${size - 14})`}>
-          <rect x={-badgeWidth / 2} y={-8} width={badgeWidth} height={14} rx={3} fill="#1a202c" stroke="#4a5568" strokeWidth={1} />
-          <text x={0} y={2} textAnchor="middle" fontSize={9} fill="#e2e8f0" fontFamily="Space Mono,monospace">
-            {badgeText}
-          </text>
+      {/* Space units row */}
+      {hasSpaceUnits && (
+        <g>
+          <rect x={-size * 0.8} y={y_space} width={size * 1.6} height={14} rx={2} fill="#1a202c" fillOpacity={0.7} stroke="#4a5568" strokeWidth={1} />
+          {(() => {
+            let x_offset = -size * 0.78
+            return spaceUnitEntries.map(([type, count]) => {
+              const icon = (
+                <g key={type}>
+                  <SvgImageIcon category="units" name={type} x={x_offset} y={y_space + 1} size={12} data-testid={`space-unit-icon-${type}`} />
+                  <text x={x_offset + 14} y={y_space + 10} fontSize={8} fill="#cbd5e0" fontFamily="Space Mono,monospace">×{count}</text>
+                </g>
+              )
+              x_offset += 26
+              return icon
+            })
+          })()}
         </g>
       )}
+
+      {/* Per-planet ground boxes */}
+      {groundEntries.map(([planetName, counts], i) => {
+        const y_ground = y_space + 16 + i * 16
+        return (
+          <g key={planetName}>
+            <rect x={-size * 0.75} y={y_ground} width={size * 1.5} height={13} rx={2} fill="#1a202c" fillOpacity={0.7} stroke="#4a5568" strokeWidth={1} />
+            <text x={-size * 0.73} y={y_ground + 9} fontSize={7} fill="#6b7280" fontFamily="Rajdhani,sans-serif">{planetName}</text>
+            {counts.infantry > 0 && (
+              <>
+                <SvgImageIcon category="units" name="infantry" x={0} y={y_ground + 1} size={10} data-testid={`ground-unit-icon-infantry-${planetName}`} />
+                <text x={13} y={y_ground + 9} fontSize={8} fill="#cbd5e0" fontFamily="Space Mono,monospace">×{counts.infantry}</text>
+              </>
+            )}
+            {counts.mech > 0 && (
+              <>
+                <SvgImageIcon category="units" name="mech" x={22} y={y_ground + 1} size={10} data-testid={`ground-unit-icon-mech-${planetName}`} />
+                <text x={35} y={y_ground + 9} fontSize={8} fill="#cbd5e0" fontFamily="Space Mono,monospace">×{counts.mech}</text>
+              </>
+            )}
+          </g>
+        )
+      })}
     </g>
   )
 }
