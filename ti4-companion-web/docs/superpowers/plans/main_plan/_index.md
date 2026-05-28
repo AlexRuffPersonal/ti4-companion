@@ -268,13 +268,13 @@ This keeps the index accurate across multi-session implementations so future age
 
 | [migration-048-promissory-dsl](migration-048-promissory-dsl.md) | `supabase/migrations/048_promissory_dsl.sql` | 39a | Promissory Note DSL Effects | planned | migration-032-promissory-effects |
 | [shared-abilityDsl-p39a](shared-abilityDsl-p39a.md) | `supabase/functions/_shared/abilityDsl.ts` | 39a | Promissory Note DSL Effects | planned | migration-048-promissory-dsl |
-| [shared-promissoryHandlers-p39a](shared-promissoryHandlers-p39a.md) | `supabase/functions/_shared/promissoryHandlers.ts` | 39a | Promissory Note DSL Effects | planned | shared-abilityDsl-p39a |
+| [shared-promissoryHandlers-p39a](shared-promissoryHandlers-p39a.md) | `supabase/functions/_shared/promissoryHandlers.ts` | 39a | Promissory Note DSL Effects | done | shared-abilityDsl-p39a |
 | [shared-promissoryEnforcement-p39a](shared-promissoryEnforcement-p39a.md) | `supabase/functions/_shared/promissoryEnforcement.ts` | 39a | Promissory Note DSL Effects | planned | shared-promissoryHandlers-p39a |
-| [fn-game-play-promissory-note-p39a](fn-game-play-promissory-note-p39a.md) | `supabase/functions/game-play-promissory-note/index.ts` | 39a | Promissory Note DSL Effects | planned | shared-abilityDsl-p39a, shared-promissoryHandlers-p39a |
+| [fn-game-play-promissory-note-p39a](fn-game-play-promissory-note-p39a.md) | `supabase/functions/game-play-promissory-note/index.ts` | 39a | Promissory Note DSL Effects | in-progress | shared-abilityDsl-p39a, shared-promissoryHandlers-p39a |
 
 | [fn-game-confirm-transaction-p39b](fn-game-confirm-transaction-p39b.md) | `supabase/functions/game-confirm-transaction/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
 | [fn-game-activate-system-p39b](fn-game-activate-system-p39b.md) | `supabase/functions/game-activate-system/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
-| [fn-game-advance-phase-p39b](fn-game-advance-phase-p39b.md) | `supabase/functions/game-advance-phase/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
+| [fn-game-advance-phase-p39b](fn-game-advance-phase-p39b.md) | `supabase/functions/game-advance-phase/index.ts` | 39b | Promissory Note DSL Effects | done | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
 | [fn-game-create-transaction-p39b](fn-game-create-transaction-p39b.md) | `supabase/functions/game-create-transaction/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
 | [fn-game-cast-votes-p39b](fn-game-cast-votes-p39b.md) | `supabase/functions/game-cast-votes/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
 | [fn-game-produce-units-p39b](fn-game-produce-units-p39b.md) | `supabase/functions/game-produce-units/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
@@ -320,7 +320,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-produce-units-p40](fn-game-produce-units-p40.md) | `supabase/functions/game-produce-units/index.ts` | 40 | Persistent Agenda Law Enforcement | planned | shared-lawEffects |
 | [fn-game-move-ships-p40](fn-game-move-ships-p40.md) | `supabase/functions/game-move-ships/index.ts` | 40 | Persistent Agenda Law Enforcement | planned | shared-lawEffects |
 | [fn-game-land-troops-p40](fn-game-land-troops-p40.md) | `supabase/functions/game-land-troops/index.ts` | 40 | Persistent Agenda Law Enforcement | planned | shared-lawEffects |
-| [fn-game-assign-hits-p40](fn-game-assign-hits-p40.md) | `supabase/functions/game-assign-hits/index.ts` | 40 | Persistent Agenda Law Enforcement | planned | shared-lawEffects |
+| [fn-game-assign-hits-p40](fn-game-assign-hits-p40.md) | `supabase/functions/game-assign-hits/index.ts` | 40 | Persistent Agenda Law Enforcement | in-progress | shared-lawEffects |
 | [fn-game-advance-phase-p40](fn-game-advance-phase-p40.md) | `supabase/functions/game-advance-phase/index.ts` | 40 | Persistent Agenda Law Enforcement | planned | shared-lawEffects, migration-049-law-enforcement |
 
 | [migration-051-exploration-fixes](migration-051-exploration-fixes.md) | `supabase/migrations/051_exploration_fixes.sql` | 41 | Exploration Full Validation | planned | — |
@@ -348,7 +348,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [shared-abilityDsl-p43a](shared-abilityDsl-p43a.md) | `supabase/functions/_shared/abilityDsl.ts` | 43a | Leader Card Abilities — Agents | planned | migration-052-leader-abilities |
 | [shared-abilityHandlers-p43a](shared-abilityHandlers-p43a.md) | `supabase/functions/_shared/abilityHandlers.ts` | 43a | Leader Card Abilities — Agents | planned | shared-leaderEffects, shared-abilityDsl-p43a |
 | [fn-game-resolve-ability-p43a](fn-game-resolve-ability-p43a.md) | `supabase/functions/game-resolve-ability/index.ts` | 43a | Leader Card Abilities — Agents | planned | shared-leaderEffects, shared-abilityDsl-p43a, shared-abilityHandlers-p43a |
-| [fn-game-advance-phase-p43a](fn-game-advance-phase-p43a.md) | `supabase/functions/game-advance-phase/index.ts` | 43a | Leader Card Abilities — Agents | planned | migration-052-leader-abilities, shared-leaderEffects |
+| [fn-game-advance-phase-p43a](fn-game-advance-phase-p43a.md) | `supabase/functions/game-advance-phase/index.ts` | 43a | Leader Card Abilities — Agents | in-progress | migration-052-leader-abilities, shared-leaderEffects |
 | [fn-game-activate-system-p43a](fn-game-activate-system-p43a.md) | `supabase/functions/game-activate-system/index.ts` | 43a | Leader Card Abilities — Agents | planned | shared-leaderEffects |
 | [fn-game-produce-units-p43a](fn-game-produce-units-p43a.md) | `supabase/functions/game-produce-units/index.ts` | 43a | Leader Card Abilities — Agents | planned | shared-leaderEffects |
 | [fn-game-assign-hits-p43a](fn-game-assign-hits-p43a.md) | `supabase/functions/game-assign-hits/index.ts` | 43a | Leader Card Abilities — Agents | planned | shared-leaderEffects |
@@ -359,7 +359,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [shared-leaderEffects-p43b](shared-leaderEffects-p43b.md) | `supabase/functions/_shared/leaderEffects.ts` | 43b | Leader Card Abilities — Heroes | planned | shared-leaderEffects |
 | [shared-abilityHandlers-p43b](shared-abilityHandlers-p43b.md) | `supabase/functions/_shared/abilityHandlers.ts` | 43b | Leader Card Abilities — Heroes | planned | shared-leaderEffects-p43b |
 | [fn-game-resolve-ability-p43b](fn-game-resolve-ability-p43b.md) | `supabase/functions/game-resolve-ability/index.ts` | 43b | Leader Card Abilities — Heroes | planned | fn-game-resolve-ability-p43a, shared-leaderEffects-p43b, shared-abilityHandlers-p43b |
-| [fn-game-advance-phase-p43b](fn-game-advance-phase-p43b.md) | `supabase/functions/game-advance-phase/index.ts` | 43b | Leader Card Abilities — Heroes | planned | fn-game-advance-phase-p43a, migration-052-leader-abilities |
+| [fn-game-advance-phase-p43b](fn-game-advance-phase-p43b.md) | `supabase/functions/game-advance-phase/index.ts` | 43b | Leader Card Abilities — Heroes | in-progress | fn-game-advance-phase-p43a, migration-052-leader-abilities |
 | [component-LeaderAbilityModal-p43b](component-LeaderAbilityModal-p43b.md) | `src/components/game/LeaderAbilityModal.jsx` | 43b | Leader Card Abilities — Heroes | planned | component-LeaderAbilityModal, lib-leaderConstants |
 
 | [shared-commanderUnlock](shared-commanderUnlock.md) | `supabase/functions/_shared/commanderUnlock.ts` | 43c | Leader Card Abilities — Commander Passives | planned | migration-052-leader-abilities |
@@ -372,8 +372,8 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-commit-ground-forces-p43c](fn-game-commit-ground-forces-p43c.md) | `supabase/functions/game-commit-ground-forces/index.ts` | 43c | Leader Card Abilities — Commander Passives | planned | shared-leaderEffects-p43c, shared-abilityHandlers-p43c |
 | [fn-game-roll-combat-dice-p43c](fn-game-roll-combat-dice-p43c.md) | `supabase/functions/game-roll-combat-dice/index.ts` | 43c | Leader Card Abilities — Commander Passives | planned | shared-leaderEffects-p43c, shared-abilityHandlers-p43c |
 | [fn-game-roll-ground-combat-dice-p43c](fn-game-roll-ground-combat-dice-p43c.md) | `supabase/functions/game-roll-ground-combat-dice/index.ts` | 43c | Leader Card Abilities — Commander Passives | planned | shared-leaderEffects-p43c, shared-abilityHandlers-p43c, fn-game-roll-combat-dice-p43c |
-| [fn-game-fire-bombardment-p43c](fn-game-fire-bombardment-p43c.md) | `supabase/functions/game-fire-bombardment/index.ts` | 43c | Leader Card Abilities — Commander Passives | planned | shared-leaderEffects-p43c, shared-abilityHandlers-p43c |
-| [fn-game-fire-space-cannon-p43c](fn-game-fire-space-cannon-p43c.md) | `supabase/functions/game-fire-space-cannon/index.ts` | 43c | Leader Card Abilities — Commander Passives | planned | shared-leaderEffects-p43c, shared-abilityHandlers-p43c |
+| [fn-game-fire-bombardment-p43c](fn-game-fire-bombardment-p43c.md) | `supabase/functions/game-fire-bombardment/index.ts` | 43c | Leader Card Abilities — Commander Passives | done | shared-leaderEffects-p43c, shared-abilityHandlers-p43c |
+| [fn-game-fire-space-cannon-p43c](fn-game-fire-space-cannon-p43c.md) | `supabase/functions/game-fire-space-cannon/index.ts` | 43c | Leader Card Abilities — Commander Passives | in-progress | shared-leaderEffects-p43c, shared-abilityHandlers-p43c |
 | [fn-game-fire-anti-fighter-barrage-p43c](fn-game-fire-anti-fighter-barrage-p43c.md) | `supabase/functions/game-fire-anti-fighter-barrage/index.ts` | 43c | Leader Card Abilities — Commander Passives | planned | shared-leaderEffects-p43c, shared-abilityHandlers-p43c |
 | [fn-game-activate-system-p43c](fn-game-activate-system-p43c.md) | `supabase/functions/game-activate-system/index.ts` | 43c | Leader Card Abilities — Commander Passives | planned | shared-leaderEffects-p43c, shared-abilityHandlers-p43c, fn-game-activate-system-p43a |
 | [fn-game-move-ships-p43c](fn-game-move-ships-p43c.md) | `supabase/functions/game-move-ships/index.ts` | 43c | Leader Card Abilities — Commander Passives | planned | shared-leaderEffects-p43c, shared-abilityHandlers-p43c |
