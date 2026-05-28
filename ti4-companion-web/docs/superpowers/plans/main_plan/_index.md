@@ -274,7 +274,7 @@ This keeps the index accurate across multi-session implementations so future age
 
 | [fn-game-confirm-transaction-p39b](fn-game-confirm-transaction-p39b.md) | `supabase/functions/game-confirm-transaction/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
 | [fn-game-activate-system-p39b](fn-game-activate-system-p39b.md) | `supabase/functions/game-activate-system/index.ts` | 39b | Promissory Note DSL Effects | done | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
-| [fn-game-advance-phase-p39b](fn-game-advance-phase-p39b.md) | `supabase/functions/game-advance-phase/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
+| [fn-game-advance-phase-p39b](fn-game-advance-phase-p39b.md) | `supabase/functions/game-advance-phase/index.ts` | 39b | Promissory Note DSL Effects | done | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
 | [fn-game-create-transaction-p39b](fn-game-create-transaction-p39b.md) | `supabase/functions/game-create-transaction/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
 | [fn-game-cast-votes-p39b](fn-game-cast-votes-p39b.md) | `supabase/functions/game-cast-votes/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
 | [fn-game-produce-units-p39b](fn-game-produce-units-p39b.md) | `supabase/functions/game-produce-units/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
