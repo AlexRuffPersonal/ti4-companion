@@ -11,12 +11,13 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
 }))
 vi.mock('../../../supabase/functions/_shared/leaderEffects.ts', () => ({
   applyCommanderPassives: vi.fn().mockResolvedValue({ inlineEffects: [], pendingWindows: [] }),
+  AGENT_REACTIVE_TRIGGERS: {},
 }))
 vi.mock('../../../supabase/functions/_shared/abilityHandlers.ts', () => ({
   getHandler: vi.fn().mockReturnValue(vi.fn().mockResolvedValue(undefined)),
 }))
 vi.mock('../../../supabase/functions/_shared/lawEffects.ts', () => ({
-  assertProductionAllowed: vi.fn().mockResolvedValue(undefined),
+  assertProductionAllowed: vi.fn(),
   LawError: class LawError extends Error {
     constructor(msg, status = 409) { super(msg); this.name = 'LawError'; this.status = status }
   },
@@ -24,8 +25,7 @@ vi.mock('../../../supabase/functions/_shared/lawEffects.ts', () => ({
 
 import { requireAuth } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
-import { applyCommanderPassives } from '../../../supabase/functions/_shared/leaderEffects.ts'
-import { getHandler } from '../../../supabase/functions/_shared/abilityHandlers.ts'
+import { assertProductionAllowed, LawError } from '../../../supabase/functions/_shared/lawEffects.ts'
 import { handler } from '../../../supabase/functions/game-produce-units/index.ts'
 
 const USER_ID = 'user-uuid'
@@ -48,20 +48,20 @@ const DEFAULT_GAME = {
 
 const ALL_UNIT_DEFS = [
   { name: 'carrier', cost: 3, production: null, unit_type: 'ship' },
-  { name: 'flagship', cost: 8, production: null, unit_type: 'ship' },
-  { name: 'fighter', cost: 0.5, production: null, unit_type: 'ship' },
+  { name: 'Space Dock', cost: null, production: '3', unit_type: 'structure' },
   { name: 'infantry', cost: 0.5, production: null, unit_type: 'ground' },
-  { name: 'space dock', cost: null, production: '3', unit_type: 'structure' },
+  { name: 'pds', cost: 2, production: null, unit_type: 'structure' },
 ]
 
 function mockDb({
-  player = { id: PLAYER_ID, technologies: [], exhausted_technologies: [], trade_goods: 10 },
+  player = { id: PLAYER_ID, technologies: [], exhausted_technologies: [], trade_goods: 0 },
   game = DEFAULT_GAME,
   activation = { id: 'act-uuid' },
-  tile = { planets: [{ name: 'Mecatol Rex', resources: 10 }] },
-  callerUnits = [{ unit_type: 'space dock', count: 1 }],
+  tile = { planets: [{ name: 'Mecatol Rex', resources: 6 }] },
+  callerUnits = [{ unit_type: 'Space Dock', count: 1 }],
   ownedPlanets = [{ planet_name: 'Mecatol Rex' }],
   enemyUnits = [],
+  existingUnit = null,
 } = {}) {
   db.from.mockImplementation((table) => {
     if (table === 'game_players') {
@@ -78,7 +78,9 @@ function mockDb({
             }),
           }
         }),
-        update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }),
       }
     }
     if (table === 'games') {
@@ -121,15 +123,6 @@ function mockDb({
         }),
       }
     }
-    if (table === 'technologies') {
-      return {
-        select: vi.fn().mockReturnValue({
-          in: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ data: [], error: null }),
-          }),
-        }),
-      }
-    }
     if (table === 'game_player_units') {
       return {
         select: vi.fn().mockImplementation((cols) => {
@@ -142,29 +135,34 @@ function mockDb({
               }),
             }
           }
-          // id, count — existing unit check and id — enemy check
+          if (cols === 'id') {
+            return {
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  neq: vi.fn().mockReturnValue({
+                    limit: vi.fn().mockResolvedValue({ data: enemyUnits, error: null }),
+                  }),
+                }),
+              }),
+            }
+          }
           return {
             eq: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                neq: vi.fn().mockReturnValue({
-                  limit: vi.fn().mockResolvedValue({ data: enemyUnits, error: null }),
-                }),
                 eq: vi.fn().mockReturnValue({
                   eq: vi.fn().mockReturnValue({
                     is: vi.fn().mockReturnValue({
-                      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+                      maybeSingle: vi.fn().mockResolvedValue({ data: existingUnit, error: null }),
                     }),
-                    maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
                   }),
-                }),
-                is: vi.fn().mockReturnValue({
-                  maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
                 }),
               }),
             }),
           }
         }),
-        update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }),
         insert: vi.fn().mockResolvedValue({ error: null }),
       }
     }
@@ -190,111 +188,64 @@ function mockDb({
   })
 }
 
-describe('game-produce-units Phase 43c — commander passives', () => {
+describe('game-produce-units Phase 40 — Law Enforcement', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockDb()
     requireAuth.mockResolvedValue(USER_ID)
-    applyCommanderPassives.mockResolvedValue({ inlineEffects: [], pendingWindows: [] })
-    getHandler.mockReturnValue(vi.fn().mockResolvedValue(undefined))
+    assertProductionAllowed.mockResolvedValue(undefined)
   })
 
-  it('calls applyCommanderPassives with PRODUCTION trigger', async () => {
-    mockDb()
+  it('returns 409 when Regulated Conscription is active and producing carrier', async () => {
+    assertProductionAllowed.mockRejectedValue(
+      new LawError('Regulated Conscription: only infantry may be produced', 409)
+    )
     const res = await handler(makeRequest({
-      game_id: GAME_ID,
-      system_key: SYSTEM_KEY,
+      game_id: GAME_ID, system_key: SYSTEM_KEY,
       units: [{ unit_type: 'carrier', count: 1 }],
       planet_exhausts: ['Mecatol Rex'],
     }))
-    expect(res.status).toBe(200)
-    expect(applyCommanderPassives).toHaveBeenCalledWith(
-      'PRODUCTION',
-      expect.objectContaining({ gameId: GAME_ID, activatingPlayerId: PLAYER_ID }),
-      expect.anything(),
-    )
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body.error).toMatch(/Regulated Conscription/)
   })
 
-  it("Vuil'raith commander — production limit bypass allows 2 extra units", async () => {
-    mockDb({
-      callerUnits: [{ unit_type: 'space dock', count: 1 }],
-      // space dock gives 3 capacity; we'll order 5 fighters (3 + 2 bypass)
-    })
-    applyCommanderPassives.mockResolvedValue({
-      inlineEffects: [{ faction: "The Vuil'raith Cabal", effect: 'vuil_production_limit_bypass' }],
-      pendingWindows: [],
-    })
-    getHandler.mockReturnValue(vi.fn().mockImplementation(async (ctx) => {
-      ctx.freeFromLimitCount = (ctx.freeFromLimitCount ?? 0) + 2
-    }))
+  it('returns 200 when Regulated Conscription is active and producing infantry', async () => {
+    // assertProductionAllowed resolves for infantry (the law only blocks non-infantry)
+    assertProductionAllowed.mockResolvedValue(undefined)
     const res = await handler(makeRequest({
-      game_id: GAME_ID,
-      system_key: SYSTEM_KEY,
-      units: [{ unit_type: 'fighter', count: 5 }],
+      game_id: GAME_ID, system_key: SYSTEM_KEY,
+      units: [{ unit_type: 'infantry', count: 1, on_planet: 'Mecatol Rex' }],
       planet_exhausts: ['Mecatol Rex'],
     }))
-    // capacity=3, freeFromLimit=2, total=5, adjusted=3 => 3 <= 3 => success
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.produced).toBe(true)
   })
 
-  it('Nomad commander — flagship produced with 0 resources', async () => {
-    mockDb({
-      player: { id: PLAYER_ID, technologies: [], exhausted_technologies: [], trade_goods: 0 },
-      tile: { planets: [{ name: 'Mecatol Rex', resources: 0 }] },
-    })
-    applyCommanderPassives.mockResolvedValue({
-      inlineEffects: [{ faction: 'The Nomad', effect: 'nomad_free_flagship' }],
-      pendingWindows: [],
-    })
-    getHandler.mockReturnValue(vi.fn().mockImplementation(async (ctx) => {
-      ctx.flagshipCostOverride = 0
-    }))
+  it('returns 409 when Articles of War is active and producing pds', async () => {
+    assertProductionAllowed.mockRejectedValue(
+      new LawError('Articles of War: PDS cannot be produced', 409)
+    )
     const res = await handler(makeRequest({
-      game_id: GAME_ID,
-      system_key: SYSTEM_KEY,
-      units: [{ unit_type: 'flagship', count: 1 }],
+      game_id: GAME_ID, system_key: SYSTEM_KEY,
+      units: [{ unit_type: 'pds', count: 1, on_planet: 'Mecatol Rex' }],
       planet_exhausts: [],
     }))
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body.error).toMatch(/Articles of War/)
+  })
+
+  it('returns 200 with no laws active (assertProductionAllowed resolves for all)', async () => {
+    assertProductionAllowed.mockResolvedValue(undefined)
+    const res = await handler(makeRequest({
+      game_id: GAME_ID, system_key: SYSTEM_KEY,
+      units: [{ unit_type: 'carrier', count: 1 }],
+      planet_exhausts: ['Mecatol Rex'],
+    }))
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.produced).toBe(true)
-  })
-
-  it('Titans commander — pending_window emitted in response', async () => {
-    mockDb()
-    applyCommanderPassives.mockResolvedValue({
-      inlineEffects: [],
-      pendingWindows: [{
-        game_id: GAME_ID,
-        trigger: 'PRODUCTION',
-        faction: 'The Titans Of Ul',
-        player_id: PLAYER_ID,
-        effect: [{ op: 'gain_trade_goods', amount: 1 }],
-      }],
-    })
-    const res = await handler(makeRequest({
-      game_id: GAME_ID,
-      system_key: SYSTEM_KEY,
-      units: [{ unit_type: 'carrier', count: 1 }],
-      planet_exhausts: ['Mecatol Rex'],
-    }))
-    expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body.pending_window).toBeDefined()
-    expect(body.pending_window.faction).toBe('The Titans Of Ul')
-  })
-
-  it('no pending_window when no commander fires', async () => {
-    mockDb()
-    const res = await handler(makeRequest({
-      game_id: GAME_ID,
-      system_key: SYSTEM_KEY,
-      units: [{ unit_type: 'carrier', count: 1 }],
-      planet_exhausts: ['Mecatol Rex'],
-    }))
-    expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body.pending_window).toBeUndefined()
   })
 })

@@ -9,6 +9,12 @@ vi.mock('../../../supabase/functions/_shared/auth.ts', () => {
 vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
   db: { from: vi.fn() },
 }))
+vi.mock('../../../supabase/functions/_shared/lawEffects.ts', () => ({
+  assertProductionAllowed: vi.fn().mockResolvedValue(undefined),
+  LawError: class LawError extends Error {
+    constructor(msg, status = 409) { super(msg); this.name = 'LawError'; this.status = status }
+  },
+}))
 
 import { requireAuth } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'

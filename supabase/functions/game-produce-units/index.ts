@@ -3,6 +3,7 @@ import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { applyCommanderPassives, AGENT_REACTIVE_TRIGGERS } from '../_shared/leaderEffects.ts'
 import { getHandler } from '../_shared/abilityHandlers.ts'
+import { assertProductionAllowed, LawError } from '../_shared/lawEffects.ts'
 
 type UnitOrder = { unit_type: string; count: number; on_planet?: string | null }
 type UnitDef = { name: string; cost: number; production: string | null; unit_type: string | null }
@@ -118,6 +119,17 @@ export async function handler(req: Request): Promise<Response> {
 
   // Fetch unit definitions for all requested unit types
   const unitOrders = body.units as UnitOrder[]
+
+  // Phase 40: Law enforcement — fail fast before any DB writes
+  for (const order of unitOrders) {
+    try {
+      await assertProductionAllowed(db, body.game_id, order.unit_type)
+    } catch (err) {
+      if (err instanceof LawError) return errorResponse(err.message, 409)
+      throw err
+    }
+  }
+
   const unitNames = [...new Set(unitOrders.map(u => u.unit_type))]
   const { data: unitDefs, error: unitDefError } = await db
     .from('units')

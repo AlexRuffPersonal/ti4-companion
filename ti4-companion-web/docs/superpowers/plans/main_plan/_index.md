@@ -317,7 +317,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-resolve-agenda-p40](fn-game-resolve-agenda-p40.md) | `supabase/functions/game-resolve-agenda/index.ts` | 40 | Persistent Agenda Law Enforcement | done | migration-049-law-enforcement |
 | [shared-lawEffects](shared-lawEffects.md) | `supabase/functions/_shared/lawEffects.ts` | 40 | Persistent Agenda Law Enforcement | planned | migration-049-law-enforcement |
 | [shared-abilityDsl-p40](shared-abilityDsl-p40.md) | `supabase/functions/_shared/abilityDsl.ts` | 40 | Persistent Agenda Law Enforcement | planned | shared-lawEffects |
-| [fn-game-produce-units-p40](fn-game-produce-units-p40.md) | `supabase/functions/game-produce-units/index.ts` | 40 | Persistent Agenda Law Enforcement | planned | shared-lawEffects |
+| [fn-game-produce-units-p40](fn-game-produce-units-p40.md) | `supabase/functions/game-produce-units/index.ts` | 40 | Persistent Agenda Law Enforcement | in-progress | shared-lawEffects |
 | [fn-game-move-ships-p40](fn-game-move-ships-p40.md) | `supabase/functions/game-move-ships/index.ts` | 40 | Persistent Agenda Law Enforcement | done | shared-lawEffects |
 | [fn-game-land-troops-p40](fn-game-land-troops-p40.md) | `supabase/functions/game-land-troops/index.ts` | 40 | Persistent Agenda Law Enforcement | done | shared-lawEffects |
 | [fn-game-assign-hits-p40](fn-game-assign-hits-p40.md) | `supabase/functions/game-assign-hits/index.ts` | 40 | Persistent Agenda Law Enforcement | done | shared-lawEffects |
