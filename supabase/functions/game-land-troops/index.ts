@@ -3,6 +3,7 @@ import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { checkAndEliminate } from '../_shared/eliminationHandler.ts'
 import { logEvent, EVT_LAND_TROOPS } from '../_shared/gameEvents.ts'
+import { assertMovementAllowed, checkVpMaintenanceLaws, LawError } from '../_shared/lawEffects.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -15,7 +16,7 @@ export async function handler(req: Request): Promise<Response> {
     return errorResponse('Internal server error', 500)
   }
 
-  let body: { game_id?: unknown; system_key?: unknown; planet_name?: unknown; troop_count?: unknown; unit_type?: unknown }
+  let body: { game_id?: unknown; system_key?: unknown; planet_name?: unknown; troop_count?: unknown }
   try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
   if (!body.game_id || typeof body.game_id !== 'string') return errorResponse("'game_id' is required")
   if (!body.system_key || typeof body.system_key !== 'string') return errorResponse("'system_key' is required")
@@ -66,6 +67,21 @@ export async function handler(req: Request): Promise<Response> {
   const planetExists = planets.some(p => p.name === body.planet_name)
   if (!planetExists) return errorResponse(`Planet "${body.planet_name}" not found in system`, 409)
 
+  const { data: existingOwner } = await db
+    .from('game_player_planets')
+    .select('player_id')
+    .eq('game_id', body.game_id)
+    .eq('planet_name', body.planet_name)
+    .maybeSingle()
+  const previousOwnerId = (existingOwner as { player_id: string } | null)?.player_id ?? null
+
+  try {
+    await assertMovementAllowed(db, body.game_id as string, body.planet_name as string)
+  } catch (err) {
+    if (err instanceof LawError) return errorResponse(err.message, 409)
+    throw err
+  }
+
   const { error: planetError2 } = await db
     .from('game_player_planets')
     .upsert({
@@ -77,27 +93,8 @@ export async function handler(req: Request): Promise<Response> {
     }, { onConflict: 'game_id,planet_name' })
   if (planetError2) return errorResponse(`Failed to claim planet: ${planetError2.message}`, 500)
 
-  if (body.unit_type === 'mech') {
-    const { data: planetRecord, error: planetError } = await db
-      .from('game_player_planets')
-      .select('attachments')
-      .eq('game_id', body.game_id)
-      .eq('player_id', player.id)
-      .eq('planet_name', body.planet_name)
-      .maybeSingle()
-    if (planetError) return errorResponse('Database error', 500)
-    const planetAttachments = (planetRecord as { attachments?: string[] } | null)?.attachments ?? []
-    if (planetAttachments.length > 0) {
-      const { data: attachmentRecords, error: attachmentError } = await db
-        .from('attachments')
-        .select('name')
-        .in('id', planetAttachments)
-      if (attachmentError) return errorResponse('Database error', 500)
-      const attachmentNames = (attachmentRecords as Array<{ name: string }> | null)?.map(a => a.name) ?? []
-      if (attachmentNames.includes('Demilitarized Zone')) {
-        return errorResponse('Cannot place a mech on a Demilitarized Zone planet', 409)
-      }
-    }
+  if (previousOwnerId !== null && previousOwnerId !== player.id) {
+    await checkVpMaintenanceLaws(db, body.game_id as string, previousOwnerId, body.planet_name as string)
   }
 
   const { data: existingUnit } = await db
