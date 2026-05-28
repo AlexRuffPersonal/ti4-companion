@@ -63,8 +63,8 @@ export async function handler(req: Request): Promise<Response> {
     }
 
     // Check for Gift of Prescience (in_play) — holder picks at initiative 0
-    const activeNotes = await getActiveNotes(body.game_id, db)
-    const giftEntries = activeNotes.giftOfPrescience
+    const strategyActiveNotes = await getActiveNotes(body.game_id, db)
+    const giftEntries = strategyActiveNotes.giftOfPrescience
     let firstPlayer: { id: string } | null = null
     if (giftEntries.length > 0) {
       // Gift of Prescience holder goes first (initiative 0)
@@ -197,24 +197,19 @@ export async function handler(req: Request): Promise<Response> {
           .maybeSingle()
         if (factionError) return errorResponse(`Failed to load faction data: ${factionError.message}`, 500)
         const commodityMax = (factionRow as { commodities: number } | null)?.commodities ?? 0
-        const { error: commError } = await db
-          .from('game_players')
-          .update({ commodities: commodityMax })
-          .eq('id', player.id)
-        if (commError) return errorResponse(`Failed to replenish commodities: ${commError.message}`, 500)
 
-        // Trade Agreement: if this player is the owner of a held note, transfer commodities to holder
+        // Trade Agreement: if this player owns a held note, transfer commodities to holder instead of replenishing
         const taNote = tradeAgreementNotes.find((n) => n.ownerPlayerId === player.id)
         if (taNote && commodityMax > 0) {
-          // Find holder's current trade_goods
-          const holderData = (allPlayers ?? []).find((p: { id: string }) => p.id === taNote.holderPlayerId)
-          const holderTg = (holderData as { trade_goods?: number } | undefined)?.trade_goods ?? 0
-          // Owner commodities → 0
+          // Write commodities: 0 directly (skip replenish → transfer in one write)
           const { error: ownerCommError } = await db
             .from('game_players')
             .update({ commodities: 0 })
             .eq('id', player.id)
           if (ownerCommError) return errorResponse(`Failed to transfer owner commodities: ${ownerCommError.message}`, 500)
+          // Find holder's current trade_goods
+          const holderData = (allPlayers ?? []).find((p: { id: string }) => p.id === taNote.holderPlayerId)
+          const holderTg = (holderData as { trade_goods?: number } | undefined)?.trade_goods ?? 0
           // Holder gains trade_goods equal to commodity_max
           const { error: holderTgError } = await db
             .from('game_players')
@@ -222,7 +217,19 @@ export async function handler(req: Request): Promise<Response> {
             .eq('id', taNote.holderPlayerId)
           if (holderTgError) return errorResponse(`Failed to update holder trade goods: ${holderTgError.message}`, 500)
           // Return the note to owner
-          await returnNote(taNote.instanceId, taNote.ownerPlayerId, db)
+          try {
+            await returnNote(taNote.instanceId, taNote.ownerPlayerId, db)
+          } catch (e: unknown) {
+            const message = e instanceof Error ? e.message : String(e)
+            return errorResponse('Failed to return note: ' + message, 500)
+          }
+        } else {
+          // Normal replenishment (no Trade Agreement in play for this player)
+          const { error: commError } = await db
+            .from('game_players')
+            .update({ commodities: commodityMax })
+            .eq('id', player.id)
+          if (commError) return errorResponse(`Failed to replenish commodities: ${commError.message}`, 500)
         }
       }
     }
@@ -306,9 +313,14 @@ export async function handler(req: Request): Promise<Response> {
     }
 
     // Return Gift of Prescience notes at status phase END (they were in_play this round)
-    const statusActiveNotes = await getActiveNotes(body.game_id, db)
-    for (const giftEntry of statusActiveNotes.giftOfPrescience) {
-      await returnNote(giftEntry.instanceId, giftEntry.ownerPlayerId, db)
+    const statusPhaseActiveNotes = await getActiveNotes(body.game_id, db)
+    for (const giftEntry of statusPhaseActiveNotes.giftOfPrescience) {
+      try {
+        await returnNote(giftEntry.instanceId, giftEntry.ownerPlayerId, db)
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e)
+        return errorResponse('Failed to return note: ' + message, 500)
+      }
     }
 
     // Detect Scepter of Dominion (held) at strategy phase start — flag in response, 39c handles returnNote

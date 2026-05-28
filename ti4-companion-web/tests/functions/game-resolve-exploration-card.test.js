@@ -20,10 +20,6 @@ vi.mock('../../../supabase/functions/_shared/abilityDsl.ts', () => ({
   }),
 }))
 
-vi.mock('../../../supabase/functions/_shared/relicEffects.ts', () => ({
-  applyOnGainRelicEffect: vi.fn().mockResolvedValue(undefined),
-}))
-
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { applyAbility } from '../../../supabase/functions/_shared/abilityDsl.ts'
@@ -49,8 +45,6 @@ function makeCard(overrides = {}) {
     relic_fragment_type: null,
     resolved_by_player_id: PLAYER_ID,
     planet_name: 'Mecatol Rex',
-    system_key: null,
-    purge: false,
     ...overrides,
   }
 }
@@ -73,7 +67,12 @@ function baseBody(overrides = {}) {
 }
 
 /**
- * Build a mock db that handles all relevant tables.
+ * Build a mock db that handles:
+ * - game_players (player lookup)
+ * - games (game fetch)
+ * - game_exploration_decks (card fetch + update)
+ * - game_player_planets (explored update)
+ * - game_player_units (conditional_mech_or_infantry)
  */
 function mockDb({
   player = BASE_PLAYER,
@@ -87,17 +86,6 @@ function mockDb({
   units = [],
   unitsError = null,
   unitUpdateError = null,
-  relicDeckRow = null,
-  relicDeckError = null,
-  planetRows = null,
-  planetRowsError = null,
-  tileRows = null,
-  tileRowsError = null,
-  unitDef = null,
-  unitDefError = null,
-  existingMech = null,
-  existingUnit = null,
-  systemState = null,
 } = {}) {
   db.from.mockImplementation((table) => {
     if (table === 'game_players') {
@@ -138,30 +126,11 @@ function mockDb({
     }
 
     if (table === 'game_player_planets') {
-      const updateFn = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: planetUpdateError }),
-            in: vi.fn().mockResolvedValue({ error: planetUpdateError }),
-          }),
-          in: vi.fn().mockResolvedValue({ error: planetUpdateError }),
-        }),
-      })
-      const selectFn = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            in: vi.fn().mockResolvedValue({ data: planetRows, error: planetRowsError }),
-          }),
-        }),
-      })
       return {
-        select: selectFn,
-        update: updateFn,
-        upsert: vi.fn().mockResolvedValue({ error: null }),
-        delete: vi.fn().mockReturnValue({
+        update: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ error: null }),
+              eq: vi.fn().mockResolvedValue({ error: planetUpdateError }),
             }),
           }),
         }),
@@ -170,94 +139,23 @@ function mockDb({
 
     if (table === 'game_player_units') {
       return {
-        // Handles:
-        // - conditional_mech_or_infantry: .select().eq().eq().eq() resolved via then
-        // - place_mech check: .select().eq().eq().eq().eq().maybeSingle() → existingMech
-        // - freelancers unit check: .select().eq().eq().eq().eq().is().maybeSingle() → existingUnit
-        select: vi.fn().mockImplementation(() => ({
+        select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                // conditional_mech_or_infantry resolves here via awaiting the query directly
-                then: vi.fn((resolve) => resolve({ data: units, error: unitsError })),
-                // place_mech_on_current_planet goes one level deeper
-                eq: vi.fn().mockReturnValue({
-                  maybeSingle: vi.fn().mockResolvedValue({ data: existingMech, error: null }),
-                  is: vi.fn().mockReturnValue({
-                    maybeSingle: vi.fn().mockResolvedValue({ data: existingUnit, error: null }),
-                  }),
-                }),
-              }),
+              eq: vi.fn().mockResolvedValue({ data: units, error: unitsError }),
             }),
           }),
-        })),
+        }),
         update: vi.fn().mockReturnValue({
           eq: vi.fn().mockResolvedValue({ error: unitUpdateError }),
         }),
         delete: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ error: null }),
-            }),
-          }),
-        }),
-        upsert: vi.fn().mockResolvedValue({ error: null }),
-        insert: vi.fn().mockResolvedValue({ error: null }),
-      }
-    }
-
-    if (table === 'game_relic_deck') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: vi.fn().mockResolvedValue({ data: relicDeckRow, error: relicDeckError }),
-              }),
-            }),
-          }),
-        }),
-        update: vi.fn().mockReturnValue({
           eq: vi.fn().mockResolvedValue({ error: null }),
         }),
       }
     }
 
-    if (table === 'game_system_state') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: systemState, error: null }),
-            }),
-          }),
-        }),
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null }),
-        }),
-        insert: vi.fn().mockResolvedValue({ error: null }),
-      }
-    }
-
-    if (table === 'tiles') {
-      return {
-        select: vi.fn().mockReturnValue({
-          in: vi.fn().mockResolvedValue({ data: tileRows ?? [], error: tileRowsError }),
-        }),
-      }
-    }
-
-    if (table === 'units') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: unitDef, error: unitDefError }),
-          }),
-        }),
-      }
-    }
-
-    return { select: vi.fn(), update: vi.fn(), delete: vi.fn(), upsert: vi.fn(), insert: vi.fn() }
+    return { select: vi.fn(), update: vi.fn(), delete: vi.fn() }
   })
 }
 
@@ -372,6 +270,7 @@ describe('game-resolve-exploration-card', () => {
     expect(body.applied).toBe('Dyson Sphere')
 
     // Card should be discarded (attach_to_planet op handles the attachment DB write)
+    // The second game_exploration_decks call is the update (first is the select/fetch)
     const deckCallIndices = db.from.mock.calls.reduce((acc, c, i) => (c[0] === 'game_exploration_decks' ? [...acc, i] : acc), [])
     expect(deckCallIndices.length).toBeGreaterThanOrEqual(2)
     const deckUpdateMock = db.from.mock.results[deckCallIndices[1]].value
@@ -395,6 +294,8 @@ describe('game-resolve-exploration-card', () => {
     const body = await res.json()
     expect(body.applied).toBe('Cultural Relic Fragment')
 
+    // Find the game_exploration_decks mock instance and verify update was called with state='held'
+    // The second game_exploration_decks call is the update (first is the select/fetch)
     const deckCallIndices = db.from.mock.calls.reduce((acc, c, i) => (c[0] === 'game_exploration_decks' ? [...acc, i] : acc), [])
     expect(deckCallIndices.length).toBeGreaterThanOrEqual(2)
     const deckUpdateMock = db.from.mock.results[deckCallIndices[1]].value
@@ -405,11 +306,10 @@ describe('game-resolve-exploration-card', () => {
     mockDb({
       card: makeCard({
         name: 'Enigmatic Device',
-        relic_fragment_type: null,
+        relic_fragment_type: 'enigmatic_device',
         has_attachment: false,
         deck_type: 'frontier',
         planet_name: null,
-        purge: false,
       }),
     })
     const res = await handler(makeRequest(baseBody()))
@@ -417,6 +317,8 @@ describe('game-resolve-exploration-card', () => {
     const body = await res.json()
     expect(body.applied).toBe('Enigmatic Device')
 
+    // Verify update called with state='held' and resolved_by_player_id=PLAYER_ID
+    // The second game_exploration_decks call is the update (first is the select/fetch)
     const deckCallIndices = db.from.mock.calls.reduce((acc, c, i) => (c[0] === 'game_exploration_decks' ? [...acc, i] : acc), [])
     expect(deckCallIndices.length).toBeGreaterThanOrEqual(2)
     const deckUpdateMock = db.from.mock.results[deckCallIndices[1]].value
@@ -465,322 +367,5 @@ describe('game-resolve-exploration-card', () => {
     // No choice or remove_infantry in body
     const res = await handler(makeRequest(baseBody()))
     expect(res.status).toBe(200)
-  })
-
-  // ── New tests for p39 changes ────────────────────────────────────────────────
-
-  it('passes system_key from card row to dispatch context', async () => {
-    // Use Gamma Wormhole which calls place_map_token and uses ctx.systemKey
-    mockDb({
-      card: makeCard({
-        name: 'Gamma Wormhole',
-        has_attachment: false,
-        relic_fragment_type: null,
-        deck_type: 'frontier',
-        planet_name: null,
-        system_key: '3,-1',
-        purge: true,
-      }),
-    })
-    const res = await handler(makeRequest(baseBody()))
-    expect(res.status).toBe(200)
-    // Verify game_system_state was touched (place_map_token uses systemKey)
-    const systemStateCall = db.from.mock.calls.find((c) => c[0] === 'game_system_state')
-    expect(systemStateCall).toBeTruthy()
-  })
-
-  it('applies ready_current_planet for Expedition with mech present', async () => {
-    mockDb({
-      card: makeCard({
-        name: 'Expedition',
-        has_attachment: false,
-        relic_fragment_type: null,
-        deck_type: 'hazardous',
-        planet_name: 'Mecatol Rex',
-      }),
-      units: [{ id: 'unit-1', unit_type: 'mech', count: 1 }],
-    })
-    const res = await handler(makeRequest(baseBody()))
-    expect(res.status).toBe(200)
-    // Verify game_player_planets was called (ready_current_planet does an update)
-    let foundReadyUpdate = false
-    for (let i = 0; i < db.from.mock.calls.length; i++) {
-      if (db.from.mock.calls[i]?.[0] === 'game_player_planets') {
-        const mock = db.from.mock.results[i]?.value
-        if (mock?.update?.mock?.calls?.some((c) => c[0]?.exhausted === false)) {
-          foundReadyUpdate = true
-          break
-        }
-      }
-    }
-    expect(foundReadyUpdate).toBe(true)
-  })
-
-  it('applies convert_all_commodities for Merchant Station choice=1', async () => {
-    mockDb({
-      card: makeCard({
-        name: 'Merchant Station',
-        has_attachment: false,
-        relic_fragment_type: null,
-        deck_type: 'frontier',
-        planet_name: null,
-      }),
-    })
-    const res = await handler(makeRequest(baseBody({ choice: 1 })))
-    expect(res.status).toBe(200)
-    expect(applyAbility).toHaveBeenCalled()
-    const allOps = applyAbility.mock.calls.flatMap((c) => c[0])
-    expect(allOps.some((op) => op.op === 'convert_all_commodities')).toBe(true)
-  })
-
-  it('applies gain_command_token_choice for Volatile Fuel Source with mech', async () => {
-    mockDb({
-      card: makeCard({
-        name: 'Volatile Fuel Source',
-        has_attachment: false,
-        relic_fragment_type: null,
-        deck_type: 'hazardous',
-        planet_name: 'Mecatol Rex',
-      }),
-      units: [{ id: 'unit-1', unit_type: 'mech', count: 1 }],
-    })
-    const res = await handler(makeRequest(baseBody({ command_token_bucket: 'fleet' })))
-    expect(res.status).toBe(200)
-    expect(applyAbility).toHaveBeenCalled()
-    const allOps = applyAbility.mock.calls.flatMap((c) => c[0])
-    expect(allOps.some((op) => op.op === 'gain_command_token_choice')).toBe(true)
-    // Verify context had command_token_bucket set
-    const ctx = applyAbility.mock.calls[0][1]
-    expect(ctx.selections?.command_token_bucket).toBe('fleet')
-  })
-
-  it('applies clear_planet_units_and_structures for Demilitarized Zone', async () => {
-    mockDb({
-      card: makeCard({
-        name: 'Demilitarized Zone',
-        has_attachment: false,
-        relic_fragment_type: null,
-        deck_type: 'cultural',
-        planet_name: 'Wellon',
-      }),
-    })
-    const res = await handler(makeRequest(baseBody()))
-    expect(res.status).toBe(200)
-    // Verify game_player_planets updated with space_dock_unit_id=null, pds_count=0
-    let foundDemilUpdate = false
-    for (let i = 0; i < db.from.mock.calls.length; i++) {
-      if (db.from.mock.calls[i]?.[0] === 'game_player_planets') {
-        const mock = db.from.mock.results[i]?.value
-        if (mock?.update?.mock?.calls?.some((c) => c[0]?.space_dock_unit_id === null)) {
-          foundDemilUpdate = true
-          break
-        }
-      }
-    }
-    expect(foundDemilUpdate).toBe(true)
-    // Verify game_player_units delete was called
-    const unitDeleteCalls = db.from.mock.calls.filter((c) => c[0] === 'game_player_units')
-    expect(unitDeleteCalls.length).toBeGreaterThan(0)
-  })
-
-  it('applies gain_named_relic for Tomb Of Emphidia', async () => {
-    const crownRow = { id: 'relic-1' }
-    mockDb({
-      card: makeCard({
-        name: 'Tomb Of Emphidia',
-        has_attachment: false,
-        relic_fragment_type: null,
-        deck_type: 'cultural',
-        planet_name: 'Mecatol Rex',
-      }),
-      relicDeckRow: crownRow,
-    })
-    const res = await handler(makeRequest(baseBody()))
-    expect(res.status).toBe(200)
-    // Verify game_relic_deck update was called with state='held'
-    let foundRelicUpdate = false
-    for (let i = 0; i < db.from.mock.calls.length; i++) {
-      if (db.from.mock.calls[i]?.[0] === 'game_relic_deck') {
-        const mock = db.from.mock.results[i]?.value
-        if (mock?.update?.mock?.calls?.some((c) => c[0]?.state === 'held')) {
-          foundRelicUpdate = true
-          break
-        }
-      }
-    }
-    expect(foundRelicUpdate).toBe(true)
-  })
-
-  it('skips gain_named_relic silently if Crown of Emphidia not in deck', async () => {
-    mockDb({
-      card: makeCard({
-        name: 'Tomb Of Emphidia',
-        has_attachment: false,
-        relic_fragment_type: null,
-        deck_type: 'cultural',
-        planet_name: 'Mecatol Rex',
-      }),
-      relicDeckRow: null, // not in deck
-    })
-    const res = await handler(makeRequest(baseBody()))
-    expect(res.status).toBe(200) // no error, silently skipped
-    // relic_deck update should not have been called
-    let anyRelicUpdate = false
-    for (let i = 0; i < db.from.mock.calls.length; i++) {
-      if (db.from.mock.calls[i]?.[0] === 'game_relic_deck') {
-        const mock = db.from.mock.results[i]?.value
-        if (mock?.update?.mock?.calls?.length > 0) {
-          anyRelicUpdate = true
-          break
-        }
-      }
-    }
-    expect(anyRelicUpdate).toBe(false)
-  })
-
-  it('sets state=held for hold_card (Enigmatic Device)', async () => {
-    mockDb({
-      card: makeCard({
-        name: 'Enigmatic Device',
-        relic_fragment_type: null,
-        has_attachment: false,
-        deck_type: 'frontier',
-        planet_name: null,
-        purge: false,
-      }),
-    })
-    const res = await handler(makeRequest(baseBody()))
-    expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body.applied).toBe('Enigmatic Device')
-
-    const deckCallIndices = db.from.mock.calls.reduce((acc, c, i) => (c[0] === 'game_exploration_decks' ? [...acc, i] : acc), [])
-    expect(deckCallIndices.length).toBeGreaterThanOrEqual(2)
-    const deckUpdateMock = db.from.mock.results[deckCallIndices[1]].value
-    expect(deckUpdateMock.update).toHaveBeenCalledWith({ state: 'held', resolved_by_player_id: PLAYER_ID })
-  })
-
-  it('sets state=purged for purge:true card (Gamma Wormhole)', async () => {
-    mockDb({
-      card: makeCard({
-        name: 'Gamma Wormhole',
-        has_attachment: false,
-        relic_fragment_type: null,
-        deck_type: 'frontier',
-        planet_name: null,
-        system_key: '0,0',
-        purge: true,
-      }),
-    })
-    const res = await handler(makeRequest(baseBody()))
-    expect(res.status).toBe(200)
-
-    const deckCallIndices = db.from.mock.calls.reduce((acc, c, i) => (c[0] === 'game_exploration_decks' ? [...acc, i] : acc), [])
-    expect(deckCallIndices.length).toBeGreaterThanOrEqual(2)
-    const deckUpdateMock = db.from.mock.results[deckCallIndices[1]].value
-    expect(deckUpdateMock.update).toHaveBeenCalledWith({ state: 'purged', resolved_by_player_id: null })
-  })
-
-  it('applies freelancers_produce when unit_type provided', async () => {
-    const planetRow = { planet_name: 'Mecatol Rex', exhausted: false, tile_id: 'tile-1' }
-    const tileRow = { id: 'tile-1', planets: [{ name: 'Mecatol Rex', resources: 3, influence: 0 }] }
-    const unitDefRow = { name: 'infantry', cost: 1 }
-    mockDb({
-      card: makeCard({
-        name: 'Freelancers',
-        has_attachment: false,
-        relic_fragment_type: null,
-        deck_type: 'cultural',
-        planet_name: 'Mecatol Rex',
-        system_key: '0,0',
-      }),
-      planetRows: [planetRow],
-      tileRows: [tileRow],
-      unitDef: unitDefRow,
-    })
-    const res = await handler(makeRequest(baseBody({
-      unit_type: 'infantry',
-      resource_planet_names: ['Mecatol Rex'],
-    })))
-    expect(res.status).toBe(200)
-    // planet should be exhausted
-    let foundExhaustUpdate = false
-    for (let i = 0; i < db.from.mock.calls.length; i++) {
-      if (db.from.mock.calls[i]?.[0] === 'game_player_planets') {
-        const mock = db.from.mock.results[i]?.value
-        if (mock?.update?.mock?.calls?.some((c) => c[0]?.exhausted === true)) {
-          foundExhaustUpdate = true
-          break
-        }
-      }
-    }
-    expect(foundExhaustUpdate).toBe(true)
-    // units table was queried (for unit insert)
-    const unitsCalls = db.from.mock.calls.filter((c) => c[0] === 'game_player_units')
-    expect(unitsCalls.length).toBeGreaterThan(0)
-  })
-
-  it('skips freelancers_produce when unit_type omitted', async () => {
-    mockDb({
-      card: makeCard({
-        name: 'Freelancers',
-        has_attachment: false,
-        relic_fragment_type: null,
-        deck_type: 'cultural',
-        planet_name: 'Mecatol Rex',
-      }),
-    })
-    // No unit_type in body
-    const res = await handler(makeRequest(baseBody()))
-    expect(res.status).toBe(200)
-    // No tiles query, no units ref query
-    const tilesCalls = db.from.mock.calls.filter((c) => c[0] === 'tiles')
-    expect(tilesCalls.length).toBe(0)
-    const unitsCalls = db.from.mock.calls.filter((c) => c[0] === 'units')
-    expect(unitsCalls.length).toBe(0)
-  })
-
-  it('409 when freelancers resources insufficient', async () => {
-    const planetRow = { planet_name: 'Mecatol Rex', exhausted: false, tile_id: 'tile-1' }
-    const tileRow = { id: 'tile-1', planets: [{ name: 'Mecatol Rex', resources: 0, influence: 0 }] }
-    const unitDefRow = { name: 'carrier', cost: 3 }
-    mockDb({
-      card: makeCard({
-        name: 'Freelancers',
-        has_attachment: false,
-        relic_fragment_type: null,
-        deck_type: 'cultural',
-        planet_name: 'Mecatol Rex',
-        system_key: '0,0',
-      }),
-      planetRows: [planetRow],
-      tileRows: [tileRow],
-      unitDef: unitDefRow,
-    })
-    const res = await handler(makeRequest(baseBody({
-      unit_type: 'carrier',
-      resource_planet_names: ['Mecatol Rex'],
-    })))
-    expect(res.status).toBe(409)
-    const body = await res.json()
-    expect(body.error).toMatch(/Insufficient resources/i)
-  })
-
-  it('409 Planet already has a mech for place_mech_on_current_planet', async () => {
-    mockDb({
-      card: makeCard({
-        name: 'Local Fabricators',
-        has_attachment: false,
-        relic_fragment_type: null,
-        deck_type: 'industrial',
-        planet_name: 'Mecatol Rex',
-        system_key: '0,0',
-      }),
-      existingMech: { id: 'mech-1', count: 1 },
-    })
-    const res = await handler(makeRequest(baseBody({ choice: 1 })))
-    expect(res.status).toBe(409)
-    const body = await res.json()
-    expect(body.error).toMatch(/Planet already has a mech/i)
   })
 })

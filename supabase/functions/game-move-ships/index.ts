@@ -2,6 +2,7 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { applyCommanderPassives } from '../_shared/leaderEffects.ts'
+import { assertFleetCapacity, assertMovementAllowed, LawError } from '../_shared/lawEffects.ts'
 
 type ShipCargo = { unit_type: string; system_key: string; count: number }
 type Ship = { unit_type: string; origin_system_key: string; path: string[]; cargo: ShipCargo[] }
@@ -24,7 +25,7 @@ export async function handler(req: Request): Promise<Response> {
     return errorResponse('Internal server error', 500)
   }
 
-  let body: { game_id?: unknown; active_system_key?: unknown; ships?: unknown; excess_removals?: unknown }
+  let body: { game_id?: unknown; active_system_key?: unknown; ships?: unknown; excess_removals?: unknown; destination_planets?: unknown }
   try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
   if (!body.game_id || typeof body.game_id !== 'string') return errorResponse("'game_id' is required")
   if (!body.active_system_key || typeof body.active_system_key !== 'string') return errorResponse("'active_system_key' is required")
@@ -32,6 +33,7 @@ export async function handler(req: Request): Promise<Response> {
 
   const ships = body.ships as Ship[]
   const excessRemovals: ExcessRemoval[] = Array.isArray(body.excess_removals) ? body.excess_removals as ExcessRemoval[] : []
+  const destinationPlanets = Array.isArray(body.destination_planets) ? body.destination_planets as string[] : []
 
   const { data: player } = await db
     .from('game_players')
@@ -209,6 +211,37 @@ export async function handler(req: Request): Promise<Response> {
     }
     if (totalCargo > def.capacity) {
       return errorResponse(`Cargo exceeds ship capacity`, 409)
+    }
+  }
+
+  // Law enforcement: Fleet Regulations
+  // Calculate the post-move fleet size at the destination (active system)
+  const existingFleetAtDest = spaceUnits.filter(
+    (u: { player_id: string; unit_type: string; system_key: string; count: number }) =>
+      u.player_id === player.id &&
+      u.system_key === body.active_system_key &&
+      !['fighter', 'infantry'].includes(u.unit_type)
+  ).reduce((sum: number, u: { count: number }) => sum + u.count, 0)
+
+  // Ships leaving the active system (originated there, counted in existingFleetAtDest but moving away)
+  const leavingFromDest = ships.filter(s => s.origin_system_key === body.active_system_key).length
+
+  const postMoveFleetSize = existingFleetAtDest - leavingFromDest + ships.length
+
+  try {
+    await assertFleetCapacity(db, body.game_id, player.id, postMoveFleetSize)
+  } catch (err) {
+    if (err instanceof LawError) return errorResponse(err.message, 409)
+    throw err
+  }
+
+  // Law enforcement: Demilitarized Zone (and other movement-restricting laws)
+  for (const planetName of destinationPlanets) {
+    try {
+      await assertMovementAllowed(db, body.game_id, planetName)
+    } catch (err) {
+      if (err instanceof LawError) return errorResponse(err.message, 409)
+      throw err
     }
   }
 

@@ -212,11 +212,11 @@ describe('game-advance-phase — Phase 39b Trade Agreement (status phase repleni
     const res = await handler(makeRequest({ game_id: GAME_ID }))
     expect(res.status).toBe(200)
 
-    // Owner commodities set to 0 after transfer
-    const ownerZeroUpdate = gamePlayersUpdateCalls.find(
-      (c) => c.commodities === 0 && c.commodities !== undefined
-    )
-    expect(ownerZeroUpdate).toBeDefined()
+    // Owner's update must have commodities: 0 (merged replenish+transfer — no separate replenish write)
+    const ownerUpdates = gamePlayersUpdateCalls.filter((c) => c.commodities !== undefined)
+    // Only one commodities write for the owner: the merged write with commodities: 0
+    expect(ownerUpdates).toHaveLength(1)
+    expect(ownerUpdates[0].commodities).toBe(0)
 
     // Holder gets trade_goods increased by commodity_max (3 from faction mock)
     const holderTgUpdate = gamePlayersUpdateCalls.find(
@@ -372,6 +372,13 @@ describe('game-advance-phase — Phase 39b Gift of Prescience returned at status
 
     // returnNote called for Gift of Prescience with the owner player
     expect(returnNote).toHaveBeenCalledWith(NOTE_INSTANCE, PLAYER_OWNER, expect.anything())
+  })
+
+  // TODO (Phase 39c): Add test for Scepter of Dominion returnNote — deferred until 39c implements full handling
+  it.skip('Scepter of Dominion (39c): returnNote called for Scepter of Dominion at status phase end — deferred to Phase 39c', () => {
+    // Phase 39c will add the returnNote call for Scepter of Dominion.
+    // Verify: when getHeldNotes returns a Scepter of Dominion entry at status phase end,
+    // returnNote is called with the correct instanceId and ownerPlayerId.
   })
 
   it('Gift of Prescience not in_play: returnNote not called for Gift of Prescience', async () => {
