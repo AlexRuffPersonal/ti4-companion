@@ -320,7 +320,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-produce-units-p40](fn-game-produce-units-p40.md) | `supabase/functions/game-produce-units/index.ts` | 40 | Persistent Agenda Law Enforcement | planned | shared-lawEffects |
 | [fn-game-move-ships-p40](fn-game-move-ships-p40.md) | `supabase/functions/game-move-ships/index.ts` | 40 | Persistent Agenda Law Enforcement | planned | shared-lawEffects |
 | [fn-game-land-troops-p40](fn-game-land-troops-p40.md) | `supabase/functions/game-land-troops/index.ts` | 40 | Persistent Agenda Law Enforcement | planned | shared-lawEffects |
-| [fn-game-assign-hits-p40](fn-game-assign-hits-p40.md) | `supabase/functions/game-assign-hits/index.ts` | 40 | Persistent Agenda Law Enforcement | in-progress | shared-lawEffects |
+| [fn-game-assign-hits-p40](fn-game-assign-hits-p40.md) | `supabase/functions/game-assign-hits/index.ts` | 40 | Persistent Agenda Law Enforcement | done | shared-lawEffects |
 | [fn-game-advance-phase-p40](fn-game-advance-phase-p40.md) | `supabase/functions/game-advance-phase/index.ts` | 40 | Persistent Agenda Law Enforcement | done | shared-lawEffects, migration-049-law-enforcement |
 
 | [migration-051-exploration-fixes](migration-051-exploration-fixes.md) | `supabase/migrations/051_exploration_fixes.sql` | 41 | Exploration Full Validation | planned | — |
