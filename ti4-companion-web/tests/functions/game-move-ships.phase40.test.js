@@ -180,6 +180,49 @@ describe('game-move-ships Phase 40 — Persistent Agenda Law Enforcement', () =>
     })
   })
 
+  describe('assertMovementAllowed enforcement', () => {
+    it('Demilitarized Zone active + ship moving to elected planet → 409', async () => {
+      const lawError = new LawError('Demilitarized Zone: cannot move ships to Mecatol Rex', 409)
+      assertMovementAllowed.mockRejectedValue(lawError)
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        active_system_key: DEST_KEY,
+        ships: [{ unit_type: 'carrier', origin_system_key: ORIGIN_KEY, path: [ORIGIN_KEY, DEST_KEY], cargo: [] }],
+        destination_planets: ['Mecatol Rex'],
+      }))
+
+      expect(res.status).toBe(409)
+      const body = await res.json()
+      expect(body.error).toContain('Demilitarized Zone')
+    })
+
+    it('calls assertMovementAllowed for each destination planet', async () => {
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        active_system_key: DEST_KEY,
+        ships: [{ unit_type: 'carrier', origin_system_key: ORIGIN_KEY, path: [ORIGIN_KEY, DEST_KEY], cargo: [] }],
+        destination_planets: ['Mecatol Rex', 'Jord'],
+      }))
+
+      expect(res.status).toBe(200)
+      expect(assertMovementAllowed).toHaveBeenCalledTimes(2)
+      expect(assertMovementAllowed).toHaveBeenCalledWith(expect.anything(), GAME_ID, 'Mecatol Rex')
+      expect(assertMovementAllowed).toHaveBeenCalledWith(expect.anything(), GAME_ID, 'Jord')
+    })
+
+    it('omitting destination_planets skips assertMovementAllowed', async () => {
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        active_system_key: DEST_KEY,
+        ships: [{ unit_type: 'carrier', origin_system_key: ORIGIN_KEY, path: [ORIGIN_KEY, DEST_KEY], cargo: [] }],
+      }))
+
+      expect(res.status).toBe(200)
+      expect(assertMovementAllowed).not.toHaveBeenCalled()
+    })
+  })
+
   describe('no laws active — unchanged behavior', () => {
     it('returns 200 with normal move when no laws are active', async () => {
       assertMovementAllowed.mockResolvedValue(undefined)
