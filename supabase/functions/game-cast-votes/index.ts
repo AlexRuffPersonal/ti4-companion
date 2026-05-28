@@ -5,6 +5,7 @@ import { getNextPlayer } from '../_shared/player-order.ts'
 import { logEvent, EVT_CAST_VOTES } from '../_shared/gameEvents.ts'
 import { applyCommanderPassives } from '../_shared/leaderEffects.ts'
 import { getHandler } from '../_shared/abilityHandlers.ts'
+import { getActiveNotes } from '../_shared/promissoryEnforcement.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -184,6 +185,34 @@ export async function handler(req: Request): Promise<Response> {
       { onConflict: 'game_id,game_player_id,agenda_id' },
     )
   if (upsertError) return errorResponse(`Failed to record vote: ${upsertError.message}`, 500)
+
+  // Phase 39b: Blood Pact — if holder and owner both voted the same outcome, +4 bonus votes for activating player
+  if (!abstain && choice !== null) {
+    try {
+      const activeNotes = await getActiveNotes(body.game_id, db)
+      for (const note of activeNotes.bloodPact) {
+        if (note.holderPlayerId === callerPlayer.id || note.ownerPlayerId === callerPlayer.id) {
+          const otherPlayerId = note.holderPlayerId === callerPlayer.id ? note.ownerPlayerId : note.holderPlayerId
+          const { data: otherVote } = await db
+            .from('game_agenda_votes')
+            .select('choice')
+            .eq('game_id', body.game_id)
+            .eq('game_player_id', otherPlayerId)
+            .eq('agenda_id', game.agenda_current_card_id)
+            .maybeSingle()
+          if (otherVote?.choice === choice) {
+            await db
+              .from('game_agenda_votes')
+              .update({ vote_count: voteCount + 4 })
+              .eq('game_id', body.game_id)
+              .eq('game_player_id', callerPlayer.id)
+              .eq('agenda_id', game.agenda_current_card_id)
+            voteCount += 4
+          }
+        }
+      }
+    } catch { /* non-fatal */ }
+  }
 
   // Phase 29b Part B: After the speaker votes — open window for matching cards
   // game.speaker_player_id is a game_players.id (FK), so compare directly
