@@ -22,6 +22,7 @@ vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
 
 vi.mock('../../../supabase/functions/_shared/leaderEffects.ts', () => ({
   collectReactiveAgents: vi.fn().mockReturnValue([]),
+  applyCommanderPassives: vi.fn().mockResolvedValue({ inlineEffects: [], pendingWindows: [] }),
 }))
 
 vi.mock('../../../supabase/functions/_shared/lawEffects.ts', () => ({
@@ -283,6 +284,54 @@ describe('Phase 40 — Persistent Agenda Law Enforcement in assign-hits', () => 
       expect(res.status).toBe(200)
       const body = await res.json()
       expect(body.phase).toBe('defender_roll')
+    })
+  })
+
+  describe('checkVpMaintenanceLaws in ground combat victory', () => {
+    it('calls checkVpMaintenanceLaws with correct args when planet control flips in ground combat', async () => {
+      const GROUND_COMBAT = {
+        ...BASE_COMBAT,
+        combat_type: 'ground',
+        planet_name: 'Mecatol Rex',
+        phase: 'attacker_assign',
+        attacker_hits: 0,
+        defender_hits: 1,
+        retreat_declared_by: null,
+        retreat_destination: null,
+        ships_destroyed: null,
+      }
+
+      mockDb({
+        player: { id: ATTACKER_ID },
+        combat: GROUND_COMBAT,
+        unitDefs: [{ name: 'infantry', sustain_damage: false }],
+        assigneeUnits: [{ id: 'u1', player_id: ATTACKER_ID, unit_type: 'infantry', count: 1, damaged: false, system_key: '1,-1' }],
+        // After attacker takes 1 casualty and loses their last ground force:
+        // atkUnitsLeft = 0 (attacker's last infantry was destroyed by defender's hit)
+        // But wait — attacker is assigning 0 hits to themselves (defender_hits=1 means the attacker must assign 1 hit)
+        // Actually: attacker_assign phase means attacker assigns hits for defender_hits=1
+        // After assignment, defender has 0 ground forces → isGroundVictory (atkAlive > 0 is wrong here)
+        // isGroundVictory = combat_type=ground && planet_name && atkAlive > 0
+        // So attacker must survive and defender must have 0 units
+        atkUnitsLeft: [{ id: 'u2' }],
+        defUnitsLeft: [],
+      })
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        combat_id: COMBAT_ID,
+        casualties: [{ unit_type: 'infantry', player_unit_id: 'u1', action: 'destroy' }],
+      }))
+
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.status).toBe('complete')
+      expect(checkVpMaintenanceLaws).toHaveBeenCalledWith(
+        expect.anything(),
+        GAME_ID,
+        DEFENDER_ID,
+        'Mecatol Rex',
+      )
     })
   })
 })

@@ -245,6 +245,9 @@ export async function handler(req: Request): Promise<Response> {
 
     // Phase 43c: if attacker wins ground combat, fire PLANET_CONTROL_GAINED passive
     const isGroundVictory = combat.combat_type === 'ground' && combat.planet_name && atkAlive > 0
+    if (isGroundVictory) {
+      await checkVpMaintenanceLaws(db, body.game_id, combat.defender_player_id, combat.planet_name)
+    }
     if (isGroundVictory && !commanderPendingWindow) {
       const { pendingWindows: planetWindows } = await applyCommanderPassives(
         'PLANET_CONTROL_GAINED',
