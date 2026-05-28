@@ -15,7 +15,7 @@ export async function handler(req: Request): Promise<Response> {
     return errorResponse('Internal server error', 500)
   }
 
-  let body: { game_id?: unknown; system_key?: unknown; planet_name?: unknown; troop_count?: unknown }
+  let body: { game_id?: unknown; system_key?: unknown; planet_name?: unknown; troop_count?: unknown; unit_type?: unknown }
   try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
   if (!body.game_id || typeof body.game_id !== 'string') return errorResponse("'game_id' is required")
   if (!body.system_key || typeof body.system_key !== 'string') return errorResponse("'system_key' is required")
@@ -76,6 +76,27 @@ export async function handler(req: Request): Promise<Response> {
       exhausted: true,
     }, { onConflict: 'game_id,planet_name' })
   if (planetError2) return errorResponse(`Failed to claim planet: ${planetError2.message}`, 500)
+
+  if (body.unit_type === 'mech') {
+    const { data: planetRecord } = await db
+      .from('game_player_planets')
+      .select('attachments')
+      .eq('game_id', body.game_id)
+      .eq('player_id', player.id)
+      .eq('planet_name', body.planet_name)
+      .maybeSingle()
+    const planetAttachments = (planetRecord as { attachments?: string[] } | null)?.attachments ?? []
+    if (planetAttachments.length > 0) {
+      const { data: attachmentRecords } = await db
+        .from('attachments')
+        .select('name')
+        .in('id', planetAttachments)
+      const attachmentNames = (attachmentRecords as Array<{ name: string }> | null)?.map(a => a.name) ?? []
+      if (attachmentNames.includes('Demilitarized Zone')) {
+        return errorResponse('Cannot place a mech on a Demilitarized Zone planet', 409)
+      }
+    }
+  }
 
   const { data: existingUnit } = await db
     .from('game_player_units')

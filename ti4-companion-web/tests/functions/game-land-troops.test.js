@@ -60,6 +60,8 @@ function mockDb({
   custodianUpdateError = null,
   playerVp = { vp: 3 },
   vpUpdateError = null,
+  planetRecord = { attachments: [] },
+  attachmentRecords = [],
 } = {}) {
   const planetUpsertMock = vi.fn().mockResolvedValue({ error: upsertPlanetError })
   const unitInsertMock = vi.fn().mockResolvedValue({ error: insertUnitError })
@@ -134,6 +136,22 @@ function mockDb({
     if (table === 'game_player_planets') {
       return {
         upsert: planetUpsertMock,
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: planetRecord, error: null }),
+              }),
+            }),
+          }),
+        }),
+      }
+    }
+    if (table === 'attachments') {
+      return {
+        select: vi.fn().mockReturnValue({
+          in: vi.fn().mockResolvedValue({ data: attachmentRecords, error: null }),
+        }),
       }
     }
     if (table === 'game_player_units') {
@@ -269,5 +287,30 @@ describe('game-land-troops', () => {
     const res = await handler(makeRequest({ game_id: GAME_ID, system_key: '1,-1', planet_name: 'Wellon', troop_count: 1 }))
     expect(res.status).toBe(200)
     expect(logEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ event_type: 'land_troops' }))
+  })
+
+  it('returns 409 when placing a mech on a Demilitarized Zone planet', async () => {
+    const DMZ_UUID = 'dmz-attachment-uuid'
+    mockDb({
+      planetRecord: { attachments: [DMZ_UUID] },
+      attachmentRecords: [{ name: 'Demilitarized Zone' }],
+    })
+    const res = await handler(makeRequest({ game_id: GAME_ID, system_key: '1,-1', planet_name: 'Wellon', troop_count: 1, unit_type: 'mech' }))
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body.error).toMatch(/Demilitarized Zone/i)
+  })
+
+  it('allows infantry landing even when DMZ attachment is present', async () => {
+    const DMZ_UUID = 'dmz-attachment-uuid'
+    mockDb({
+      planetRecord: { attachments: [DMZ_UUID] },
+      attachmentRecords: [{ name: 'Demilitarized Zone' }],
+    })
+    // no unit_type field — defaults to infantry behaviour
+    const res = await handler(makeRequest({ game_id: GAME_ID, system_key: '1,-1', planet_name: 'Wellon', troop_count: 1 }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.claimed).toBe(true)
   })
 })
