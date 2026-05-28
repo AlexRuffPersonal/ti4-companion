@@ -262,6 +262,29 @@ describe('Phase 40 — Persistent Agenda Law Enforcement in assign-hits', () => 
       expect(res.status).toBe(200)
       expect(assertCombatHitAllowed).not.toHaveBeenCalled()
     })
+
+    it('Conventions of War active: sustain action on a fighter is NOT blocked (assertCombatHitAllowed not called for sustain)', async () => {
+      // If assertCombatHitAllowed were called for a sustain, it would throw a LawError and produce a 409.
+      // The test passes only if the response is 200, confirming the guard skips sustain actions.
+      const lawError = new LawError('Conventions of War: fighters cannot be destroyed', 409)
+      assertCombatHitAllowed.mockRejectedValue(lawError)
+
+      mockDb({
+        player: { id: DEFENDER_ID },
+        combat: { ...BASE_COMBAT, phase: 'defender_assign', attacker_hits: 1 },
+        unitDefs: [{ name: 'fighter', sustain_damage: true }],
+        assigneeUnits: [{ id: 'u1', player_id: DEFENDER_ID, unit_type: 'fighter', count: 1, damaged: false, system_key: '1,-1' }],
+      })
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        combat_id: COMBAT_ID,
+        casualties: [{ unit_type: 'fighter', player_unit_id: 'u1', action: 'sustain' }],
+      }))
+
+      expect(res.status).toBe(200)
+      expect(assertCombatHitAllowed).not.toHaveBeenCalled()
+    })
   })
 
   describe('no laws active — unchanged behavior', () => {

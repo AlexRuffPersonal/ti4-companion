@@ -69,12 +69,14 @@ export async function handler(req: Request): Promise<Response> {
 
   // Validate casualties
   for (const c of casualties) {
-    // Check persistent law restrictions before allowing the casualty
-    try {
-      await assertCombatHitAllowed(db, body.game_id, c.unit_type)
-    } catch (err) {
-      if (err instanceof LawError) return errorResponse(err.message, 409)
-      throw err
+    // Check persistent law restrictions before allowing the casualty (destroy only — sustain is not a destruction)
+    if (c.action === 'destroy') {
+      try {
+        await assertCombatHitAllowed(db, body.game_id, c.unit_type)
+      } catch (err) {
+        if (err instanceof LawError) return errorResponse(err.message, 409)
+        throw err
+      }
     }
 
     if (c.action === 'sustain') {
