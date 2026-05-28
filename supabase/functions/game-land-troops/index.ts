@@ -67,12 +67,13 @@ export async function handler(req: Request): Promise<Response> {
   const planetExists = planets.some(p => p.name === body.planet_name)
   if (!planetExists) return errorResponse(`Planet "${body.planet_name}" not found in system`, 409)
 
-  const { data: existingOwner } = await db
+  const { data: existingOwner, error: ownerError } = await db
     .from('game_player_planets')
     .select('player_id')
     .eq('game_id', body.game_id)
     .eq('planet_name', body.planet_name)
     .maybeSingle()
+  if (ownerError) return errorResponse('Database error', 500)
   const previousOwnerId = (existingOwner as { player_id: string } | null)?.player_id ?? null
 
   try {
@@ -94,7 +95,12 @@ export async function handler(req: Request): Promise<Response> {
   if (planetError2) return errorResponse(`Failed to claim planet: ${planetError2.message}`, 500)
 
   if (previousOwnerId !== null && previousOwnerId !== player.id) {
-    await checkVpMaintenanceLaws(db, body.game_id as string, previousOwnerId, body.planet_name as string)
+    try {
+      await checkVpMaintenanceLaws(db, body.game_id as string, previousOwnerId, body.planet_name as string)
+    } catch (err) {
+      if (err instanceof LawError) return errorResponse(err.message, 409)
+      return errorResponse('Failed to apply VP maintenance law', 500)
+    }
   }
 
   const { data: existingUnit } = await db

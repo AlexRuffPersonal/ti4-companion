@@ -256,6 +256,20 @@ describe('Phase 40 — Persistent Agenda Law Enforcement in game-land-troops', (
       expect(res.status).toBe(200)
       expect(checkVpMaintenanceLaws).not.toHaveBeenCalled()
     })
+
+    it('checkVpMaintenanceLaws throws a DB error → returns 500', async () => {
+      mockDb({ existingOwner: { player_id: PREV_OWNER_ID } })
+      checkVpMaintenanceLaws.mockRejectedValue(new Error('DB failure'))
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        system_key: '1,-1',
+        planet_name: 'Wellon',
+        troop_count: 1,
+      }))
+
+      expect(res.status).toBe(500)
+    })
   })
 
   describe('no laws active — unchanged behavior', () => {
