@@ -406,4 +406,123 @@ describe('game-resolve-agenda (Phase 40)', () => {
     expect(vpUpdateData.vp).toBe(7)  // 5 + 2
     expect(vpUpdatePlayerId).toBe('p3')  // The player who controls the planet
   })
+
+  // Test 4: remove_vp for planet-elect law should remove VP from player controlling the planet
+  it('remove_vp for planet-elect law: VP deducted from player controlling the elected planet', async () => {
+    const db_mock = setupDefaultMocks()
+    let vpUpdateData = null
+    let vpUpdatePlayerId = null
+
+    db_mock.from = vi.fn().mockImplementation((table) => {
+      if (table === 'games') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: 'g1', speaker_player_id: 'p1', agenda_current_card_id: 'agenda-1', agenda_phase_step: 'agenda_1_voting', round: 3 },
+                error: null,
+              }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: {}, error: null }),
+          }),
+        }
+      }
+      if (table === 'game_players') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'p1' }, error: null }),
+              }),
+              maybeSingle: vi.fn().mockImplementation(() => {
+                // For the vp lookup
+                return Promise.resolve({ data: { vp: 8 }, error: null })
+              }),
+            }),
+          }),
+          update: vi.fn().mockImplementation((data) => {
+            vpUpdateData = data
+            return {
+              eq: vi.fn().mockImplementation((col, val) => {
+                vpUpdatePlayerId = val
+                return Promise.resolve({ data: {}, error: null })
+              }),
+            }
+          }),
+        }
+      }
+      if (table === 'agendas') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: {
+                  id: 'agenda-1',
+                  type: 'law',
+                  elect_type: 'planet',  // Planet-elect
+                  tractable: true,
+                  effect_json: { op: 'remove_vp', amount: 3 },  // remove_vp effect
+                },
+                error: null,
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'game_agenda_deck') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'deck-1' }, error: null }),
+                }),
+              }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: {}, error: null }),
+          }),
+        }
+      }
+      if (table === 'game_player_planets') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { player_id: 'p2' },  // Planet is controlled by p2
+                  error: null,
+                }),
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'game_laws') {
+        return {
+          insert: vi.fn().mockResolvedValue({ data: {}, error: null }),
+        }
+      }
+      return { from: vi.fn() }
+    })
+
+    const req = {
+      method: 'POST',
+      json: vi.fn().mockResolvedValue({
+        game_id: 'g1',
+        agenda_id: 'agenda-1',
+        elected_target: 'Mecatol Rex',
+      }),
+    }
+
+    await handler(req)
+
+    // Verify VP was deducted from the player controlling the planet
+    expect(vpUpdateData).toBeDefined()
+    expect(vpUpdateData.vp).toBe(5)  // 8 - 3
+    expect(vpUpdatePlayerId).toBe('p2')  // The player who controls the planet
+  })
 })
