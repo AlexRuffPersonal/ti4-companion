@@ -1,7 +1,17 @@
-import { requireAuth, AuthError } from '../_shared/auth.ts'
+﻿import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { logEvent, EVT_CREATE_TRANSACTION } from '../_shared/gameEvents.ts'
+import { getActiveNotes } from '../_shared/promissoryEnforcement.ts'
+
+function axialNeighbors(systemKey: string): string[] {
+  const [q, r] = systemKey.split(',').map(Number)
+  return [
+    [q + 1, r], [q - 1, r],
+    [q, r + 1], [q, r - 1],
+    [q + 1, r - 1], [q - 1, r + 1],
+  ].map(([nq, nr]) => `${nq},${nr}`)
+}
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -32,7 +42,7 @@ export async function handler(req: Request): Promise<Response> {
   // Get current player
   const { data: fromPlayer, error: fromPlayerError } = await db
     .from('game_players')
-    .select('id, commodities, trade_goods')
+    .select('id, commodities, trade_goods, faction')
     .eq('game_id', body.game_id)
     .eq('user_id', userId)
     .single()
@@ -49,21 +59,55 @@ export async function handler(req: Request): Promise<Response> {
   // Validate to_player exists
   const { data: toPlayer, error: toPlayerError } = await db
     .from('game_players')
-    .select('id')
+    .select('id, faction')
     .eq('game_id', body.game_id)
     .eq('id', body.to_player_id)
     .maybeSingle()
   if (toPlayerError) return errorResponse('Database error', 500)
   if (!toPlayer) return errorResponse('Target player not in game', 404)
 
-  // Get game for current_vote_sequence
+  // Get game for current_vote_sequence and map_tiles
   const { data: game, error: gameError } = await db
     .from('games')
-    .select('current_vote_sequence')
+    .select('current_vote_sequence, map_tiles')
     .eq('id', body.game_id)
     .maybeSingle()
   if (gameError) return errorResponse('Database error', 500)
   if (!game) return errorResponse('Game not found', 404)
+
+  // Neighbor-adjacency check with Trade Convoys bypass
+  const mapTiles = (game.map_tiles ?? {}) as Record<string, unknown>
+  if (Object.keys(mapTiles).length > 0 && fromPlayer.faction && toPlayer.faction) {
+    const [fromTileResult, toTileResult] = await Promise.all([
+      db.from('tiles').select('id').eq('faction_key', fromPlayer.faction).maybeSingle(),
+      db.from('tiles').select('id').eq('faction_key', toPlayer.faction).maybeSingle(),
+    ])
+    const fromTileId = fromTileResult.data?.id
+    const toTileId = toTileResult.data?.id
+
+    if (fromTileId && toTileId) {
+      const findHomeKey = (tileId: unknown) =>
+        Object.entries(mapTiles).find(([, entry]) => {
+          const id = typeof entry === 'object' && entry !== null
+            ? (entry as Record<string, unknown>).tile_id
+            : entry
+          return String(id) === String(tileId)
+        })?.[0]
+
+      const fromHomeKey = findHomeKey(fromTileId)
+      const toHomeKey = findHomeKey(toTileId)
+
+      if (fromHomeKey && toHomeKey && !axialNeighbors(fromHomeKey).includes(toHomeKey)) {
+        const activeNotes = await getActiveNotes(body.game_id, db)
+        const tradeConvoysActive = activeNotes.tradeConvoys.some(
+          n => n.holderPlayerId === fromPlayerId || n.holderPlayerId === body.to_player_id
+        )
+        if (!tradeConvoysActive) {
+          return errorResponse('Players are not neighbors', 409)
+        }
+      }
+    }
+  }
 
   // Validate commodities/trade_goods availability
   if ((offer.commodities ?? 0) > (fromPlayer.commodities ?? 0)) {
