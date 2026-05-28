@@ -2,6 +2,7 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { applyCommanderPassives } from '../_shared/leaderEffects.ts'
+import { assertFleetCapacity, LawError } from '../_shared/lawEffects.ts'
 
 type ShipCargo = { unit_type: string; system_key: string; count: number }
 type Ship = { unit_type: string; origin_system_key: string; path: string[]; cargo: ShipCargo[] }
@@ -210,6 +211,14 @@ export async function handler(req: Request): Promise<Response> {
     if (totalCargo > def.capacity) {
       return errorResponse(`Cargo exceeds ship capacity`, 409)
     }
+  }
+
+  // Law enforcement: Fleet Regulations
+  try {
+    await assertFleetCapacity(db, body.game_id, player.id, ships.length)
+  } catch (err) {
+    if (err instanceof LawError) return errorResponse(err.message, 409)
+    throw err
   }
 
   // Post-movement capacity check

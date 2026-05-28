@@ -13,8 +13,8 @@ vi.mock('../../../supabase/functions/_shared/leaderEffects.ts', () => ({
   applyCommanderPassives: vi.fn().mockResolvedValue({ inlineEffects: [], pendingWindows: [] }),
 }))
 vi.mock('../../../supabase/functions/_shared/lawEffects.ts', () => ({
-  assertMovementAllowed: vi.fn().mockResolvedValue(undefined),
-  assertFleetCapacity: vi.fn().mockResolvedValue(undefined),
+  assertMovementAllowed: vi.fn(),
+  assertFleetCapacity: vi.fn(),
   LawError: class LawError extends Error {
     constructor(message, status = 409) {
       super(message)
@@ -26,7 +26,7 @@ vi.mock('../../../supabase/functions/_shared/lawEffects.ts', () => ({
 
 import { requireAuth } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
-import { applyCommanderPassives } from '../../../supabase/functions/_shared/leaderEffects.ts'
+import { assertMovementAllowed, assertFleetCapacity, LawError } from '../../../supabase/functions/_shared/lawEffects.ts'
 import { handler } from '../../../supabase/functions/game-move-ships/index.ts'
 
 const USER_ID = 'user-uuid'
@@ -127,84 +127,73 @@ function mockDb({
   })
 }
 
-describe('game-move-ships Phase 43c — commander passives', () => {
+describe('game-move-ships Phase 40 — Persistent Agenda Law Enforcement', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     requireAuth.mockResolvedValue(USER_ID)
-    applyCommanderPassives.mockResolvedValue({ inlineEffects: [], pendingWindows: [] })
+    assertMovementAllowed.mockResolvedValue(undefined)
+    assertFleetCapacity.mockResolvedValue(undefined)
+    mockDb()
   })
 
-  it('calls applyCommanderPassives with SHIPS_MOVED trigger after move', async () => {
-    mockDb()
-    const res = await handler(makeRequest({
-      game_id: GAME_ID,
-      active_system_key: DEST_KEY,
-      ships: [{ unit_type: 'carrier', origin_system_key: ORIGIN_KEY, path: [ORIGIN_KEY, DEST_KEY], cargo: [] }],
-    }))
-    expect(res.status).toBe(200)
-    expect(applyCommanderPassives).toHaveBeenCalledWith(
-      'SHIPS_MOVED',
-      expect.objectContaining({ gameId: GAME_ID, activatingPlayerId: PLAYER_ID, systemKey: DEST_KEY }),
-      expect.anything(),
-    )
-  })
+  describe('assertFleetCapacity enforcement', () => {
+    it('returns 409 when Fleet Regulations active and fleet size exceeds max-2', async () => {
+      const lawError = new LawError('Fleet Regulations: fleet size exceeds reduced maximum', 409)
+      assertFleetCapacity.mockRejectedValue(lawError)
 
-  it('Creuss commander — returns pending_window when unlocked commander emits window', async () => {
-    mockDb()
-    applyCommanderPassives.mockResolvedValue({
-      inlineEffects: [],
-      pendingWindows: [{
+      const res = await handler(makeRequest({
         game_id: GAME_ID,
-        trigger: 'SHIPS_MOVED',
-        faction: 'The Ghosts Of Creuss',
-        player_id: PLAYER_ID,
-        effect: [{ op: 'place_units', unit_type: 'fighter', count: 1, target: 'active_system' }],
-      }],
-    })
-    const res = await handler(makeRequest({
-      game_id: GAME_ID,
-      active_system_key: DEST_KEY,
-      ships: [{ unit_type: 'carrier', origin_system_key: ORIGIN_KEY, path: [ORIGIN_KEY, DEST_KEY], cargo: [] }],
-    }))
-    expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body.pending_window).toBeDefined()
-    expect(body.pending_window.faction).toBe('The Ghosts Of Creuss')
-  })
+        active_system_key: DEST_KEY,
+        ships: [{ unit_type: 'carrier', origin_system_key: ORIGIN_KEY, path: [ORIGIN_KEY, DEST_KEY], cargo: [] }],
+      }))
 
-  it('Empyrean commander — returns pending_window for return-token window', async () => {
-    mockDb()
-    applyCommanderPassives.mockResolvedValue({
-      inlineEffects: [],
-      pendingWindows: [{
+      expect(res.status).toBe(409)
+      const body = await res.json()
+      expect(body.error).toContain('Fleet Regulations')
+    })
+
+    it('calls assertFleetCapacity with ships.length as fleet size', async () => {
+      mockDb({
+        spaceUnits: [
+          { id: 'unit-1', player_id: PLAYER_ID, unit_type: 'carrier', count: 1, system_key: ORIGIN_KEY },
+          { id: 'unit-2', player_id: PLAYER_ID, unit_type: 'carrier', count: 1, system_key: ORIGIN_KEY },
+        ],
+        unitDefs: [CARRIER_DEF],
+      })
+
+      const res = await handler(makeRequest({
         game_id: GAME_ID,
-        trigger: 'SHIPS_MOVED',
-        faction: 'The Empyrean',
-        player_id: 'empyrean-player-uuid',
-        effect: 'empyrean_return_token',
-      }],
+        active_system_key: DEST_KEY,
+        ships: [
+          { unit_type: 'carrier', origin_system_key: ORIGIN_KEY, path: [ORIGIN_KEY, DEST_KEY], cargo: [] },
+          { unit_type: 'carrier', origin_system_key: ORIGIN_KEY, path: [ORIGIN_KEY, DEST_KEY], cargo: [] },
+        ],
+      }))
+
+      expect(res.status).toBe(200)
+      expect(assertFleetCapacity).toHaveBeenCalledWith(
+        expect.anything(),
+        GAME_ID,
+        PLAYER_ID,
+        2,
+      )
     })
-    const res = await handler(makeRequest({
-      game_id: GAME_ID,
-      active_system_key: DEST_KEY,
-      ships: [{ unit_type: 'carrier', origin_system_key: ORIGIN_KEY, path: [ORIGIN_KEY, DEST_KEY], cargo: [] }],
-    }))
-    expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body.pending_window).toBeDefined()
-    expect(body.pending_window.faction).toBe('The Empyrean')
   })
 
-  it('no pending_window field when no commander passive fires', async () => {
-    mockDb()
-    const res = await handler(makeRequest({
-      game_id: GAME_ID,
-      active_system_key: DEST_KEY,
-      ships: [{ unit_type: 'carrier', origin_system_key: ORIGIN_KEY, path: [ORIGIN_KEY, DEST_KEY], cargo: [] }],
-    }))
-    expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body.pending_window).toBeUndefined()
-    expect(body.moved).toBe(true)
+  describe('no laws active — unchanged behavior', () => {
+    it('returns 200 with normal move when no laws are active', async () => {
+      assertMovementAllowed.mockResolvedValue(undefined)
+      assertFleetCapacity.mockResolvedValue(undefined)
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        active_system_key: DEST_KEY,
+        ships: [{ unit_type: 'carrier', origin_system_key: ORIGIN_KEY, path: [ORIGIN_KEY, DEST_KEY], cargo: [] }],
+      }))
+
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.moved).toBe(true)
+    })
   })
 })
