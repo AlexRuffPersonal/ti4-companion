@@ -70,6 +70,9 @@ export async function handler(req: Request): Promise<Response> {
       // Gift of Prescience holder goes first (initiative 0)
       firstPlayer = { id: giftEntries[0].holderPlayerId }
       responseExtras.gift_of_prescience_holder_id = giftEntries[0].holderPlayerId
+      // Naalu (owner) loses their Telepathic ability — holder now has the initiative 0 benefit instead
+      responseExtras.gift_of_prescience_owner_id = giftEntries[0].ownerPlayerId
+      responseExtras.naalu_telepathic_skipped = true
     } else {
       const { data: players, error: playersError } = await db
         .from('game_players')

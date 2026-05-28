@@ -293,6 +293,29 @@ describe('game-advance-phase — Phase 39b Gift of Prescience (strategy phase)',
     expect(body.gift_of_prescience_holder_id).toBe(giftHolderPlayerId)
   })
 
+  it('Gift of Prescience in_play: response includes naalu_telepathic_skipped and gift_of_prescience_owner_id', async () => {
+    const giftOwnerPlayerId = PLAYER_OWNER
+    const giftHolderPlayerId = PLAYER_HOLDER
+
+    getActiveNotes.mockResolvedValue({
+      supportForThrone: [], alliance: [], tradeConvoys: [], promiseOfProtection: [],
+      bloodPact: [], darkPact: [], stymie: [], antivirus: [],
+      giftOfPrescience: [{ instanceId: NOTE_INSTANCE, holderPlayerId: giftHolderPlayerId, ownerPlayerId: giftOwnerPlayerId }],
+      tradeAgreement: [], crucible: [], strikeWingAmbuscade: [],
+    })
+
+    const gamesUpdateCalls = []
+    makeStrategyMock({ players: [], gamesUpdateCalls })
+
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    expect(res.status).toBe(200)
+
+    const body = await res.json()
+    // Naalu (owner) loses Telepathic — client should skip their initiative 0 treatment
+    expect(body.naalu_telepathic_skipped).toBe(true)
+    expect(body.gift_of_prescience_owner_id).toBe(giftOwnerPlayerId)
+  })
+
   it('Gift of Prescience not in_play: normal strategy card ordering applies', async () => {
     getActiveNotes.mockResolvedValue({
       supportForThrone: [], alliance: [], tradeConvoys: [], promiseOfProtection: [],
@@ -313,6 +336,8 @@ describe('game-advance-phase — Phase 39b Gift of Prescience (strategy phase)',
 
     const body = await res.json()
     expect(body.gift_of_prescience_holder_id).toBeUndefined()
+    expect(body.naalu_telepathic_skipped).toBeUndefined()
+    expect(body.gift_of_prescience_owner_id).toBeUndefined()
   })
 })
 
