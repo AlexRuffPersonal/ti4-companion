@@ -129,8 +129,9 @@ function mockDb(overrides = {}) {
     if (table === 'game_player_promissory_notes') {
       return {
         select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({
+          eq: vi.fn().mockReturnValue({
             maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+            eq: vi.fn().mockResolvedValue({ data: [], error: null }),
           }),
         }),
         update: vi.fn().mockResolvedValue({ error: null }),
@@ -352,6 +353,7 @@ describe('game-confirm-transaction', () => {
                 data: { id: noteRowId, state: 'held', held_by_player_id: FROM_PLAYER_ID, note_id: 'ref-sftt' },
                 error: null,
               }),
+              eq: vi.fn().mockResolvedValue({ data: [], error: null }),
             }),
           }),
           update: noteUpdateMock,
@@ -473,6 +475,7 @@ describe('game-confirm-transaction', () => {
                 data: { id: noteRowId, state: 'held', held_by_player_id: FROM_PLAYER_ID, note_id: 'ref-alliance' },
                 error: null,
               }),
+              eq: vi.fn().mockResolvedValue({ data: [], error: null }),
             }),
           }),
           update: noteUpdateMock,
@@ -587,6 +590,7 @@ describe('game-confirm-transaction', () => {
                 data: { id: noteRowId, state: 'held', held_by_player_id: FROM_PLAYER_ID, note_id: 'ref-generic' },
                 error: null,
               }),
+              eq: vi.fn().mockResolvedValue({ data: [], error: null }),
             }),
           }),
           update: noteUpdateMock,
@@ -706,8 +710,9 @@ describe('game-confirm-transaction', () => {
       if (table === 'game_player_promissory_notes') {
         return {
           select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({
+            eq: vi.fn().mockReturnValue({
               maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+              eq: vi.fn().mockResolvedValue({ data: [], error: null }),
             }),
           }),
           update: vi.fn().mockResolvedValue({ error: null }),

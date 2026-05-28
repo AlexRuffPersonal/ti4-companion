@@ -2,6 +2,7 @@ import { requireAuth, AuthError } from '../_shared/auth.ts'
 import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { logEvent, EVT_CONFIRM_TRANSACTION } from '../_shared/gameEvents.ts'
+import { getActiveNotes } from '../_shared/promissoryEnforcement.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -161,6 +162,38 @@ export async function handler(req: Request): Promise<Response> {
           .eq('id', noteId)
         if (transferError) return errorResponse('Database error', 500)
       }
+    }
+  }
+
+  // Dark Pact enforcement: if note is in_play and holder sends max commodities to owner → both +1 TG
+  const activeNotes = await getActiveNotes(body.game_id, db)
+  for (const note of activeNotes.darkPact) {
+    let commoditiesFromHolderToOwner = 0
+    if (tx.from_player_id === note.holderPlayerId && tx.to_player_id === note.ownerPlayerId) {
+      commoditiesFromHolderToOwner = items.offer.commodities ?? 0
+    } else if (tx.to_player_id === note.holderPlayerId && tx.from_player_id === note.ownerPlayerId) {
+      commoditiesFromHolderToOwner = items.request.commodities ?? 0
+    }
+    if (commoditiesFromHolderToOwner === 0) continue
+
+    const { data: ownerRow } = await db
+      .from('game_players')
+      .select('id, commodity_max, trade_goods')
+      .eq('id', note.ownerPlayerId)
+      .maybeSingle()
+    const commodityMax = (ownerRow as { commodity_max: number } | null)?.commodity_max ?? 0
+    if (commoditiesFromHolderToOwner >= commodityMax) {
+      await db.from('game_players')
+        .update({ trade_goods: ((ownerRow as { trade_goods: number } | null)?.trade_goods ?? 0) + 1 })
+        .eq('id', note.ownerPlayerId)
+      const { data: holderRow } = await db
+        .from('game_players')
+        .select('trade_goods')
+        .eq('id', note.holderPlayerId)
+        .maybeSingle()
+      await db.from('game_players')
+        .update({ trade_goods: ((holderRow as { trade_goods: number } | null)?.trade_goods ?? 0) + 1 })
+        .eq('id', note.holderPlayerId)
     }
   }
 
