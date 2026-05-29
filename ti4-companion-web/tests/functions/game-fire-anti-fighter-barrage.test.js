@@ -11,6 +11,11 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
   db: { from: vi.fn() },
 }))
 
+vi.mock('../../../supabase/functions/_shared/promissoryEnforcement.ts', () => ({
+  getHeldNotes: vi.fn().mockResolvedValue([]),
+  returnNote: vi.fn().mockResolvedValue(undefined),
+}))
+
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-fire-anti-fighter-barrage/index.ts'

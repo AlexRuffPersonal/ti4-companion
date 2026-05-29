@@ -3,6 +3,7 @@ import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { resolveUnitStats, type StatBlock } from '../_shared/techEffects.ts'
 import { applyCommanderPassives } from '../_shared/leaderEffects.ts'
+import { getHeldNotes, returnNote } from '../_shared/promissoryEnforcement.ts'
 
 type UnitRow = { id: string; player_id: string; unit_type: string; count: number; system_key: string }
 type UnitDef = { name: string; afb: string | null }
@@ -65,11 +66,12 @@ export async function handler(req: Request): Promise<Response> {
     return errorResponse('Internal server error', 500)
   }
 
-  let body: { game_id?: unknown; combat_id?: unknown; plasma_scoring_unit?: unknown }
+  let body: { game_id?: unknown; combat_id?: unknown; plasma_scoring_unit?: unknown; selections?: unknown }
   try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
   if (!body.game_id || typeof body.game_id !== 'string') return errorResponse("'game_id' is required")
   if (!body.combat_id || typeof body.combat_id !== 'string') return errorResponse("'combat_id' is required")
   const plasmaScoringUnit = typeof body.plasma_scoring_unit === 'string' ? body.plasma_scoring_unit : undefined
+  const selections = (body.selections && typeof body.selections === 'object') ? body.selections as Record<string, unknown> : {}
 
   const { data: player } = await db
     .from('game_players')
@@ -169,8 +171,34 @@ export async function handler(req: Request): Promise<Response> {
   const effectivePlasmaScoringUnit =
     attackerTechs.includes('Plasma Scoring') && plasmaScoringUnit ? plasmaScoringUnit : undefined
 
-  const { results: atkResults, hits: atkHits } = rollAfb(atkUnits ?? [], defMap, afbOverrides, effectivePlasmaScoringUnit)
+  // Strike Wing Ambuscade: +1 die for chosen unit type's AFB stat
+  const ambuscadeNotes = await getHeldNotes(body.game_id, 'Strike Wing Ambuscade', db)
+  const callerAmbuscadeNote = ambuscadeNotes.find((n) => n.holderPlayerId === (player as Record<string, string>).id)
+  let ambuscadeUnitType: string | null = null
+  let ambuscadeNoteInstanceId: string | null = null
+  let ambuscadeOwnerPlayerId: string | null = null
+  if (callerAmbuscadeNote && typeof selections.ambuscade_unit_type === 'string') {
+    ambuscadeUnitType = selections.ambuscade_unit_type
+    ambuscadeNoteInstanceId = callerAmbuscadeNote.instanceId
+    ambuscadeOwnerPlayerId = callerAmbuscadeNote.ownerPlayerId
+  }
+
+  const { results: atkResultsBase, hits: atkHitsBase } = rollAfb(atkUnits ?? [], defMap, afbOverrides, effectivePlasmaScoringUnit)
   const { results: defResults, hits: defHits } = rollAfb(defUnits ?? [], defMap)
+
+  // Apply ambuscade extra die
+  const atkResults = [...atkResultsBase]
+  let atkHits = atkHitsBase
+  if (ambuscadeUnitType !== null) {
+    const ambuscadeDef = defMap.get(ambuscadeUnitType)
+    const ambuscadeAfbStat = ambuscadeDef?.afb ?? null
+    const ambuscadeValue = ambuscadeAfbStat ? parseStat(ambuscadeAfbStat).value : 6
+    const roll = Math.ceil(Math.random() * 10)
+    const hit = roll >= ambuscadeValue
+    if (hit) atkHits++
+    atkResults.push({ unit_type: ambuscadeUnitType, roll, hit_on: ambuscadeValue, hit })
+    await returnNote(ambuscadeNoteInstanceId!, ambuscadeOwnerPlayerId!, db)
+  }
 
   const { pendingWindows } = await applyCommanderPassives(
     'UNIT_ABILITY_ROLL',
