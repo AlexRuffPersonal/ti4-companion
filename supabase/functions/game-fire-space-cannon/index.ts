@@ -3,6 +3,7 @@ import { db } from '../_shared/db.ts'
 import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/errors.ts'
 import { logEvent, EVT_FIRE_SPACE_CANNON } from '../_shared/gameEvents.ts'
 import { applyCommanderPassives } from '../_shared/leaderEffects.ts'
+import { getHeldNotes, returnNote } from '../_shared/promissoryEnforcement.ts'
 
 type SpEntry = { player_id: string; system_key: string; unit_type: string; dice_count: number; resolved: boolean }
 type UnitRow = { id: string; player_id: string; unit_type: string; count: number; system_key: string }
@@ -122,6 +123,18 @@ export async function handler(req: Request): Promise<Response> {
       diceCount += 1
     }
 
+    // Strike Wing Ambuscade: +1 die for chosen unit type; return note after use
+    const ambuscadeNotes = await getHeldNotes(body.game_id, 'Strike Wing Ambuscade', db)
+    const callerAmbuscadeNote = ambuscadeNotes.find((n) => n.holderPlayerId === player.id)
+    let ambuscadeUnitType: string | null = null
+    let ambuscadeNoteInstanceId: string | null = null
+    let ambuscadeOwnerPlayerId: string | null = null
+    if (callerAmbuscadeNote && typeof selections.ambuscade_unit_type === 'string') {
+      ambuscadeUnitType = selections.ambuscade_unit_type
+      ambuscadeNoteInstanceId = callerAmbuscadeNote.instanceId
+      ambuscadeOwnerPlayerId = callerAmbuscadeNote.ownerPlayerId
+    }
+
     const { data: unitDef } = await db
       .from('units')
       .select('space_cannon')
@@ -148,6 +161,24 @@ export async function handler(req: Request): Promise<Response> {
       const hit = roll >= scValue
       if (hit) hits++
       diceResults.push({ roll, hit })
+    }
+
+    // Strike Wing Ambuscade: roll +1 die using the chosen unit type's space cannon stat
+    if (ambuscadeUnitType !== null) {
+      const { data: ambuscadeUnitDef } = await db
+        .from('units')
+        .select('space_cannon')
+        .eq('name', ambuscadeUnitType)
+        .maybeSingle()
+      const ambuscadeScValue = parseCombatValue(ambuscadeUnitDef?.space_cannon ?? '6')
+      let ambuscadeRoll = Math.floor(Math.random() * 10) + 1
+      if (targetTechs.includes('Antimass Deflectors')) {
+        ambuscadeRoll = Math.max(1, ambuscadeRoll - 1)
+      }
+      const ambuscadeHit = ambuscadeRoll >= ambuscadeScValue
+      if (ambuscadeHit) hits++
+      diceResults.push({ roll: ambuscadeRoll, hit: ambuscadeHit })
+      await returnNote(ambuscadeNoteInstanceId!, ambuscadeOwnerPlayerId!, db)
     }
 
     await applyHits(body.game_id, combat.system_key, targetId, hits)
