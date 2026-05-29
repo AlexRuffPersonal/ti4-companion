@@ -176,6 +176,28 @@ export async function handler(req: Request): Promise<Response> {
   const defMap = new Map((unitDefs ?? []).map((u: UnitDef) => [u.name, u]))
   let { results, hits } = rollDice(rollerUnits ?? [], defMap, technologies)
 
+  // Phase 39b: The Cavalry promissory note — treat one non-fighter ship as Nomad flagship
+  // cavalry_active_player_id and cavalry_unit_id are set by game-play-promissory-note
+  if (combat.cavalry_active_player_id === rollingPlayerId && combat.cavalry_unit_id) {
+    const cavalryUnit = (rollerUnits ?? []).find((u: UnitRow) => u.id === combat.cavalry_unit_id)
+    if (cavalryUnit) {
+      // Nomad flagship combat stats: combat=5(x2), sustain_damage (sustain handled by assign-hits)
+      const NOMAD_FLAGSHIP_COMBAT = 5
+      const NOMAD_FLAGSHIP_DICE = 2
+      // Remove all results rolled for the cavalry unit type, then reroll with flagship stats
+      const nonCavalryResults = results.filter((r: DieResult) => r.unit_type !== cavalryUnit.unit_type)
+      const cavalryDiceCount = NOMAD_FLAGSHIP_DICE * cavalryUnit.count
+      const cavalryNewResults: DieResult[] = []
+      for (let i = 0; i < cavalryDiceCount; i++) {
+        const roll = Math.ceil(Math.random() * 10)
+        const hit = roll >= NOMAD_FLAGSHIP_COMBAT
+        cavalryNewResults.push({ unit_type: cavalryUnit.unit_type, roll, hit_on: NOMAD_FLAGSHIP_COMBAT, hit })
+      }
+      results = [...nonCavalryResults, ...cavalryNewResults]
+      hits = results.filter((r: DieResult) => r.hit).length
+    }
+  }
+
   // Phase 43c: apply COMBAT_ROLL commander passives
   const combatRollContext = {
     gameId: body.game_id,
