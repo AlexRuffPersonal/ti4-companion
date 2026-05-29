@@ -285,7 +285,7 @@ This keeps the index accurate across multi-session implementations so future age
 | [fn-game-research-technology-p39b](fn-game-research-technology-p39b.md) | `supabase/functions/game-research-technology/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
 | [fn-game-commit-ground-forces-p39b](fn-game-commit-ground-forces-p39b.md) | `supabase/functions/game-commit-ground-forces/index.ts` | 39b | Promissory Note DSL Effects | planned | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
 | [fn-game-resolve-ability-p39b](fn-game-resolve-ability-p39b.md) | `supabase/functions/game-resolve-ability/index.ts` | 39b | Promissory Note DSL Effects | in-progress | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
-| [fn-game-end-turn-p39b](fn-game-end-turn-p39b.md) | `supabase/functions/game-end-turn/index.ts` | 39b | Promissory Note DSL Effects | in-progress | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
+| [fn-game-end-turn-p39b](fn-game-end-turn-p39b.md) | `supabase/functions/game-end-turn/index.ts` | 39b | Promissory Note DSL Effects | done | fn-game-play-promissory-note-p39a, shared-promissoryEnforcement-p39a |
 
 | [shared-promissoryHandlers-p39c](shared-promissoryHandlers-p39c.md) | `supabase/functions/_shared/promissoryHandlers.ts` | 39c | Promissory Note DSL Effects | in-progress | shared-promissoryHandlers-p39a, fn-game-confirm-transaction-p39b, fn-game-activate-system-p39b, fn-game-advance-phase-p39b, fn-game-end-turn-p39b |
 
