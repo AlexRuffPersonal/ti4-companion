@@ -15,6 +15,11 @@ vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
   EVT_END_TURN: 'end_turn',
 }))
 
+vi.mock('../../../supabase/functions/_shared/promissoryEnforcement.ts', () => ({
+  getHeldNotes: vi.fn().mockResolvedValue([]),
+  returnNote: vi.fn().mockResolvedValue(undefined),
+}))
+
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { logEvent } from '../../../supabase/functions/_shared/gameEvents.ts'

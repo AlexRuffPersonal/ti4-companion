@@ -18,55 +18,6 @@ describe('resolvePromissoryHandler', () => {
     vi.clearAllMocks()
   })
 
-  // Test all 26 known handlers throw 501
-  const knownKeys = [
-    'ceasefire',
-    'politicalSecret',
-    'politicalFavor',
-    'acquiescence',
-    'firesOfTheGashlai',
-    'creussIff',
-    'terraform',
-    'warFunding',
-    'tekklarLegion',
-    'theCavalry',
-    'researchAgreement',
-    'cyberneticEnhancements',
-    'militarySupport',
-    'raghsCall',
-    'greyfireMutagen',
-    'spyNet',
-    'scepterOfDominion',
-    'strikeWingAmbuscade',
-    'crucible',
-    'tradeConvoys',
-    'promiseOfProtection',
-    'bloodPact',
-    'darkPact',
-    'stymie',
-    'antivirus',
-    'giftOfPrescience',
-  ]
-
-  knownKeys.forEach((key) => {
-    it(`known key '${key}' throws dslError with status 501`, async () => {
-      const ctx = {
-        gameId: GAME_ID,
-        activatingPlayerId: PLAYER_ID,
-      }
-      const db = {}
-
-      const promise = resolvePromissoryHandler(key, ctx, db)
-      await expect(promise).rejects.toThrow()
-      try {
-        await promise
-      } catch (err) {
-        expect(err.status).toBe(501)
-        expect(err.message).toContain('not yet implemented')
-      }
-    })
-  })
-
   it('unknown key throws dslError with status 400', async () => {
     const ctx = {
       gameId: GAME_ID,
