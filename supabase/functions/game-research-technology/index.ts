@@ -4,6 +4,7 @@ import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/err
 import { logEvent, EVT_RESEARCH_TECH } from '../_shared/gameEvents.ts'
 import { applyCommanderPassives } from '../_shared/leaderEffects.ts'
 import { getHandler } from '../_shared/abilityHandlers.ts'
+import { getHeldNotes, returnNote } from '../_shared/promissoryEnforcement.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -215,6 +216,26 @@ export async function handler(req: Request): Promise<Response> {
       .update({ exhausted: true })
       .in('id', exhaustPlanetIds)
     if (exhaustError) return errorResponse(`Failed to exhaust planets: ${exhaustError.message}`, 500)
+  }
+
+  // Phase 39b: Research Agreement — grant same tech to the note holder (Jol-Nar side)
+  const researchAgreementNotes = await getHeldNotes(body.game_id, 'Research Agreement', db)
+  for (const note of researchAgreementNotes) {
+    if (note.ownerPlayerId !== player.id) continue
+    if ((tech.technology_type as string) === 'faction') continue
+    const { data: holderPlayer } = await db
+      .from('game_players')
+      .select('technologies')
+      .eq('id', note.holderPlayerId)
+      .maybeSingle()
+    const holderTechs: string[] = (holderPlayer?.technologies as string[]) ?? []
+    if (!holderTechs.includes(body.tech_name)) {
+      await db
+        .from('game_players')
+        .update({ technologies: [...holderTechs, body.tech_name] })
+        .eq('id', note.holderPlayerId)
+    }
+    await returnNote(note.instanceId, note.ownerPlayerId, db)
   }
 
   // Phase 29b: open after_technology_researched window for other players holding a matching card
