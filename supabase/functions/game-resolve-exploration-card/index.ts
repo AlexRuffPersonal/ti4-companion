@@ -18,6 +18,8 @@ type ExplorationCardRow = {
   relic_fragment_type: string | null
   resolved_by_player_id: string | null
   planet_name: string | null
+  system_key: string | null
+  purge: boolean
 }
 
 type ResolveExplorationContext = {
@@ -27,6 +29,8 @@ type ResolveExplorationContext = {
   systemKey: string | null
   choice: number | undefined
   removeInfantry: boolean | undefined
+  unitType: string | undefined
+  resourcePlanetNames: string[] | undefined
 }
 
 /**
@@ -39,7 +43,7 @@ async function dispatchExplorationOp(
   card: ExplorationCardRow,
   resolveContext: ResolveContext,
   dbClient: SupabaseClient
-): Promise<'handled' | 'passthrough' | 'relic_fragment' | 'attachment' | Response> {
+): Promise<'handled' | 'passthrough' | 'relic_fragment' | 'attachment' | 'hold' | Response> {
   switch (op.op) {
     case 'choice': {
       const options = op.options as Op[][]
@@ -47,15 +51,17 @@ async function dispatchExplorationOp(
       const chosen = options[chosenIndex]
       if (!chosen) return 'handled'
       const choicePassthrough: Op[] = []
+      let choiceSignal: 'handled' | 'passthrough' | 'relic_fragment' | 'attachment' | 'hold' = 'handled'
       for (const innerOp of chosen) {
         const result = await dispatchExplorationOp(innerOp, ctx, card, resolveContext, dbClient)
         if (result instanceof Response) return result
         if (result === 'passthrough') choicePassthrough.push(innerOp)
+        else if (result === 'hold') choiceSignal = 'hold'
       }
       if (choicePassthrough.length > 0) {
         await applyAbility(choicePassthrough, resolveContext, dbClient)
       }
-      return 'handled'
+      return choiceSignal
     }
 
     case 'attach_to_planet': {
@@ -67,7 +73,155 @@ async function dispatchExplorationOp(
     }
 
     case 'hold_card': {
-      return 'relic_fragment'
+      return 'hold'
+    }
+
+    case 'ready_current_planet': {
+      if (ctx.planetName) {
+        await dbClient
+          .from('game_player_planets')
+          .update({ exhausted: false })
+          .eq('game_id', ctx.gameId)
+          .eq('player_id', ctx.playerId)
+          .eq('planet_name', ctx.planetName)
+      }
+      return 'handled'
+    }
+
+    case 'clear_planet_units_and_structures': {
+      if (ctx.planetName) {
+        await dbClient
+          .from('game_player_planets')
+          .update({ space_dock_unit_id: null, pds_count: 0 })
+          .eq('game_id', ctx.gameId)
+          .eq('player_id', ctx.playerId)
+          .eq('planet_name', ctx.planetName)
+        await dbClient
+          .from('game_player_units')
+          .delete()
+          .eq('game_id', ctx.gameId)
+          .eq('player_id', ctx.playerId)
+          .eq('on_planet', ctx.planetName)
+      }
+      return 'handled'
+    }
+
+    case 'gain_named_relic': {
+      const relicName = op.name as string
+      const { data: relicRow } = await dbClient
+        .from('game_relic_deck')
+        .select('id')
+        .eq('game_id', ctx.gameId)
+        .eq('name', relicName)
+        .eq('state', 'deck')
+        .maybeSingle()
+      if (relicRow) {
+        await dbClient
+          .from('game_relic_deck')
+          .update({ state: 'held', held_by_player_id: ctx.playerId })
+          .eq('id', (relicRow as { id: string }).id)
+      }
+      return 'handled'
+    }
+
+    case 'place_mech_on_current_planet': {
+      if (!ctx.planetName) return 'handled'
+      const { data: existing } = await dbClient
+        .from('game_player_units')
+        .select('id, count')
+        .eq('game_id', ctx.gameId)
+        .eq('player_id', ctx.playerId)
+        .eq('unit_type', 'mech')
+        .eq('on_planet', ctx.planetName)
+        .maybeSingle()
+      if (existing && (existing as { count: number }).count >= 1) {
+        return errorResponse('Planet already has a mech', 409)
+      }
+      await dbClient
+        .from('game_player_units')
+        .upsert(
+          {
+            game_id: ctx.gameId,
+            player_id: ctx.playerId,
+            unit_type: 'mech',
+            system_key: ctx.systemKey,
+            on_planet: ctx.planetName,
+            count: 1,
+          },
+          { onConflict: 'game_id,player_id,unit_type,system_key,on_planet' }
+        )
+      return 'handled'
+    }
+
+    case 'freelancers_produce': {
+      if (!ctx.unitType) return 'handled'  // optional — player skipped production
+      const unitType = ctx.unitType
+      const resourcePlanetNames = ctx.resourcePlanetNames ?? []
+      // Fetch unit cost
+      const { data: unitDef, error: unitDefError } = await dbClient
+        .from('units')
+        .select('cost')
+        .eq('name', unitType)
+        .maybeSingle()
+      if (unitDefError || !unitDef) return errorResponse('Unit definition not found', 409)
+      const cost = (unitDef as { cost: number }).cost
+      // Fetch chosen planets
+      const { data: planets, error: planetsError } = await dbClient
+        .from('game_player_planets')
+        .select('planet_name, exhausted, tile_id')
+        .eq('game_id', ctx.gameId)
+        .eq('player_id', ctx.playerId)
+        .in('planet_name', resourcePlanetNames)
+      if (planetsError) return errorResponse('Database error', 500)
+      const planetRows = (planets ?? []) as Array<{ planet_name: string; exhausted: boolean; tile_id: string }>
+      if (planetRows.length !== resourcePlanetNames.length) return errorResponse('One or more planets not controlled by player', 409)
+      if (planetRows.some(p => p.exhausted)) return errorResponse('One or more planets are exhausted', 409)
+      // Fetch tile definitions to sum resources+influence
+      const tileIds = [...new Set(planetRows.map(p => p.tile_id))]
+      const { data: tiles, error: tilesError } = await dbClient
+        .from('tiles')
+        .select('id, planets')
+        .in('id', tileIds)
+      if (tilesError) return errorResponse('Database error', 500)
+      const tileMap = new Map(
+        ((tiles ?? []) as Array<{ id: string; planets: Record<string, { resources?: number; influence?: number }> }>)
+          .map(t => [t.id, t.planets])
+      )
+      let totalSpend = 0
+      for (const p of planetRows) {
+        const tilePlanets = tileMap.get(p.tile_id) ?? {}
+        const planetData = tilePlanets[p.planet_name] ?? {}
+        totalSpend += (planetData.resources ?? 0) + (planetData.influence ?? 0)
+      }
+      if (totalSpend < cost) return errorResponse('Insufficient resources', 409)
+      // Exhaust chosen planets
+      await dbClient
+        .from('game_player_planets')
+        .update({ exhausted: true })
+        .eq('game_id', ctx.gameId)
+        .eq('player_id', ctx.playerId)
+        .in('planet_name', resourcePlanetNames)
+      // Place unit in space area of current system
+      const { data: existingUnit } = await dbClient
+        .from('game_player_units')
+        .select('id, count')
+        .eq('game_id', ctx.gameId)
+        .eq('player_id', ctx.playerId)
+        .eq('unit_type', unitType)
+        .eq('system_key', ctx.systemKey)
+        .is('on_planet', null)
+        .maybeSingle()
+      if (existingUnit) {
+        await dbClient
+          .from('game_player_units')
+          .update({ count: ((existingUnit as { count: number }).count ?? 0) + 1 })
+          .eq('id', (existingUnit as { id: string }).id)
+      } else {
+        await dbClient
+          .from('game_player_units')
+          .insert({ game_id: ctx.gameId, player_id: ctx.playerId, unit_type: unitType, system_key: ctx.systemKey, on_planet: null, count: 1 })
+      }
+      return 'handled'
     }
 
     case 'conditional_mech_or_infantry': {
@@ -128,7 +282,18 @@ async function dispatchExplorationOp(
     }
 
     case 'place_mirage': {
-      return errorResponse('Mirage placement not yet implemented', 409)
+      if (ctx.systemKey) {
+        await dbClient
+          .from('game_system_state')
+          .upsert({ game_id: ctx.gameId, system_key: ctx.systemKey, has_mirage: true }, { onConflict: 'game_id,system_key' })
+        await dbClient
+          .from('game_player_planets')
+          .upsert(
+            { game_id: ctx.gameId, player_id: ctx.playerId, planet_name: 'mirage', system_key: ctx.systemKey, exhausted: false },
+            { onConflict: 'game_id,planet_name' }
+          )
+      }
+      return 'handled'
     }
 
     default:
@@ -153,6 +318,9 @@ export async function handler(req: Request): Promise<Response> {
     card_id?: unknown
     choice?: unknown
     remove_infantry?: unknown
+    command_token_bucket?: unknown
+    unit_type?: unknown
+    resource_planet_names?: unknown
   }
   try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
 
@@ -165,6 +333,9 @@ export async function handler(req: Request): Promise<Response> {
   const card_id = body.card_id
   const choice = typeof body.choice === 'number' ? body.choice : undefined
   const removeInfantry = typeof body.remove_infantry === 'boolean' ? body.remove_infantry : undefined
+  const commandTokenBucket = typeof body.command_token_bucket === 'string' ? body.command_token_bucket : undefined
+  const unitType = typeof body.unit_type === 'string' ? body.unit_type : undefined
+  const resourcePlanetNames = Array.isArray(body.resource_planet_names) ? body.resource_planet_names as string[] : undefined
 
   const { data: player, error: playerError } = await db
     .from('game_players')
@@ -184,7 +355,7 @@ export async function handler(req: Request): Promise<Response> {
 
   const { data: cardRow, error: cardError } = await db
     .from('game_exploration_decks')
-    .select('id, game_id, deck_type, state, deck_position, name, text, has_attachment, relic_fragment_type, resolved_by_player_id, planet_name')
+    .select('id, game_id, deck_type, state, deck_position, name, text, has_attachment, relic_fragment_type, resolved_by_player_id, planet_name, system_key, purge')
     .eq('id', card_id)
     .eq('game_id', game_id)
     .maybeSingle()
@@ -200,7 +371,7 @@ export async function handler(req: Request): Promise<Response> {
   if (!ops) return errorResponse('Unknown exploration card', 409)
 
   const planetName = card.planet_name
-  const systemKey: string | null = null
+  const systemKey = card.system_key ?? null
 
   const explorationCtx: ResolveExplorationContext = {
     gameId: game_id,
@@ -209,6 +380,8 @@ export async function handler(req: Request): Promise<Response> {
     systemKey,
     choice,
     removeInfantry,
+    unitType,
+    resourcePlanetNames,
   }
 
   const resolveContext: ResolveContext = {
@@ -216,9 +389,10 @@ export async function handler(req: Request): Promise<Response> {
     activatingPlayerId: player_id,
     targetPlanetName: planetName ?? undefined,
     chosenOption: choice,
+    selections: commandTokenBucket ? { command_token_bucket: commandTokenBucket } : undefined,
   }
 
-  let signalType: 'handled' | 'passthrough' | 'relic_fragment' | 'attachment' = 'handled'
+  let signalType: 'handled' | 'passthrough' | 'relic_fragment' | 'attachment' | 'hold' = 'handled'
   const passthroughOps: Op[] = []
 
   for (const op of ops) {
@@ -230,6 +404,8 @@ export async function handler(req: Request): Promise<Response> {
       signalType = 'relic_fragment'
     } else if (result === 'attachment') {
       signalType = 'attachment'
+    } else if (result === 'hold') {
+      signalType = 'hold'
     }
   }
 
@@ -251,10 +427,16 @@ export async function handler(req: Request): Promise<Response> {
     }
   }
 
-  if (signalType === 'relic_fragment') {
+  if (signalType === 'relic_fragment' || signalType === 'hold') {
     const { error: updateError } = await db
       .from('game_exploration_decks')
       .update({ state: 'held', resolved_by_player_id: player_id })
+      .eq('id', card_id)
+    if (updateError) return errorResponse('Database error', 500)
+  } else if (card.purge) {
+    const { error: updateError } = await db
+      .from('game_exploration_decks')
+      .update({ state: 'purged', resolved_by_player_id: null })
       .eq('id', card_id)
     if (updateError) return errorResponse('Database error', 500)
   } else {
