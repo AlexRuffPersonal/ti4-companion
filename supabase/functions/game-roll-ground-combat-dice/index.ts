@@ -248,6 +248,26 @@ export async function handler(req: Request): Promise<Response> {
     hits = results.filter((d: DieResult) => d.hit).length
   }
 
+  // ── Tekklar Legion ───────────────────────────────────────────────────────────
+  // If tekklar_holder_player_id is set, adjust all die results:
+  // Holder's rolls: +1 to each die value (capped at 10)
+  // Owner's (Sardakk) rolls: −1 from each die value (floor at 1)
+  const tekklarHolderId = (combat as Record<string, unknown>).tekklar_holder_player_id as string | null
+  if (tekklarHolderId) {
+    if (player.id === tekklarHolderId) {
+      results = results.map((r: DieResult) => {
+        const newRoll = Math.min(10, r.roll + 1)
+        return { ...r, roll: newRoll, hit: newRoll >= r.hit_on }
+      })
+    } else {
+      results = results.map((r: DieResult) => {
+        const newRoll = Math.max(1, r.roll - 1)
+        return { ...r, roll: newRoll, hit: newRoll >= r.hit_on }
+      })
+    }
+    hits = results.filter((r: DieResult) => r.hit).length
+  }
+
   const nextPhase = combat.phase === 'attacker_roll' ? 'defender_assign' : 'attacker_assign'
   const updatePayload = combat.phase === 'attacker_roll'
     ? { attacker_dice: results, attacker_hits: hits, phase: nextPhase }
