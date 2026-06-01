@@ -14,14 +14,8 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
 import { requireServiceRole, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/admin-import-units/index.ts'
-
-function makeRequest(body) {
-  return new Request('http://localhost/admin-import-units', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-}
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+const makeRequest = (body) => _makeRequest('admin-import-units', body)
 
 function mockDb({ deleteError = null, insertError = null } = {}) {
   db.from.mockReturnValue({

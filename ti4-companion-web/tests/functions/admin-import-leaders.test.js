@@ -14,17 +14,11 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
 import { requireAdmin, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/admin-import-leaders/index.ts'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+const makeRequest = (body) => _makeRequest('admin-import-leaders', body)
 
 const LEADER_ID = 'leader-uuid'
 const DEF_ID = 'def-uuid'
-
-function makeRequest(body) {
-  return new Request('http://localhost/admin-import-leaders', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 const SAMPLE_RECORD = {
   name: 'Jae Mir Kan',
