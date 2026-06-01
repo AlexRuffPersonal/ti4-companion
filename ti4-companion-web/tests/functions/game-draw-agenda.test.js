@@ -23,19 +23,14 @@ import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { getNextPlayer } from '../../../supabase/functions/_shared/player-order.ts'
 import { handler } from '../../../supabase/functions/game-draw-agenda/index.ts'
+import { GAME_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
 
-const GAME_ID = 'game-uuid'
+const makeRequest = (body) => _makeRequest('game-draw-agenda', body)
+
 const SPEAKER_USER_ID = 'speaker-user-uuid'
 const SPEAKER_PLAYER_ID = 'speaker-player-uuid'
 const CARD_ID = 'agenda-card-uuid'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-draw-agenda', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 let updateGameMock, updateDeckMock
 

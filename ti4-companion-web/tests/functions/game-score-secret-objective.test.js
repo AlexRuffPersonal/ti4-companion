@@ -25,19 +25,12 @@ import { db } from '../../../supabase/functions/_shared/db.ts'
 import { logEvent } from '../../../supabase/functions/_shared/gameEvents.ts'
 import { buildEvaluationContext, evaluateCondition, applySpendSideEffect } from '../../../supabase/functions/_shared/objectiveConditions.ts'
 import { handler } from '../../../supabase/functions/game-score-secret-objective/index.ts'
+import { USER_ID, GAME_ID, PLAYER_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
 
-const USER_ID = 'user-uuid'
-const GAME_ID = 'game-uuid'
-const PLAYER_ID = 'player-uuid'
+const makeRequest = (body) => _makeRequest('game-score-secret-objective', body)
+
 const OBJ_ID = 'obj-uuid'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-score-secret-objective', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 function mockDb({
   player = { id: PLAYER_ID, vp: 3, secret_objective_count: 0 },
