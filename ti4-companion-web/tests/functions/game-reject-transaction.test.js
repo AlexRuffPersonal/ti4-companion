@@ -17,20 +17,14 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-reject-transaction/index.ts'
+import { USER_ID, GAME_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
 
-const USER_ID = 'user-uuid'
-const GAME_ID = 'game-uuid'
+const makeRequest = (body) => _makeRequest('game-reject-transaction', body)
+
 const FROM_PLAYER_ID = 'player1-uuid'
 const TO_PLAYER_ID = 'player2-uuid'
 const ACTIVE_PLAYER_ID = FROM_PLAYER_ID
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-reject-transaction', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 function mockDbDefaults() {
   return {

@@ -14,18 +14,10 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-shuffle-exploration-deck/index.ts'
+import { USER_ID, GAME_ID, PLAYER_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
 
-const USER_ID = 'user-1'
-const GAME_ID = 'game-1'
-const PLAYER_ID = 'player-1'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-shuffle-exploration-deck', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
+const makeRequest = (body) => _makeRequest('game-shuffle-exploration-deck', body)
 
 function mockDb({
   player = { id: PLAYER_ID },

@@ -15,20 +15,14 @@ import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-advance-barrage/index.ts'
 
-const USER_ID = 'user-1'
-const GAME_ID = 'game-1'
-const PLAYER_ID = 'player-1'
-const ATTACKER_ID = 'player-1'
-const DEFENDER_ID = 'player-2'
-const COMBAT_ID = 'combat-1'
+import { USER_ID, GAME_ID, PLAYER_ID, COMBAT_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { buildDbMock, nullSafeChain } from '../helpers/mockDb.js'
 
-function makeRequest(body) {
-  return new Request('http://localhost/game-advance-barrage', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
+const makeRequest = (body) => _makeRequest('game-advance-barrage', body)
+
+const ATTACKER_ID = PLAYER_ID
+const DEFENDER_ID = 'player-2'
 
 const BASE_COMBAT = {
   id: COMBAT_ID,
@@ -47,55 +41,46 @@ function mockDb({
   afbDefs = [],
   updateError = null,
 } = {}) {
-  db.from.mockImplementation((table) => {
-    if (table === 'game_players') {
-      return {
-        select: vi.fn().mockReturnValue({
+  buildDbMock(db, {
+    game_players: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: player }),
+          }),
+        }),
+      }),
+    }),
+    game_combats: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: combat }),
+          }),
+        }),
+      }),
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: updateError }),
+      }),
+    }),
+    game_player_units: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: player }),
+              is: vi.fn().mockResolvedValue({ data: attackerUnits }),
             }),
           }),
         }),
-      }
-    }
-    if (table === 'game_combats') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: combat }),
-            }),
-          }),
+      }),
+    }),
+    units: () => ({
+      select: vi.fn().mockReturnValue({
+        in: vi.fn().mockReturnValue({
+          not: vi.fn().mockResolvedValue({ data: afbDefs }),
         }),
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: updateError }),
-        }),
-      }
-    }
-    if (table === 'game_player_units') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                is: vi.fn().mockResolvedValue({ data: attackerUnits }),
-              }),
-            }),
-          }),
-        }),
-      }
-    }
-    if (table === 'units') {
-      return {
-        select: vi.fn().mockReturnValue({
-          in: vi.fn().mockReturnValue({
-            not: vi.fn().mockResolvedValue({ data: afbDefs }),
-          }),
-        }),
-      }
-    }
-    return { select: vi.fn(), update: vi.fn() }
+      }),
+    }),
   })
 }
 
@@ -183,37 +168,32 @@ describe('game-advance-barrage', () => {
   it('200 advances when barrage_attacker_dice is already set (afbDefs query not needed)', async () => {
     // barrage_attacker_dice has already been set, so units/defs queries should NOT be called
     const unitsSpy = vi.fn()
-    db.from.mockImplementation((table) => {
-      if (table === 'game_players') {
-        return {
-          select: vi.fn().mockReturnValue({
+    buildDbMock(db, {
+      game_players: () => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: vi.fn().mockResolvedValue({ data: { id: PLAYER_ID } }),
-              }),
+              maybeSingle: vi.fn().mockResolvedValue({ data: { id: PLAYER_ID } }),
             }),
           }),
-        }
-      }
-      if (table === 'game_combats') {
-        return {
-          select: vi.fn().mockReturnValue({
+        }),
+      }),
+      game_combats: () => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: vi.fn().mockResolvedValue({ data: BASE_COMBAT }),
-              }),
+              maybeSingle: vi.fn().mockResolvedValue({ data: BASE_COMBAT }),
             }),
           }),
-          update: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: null }),
-          }),
-        }
-      }
-      if (table === 'game_player_units') {
+        }),
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }),
+      }),
+      game_player_units: () => {
         unitsSpy()
         return { select: vi.fn() }
-      }
-      return { select: vi.fn(), update: vi.fn() }
+      },
     })
     const res = await handler(makeRequest({ game_id: GAME_ID, combat_id: COMBAT_ID }))
     expect(res.status).toBe(200)

@@ -21,19 +21,12 @@ import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { logEvent } from '../../../supabase/functions/_shared/gameEvents.ts'
 import { handler } from '../../../supabase/functions/game-add-bot/index.ts'
+import { USER_ID, GAME_ID, PLAYER_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { nullSafeChain } from '../helpers/mockDb.js'
+const makeRequest = (body) => _makeRequest('game-add-bot', body)
 
-const USER_ID = 'user-uuid'
-const GAME_ID = 'game-uuid'
-const PLAYER_ID = 'player-uuid'
 const NEW_BOT_ID = 'new-bot-uuid'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-add-bot', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 const VALID_BODY = {
   game_id: GAME_ID,
@@ -99,7 +92,7 @@ function mockDb({
         }),
       }
     }
-    return {}
+    return nullSafeChain()
   })
 }
 
@@ -155,7 +148,7 @@ function mockDbDetailed({
         }),
       }
     }
-    return {}
+    return nullSafeChain()
   })
 }
 

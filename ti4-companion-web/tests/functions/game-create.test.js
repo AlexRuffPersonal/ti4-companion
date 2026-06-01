@@ -13,20 +13,16 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
 
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
-
-function makeRequest(body = {}) {
-  return new Request('http://localhost/game-create', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
+import { USER_ID, GAME_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { nullSafeChain } from '../helpers/mockDb.js'
+const makeRequest = (body = {}) => _makeRequest('game-create', body)
 
 // Sets up db.from to return appropriate mocks for each table
 function mockDb({
   profileData = { display_name: 'Test User' },
   profileError = null,
-  gameData = { id: 'game-uuid', code: 'ABC123' },
+  gameData = { id: GAME_ID, code: 'ABC123' },
   gameError = null,
   playerError = null,
 } = {}) {
@@ -59,6 +55,7 @@ function mockDb({
         insert: vi.fn().mockResolvedValue({ error: playerError }),
       }
     }
+    return nullSafeChain()
   })
 }
 
@@ -90,16 +87,16 @@ describe('game-create', () => {
   })
 
   it('returns 200 with code and game_id on success', async () => {
-    requireAuth.mockResolvedValue('user-uuid')
+    requireAuth.mockResolvedValue(USER_ID)
     const res = await handler(makeRequest())
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.code).toBe('ABC123')
-    expect(body.game_id).toBe('game-uuid')
+    expect(body.game_id).toBe(GAME_ID)
   })
 
   it('returns 500 when game insert fails', async () => {
-    requireAuth.mockResolvedValue('user-uuid')
+    requireAuth.mockResolvedValue(USER_ID)
     mockDb({ gameError: { message: 'unique violation' } })
     const res = await handler(makeRequest())
     expect(res.status).toBe(500)
@@ -108,7 +105,7 @@ describe('game-create', () => {
   })
 
   it('returns 500 when game_players insert fails', async () => {
-    requireAuth.mockResolvedValue('user-uuid')
+    requireAuth.mockResolvedValue(USER_ID)
     mockDb({ playerError: { message: 'constraint violation' } })
     const res = await handler(makeRequest())
     expect(res.status).toBe(500)
@@ -117,7 +114,7 @@ describe('game-create', () => {
   })
 
   it('returns 500 when profile fetch fails', async () => {
-    requireAuth.mockResolvedValue('user-uuid')
+    requireAuth.mockResolvedValue(USER_ID)
     mockDb({ profileError: { message: 'relation does not exist' } })
     const res = await handler(makeRequest())
     expect(res.status).toBe(500)

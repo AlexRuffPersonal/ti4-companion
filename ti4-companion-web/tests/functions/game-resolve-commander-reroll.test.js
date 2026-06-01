@@ -15,10 +15,11 @@ import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-resolve-commander-reroll/index.ts'
 
-const USER_ID = 'user-uuid'
-const GAME_ID = 'game-uuid'
-const PLAYER_ID = 'player-uuid'
-const COMBAT_ID = 'combat-uuid'
+import { USER_ID, GAME_ID, PLAYER_ID, COMBAT_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { buildDbMock, nullSafeChain } from '../helpers/mockDb.js'
+
+const makeRequest = (body) => _makeRequest('game-resolve-commander-reroll', body)
 
 const JOL_NAR_PLAYER = {
   id: PLAYER_ID,
@@ -39,42 +40,29 @@ const SAMPLE_COMBAT = {
   defender_hits: 0,
 }
 
-function makeRequest(body) {
-  return new Request('http://localhost/game-resolve-commander-reroll', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
-
 function mockDb({ player = JOL_NAR_PLAYER, combat = SAMPLE_COMBAT, updateError = null } = {}) {
-  db.from.mockImplementation((table) => {
-    if (table === 'game_players') {
-      return {
-        select: vi.fn().mockReturnValue({
+  buildDbMock(db, {
+    game_players: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }),
-            }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }),
           }),
         }),
-      }
-    }
-    if (table === 'game_combats') {
-      return {
-        select: vi.fn().mockReturnValue({
+      }),
+    }),
+    game_combats: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: combat, error: null }),
-            }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: combat, error: null }),
           }),
         }),
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: updateError }),
-        }),
-      }
-    }
-    return {}
+      }),
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: updateError }),
+      }),
+    }),
   })
 }
 
@@ -144,31 +132,26 @@ describe('game-resolve-commander-reroll', () => {
   it('rerolls chosen dice and updates combat row', async () => {
     const updateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
 
-    db.from.mockImplementation((table) => {
-      if (table === 'game_players') {
-        return {
-          select: vi.fn().mockReturnValue({
+    buildDbMock(db, {
+      game_players: () => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: vi.fn().mockResolvedValue({ data: JOL_NAR_PLAYER, error: null }),
-              }),
+              maybeSingle: vi.fn().mockResolvedValue({ data: JOL_NAR_PLAYER, error: null }),
             }),
           }),
-        }
-      }
-      if (table === 'game_combats') {
-        return {
-          select: vi.fn().mockReturnValue({
+        }),
+      }),
+      game_combats: () => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: vi.fn().mockResolvedValue({ data: SAMPLE_COMBAT, error: null }),
-              }),
+              maybeSingle: vi.fn().mockResolvedValue({ data: SAMPLE_COMBAT, error: null }),
             }),
           }),
-          update: updateMock,
-        }
-      }
-      return {}
+        }),
+        update: updateMock,
+      }),
     })
 
     const res = await handler(makeRequest({ game_id: GAME_ID, combat_id: COMBAT_ID, reroll_indices: [0] }))

@@ -15,20 +15,14 @@ import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-fire-space-cannon-defense/index.ts'
 
-const USER_ID = 'user-uuid'
-const GAME_ID = 'game-uuid'
-const PLAYER_ID = 'player-uuid'
-const COMBAT_ID = 'combat-uuid'
+import { USER_ID, GAME_ID, PLAYER_ID, COMBAT_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { buildDbMock, nullSafeChain } from '../helpers/mockDb.js'
+
+const makeRequest = (body) => _makeRequest('game-fire-space-cannon-defense', body)
+
 const ATTACKER_ID = 'attacker-uuid'
 const DEFENDER_ID = PLAYER_ID
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-fire-space-cannon-defense', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 function makeBaseCombat(overrides = {}) {
   return {
@@ -55,57 +49,44 @@ function mockDb({
     eq: vi.fn().mockResolvedValue({ error: null }),
   })
 
-  db.from.mockImplementation((table) => {
-    if (table === 'game_players') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }),
-            }),
-          }),
-        }),
-      }
-    }
-    if (table === 'game_combats') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: combat, error: null }),
-            }),
-          }),
-        }),
-        update: internalUpdateSpy,
-      }
-    }
-    if (table === 'game_player_units') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockResolvedValue({ data: defUnits, error: null }),
-              }),
-            }),
-          }),
-        }),
-      }
-    }
-    if (table === 'units') {
-      return {
-        select: vi.fn().mockReturnValue({
-          in: vi.fn().mockReturnValue({
-            not: vi.fn().mockResolvedValue({ data: scdDefs, error: null }),
-          }),
-        }),
-      }
-    }
-    return {
+  buildDbMock(db, {
+    game_players: () => ({
       select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }),
+          }),
+        }),
       }),
-    }
+    }),
+    game_combats: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: combat, error: null }),
+          }),
+        }),
+      }),
+      update: internalUpdateSpy,
+    }),
+    game_player_units: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ data: defUnits, error: null }),
+            }),
+          }),
+        }),
+      }),
+    }),
+    units: () => ({
+      select: vi.fn().mockReturnValue({
+        in: vi.fn().mockReturnValue({
+          not: vi.fn().mockResolvedValue({ data: scdDefs, error: null }),
+        }),
+      }),
+    }),
   })
 
   return { updateSpy: internalUpdateSpy }

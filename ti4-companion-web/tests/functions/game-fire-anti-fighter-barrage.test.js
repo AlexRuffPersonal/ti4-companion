@@ -18,7 +18,11 @@ vi.mock('../../../supabase/functions/_shared/promissoryEnforcement.ts', () => ({
 
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
+import { getHeldNotes, returnNote } from '../../../supabase/functions/_shared/promissoryEnforcement.ts'
 import { handler } from '../../../supabase/functions/game-fire-anti-fighter-barrage/index.ts'
+
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+const makeRequest = (body) => _makeRequest('game-fire-anti-fighter-barrage', body)
 
 const USER_ID = 'user-1'
 const GAME_ID = 'game-1'
@@ -26,14 +30,6 @@ const PLAYER_ID = 'player-1'
 const ATTACKER_ID = 'player-1'
 const DEFENDER_ID = 'player-2'
 const COMBAT_ID = 'combat-1'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-fire-anti-fighter-barrage', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 const BASE_COMBAT = {
   id: COMBAT_ID,
@@ -515,12 +511,6 @@ describe('game-fire-anti-fighter-barrage', () => {
   // Phase 30 tests: upgraded Destroyer stats + Plasma Scoring
 
   it('Phase 30: Destroyer II tech — resolveUnitStats called; upgraded afb stats used in roll', async () => {
-    // Destroyer II upgrades AFB from 9 to 8 (better hit value). resolveUnitStats is a stub
-    // in Phase 30, so we verify the code path: upgraded stat returned from resolveUnitStats
-    // is used when an override is present. We'll mock the Destroyer def to return afb='9'
-    // and attackerTechs=['Destroyer II']. Since resolveUnitStats is a stub returning base stats,
-    // the roll hit-threshold stays at 9. The key check is that the override path is taken (no crash)
-    // and the result is correct.
     const atkUnits = [
       { id: 'u1', player_id: ATTACKER_ID, unit_type: 'Destroyer', count: 1, system_key: '1,-1' },
     ]
@@ -698,5 +688,76 @@ describe('game-fire-anti-fighter-barrage', () => {
     expect(body.pending_window).toBeUndefined()
 
     randomSpy.mockRestore()
+  })
+})
+
+describe('phase 39b — Strike Wing Ambuscade', () => {
+  const NOTE_ID = 'note-instance-1'
+  const OWNER_ID = 'owner-player-1'
+
+  const ATK_UNITS = [
+    { id: 'u1', player_id: ATTACKER_ID, unit_type: 'destroyer', count: 1, system_key: '1,-1' },
+  ]
+  const DEF_UNITS = []
+  const UNIT_DEFS = [{ name: 'destroyer', afb: '9' }]
+  const DESTROYER_DEF_ROW = { name: 'destroyer', combat: 9, move: 2, capacity: 0, afb: '9', space_cannon: null, bombardment: null }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockDb({
+      atkUnits: ATK_UNITS,
+      defUnits: DEF_UNITS,
+      unitDefs: UNIT_DEFS,
+      destroyerDefRow: DESTROYER_DEF_ROW,
+    })
+    requireAuth.mockResolvedValue(USER_ID)
+    getHeldNotes.mockResolvedValue([])
+    returnNote.mockResolvedValue(undefined)
+  })
+
+  it('Strike Wing Ambuscade held by caller, ambuscade_unit_type set → +1 die for that unit; note returned', async () => {
+    getHeldNotes.mockImplementation(async (gameId, noteName) => {
+      if (noteName === 'Strike Wing Ambuscade') {
+        return [{ instanceId: NOTE_ID, holderPlayerId: PLAYER_ID, ownerPlayerId: OWNER_ID }]
+      }
+      return []
+    })
+
+    // Base roll (1 destroyer): miss. Ambuscade extra die: miss.
+    vi.spyOn(Math, 'random').mockReturnValue(0.0) // ceil(0.0 * 10) = 0 → but actually 0.0 → Math.ceil(0) = 0... use 0.1 → 1 (miss < 9)
+
+    const res = await handler(makeRequest({
+      game_id: GAME_ID,
+      combat_id: COMBAT_ID,
+      selections: { ambuscade_unit_type: 'destroyer' },
+    }))
+
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    // Base: 1 die (1 destroyer × 1 die). Ambuscade: +1 die. Total: 2 attacker dice.
+    expect(body.barrage_attacker_dice).toHaveLength(2)
+    expect(returnNote).toHaveBeenCalledWith(NOTE_ID, OWNER_ID, expect.anything())
+
+    vi.restoreAllMocks()
+  })
+
+  it('Strike Wing Ambuscade not held → no extra die, note not returned', async () => {
+    getHeldNotes.mockResolvedValue([])
+
+    vi.spyOn(Math, 'random').mockReturnValue(0.1) // roll = 1, miss
+
+    const res = await handler(makeRequest({
+      game_id: GAME_ID,
+      combat_id: COMBAT_ID,
+      selections: { ambuscade_unit_type: 'destroyer' },
+    }))
+
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    // Only 1 base die, no ambuscade die
+    expect(body.barrage_attacker_dice).toHaveLength(1)
+    expect(returnNote).not.toHaveBeenCalled()
+
+    vi.restoreAllMocks()
   })
 })

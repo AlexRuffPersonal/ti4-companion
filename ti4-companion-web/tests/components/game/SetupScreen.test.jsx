@@ -8,10 +8,9 @@ vi.mock('react-router-dom', async (importOriginal) => {
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
-vi.mock('../../../src/lib/edgeFunctions.js', () => ({
-  createGame: vi.fn(),
-  joinGame: vi.fn(),
-}))
+import { edgeFunctionStubs } from '../../helpers/edgeFunctionMocks.js'
+
+vi.mock('../../../src/lib/edgeFunctions.js', () => ({ ...edgeFunctionStubs }))
 
 import { createGame, joinGame } from '../../../src/lib/edgeFunctions.js'
 import SetupScreen from '../../../src/components/game/SetupScreen.jsx'

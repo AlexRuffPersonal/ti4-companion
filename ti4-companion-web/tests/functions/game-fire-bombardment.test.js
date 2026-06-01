@@ -15,21 +15,15 @@ import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-fire-bombardment/index.ts'
 
-const USER_ID = 'user-1'
-const GAME_ID = 'game-1'
-const PLAYER_ID = 'player-1'
+import { USER_ID, GAME_ID, PLAYER_ID, SYSTEM_KEY } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { buildDbMock, nullSafeChain } from '../helpers/mockDb.js'
+
+const makeRequest = (body) => _makeRequest('game-fire-bombardment', body)
+
 const DEFENDER_ID = 'player-2'
-const SYSTEM_KEY = '1,-1'
 const PLANET_NAME = 'Mecatol Rex'
 const TILE_ID = 18
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-fire-bombardment', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 const BASE_BODY = { game_id: GAME_ID, system_key: SYSTEM_KEY, planet_name: PLANET_NAME }
 
@@ -54,24 +48,8 @@ const BASE_BOMB_DEFS = [
   { name: 'dreadnought', bombardment: '5' },
 ]
 
-// Build a simple chain mock where every method returns itself (chainable) and
-// calling maybeSingle/resolves with the given data at the end.
-// We need precise mocks for each query's terminal call, so we use a per-call counter approach.
-
 /**
  * mockDb wires up all db.from calls for the happy-path (no planetary shield).
- *
- * Query order (no shield):
- *  1. game_players    → maybeSingle → player
- *  2. games           → maybeSingle → game
- *  3. game_system_activations → maybeSingle → activation
- *  4. tiles           → maybeSingle → tile
- *  5. game_combats    → maybeSingle → existingBombardment  (select)
- *  6. game_player_units (defenderUnits)   → resolves via neq
- *  7. units (shieldDefs)                  → resolves via eq('planetary_shield', true)
- *  8. game_player_units (atkSpaceUnits)   → resolves via is
- *  9. units (bombDefs)                    → resolves via not
- * 10. game_combats    → insert → maybeSingle → insertedCombat
  */
 function mockDb({
   player = { id: PLAYER_ID },
@@ -92,11 +70,10 @@ function mockDb({
   let gcCallCount = 0
   let gpCallCount = 0
 
-  db.from.mockImplementation((table) => {
-    if (table === 'game_players') {
+  buildDbMock(db, {
+    game_players: () => {
       gpCallCount++
       if (gpCallCount === 1) {
-        // First call: auth check — .select('id').eq().eq().maybeSingle()
         return {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
@@ -107,55 +84,43 @@ function mockDb({
           }),
         }
       } else {
-        // Subsequent calls: applyCommanderPassives — .select('id, faction, leaders').eq('game_id', ...) → array
         return {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockResolvedValue({ data: commanderPlayers }),
           }),
         }
       }
-    }
-
-    if (table === 'games') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: game }),
-          }),
+    },
+    games: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: game }),
         }),
-      }
-    }
-
-    if (table === 'game_system_activations') {
-      return {
-        select: vi.fn().mockReturnValue({
+      }),
+    }),
+    game_system_activations: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  maybeSingle: vi.fn().mockResolvedValue({ data: activation }),
-                }),
+                maybeSingle: vi.fn().mockResolvedValue({ data: activation }),
               }),
             }),
           }),
         }),
-      }
-    }
-
-    if (table === 'tiles') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: tile }),
-          }),
+      }),
+    }),
+    tiles: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: tile }),
         }),
-      }
-    }
-
-    if (table === 'game_combats') {
+      }),
+    }),
+    game_combats: () => {
       gcCallCount++
       if (gcCallCount === 1) {
-        // Select existing bombardment
         return {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
@@ -170,7 +135,6 @@ function mockDb({
           }),
         }
       }
-      // Insert (shouldn't be reached in error cases, but provide it anyway)
       return {
         insert: vi.fn().mockReturnValue({
           select: vi.fn().mockReturnValue({
@@ -178,12 +142,9 @@ function mockDb({
           }),
         }),
       }
-    }
-
-    if (table === 'game_player_units') {
+    },
+    game_player_units: () => {
       gpuCallCount++
-      // Call 1: defenderUnits — chain ends with .neq() (or .eq() for on_planet)
-      // Call 2: atkSpaceUnits (no shield path) — chain ends with .is()
       const data = gpuCallCount === 1 ? defenderUnits : atkSpaceUnits
       return {
         select: vi.fn().mockReturnValue({
@@ -198,45 +159,27 @@ function mockDb({
           }),
         }),
       }
-    }
-
-    if (table === 'units') {
+    },
+    units: () => {
       unitsCallCount++
-      // No-shield path:
-      //   Call 1: select('name').in(defTypes).eq('planetary_shield', true) → shieldDefs
-      //   Call 2: select('name, bombardment').in(atkTypes).not('bombardment','is',null) → bombDefs
       const data = unitsCallCount === 1 ? shieldDefs : bombDefs
       return {
         select: vi.fn().mockReturnValue({
           in: vi.fn().mockReturnValue({
-            // shield query: .eq('planetary_shield', true) resolves directly
             eq: vi.fn().mockResolvedValue({ data }),
-            // bombardment query: .not('bombardment', 'is', null) resolves directly
             not: vi.fn().mockResolvedValue({ data }),
           }),
           eq: vi.fn().mockReturnValue({
-            // war_sun check: .eq('name','war_sun').in(...) resolves directly
             in: vi.fn().mockResolvedValue({ data }),
           }),
         }),
       }
-    }
-
-    return { select: vi.fn(), insert: vi.fn(), update: vi.fn() }
+    },
   })
 }
 
 /**
  * Full mock for scenarios with planetary shield active.
- * Query order (shield present):
- *  ...same up to step 6...
- *  7. units (shieldDefs)                  → resolves via .in().eq() → non-empty
- *  8. game_player_units (atkForShield)    → resolves via .is()
- *  9. units (warSunDefs)                  → resolves via .eq().in()
- * [If warSunDefs empty → 409]
- * 10. game_player_units (atkSpaceUnits)   → resolves via .is()
- * 11. units (bombDefs)                    → resolves via .in().not()
- * 12. game_combats insert
  */
 function mockDbWithShield({
   player = { id: PLAYER_ID },
@@ -259,11 +202,10 @@ function mockDbWithShield({
   let gcCallCount = 0
   let gpCallCount = 0
 
-  db.from.mockImplementation((table) => {
-    if (table === 'game_players') {
+  buildDbMock(db, {
+    game_players: () => {
       gpCallCount++
       if (gpCallCount === 1) {
-        // First call: auth check — .select('id').eq().eq().maybeSingle()
         return {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
@@ -274,48 +216,41 @@ function mockDbWithShield({
           }),
         }
       } else {
-        // Subsequent calls: applyCommanderPassives — .select('id, faction, leaders').eq('game_id', ...) → array
         return {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockResolvedValue({ data: commanderPlayers }),
           }),
         }
       }
-    }
-    if (table === 'games') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: game }),
-          }),
+    },
+    games: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: game }),
         }),
-      }
-    }
-    if (table === 'game_system_activations') {
-      return {
-        select: vi.fn().mockReturnValue({
+      }),
+    }),
+    game_system_activations: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  maybeSingle: vi.fn().mockResolvedValue({ data: activation }),
-                }),
+                maybeSingle: vi.fn().mockResolvedValue({ data: activation }),
               }),
             }),
           }),
         }),
-      }
-    }
-    if (table === 'tiles') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: tile }),
-          }),
+      }),
+    }),
+    tiles: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: tile }),
         }),
-      }
-    }
-    if (table === 'game_combats') {
+      }),
+    }),
+    game_combats: () => {
       gcCallCount++
       if (gcCallCount === 1) {
         return {
@@ -339,8 +274,8 @@ function mockDbWithShield({
           }),
         }),
       }
-    }
-    if (table === 'game_player_units') {
+    },
+    game_player_units: () => {
       gpuCallCount++
       let data
       if (gpuCallCount === 1) data = defenderUnits
@@ -359,12 +294,9 @@ function mockDbWithShield({
           }),
         }),
       }
-    }
-    if (table === 'units') {
+    },
+    units: () => {
       unitsCallCount++
-      // Call 1: shieldDefs via .in().eq()
-      // Call 2: warSunDefs via .eq().in()
-      // Call 3: bombDefs via .in().not()
       let data
       if (unitsCallCount === 1) data = shieldDefs
       else if (unitsCallCount === 2) data = warSunDefs
@@ -380,8 +312,7 @@ function mockDbWithShield({
           }),
         }),
       }
-    }
-    return { select: vi.fn(), insert: vi.fn(), update: vi.fn() }
+    },
   })
 }
 
@@ -481,52 +412,44 @@ describe('game-fire-bombardment', () => {
     let unitsCallCount = 0
     let gcCallCount = 0
 
-    db.from.mockImplementation((table) => {
-      if (table === 'game_players') {
-        return {
-          select: vi.fn().mockReturnValue({
+    buildDbMock(db, {
+      game_players: () => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: vi.fn().mockResolvedValue({ data: { id: PLAYER_ID } }),
-              }),
+              maybeSingle: vi.fn().mockResolvedValue({ data: { id: PLAYER_ID } }),
             }),
           }),
-        }
-      }
-      if (table === 'games') {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: BASE_GAME }),
-            }),
+        }),
+      }),
+      games: () => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: BASE_GAME }),
           }),
-        }
-      }
-      if (table === 'game_system_activations') {
-        return {
-          select: vi.fn().mockReturnValue({
+        }),
+      }),
+      game_system_activations: () => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
                 eq: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockReturnValue({
-                    maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'act-1' } }),
-                  }),
+                  maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'act-1' } }),
                 }),
               }),
             }),
           }),
-        }
-      }
-      if (table === 'tiles') {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: BASE_TILE }),
-            }),
+        }),
+      }),
+      tiles: () => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: BASE_TILE }),
           }),
-        }
-      }
-      if (table === 'game_combats') {
+        }),
+      }),
+      game_combats: () => {
         gcCallCount++
         if (gcCallCount === 1) {
           return {
@@ -550,8 +473,8 @@ describe('game-fire-bombardment', () => {
         })
         capturedInsertMock = insertMock
         return { insert: insertMock }
-      }
-      if (table === 'game_player_units') {
+      },
+      game_player_units: () => {
         gpuCallCount++
         const data = gpuCallCount === 1 ? BASE_DEFENDER_UNITS : BASE_ATK_SPACE_UNITS
         return {
@@ -567,10 +490,9 @@ describe('game-fire-bombardment', () => {
             }),
           }),
         }
-      }
-      if (table === 'units') {
+      },
+      units: () => {
         unitsCallCount++
-        // Call 1: shieldDefs (empty, no shield), Call 2: bombDefs
         const data = unitsCallCount === 1 ? [] : BASE_BOMB_DEFS
         return {
           select: vi.fn().mockReturnValue({
@@ -583,12 +505,10 @@ describe('game-fire-bombardment', () => {
             }),
           }),
         }
-      }
-      return { select: vi.fn(), insert: vi.fn(), update: vi.fn() }
+      },
     })
 
     // 2 dreadnoughts × 1 die each = 2 dice, bombardment '5' means hit on >= 5
-    // Math.ceil(0.7 * 10) = 7 >= 5 → hit, Math.ceil(0.2 * 10) = 2 < 5 → miss → 1 hit
     const randomSpy = vi.spyOn(Math, 'random')
     randomSpy.mockReturnValueOnce(0.7).mockReturnValueOnce(0.2)
 
@@ -616,52 +536,44 @@ describe('game-fire-bombardment', () => {
     let unitsCallCount = 0
     let gcCallCount = 0
 
-    db.from.mockImplementation((table) => {
-      if (table === 'game_players') {
-        return {
-          select: vi.fn().mockReturnValue({
+    buildDbMock(db, {
+      game_players: () => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: vi.fn().mockResolvedValue({ data: { id: PLAYER_ID } }),
-              }),
+              maybeSingle: vi.fn().mockResolvedValue({ data: { id: PLAYER_ID } }),
             }),
           }),
-        }
-      }
-      if (table === 'games') {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: BASE_GAME }),
-            }),
+        }),
+      }),
+      games: () => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: BASE_GAME }),
           }),
-        }
-      }
-      if (table === 'game_system_activations') {
-        return {
-          select: vi.fn().mockReturnValue({
+        }),
+      }),
+      game_system_activations: () => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
                 eq: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockReturnValue({
-                    maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'act-1' } }),
-                  }),
+                  maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'act-1' } }),
                 }),
               }),
             }),
           }),
-        }
-      }
-      if (table === 'tiles') {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: BASE_TILE }),
-            }),
+        }),
+      }),
+      tiles: () => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: BASE_TILE }),
           }),
-        }
-      }
-      if (table === 'game_combats') {
+        }),
+      }),
+      game_combats: () => {
         gcCallCount++
         if (gcCallCount === 1) {
           return {
@@ -685,8 +597,8 @@ describe('game-fire-bombardment', () => {
         })
         capturedInsertMock = insertMock
         return { insert: insertMock }
-      }
-      if (table === 'game_player_units') {
+      },
+      game_player_units: () => {
         gpuCallCount++
         const data = gpuCallCount === 1 ? BASE_DEFENDER_UNITS : BASE_ATK_SPACE_UNITS
         return {
@@ -702,8 +614,8 @@ describe('game-fire-bombardment', () => {
             }),
           }),
         }
-      }
-      if (table === 'units') {
+      },
+      units: () => {
         unitsCallCount++
         const data = unitsCallCount === 1 ? [] : BASE_BOMB_DEFS
         return {
@@ -717,8 +629,7 @@ describe('game-fire-bombardment', () => {
             }),
           }),
         }
-      }
-      return { select: vi.fn(), insert: vi.fn(), update: vi.fn() }
+      },
     })
 
     // Both dreadnoughts miss (Math.ceil(0.3 * 10) = 3 < 5)

@@ -15,17 +15,13 @@ import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-roll-rift-dice/index.ts'
 
-const USER_ID = 'user-1'
-const TRANSIT_ID = 'transit-1'
-const GAME_ID = 'game-1'
+import { USER_ID, GAME_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { buildDbMock, nullSafeChain } from '../helpers/mockDb.js'
 
-function makeRequest(body) {
-  return new Request('http://localhost/game-roll-rift-dice', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
+const makeRequest = (body) => _makeRequest('game-roll-rift-dice', body)
+
+const TRANSIT_ID = 'transit-1'
 
 const SHIP_A = { unit_id: 'unit-a', roll: null, destroyed: false, cargo: [] }
 const SHIP_B = { unit_id: 'unit-b', roll: null, destroyed: false, cargo: [] }
@@ -43,34 +39,28 @@ const BASE_TRANSIT = {
 function mockDb({
   transit = BASE_TRANSIT,
   transitUpdateError = null,
-  nextTransit = null,
   destroyError = null,
   survivorUpdateError = null,
 } = {}) {
-  db.from.mockImplementation((table) => {
-    if (table === 'game_rift_transits') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: transit }),
-          }),
+  buildDbMock(db, {
+    game_rift_transits: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: transit }),
         }),
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: transitUpdateError }),
-        }),
-      }
-    }
-    if (table === 'game_player_units') {
-      return {
-        delete: vi.fn().mockReturnValue({
-          in: vi.fn().mockResolvedValue({ error: destroyError }),
-        }),
-        update: vi.fn().mockReturnValue({
-          in: vi.fn().mockResolvedValue({ error: survivorUpdateError }),
-        }),
-      }
-    }
-    return { select: vi.fn(), update: vi.fn(), delete: vi.fn() }
+      }),
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: transitUpdateError }),
+      }),
+    }),
+    game_player_units: () => ({
+      delete: vi.fn().mockReturnValue({
+        in: vi.fn().mockResolvedValue({ error: destroyError }),
+      }),
+      update: vi.fn().mockReturnValue({
+        in: vi.fn().mockResolvedValue({ error: survivorUpdateError }),
+      }),
+    }),
   })
 }
 
@@ -78,50 +68,45 @@ function mockDb({
 // is queried twice (once for update, once for select next)
 function mockDbWithNext({ transit = BASE_TRANSIT, nextTransitData = null } = {}) {
   let riftTransitSelectCallCount = 0
-  db.from.mockImplementation((table) => {
-    if (table === 'game_rift_transits') {
-      return {
-        select: vi.fn().mockImplementation(() => {
-          riftTransitSelectCallCount++
-          if (riftTransitSelectCallCount === 1) {
-            // First select: fetch transit by id
-            return {
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: vi.fn().mockResolvedValue({ data: transit }),
-              }),
-            }
-          }
-          // Second select: find next pending transit
+  buildDbMock(db, {
+    game_rift_transits: () => ({
+      select: vi.fn().mockImplementation(() => {
+        riftTransitSelectCallCount++
+        if (riftTransitSelectCallCount === 1) {
+          // First select: fetch transit by id
           return {
             eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                neq: vi.fn().mockReturnValue({
-                  order: vi.fn().mockReturnValue({
-                    limit: vi.fn().mockReturnValue({
-                      maybeSingle: vi.fn().mockResolvedValue({ data: nextTransitData }),
-                    }),
+              maybeSingle: vi.fn().mockResolvedValue({ data: transit }),
+            }),
+          }
+        }
+        // Second select: find next pending transit
+        return {
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              neq: vi.fn().mockReturnValue({
+                order: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({ data: nextTransitData }),
                   }),
                 }),
               }),
             }),
-          }
-        }),
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null }),
-        }),
-      }
-    }
-    if (table === 'game_player_units') {
-      return {
-        delete: vi.fn().mockReturnValue({
-          in: vi.fn().mockResolvedValue({ error: null }),
-        }),
-        update: vi.fn().mockReturnValue({
-          in: vi.fn().mockResolvedValue({ error: null }),
-        }),
-      }
-    }
-    return { select: vi.fn(), update: vi.fn(), delete: vi.fn() }
+          }),
+        }
+      }),
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: null }),
+      }),
+    }),
+    game_player_units: () => ({
+      delete: vi.fn().mockReturnValue({
+        in: vi.fn().mockResolvedValue({ error: null }),
+      }),
+      update: vi.fn().mockReturnValue({
+        in: vi.fn().mockResolvedValue({ error: null }),
+      }),
+    }),
   })
 }
 

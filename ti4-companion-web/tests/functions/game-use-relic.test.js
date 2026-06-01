@@ -38,9 +38,12 @@ import { db } from '../../../supabase/functions/_shared/db.ts'
 import { applyAbility } from '../../../supabase/functions/_shared/abilityDsl.ts'
 import { handler } from '../../../supabase/functions/game-use-relic/index.ts'
 
-const USER_ID = 'user-1'
-const GAME_ID = 'game-1'
-const PLAYER_ID = 'player-1'
+import { USER_ID, GAME_ID, PLAYER_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { buildDbMock, nullSafeChain } from '../helpers/mockDb.js'
+
+const makeRequest = (body) => _makeRequest('game-use-relic', body)
+
 const RELIC_ROW_ID = 'relic-row-1'
 const RELIC_DEF_ID = 'relic-def-1'
 
@@ -60,14 +63,6 @@ const BASE_RELIC_DEF = {
   purge_on_use: false,
   exhaustable: false,
   text: 'Gain 1 VP...',
-}
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-use-relic', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
 }
 
 function baseBody(overrides = {}) {
@@ -91,65 +86,49 @@ function mockDb({
   relicUpdateError = null,
   legendaryDeleteError = null,
 } = {}) {
-  db.from.mockImplementation((table) => {
-    if (table === 'game_players') {
-      return {
-        select: vi.fn().mockReturnValue({
+  buildDbMock(db, {
+    game_players: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: player, error: playerError }),
-            }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: player, error: playerError }),
           }),
         }),
-      }
-    }
-
-    if (table === 'games') {
-      return {
-        select: vi.fn().mockReturnValue({
+      }),
+    }),
+    games: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: game, error: gameError }),
+        }),
+      }),
+    }),
+    game_relic_deck: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: game, error: gameError }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: relicRow, error: relicRowError }),
           }),
         }),
-      }
-    }
-
-    if (table === 'game_relic_deck') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: relicRow, error: relicRowError }),
-            }),
-          }),
+      }),
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: relicUpdateError }),
+      }),
+    }),
+    relics: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: relicDef, error: relicDefError }),
         }),
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: relicUpdateError }),
+      }),
+    }),
+    game_player_legendary_cards: () => ({
+      delete: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: legendaryDeleteError }),
         }),
-      }
-    }
-
-    if (table === 'relics') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: relicDef, error: relicDefError }),
-          }),
-        }),
-      }
-    }
-
-    if (table === 'game_player_legendary_cards') {
-      return {
-        delete: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: legendaryDeleteError }),
-          }),
-        }),
-      }
-    }
-
-    return { select: vi.fn(), update: vi.fn(), delete: vi.fn() }
+      }),
+    }),
   })
 }
 

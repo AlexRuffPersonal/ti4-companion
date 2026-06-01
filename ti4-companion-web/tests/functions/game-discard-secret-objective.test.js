@@ -14,19 +14,12 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-discard-secret-objective/index.ts'
+import { USER_ID, GAME_ID, PLAYER_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
 
-const USER_ID = 'user-uuid'
-const GAME_ID = 'game-uuid'
-const PLAYER_ID = 'player-uuid'
+const makeRequest = (body) => _makeRequest('game-discard-secret-objective', body)
+
 const OBJ_ID = 'obj-uuid'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-discard-secret-objective', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 function mockDb({
   player = { id: PLAYER_ID, secrets_selected: false },

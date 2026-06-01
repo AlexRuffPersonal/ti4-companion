@@ -21,19 +21,12 @@ import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { logEvent } from '../../../supabase/functions/_shared/gameEvents.ts'
 import { handler } from '../../../supabase/functions/game-remove-bot/index.ts'
+import { USER_ID, GAME_ID, PLAYER_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { nullSafeChain } from '../helpers/mockDb.js'
+const makeRequest = (body) => _makeRequest('game-remove-bot', body)
 
-const USER_ID = 'user-uuid'
-const GAME_ID = 'game-uuid'
-const PLAYER_ID = 'player-uuid'
 const BOT_PLAYER_ID = 'bot-player-uuid'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-remove-bot', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 const VALID_BODY = { game_id: GAME_ID, bot_player_id: BOT_PLAYER_ID }
 
@@ -87,7 +80,7 @@ function mockDbDetailed({
         }),
       }
     }
-    return {}
+    return nullSafeChain()
   })
 }
 
@@ -217,7 +210,7 @@ describe('game-remove-bot', () => {
           }),
         }
       }
-      return {}
+      return nullSafeChain()
     })
 
     const res = await handler(makeRequest(VALID_BODY))

@@ -23,7 +23,14 @@ vi.mock('../../../supabase/functions/_shared/promissoryEnforcement.ts', () => ({
 
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
+import { applyCommanderPassives } from '../../../supabase/functions/_shared/leaderEffects.ts'
+import { getHandler } from '../../../supabase/functions/_shared/abilityHandlers.ts'
+import { getHeldNotes, returnNote } from '../../../supabase/functions/_shared/promissoryEnforcement.ts'
 import { handler } from '../../../supabase/functions/game-commit-ground-forces/index.ts'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { nullSafeChain } from '../helpers/mockDb.js'
+
+const makeRequest = (body) => _makeRequest('game-commit-ground-forces', body)
 
 const USER_ID = 'user-uuid'
 const GAME_ID = 'game-uuid'
@@ -32,14 +39,6 @@ const DEFENDER_ID = 'defender-uuid'
 const TILE_ID = 42
 const SYSTEM_KEY = '1,-1'
 const PLANET_NAME = 'Wellon'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-commit-ground-forces', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 const BASE_BODY = { game_id: GAME_ID, system_key: SYSTEM_KEY, planet_name: PLANET_NAME, troop_count: 2 }
 
@@ -268,7 +267,7 @@ function mockDb({
       }
     }
 
-    return { select: vi.fn(), insert: vi.fn(), update: vi.fn(), upsert: vi.fn() }
+    return nullSafeChain()
   })
 
   return { planetUpsertMock, unitInsertMock, unitUpdateMock, combatInsertMock, gamesUpdateMock, legendaryInsertMock, legendaryUpdateMock, gamePlayerUpdateMock }
@@ -276,6 +275,10 @@ function mockDb({
 
 beforeEach(() => {
   vi.clearAllMocks()
+  applyCommanderPassives.mockResolvedValue({ inlineEffects: [], pendingWindows: [] })
+  getHandler.mockReturnValue(vi.fn().mockResolvedValue(undefined))
+  getHeldNotes.mockResolvedValue([])
+  returnNote.mockResolvedValue(undefined)
   mockDb()
   requireAuth.mockResolvedValue(USER_ID)
 })
@@ -470,5 +473,607 @@ describe('game-commit-ground-forces', () => {
     expect(res.status).toBe(200)
     expect(legendaryInsertMock).not.toHaveBeenCalled()
     expect(legendaryUpdateMock).not.toHaveBeenCalled()
+  })
+})
+
+describe("phase 39b — Ragh's Call promissory note", () => {
+  const SAAR_ID = 'saar-uuid'
+  const NOTE_ID = 'note-instance-uuid'
+  const RETREAT_SYSTEM_KEY = '2,0'
+  const RETREAT_PLANET = 'Jord'
+  const RETREAT_TILE_ID = 99
+
+  const PHASE39B_MAP_TILES = {
+    [SYSTEM_KEY]: { tile_id: TILE_ID },
+    [RETREAT_SYSTEM_KEY]: { tile_id: RETREAT_TILE_ID },
+  }
+
+  const PHASE39B_BASE_BODY = {
+    game_id: GAME_ID,
+    system_key: SYSTEM_KEY,
+    planet_name: PLANET_NAME,
+    troop_count: 2,
+    saar_retreat_planet: RETREAT_PLANET,
+  }
+
+  function makeUpdateChain() {
+    const chain = {}
+    chain.eq = vi.fn().mockReturnValue(chain)
+    chain.then = (resolve) => resolve({ error: null })
+    return chain
+  }
+
+  function mockDb39b({
+    player = { id: PLAYER_ID },
+    game = { round: 1, map_tiles: PHASE39B_MAP_TILES, custodians_claimed: true },
+    activation = { id: 'act-1', bombardment_done: false },
+    tile = { planets: [{ name: PLANET_NAME }] },
+    defenders = [],
+    retreatPlanetRow = { tile_id: RETREAT_TILE_ID },
+  } = {}) {
+    let gpuCallCount = 0
+
+    const unitInsertMock = vi.fn().mockResolvedValue({ error: null })
+    const unitUpdateChain = makeUpdateChain()
+    const unitUpdateMock = vi.fn().mockReturnValue(unitUpdateChain)
+
+    db.from.mockImplementation((table) => {
+      if (table === 'game_players') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }),
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'games') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: game, error: null }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        }
+      }
+      if (table === 'game_system_activations') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({ data: activation, error: null }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'tiles') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: tile, error: null }),
+            }),
+          }),
+        }
+      }
+      if (table === 'game_player_units') {
+        gpuCallCount++
+        if (gpuCallCount === 1) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    is: vi.fn().mockResolvedValue({ data: [], error: null }),
+                  }),
+                }),
+              }),
+            }),
+          }
+        }
+        if (gpuCallCount === 2) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    neq: vi.fn().mockResolvedValue({ data: defenders, error: null }),
+                  }),
+                }),
+              }),
+            }),
+          }
+        }
+        if (gpuCallCount === 3) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockReturnValue({
+                      eq: vi.fn().mockReturnValue({
+                        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+                      }),
+                    }),
+                  }),
+                }),
+              }),
+            }),
+            insert: unitInsertMock,
+            update: unitUpdateMock,
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+            }),
+          }),
+          insert: unitInsertMock,
+          update: unitUpdateMock,
+        }
+      }
+      if (table === 'units') {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockReturnValue({
+              not: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }),
+        }
+      }
+      if (table === 'game_player_planets') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({ data: retreatPlanetRow, error: null }),
+                }),
+              }),
+            }),
+          }),
+          upsert: vi.fn().mockResolvedValue({ error: null }),
+        }
+      }
+      if (table === 'game_player_legendary_cards') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+              }),
+            }),
+          }),
+          insert: vi.fn().mockResolvedValue({ error: null }),
+          update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        }
+      }
+      return nullSafeChain()
+    })
+
+    return { unitUpdateMock, unitInsertMock }
+  }
+
+  it("Ragh's Call held by invader, Saar has ground forces on planet → Saar forces ejected; note returned", async () => {
+    getHeldNotes.mockImplementation(async (gameId, noteName) => {
+      if (noteName === "Ragh's Call") {
+        return [{ instanceId: NOTE_ID, holderPlayerId: PLAYER_ID, ownerPlayerId: SAAR_ID }]
+      }
+      return []
+    })
+
+    const { unitUpdateMock } = mockDb39b({
+      defenders: [{ id: 'saar-inf', player_id: SAAR_ID, unit_type: 'infantry', count: 2 }],
+    })
+
+    const res = await handler(makeRequest(PHASE39B_BASE_BODY))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.claimed).toBe(true)
+
+    expect(unitUpdateMock).toHaveBeenCalledWith(
+      expect.objectContaining({ system_key: RETREAT_SYSTEM_KEY, on_planet: RETREAT_PLANET }),
+    )
+    expect(returnNote).toHaveBeenCalledWith(NOTE_ID, SAAR_ID, expect.anything())
+  })
+
+  it("Ragh's Call not held → no ejection, no returnNote", async () => {
+    getHeldNotes.mockResolvedValue([])
+
+    mockDb39b({ defenders: [] })
+
+    const res = await handler(makeRequest(PHASE39B_BASE_BODY))
+    expect(res.status).toBe(200)
+    expect(returnNote).not.toHaveBeenCalled()
+  })
+})
+
+describe('phase 43c — commander passives', () => {
+  function mockDb43c({
+    player = { id: PLAYER_ID },
+    game = { round: 1, map_tiles: { [SYSTEM_KEY]: { tile_id: TILE_ID } }, custodians_claimed: true },
+    activation = { id: 'act-1', bombardment_done: false },
+    tile = { planets: [{ name: PLANET_NAME }] },
+    atkSpaceUnits = [],
+    bombDefs = [],
+    defenders = [],
+    existingInfantry = null,
+    scdDefs = [],
+    insertedCombat = { id: 'combat-1' },
+    legendaryExisting = null,
+  } = {}) {
+    let gpuCallCount = 0
+    let unitsCallCount = 0
+
+    db.from.mockImplementation((table) => {
+      if (table === 'game_players') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: player }),
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'games') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: game }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        }
+      }
+      if (table === 'game_system_activations') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({ data: activation }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'tiles') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: tile }),
+            }),
+          }),
+        }
+      }
+      if (table === 'game_player_units') {
+        gpuCallCount++
+        const count = gpuCallCount
+        if (count === 1) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    is: vi.fn().mockResolvedValue({ data: atkSpaceUnits }),
+                  }),
+                }),
+              }),
+            }),
+          }
+        }
+        if (count === 2) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    neq: vi.fn().mockResolvedValue({ data: defenders }),
+                  }),
+                }),
+              }),
+            }),
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockReturnValue({
+                      maybeSingle: vi.fn().mockResolvedValue({ data: existingInfantry }),
+                    }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+          insert: vi.fn().mockResolvedValue({ error: null }),
+        }
+      }
+      if (table === 'units') {
+        unitsCallCount++
+        if (unitsCallCount === 1) {
+          return {
+            select: vi.fn().mockReturnValue({
+              in: vi.fn().mockReturnValue({
+                not: vi.fn().mockResolvedValue({ data: bombDefs }),
+              }),
+            }),
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockReturnValue({
+              not: vi.fn().mockResolvedValue({ data: scdDefs }),
+            }),
+          }),
+        }
+      }
+      if (table === 'game_combats') {
+        return {
+          insert: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: insertedCombat }),
+            }),
+          }),
+        }
+      }
+      if (table === 'game_player_planets') {
+        return {
+          upsert: vi.fn().mockResolvedValue({ error: null }),
+        }
+      }
+      if (table === 'game_player_legendary_cards') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: legendaryExisting }),
+              }),
+            }),
+          }),
+          insert: vi.fn().mockResolvedValue({ error: null }),
+          update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        }
+      }
+      return nullSafeChain()
+    })
+  }
+
+  it('calls applyCommanderPassives with GROUND_COMBAT_START trigger', async () => {
+    mockDb43c({ defenders: [{ id: 'def-unit', player_id: DEFENDER_ID, unit_type: 'infantry', count: 1 }] })
+    const res = await handler(makeRequest({
+      game_id: GAME_ID, system_key: SYSTEM_KEY, planet_name: PLANET_NAME, troop_count: 1,
+    }))
+    expect(applyCommanderPassives).toHaveBeenCalledWith(
+      'GROUND_COMBAT_START',
+      expect.objectContaining({ gameId: GAME_ID, activatingPlayerId: PLAYER_ID, systemKey: SYSTEM_KEY }),
+      expect.anything(),
+    )
+  })
+
+  it('Sol commander — pending_window returned for infantry placement window', async () => {
+    mockDb43c({ defenders: [{ id: 'def-unit', player_id: DEFENDER_ID, unit_type: 'infantry', count: 1 }] })
+    applyCommanderPassives.mockResolvedValue({
+      inlineEffects: [],
+      pendingWindows: [{
+        game_id: GAME_ID,
+        trigger: 'GROUND_COMBAT_START',
+        faction: 'The Federation Of Sol',
+        player_id: 'sol-player-id',
+        effect: [{ op: 'place_units', unit_type: 'infantry', count: 1, target: 'active_planet' }],
+      }],
+    })
+    const res = await handler(makeRequest({
+      game_id: GAME_ID, system_key: SYSTEM_KEY, planet_name: PLANET_NAME, troop_count: 1,
+    }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.pending_window).toBeDefined()
+    expect(body.pending_window.faction).toBe('The Federation Of Sol')
+  })
+
+  it("Sardakk commander — sardakkExtendedCommit flag allows planet from adjacent system", async () => {
+    const ADJ_SYSTEM = '2,-1'
+    const ADJ_PLANET = 'Tren'
+    const ADJ_TILE_ID = 99
+
+    applyCommanderPassives.mockResolvedValue({
+      inlineEffects: [{ faction: "Sardakk N'orr", effect: 'sardakk_extended_commitment' }],
+      pendingWindows: [],
+    })
+    getHandler.mockReturnValue(vi.fn().mockImplementation(async (ctx) => {
+      ctx.sardakkExtendedCommit = true
+    }))
+
+    let activationsCallCount = 0
+    let tilesCallCount = 0
+    let gpuCallCount = 0
+
+    db.from.mockImplementation((table) => {
+      if (table === 'game_players') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: { id: PLAYER_ID } }),
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'games') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: {
+                  round: 1,
+                  custodians_claimed: true,
+                  map_tiles: {
+                    [SYSTEM_KEY]: { tile_id: TILE_ID },
+                    [ADJ_SYSTEM]: { tile_id: ADJ_TILE_ID },
+                  },
+                },
+              }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        }
+      }
+      if (table === 'game_system_activations') {
+        activationsCallCount++
+        const count = activationsCallCount
+        if (count === 1) {
+          // Main activation check for active system — return valid activation
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockReturnValue({
+                      maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'act-1', bombardment_done: false } }),
+                    }),
+                  }),
+                }),
+              }),
+            }),
+          }
+        }
+        // Adjacent system activation check — return null (player has no token there)
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'tiles') {
+        tilesCallCount++
+        const count = tilesCallCount
+        if (count === 1) {
+          // Active system tile — planet NOT here
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: { planets: [] } }),
+              }),
+            }),
+          }
+        }
+        // Adjacent system tile — planet IS here
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: { planets: [{ name: ADJ_PLANET }] } }),
+            }),
+          }),
+        }
+      }
+      if (table === 'game_player_units') {
+        gpuCallCount++
+        const count = gpuCallCount
+        if (count === 1) {
+          // atkSpaceUnits — no bombardment ships
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    is: vi.fn().mockResolvedValue({ data: [] }),
+                  }),
+                }),
+              }),
+            }),
+          }
+        }
+        if (count === 2) {
+          // defenders — none (no combat → claim planet)
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    neq: vi.fn().mockResolvedValue({ data: [] }),
+                  }),
+                }),
+              }),
+            }),
+          }
+        }
+        // existingInfantry
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockReturnValue({
+                      maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+                    }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+          insert: vi.fn().mockResolvedValue({ error: null }),
+        }
+      }
+      if (table === 'units') {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockReturnValue({
+              not: vi.fn().mockResolvedValue({ data: [] }),
+            }),
+          }),
+        }
+      }
+      if (table === 'game_player_planets') {
+        return { upsert: vi.fn().mockResolvedValue({ error: null }) }
+      }
+      if (table === 'game_player_legendary_cards') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+              }),
+            }),
+          }),
+          insert: vi.fn().mockResolvedValue({ error: null }),
+        }
+      }
+      return nullSafeChain()
+    })
+
+    const res = await handler(makeRequest({
+      game_id: GAME_ID, system_key: SYSTEM_KEY, planet_name: ADJ_PLANET, troop_count: 1,
+    }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.claimed).toBe(true)
   })
 })

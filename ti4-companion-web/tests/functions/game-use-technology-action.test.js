@@ -15,18 +15,13 @@ import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-use-technology-action/index.ts'
 
-const USER_ID = 'user-uuid'
-const GAME_ID = 'game-uuid'
-const PLAYER_ID = 'player-uuid'
-const CHOSEN_PLAYER_ID = 'chosen-uuid'
+import { USER_ID, GAME_ID, PLAYER_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { buildDbMock, nullSafeChain } from '../helpers/mockDb.js'
 
-function makeRequest(body) {
-  return new Request('http://localhost/game-use-technology-action', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
+const makeRequest = (body) => _makeRequest('game-use-technology-action', body)
+
+const CHOSEN_PLAYER_ID = 'chosen-uuid'
 
 const BASE_PLAYER = {
   id: PLAYER_ID,
@@ -42,51 +37,46 @@ function mockDb(overrides = {}) {
   const chosenPlayer = overrides.chosenPlayer !== undefined ? overrides.chosenPlayer : { id: CHOSEN_PLAYER_ID, trade_goods: 0 }
   const unitRow = overrides.unitRow !== undefined ? overrides.unitRow : null
 
-  db.from.mockImplementation((table) => {
-    if (table === 'game_players') {
-      return {
-        select: vi.fn().mockReturnValue({
+  buildDbMock(db, {
+    game_players: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: player }),
-            }),
-            maybeSingle: vi.fn().mockResolvedValue({ data: chosenPlayer }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: player }),
           }),
+          maybeSingle: vi.fn().mockResolvedValue({ data: chosenPlayer }),
         }),
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null }),
-        }),
-      }
-    }
-    if (table === 'game_player_units') {
-      return {
-        select: vi.fn().mockReturnValue({
+      }),
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: null }),
+      }),
+    }),
+    game_player_units: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  is: vi.fn().mockReturnValue({
-                    maybeSingle: vi.fn().mockResolvedValue({ data: unitRow }),
-                  }),
+                is: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({ data: unitRow }),
                 }),
               }),
             }),
           }),
         }),
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null }),
-        }),
-        insert: vi.fn().mockResolvedValue({ error: null }),
-        delete: vi.fn().mockReturnValue({
+      }),
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: null }),
+      }),
+      insert: vi.fn().mockResolvedValue({ error: null }),
+      delete: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ error: null }),
-            }),
+            eq: vi.fn().mockResolvedValue({ error: null }),
           }),
         }),
-      }
-    }
-    return {}
+      }),
+    }),
   })
 }
 
@@ -151,24 +141,21 @@ describe('game-use-technology-action', () => {
   describe('Production Biomes', () => {
     it('updates trade goods for both players and spends strategy token', async () => {
       let updates = []
-      db.from.mockImplementation((table) => {
-        if (table === 'game_players') {
-          return {
-            select: vi.fn().mockReturnValue({
+      buildDbMock(db, {
+        game_players: () => ({
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  maybeSingle: vi.fn().mockResolvedValue({ data: BASE_PLAYER }),
-                }),
-                maybeSingle: vi.fn().mockResolvedValue({ data: { id: CHOSEN_PLAYER_ID, trade_goods: 1 } }),
+                maybeSingle: vi.fn().mockResolvedValue({ data: BASE_PLAYER }),
               }),
+              maybeSingle: vi.fn().mockResolvedValue({ data: { id: CHOSEN_PLAYER_ID, trade_goods: 1 } }),
             }),
-            update: vi.fn().mockImplementation((data) => {
-              updates.push(data)
-              return { eq: vi.fn().mockResolvedValue({ error: null }) }
-            }),
-          }
-        }
-        return {}
+          }),
+          update: vi.fn().mockImplementation((data) => {
+            updates.push(data)
+            return { eq: vi.fn().mockResolvedValue({ error: null }) }
+          }),
+        }),
       })
 
       const res = await handler(makeRequest({
@@ -198,41 +185,36 @@ describe('game-use-technology-action', () => {
     it('inserts new unit in system and exhausts tech', async () => {
       let inserted = null
       let exhausted = null
-      db.from.mockImplementation((table) => {
-        if (table === 'game_players') {
-          return {
-            select: vi.fn().mockReturnValue({
+      buildDbMock(db, {
+        game_players: () => ({
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  maybeSingle: vi.fn().mockResolvedValue({ data: BASE_PLAYER }),
-                }),
+                maybeSingle: vi.fn().mockResolvedValue({ data: BASE_PLAYER }),
               }),
             }),
-            update: vi.fn().mockImplementation((data) => {
-              if (data.exhausted_technologies) exhausted = data
-              return { eq: vi.fn().mockResolvedValue({ error: null }) }
-            }),
-          }
-        }
-        if (table === 'game_player_units') {
-          return {
-            select: vi.fn().mockReturnValue({
+          }),
+          update: vi.fn().mockImplementation((data) => {
+            if (data.exhausted_technologies) exhausted = data
+            return { eq: vi.fn().mockResolvedValue({ error: null }) }
+          }),
+        }),
+        game_player_units: () => ({
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
                 eq: vi.fn().mockReturnValue({
                   eq: vi.fn().mockReturnValue({
-                    eq: vi.fn().mockReturnValue({
-                      is: vi.fn().mockReturnValue({
-                        maybeSingle: vi.fn().mockResolvedValue({ data: null }),
-                      }),
+                    is: vi.fn().mockReturnValue({
+                      maybeSingle: vi.fn().mockResolvedValue({ data: null }),
                     }),
                   }),
                 }),
               }),
             }),
-            insert: vi.fn().mockImplementation((data) => { inserted = data; return Promise.resolve({ error: null }) }),
-          }
-        }
-        return {}
+          }),
+          insert: vi.fn().mockImplementation((data) => { inserted = data; return Promise.resolve({ error: null }) }),
+        }),
       })
 
       const res = await handler(makeRequest({
@@ -251,41 +233,36 @@ describe('game-use-technology-action', () => {
     it('inserts unit without exhausting tech', async () => {
       let inserted = null
       let exhaustCalled = false
-      db.from.mockImplementation((table) => {
-        if (table === 'game_players') {
-          return {
-            select: vi.fn().mockReturnValue({
+      buildDbMock(db, {
+        game_players: () => ({
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  maybeSingle: vi.fn().mockResolvedValue({ data: BASE_PLAYER }),
-                }),
+                maybeSingle: vi.fn().mockResolvedValue({ data: BASE_PLAYER }),
               }),
             }),
-            update: vi.fn().mockImplementation((data) => {
-              if (data.exhausted_technologies) exhaustCalled = true
-              return { eq: vi.fn().mockResolvedValue({ error: null }) }
-            }),
-          }
-        }
-        if (table === 'game_player_units') {
-          return {
-            select: vi.fn().mockReturnValue({
+          }),
+          update: vi.fn().mockImplementation((data) => {
+            if (data.exhausted_technologies) exhaustCalled = true
+            return { eq: vi.fn().mockResolvedValue({ error: null }) }
+          }),
+        }),
+        game_player_units: () => ({
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
                 eq: vi.fn().mockReturnValue({
                   eq: vi.fn().mockReturnValue({
-                    eq: vi.fn().mockReturnValue({
-                      is: vi.fn().mockReturnValue({
-                        maybeSingle: vi.fn().mockResolvedValue({ data: null }),
-                      }),
+                    is: vi.fn().mockReturnValue({
+                      maybeSingle: vi.fn().mockResolvedValue({ data: null }),
                     }),
                   }),
                 }),
               }),
             }),
-            insert: vi.fn().mockImplementation((data) => { inserted = data; return Promise.resolve({ error: null }) }),
-          }
-        }
-        return {}
+          }),
+          insert: vi.fn().mockImplementation((data) => { inserted = data; return Promise.resolve({ error: null }) }),
+        }),
       })
 
       const res = await handler(makeRequest({

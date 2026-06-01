@@ -21,24 +21,19 @@ import { db } from '../../../supabase/functions/_shared/db.ts'
 import { logEvent } from '../../../supabase/functions/_shared/gameEvents.ts'
 import { handler } from '../../../supabase/functions/game-deploy-mech/index.ts'
 
-const USER_ID = 'user-uuid'
-const GAME_ID = 'game-uuid'
-const PLAYER_ID = 'player-uuid'
+import { USER_ID, GAME_ID, PLAYER_ID, SYSTEM_KEY } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { buildDbMock, nullSafeChain } from '../helpers/mockDb.js'
+
+const makeRequest = (body) => _makeRequest('game-deploy-mech', body)
+
 const UNIT_ID = 'unit-uuid'
 const FACTION = 'The Federation of Sol'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-deploy-mech', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 const BASE_BODY = {
   game_id: GAME_ID,
   unit_id: UNIT_ID,
-  system_key: '1,-1',
+  system_key: SYSTEM_KEY,
   target_planet_name: 'Wellon',
 }
 
@@ -51,41 +46,35 @@ function mockDb({
   infantryRow = null,
   game = { round: 2 },
 } = {}) {
-  db.from.mockImplementation((table) => {
-    if (table === 'game_players') {
-      return {
-        select: vi.fn().mockReturnValue({
+  buildDbMock(db, {
+    game_players: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }),
+          }),
+        }),
+      }),
+    }),
+    units: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: unit, error: null }),
+        }),
+      }),
+    }),
+    game_player_planets: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }),
+              maybeSingle: vi.fn().mockResolvedValue({ data: planetRow, error: null }),
             }),
           }),
         }),
-      }
-    }
-    if (table === 'units') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: unit, error: null }),
-          }),
-        }),
-      }
-    }
-    if (table === 'game_player_planets') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: vi.fn().mockResolvedValue({ data: planetRow, error: null }),
-              }),
-            }),
-          }),
-        }),
-      }
-    }
-    if (table === 'game_player_units') {
+      }),
+    }),
+    game_player_units: () => {
       let callCount = 0
       return {
         select: vi.fn().mockReturnValue({
@@ -108,17 +97,14 @@ function mockDb({
         update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
         delete: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
       }
-    }
-    if (table === 'games') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: game, error: null }),
-          }),
+    },
+    games: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: game, error: null }),
         }),
-      }
-    }
-    return {}
+      }),
+    }),
   })
 }
 
@@ -142,12 +128,12 @@ describe('game-deploy-mech', () => {
   })
 
   it('returns 400 when game_id is missing', async () => {
-    const res = await handler(makeRequest({ unit_id: UNIT_ID, system_key: '1,-1', target_planet_name: 'Wellon' }))
+    const res = await handler(makeRequest({ unit_id: UNIT_ID, system_key: SYSTEM_KEY, target_planet_name: 'Wellon' }))
     expect(res.status).toBe(400)
   })
 
   it('returns 400 when unit_id is missing', async () => {
-    const res = await handler(makeRequest({ game_id: GAME_ID, system_key: '1,-1', target_planet_name: 'Wellon' }))
+    const res = await handler(makeRequest({ game_id: GAME_ID, system_key: SYSTEM_KEY, target_planet_name: 'Wellon' }))
     expect(res.status).toBe(400)
   })
 
@@ -191,75 +177,63 @@ describe('game-deploy-mech', () => {
     const updateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
     const deleteMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
 
-    // Need to set up infantry removal mock manually
     let unitCallCount = 0
-    db.from.mockImplementation((table) => {
-      if (table === 'game_players') {
-        return {
-          select: vi.fn().mockReturnValue({
+    buildDbMock(db, {
+      game_players: () => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: { id: PLAYER_ID, faction: FACTION }, error: null }),
+            }),
+          }),
+        }),
+      }),
+      units: () => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: { id: UNIT_ID, unit_type: 'mech', faction: FACTION }, error: null }),
+          }),
+        }),
+      }),
+      game_player_planets: () => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                maybeSingle: vi.fn().mockResolvedValue({ data: { id: PLAYER_ID, faction: FACTION }, error: null }),
+                maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'pp-uuid' }, error: null }),
               }),
             }),
           }),
-        }
-      }
-      if (table === 'units') {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: { id: UNIT_ID, unit_type: 'mech', faction: FACTION }, error: null }),
-            }),
-          }),
-        }
-      }
-      if (table === 'game_player_planets') {
-        return {
-          select: vi.fn().mockReturnValue({
+        }),
+      }),
+      game_player_units: () => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
                 eq: vi.fn().mockReturnValue({
-                  maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'pp-uuid' }, error: null }),
-                }),
-              }),
-            }),
-          }),
-        }
-      }
-      if (table === 'game_player_units') {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockReturnValue({
-                    eq: vi.fn().mockImplementation(() => {
-                      unitCallCount++
-                      // first call = mech (not found), second = infantry (found with count 2)
-                      const data = unitCallCount === 1 ? null : infantryRow
-                      return { maybeSingle: vi.fn().mockResolvedValue({ data, error: null }) }
-                    }),
+                  eq: vi.fn().mockImplementation(() => {
+                    unitCallCount++
+                    // first call = mech (not found), second = infantry (found with count 2)
+                    const data = unitCallCount === 1 ? null : infantryRow
+                    return { maybeSingle: vi.fn().mockResolvedValue({ data, error: null }) }
                   }),
                 }),
               }),
             }),
           }),
-          insert: vi.fn().mockResolvedValue({ error: null }),
-          update: updateMock,
-          delete: deleteMock,
-        }
-      }
-      if (table === 'games') {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: { round: 2 }, error: null }),
-            }),
+        }),
+        insert: vi.fn().mockResolvedValue({ error: null }),
+        update: updateMock,
+        delete: deleteMock,
+      }),
+      games: () => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: { round: 2 }, error: null }),
           }),
-        }
-      }
-      return {}
+        }),
+      }),
     })
 
     const res = await handler(makeRequest({ ...BASE_BODY, replacing_infantry: true }))

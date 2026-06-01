@@ -14,17 +14,12 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-status-phase/index.ts'
+import { GAME_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { nullSafeChain } from '../helpers/mockDb.js'
+const makeRequest = (body) => _makeRequest('game-status-phase', body)
 
 const HOST_ID = 'host-uuid'
-const GAME_ID = 'game-uuid'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-status-phase', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 const PASSED_PLAYERS = [
   { id: 'p1', passed: true, command_tokens: { tactic_total: 2, fleet: 3, strategy: 2 } },
@@ -89,6 +84,7 @@ function mockDb({
         }),
       }
     }
+    return nullSafeChain()
   })
   return { updateGameMock, updatePlayerMock }
 }

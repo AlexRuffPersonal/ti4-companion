@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
+import { edgeFunctionStubs } from '../../helpers/edgeFunctionMocks.js'
 import GameScreen from '../../../src/components/game/GameScreen.jsx'
 import { useStrategyCards } from '../../../src/hooks/useStrategyCards.js'
 import { useGame } from '../../../src/hooks/useGame.js'
@@ -31,21 +32,7 @@ vi.mock('../../../src/lib/supabase.js', () => ({
 }))
 
 // Mock edge functions
-vi.mock('../../../src/lib/edgeFunctions.js', () => ({
-  resolveAbility: vi.fn(),
-  unlockCommander: vi.fn(),
-  produceUnits: vi.fn().mockResolvedValue({}),
-  undoLastAction: vi.fn().mockResolvedValue({}),
-  passActionWindow: vi.fn().mockResolvedValue({}),
-  playActionCard: vi.fn().mockResolvedValue({}),
-  endTurn: vi.fn().mockResolvedValue({}),
-  passAction: vi.fn().mockResolvedValue({}),
-  activateSystem: vi.fn().mockResolvedValue({}),
-  assignHits: vi.fn().mockResolvedValue({}),
-  rollCombatDice: vi.fn().mockResolvedValue({}),
-  castVotes: vi.fn().mockResolvedValue({}),
-  playStrategyCard: vi.fn().mockResolvedValue({}),
-}))
+vi.mock('../../../src/lib/edgeFunctions.js', () => ({ ...edgeFunctionStubs }))
 
 vi.mock('../../../src/hooks/useBotPlayer.js', () => ({
   useBotPlayer: vi.fn(() => ({ isBotTurn: false, isTicking: { current: false } })),

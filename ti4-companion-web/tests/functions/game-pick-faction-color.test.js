@@ -13,17 +13,9 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
 
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
-
-const USER_ID = 'user-uuid'
-const GAME_ID = 'game-uuid'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-pick-faction-color', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
+import { USER_ID, GAME_ID, PLAYER_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+const makeRequest = (body) => _makeRequest('game-pick-faction-color', body)
 
 // Returns a membership check mock (caller is or isn't in the game)
 function membershipMock(found = true) {
@@ -31,7 +23,7 @@ function membershipMock(found = true) {
     select: vi.fn().mockReturnValue({
       eq: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
-          maybeSingle: vi.fn().mockResolvedValue({ data: found ? { id: 'player-uuid' } : null }),
+          maybeSingle: vi.fn().mockResolvedValue({ data: found ? { id: PLAYER_ID } : null }),
         }),
       }),
     }),

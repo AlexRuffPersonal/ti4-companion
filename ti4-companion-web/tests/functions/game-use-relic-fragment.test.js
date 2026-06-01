@@ -20,9 +20,12 @@ import { db } from '../../../supabase/functions/_shared/db.ts'
 import { applyAbility } from '../../../supabase/functions/_shared/abilityDsl.ts'
 import { handler } from '../../../supabase/functions/game-use-relic-fragment/index.ts'
 
-const USER_ID = 'user-1'
-const GAME_ID = 'game-1'
-const PLAYER_ID = 'player-1'
+import { USER_ID, GAME_ID, PLAYER_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { buildDbMock, nullSafeChain } from '../helpers/mockDb.js'
+
+const makeRequest = (body) => _makeRequest('game-use-relic-fragment', body)
+
 const FRAG_1 = 'frag-1'
 const FRAG_2 = 'frag-2'
 const FRAG_3 = 'frag-3'
@@ -38,14 +41,6 @@ const BASE_FRAGMENTS = [
   { id: FRAG_3, state: 'held', resolved_by_player_id: PLAYER_ID, relic_fragment_type: 'cultural' },
 ]
 
-function makeRequest(body) {
-  return new Request('http://localhost/game-use-relic-fragment', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
-
 function mockDb({
   player = BASE_PLAYER,
   playerError = null,
@@ -55,40 +50,33 @@ function mockDb({
   fragmentsError = null,
   discardError = null,
 } = {}) {
-  db.from.mockImplementation((table) => {
-    if (table === 'game_players') {
-      return {
-        select: vi.fn().mockReturnValue({
+  buildDbMock(db, {
+    game_players: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: player, error: playerError }),
-            }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: player, error: playerError }),
           }),
         }),
-      }
-    }
-    if (table === 'games') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: game, error: gameError }),
-          }),
+      }),
+    }),
+    games: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: game, error: gameError }),
         }),
-      }
-    }
-    if (table === 'game_exploration_decks') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            in: vi.fn().mockResolvedValue({ data: fragments, error: fragmentsError }),
-          }),
+      }),
+    }),
+    game_exploration_decks: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          in: vi.fn().mockResolvedValue({ data: fragments, error: fragmentsError }),
         }),
-        update: vi.fn().mockReturnValue({
-          in: vi.fn().mockResolvedValue({ error: discardError }),
-        }),
-      }
-    }
-    return { select: vi.fn(), update: vi.fn() }
+      }),
+      update: vi.fn().mockReturnValue({
+        in: vi.fn().mockResolvedValue({ error: discardError }),
+      }),
+    }),
   })
 }
 

@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
+import { edgeFunctionStubs } from '../helpers/edgeFunctionMocks.js'
 
-vi.mock('../../src/lib/edgeFunctions.js', () => ({
-  researchTechnology: vi.fn().mockResolvedValue({}),
-}))
+vi.mock('../../src/lib/edgeFunctions.js', () => ({ ...edgeFunctionStubs }))
 
 import TechTreeModal from '../../src/components/game/TechTreeModal.jsx'
 
@@ -60,7 +59,7 @@ describe('TechTreeModal', () => {
         onClose={vi.fn()}
       />
     )
-    expect(screen.getByText('BIOTIC')).toBeTruthy()
+    expect(screen.getAllByText('BIOTIC').length).toBeGreaterThan(0)
   })
 
   it('calls onClose when close button is clicked', () => {

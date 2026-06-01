@@ -1,12 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { edgeFunctionStubs } from '../../helpers/edgeFunctionMocks.js'
 import AdminImportPage from '../../../src/components/admin/AdminImportPage.jsx'
 
-vi.mock('../../../src/lib/edgeFunctions.js', () => ({
-  importTable: vi.fn(),
-  callFunction: vi.fn(),
-}))
+vi.mock('../../../src/lib/edgeFunctions.js', () => ({ ...edgeFunctionStubs }))
 
 import { importTable } from '../../../src/lib/edgeFunctions.js'
 

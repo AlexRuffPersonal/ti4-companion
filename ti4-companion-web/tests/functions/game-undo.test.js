@@ -25,19 +25,12 @@ import { db } from '../../../supabase/functions/_shared/db.ts'
 import { getUndoableEvents, applyUndo } from '../../../supabase/functions/_shared/gameEvents.ts'
 import { applyUndoHandler } from '../../../supabase/functions/_shared/undoHandlers.ts'
 import { handler } from '../../../supabase/functions/game-undo/index.ts'
+import { USER_ID, GAME_ID, PLAYER_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { nullSafeChain } from '../helpers/mockDb.js'
+const makeRequest = (body) => _makeRequest('game-undo', body)
 
-const USER_ID = 'user-uuid'
-const GAME_ID = 'game-uuid'
-const PLAYER_ID = 'player-uuid'
 const EVENT_ID = 'event-uuid'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-undo', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 const SAMPLE_GAME = { id: GAME_ID, phase: 'action', round: 1 }
 const SAMPLE_PLAYERS = [{ id: PLAYER_ID, faction: 'Arborec' }]
@@ -73,7 +66,7 @@ function mockDb({
         }),
       }
     }
-    return {}
+    return nullSafeChain()
   })
 }
 
@@ -120,7 +113,7 @@ function mockDbFull({
         }),
       }
     }
-    return {}
+    return nullSafeChain()
   })
 }
 

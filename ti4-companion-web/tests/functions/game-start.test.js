@@ -14,17 +14,14 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 
+import { GAME_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { nullSafeChain } from '../helpers/mockDb.js'
+
 const HOST_ID = 'host-uuid'
-const GAME_ID = 'game-uuid'
 const SPEAKER_ID = 'speaker-uuid'
 
-function makeRequest(body) {
-  return new Request('http://localhost/game-start', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
+const makeRequest = (body) => _makeRequest('game-start', body)
 
 const READY_PLAYERS = [
   { id: 'p1', faction: 'Arborec', colour: 'green', display_name: 'Alice' },
@@ -173,6 +170,7 @@ function mockDb({
     if (table === 'game_player_promissory_notes') {
       return { insert: promissoryNoteInsertMock }
     }
+    return nullSafeChain()
   })
   return { actionCardInsertMock, agendaInsertMock }
 }
@@ -619,6 +617,96 @@ describe('game-start — Phase 22 custom map support', () => {
     expect(mapCall).toBeDefined()
     // Custom tile at '1,-1' preserved (not a home position)
     expect(mapCall[0].map_tiles['1,-1']).toEqual({ tile_id: 'some-tile', tile_number: '20' })
+  })
+})
+
+describe('game-start — phase 7 — agenda deck', () => {
+  const PHASE7_PLAYERS = [
+    { id: 'p1', faction: 'Arborec', colour: 'green', display_name: 'Alice' },
+  ]
+  const PHASE7_AGENDAS = [
+    { id: 'ag-1', expansion: 'base' },
+    { id: 'ag-2', expansion: 'base' },
+    { id: 'ag-3', expansion: 'pok' },
+  ]
+
+  let agendaInsertMock
+
+  function mockDbPhase7({ agendas = PHASE7_AGENDAS, insertAgendaError = null, expansions = { base: true, pok: true } } = {}) {
+    agendaInsertMock = vi.fn().mockResolvedValue({ error: insertAgendaError })
+
+    db.from.mockImplementation((table) => {
+      if (table === 'games') return {
+        select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: { host_user_id: HOST_ID, status: 'lobby', speaker_player_id: 'sp-1', expansions },
+            error: null,
+          }),
+        })}),
+        update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+      }
+      if (table === 'game_players') return {
+        select: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: PHASE7_PLAYERS, error: null }) }),
+        update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+      }
+      if (table === 'public_objectives') return {
+        select: vi.fn().mockReturnValue({ data: [], error: null }),
+      }
+      if (table === 'action_cards') return {
+        select: vi.fn().mockReturnValue({ data: [], error: null }),
+      }
+      if (table === 'secret_objectives') return {
+        select: vi.fn().mockReturnValue({ data: [
+          { id: 'so-1', expansion: 'base' }, { id: 'so-2', expansion: 'base' },
+        ], error: null }),
+      }
+      if (table === 'game_player_secret_objectives') return {
+        insert: vi.fn().mockResolvedValue({ error: null }),
+      }
+      if (table === 'agendas') return {
+        select: vi.fn().mockReturnValue({ data: agendas, error: null }),
+      }
+      if (table === 'game_agenda_deck') return {
+        insert: agendaInsertMock,
+      }
+      if (table === 'factions') return {
+        select: vi.fn().mockReturnValue({
+          in: vi.fn().mockResolvedValue({
+            data: [{ name: 'Arborec', home_tile_number: null, starting_techs: [] }],
+            error: null,
+          }),
+        }),
+      }
+      if (table === 'tiles') return {
+        select: vi.fn().mockImplementation((cols) => {
+          if (cols === 'id, tile_number') return Promise.resolve({ data: [], error: null })
+          return { in: vi.fn().mockResolvedValue({ data: [], error: null }) }
+        }),
+      }
+      return { select: vi.fn().mockReturnValue({ data: [], error: null }) }
+    })
+  }
+
+  beforeEach(() => { vi.clearAllMocks(); mockDbPhase7(); requireAuth.mockResolvedValue(HOST_ID) })
+
+  it('inserts one row per eligible agenda into game_agenda_deck', async () => {
+    // With pok active, all 3 agendas are eligible
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    expect(res.status).toBe(200)
+    const insertArg = agendaInsertMock.mock.calls[0][0]
+    expect(insertArg).toHaveLength(3)
+    expect(insertArg[0]).toMatchObject({ game_id: GAME_ID, state: 'deck' })
+    expect(typeof insertArg[0].deck_position).toBe('number')
+  })
+
+  it('filters agendas by active expansions (base only)', async () => {
+    mockDbPhase7({ expansions: { base: true, pok: false } })
+    requireAuth.mockResolvedValue(HOST_ID)
+    const res = await handler(makeRequest({ game_id: GAME_ID }))
+    expect(res.status).toBe(200)
+    const insertArg = agendaInsertMock.mock.calls[0]?.[0] ?? []
+    // only base agendas (ag-1, ag-2)
+    expect(insertArg).toHaveLength(2)
   })
 })
 

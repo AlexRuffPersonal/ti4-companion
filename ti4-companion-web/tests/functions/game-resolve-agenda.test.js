@@ -19,20 +19,15 @@ import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { logEvent } from '../../../supabase/functions/_shared/gameEvents.ts'
 import { handler } from '../../../supabase/functions/game-resolve-agenda/index.ts'
+import { GAME_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
 
-const GAME_ID = 'game-uuid'
+const makeRequest = (body) => _makeRequest('game-resolve-agenda', body)
+
 const SPEAKER_USER_ID = 'speaker-user'
 const SPEAKER_PLAYER_ID = 'p1'
 const AGENDA_ID = 'agenda-uuid'
 const DECK_ROW_ID = 'deck-row-uuid'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-resolve-agenda', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 let updateGameMock, updateDeckMock, updatePlayerMock, updatePlanetMock, insertLawsMock
 

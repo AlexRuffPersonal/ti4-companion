@@ -18,17 +18,11 @@ vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { logEvent } from '../../../supabase/functions/_shared/gameEvents.ts'
+import { USER_ID, GAME_ID, PLAYER_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { buildDbMock, eqEqSingle } from '../helpers/mockDb.js'
 
-const USER_ID = 'user-uuid'
-const GAME_ID = 'game-uuid'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-draw-action-card', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
+const makeRequest = (body) => _makeRequest('game-draw-action-card', body)
 
 let handler
 
@@ -41,15 +35,8 @@ beforeEach(() => {
   vi.clearAllMocks()
   requireAuth.mockResolvedValue(USER_ID)
   db.rpc.mockResolvedValue({ data: { drawn: true }, error: null })
-  db.from.mockReturnValue({
-    select: vi.fn().mockReturnValue({
-      eq: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'player-uuid' }, error: null }),
-        }),
-      }),
-    }),
-    insert: vi.fn().mockResolvedValue({ error: null }),
+  buildDbMock(db, {
+    game_players: () => eqEqSingle({ id: PLAYER_ID }),
   })
 })
 

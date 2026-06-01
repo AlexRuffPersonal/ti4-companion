@@ -34,20 +34,16 @@ import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { checkAndEliminate } from '../../../supabase/functions/_shared/eliminationHandler.ts'
 import { logEvent } from '../../../supabase/functions/_shared/gameEvents.ts'
+import { assertMovementAllowed, checkVpMaintenanceLaws, LawError } from '../../../supabase/functions/_shared/lawEffects.ts'
 import { handler } from '../../../supabase/functions/game-land-troops/index.ts'
+
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+const makeRequest = (body) => _makeRequest('game-land-troops', body)
 
 const USER_ID = 'user-uuid'
 const GAME_ID = 'game-uuid'
 const PLAYER_ID = 'player-uuid'
 const TILE_ID = 'tile-uuid'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-land-troops', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 const DEFAULT_MAP_TILES = {
   '1,-1': { tile_id: TILE_ID, tile_number: '32' },
@@ -62,7 +58,6 @@ function mockDb({
   activation = { id: 'act-1' },
   activationError = null,
   tile = { planets: [{ name: 'Wellon' }] },
-  mecatolTile = { planets: [{ name: 'Mecatol Rex' }] },
   tileError = null,
   upsertPlanetError = null,
   existingUnit = null,
@@ -133,11 +128,7 @@ function mockDb({
       return {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockImplementation(() => {
-              // Return mecatol tile if tile_id is 'mecatol-uuid'
-              const t = tile
-              return Promise.resolve({ data: t, error: tileError })
-            }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: tile, error: tileError }),
           }),
         }),
       }
@@ -181,6 +172,8 @@ function mockDb({
 beforeEach(() => {
   vi.clearAllMocks()
   checkAndEliminate.mockResolvedValue([])
+  assertMovementAllowed.mockResolvedValue(undefined)
+  checkVpMaintenanceLaws.mockResolvedValue(undefined)
   mockDb()
   requireAuth.mockResolvedValue(USER_ID)
 })
@@ -247,7 +240,6 @@ describe('game-land-troops', () => {
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.custodians_claimed).toBe(true)
-    // games.update should have been called with custodians flags
     expect(gamesUpdateMock).toHaveBeenCalledWith({ custodians_claimed: true, agenda_unlocked: true })
   })
 
@@ -287,5 +279,479 @@ describe('game-land-troops', () => {
     const res = await handler(makeRequest({ game_id: GAME_ID, system_key: '1,-1', planet_name: 'Wellon', troop_count: 1 }))
     expect(res.status).toBe(200)
     expect(logEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ event_type: 'land_troops' }))
+  })
+})
+
+describe('phase 39 — DMZ Mech Guard in game-land-troops', () => {
+  const DMZ_ATTACHMENT_ID = 'dmz-attachment-uuid'
+
+  const DEFAULT_MAP_TILES_P39 = {
+    '1,-1': { tile_id: TILE_ID, tile_number: '32' },
+  }
+
+  function mockDbP39({
+    player = { id: PLAYER_ID },
+    game = { round: 2, map_tiles: DEFAULT_MAP_TILES_P39, custodians_claimed: false },
+    activation = { id: 'act-1' },
+    tile = { planets: [{ name: 'Wellon' }] },
+    existingOwner = null,
+    planetAttachments = [],
+    attachmentNames = [],
+  } = {}) {
+    let planetCallCount = 0
+
+    db.from.mockImplementation((table) => {
+      if (table === 'game_players') {
+        return {
+          select: vi.fn().mockImplementation((fields) => {
+            if (fields === 'id') {
+              return {
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }),
+                  }),
+                }),
+              }
+            }
+            // vp query for custodians
+            return {
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: { vp: 3 }, error: null }),
+              }),
+            }
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        }
+      }
+      if (table === 'games') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: game, error: null }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        }
+      }
+      if (table === 'game_system_activations') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({ data: activation, error: null }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'tiles') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: tile, error: null }),
+            }),
+          }),
+        }
+      }
+      if (table === 'game_player_planets') {
+        planetCallCount++
+        const thisCall = planetCallCount
+        if (thisCall === 1) {
+          // 1st call: ownership check
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({ data: existingOwner, error: null }),
+                }),
+              }),
+            }),
+            upsert: vi.fn().mockResolvedValue({ error: null }),
+          }
+        } else {
+          // 2nd call: attachments check
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({
+                      data: { attachments: planetAttachments },
+                      error: null,
+                    }),
+                  }),
+                }),
+              }),
+            }),
+            upsert: vi.fn().mockResolvedValue({ error: null }),
+          }
+        }
+      }
+      if (table === 'attachments') {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: attachmentNames.map(name => ({ name })),
+              error: null,
+            }),
+          }),
+        }
+      }
+      if (table === 'game_player_units') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockReturnValue({
+                      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+                    }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+          insert: vi.fn().mockResolvedValue({ error: null }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        }
+      }
+    })
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    checkAndEliminate.mockResolvedValue([])
+    requireAuth.mockResolvedValue(USER_ID)
+    assertMovementAllowed.mockResolvedValue(undefined)
+    checkVpMaintenanceLaws.mockResolvedValue(undefined)
+    mockDbP39()
+  })
+
+  it('409 Cannot place a mech on a Demilitarized Zone planet', async () => {
+    mockDbP39({
+      planetAttachments: [DMZ_ATTACHMENT_ID],
+      attachmentNames: ['Demilitarized Zone'],
+    })
+
+    const res = await handler(makeRequest({
+      game_id: GAME_ID,
+      system_key: '1,-1',
+      planet_name: 'Wellon',
+      troop_count: 1,
+      unit_type: 'mech',
+    }))
+
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body.error).toContain('Demilitarized Zone')
+  })
+
+  it('allows infantry landing even when DMZ attachment is present', async () => {
+    mockDbP39({
+      planetAttachments: [DMZ_ATTACHMENT_ID],
+      attachmentNames: ['Demilitarized Zone'],
+    })
+
+    const res = await handler(makeRequest({
+      game_id: GAME_ID,
+      system_key: '1,-1',
+      planet_name: 'Wellon',
+      troop_count: 1,
+    }))
+
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.claimed).toBe(true)
+  })
+
+  it('allows mech landing when planet has no attachments', async () => {
+    mockDbP39({
+      planetAttachments: [],
+      attachmentNames: [],
+    })
+
+    const res = await handler(makeRequest({
+      game_id: GAME_ID,
+      system_key: '1,-1',
+      planet_name: 'Wellon',
+      troop_count: 1,
+      unit_type: 'mech',
+    }))
+
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.claimed).toBe(true)
+  })
+
+  it('allows mech landing when planet has attachments but none are DMZ', async () => {
+    mockDbP39({
+      planetAttachments: ['some-other-attachment-uuid'],
+      attachmentNames: ['Terraform'],
+    })
+
+    const res = await handler(makeRequest({
+      game_id: GAME_ID,
+      system_key: '1,-1',
+      planet_name: 'Wellon',
+      troop_count: 1,
+      unit_type: 'mech',
+    }))
+
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.claimed).toBe(true)
+  })
+})
+
+describe('phase 40 — Persistent Agenda Law Enforcement in game-land-troops', () => {
+  const PREV_OWNER_ID = 'prev-owner-uuid'
+
+  const DEFAULT_MAP_TILES_P40 = {
+    '1,-1': { tile_id: TILE_ID, tile_number: '32' },
+  }
+
+  function mockDbP40({
+    player = { id: PLAYER_ID },
+    game = { round: 2, map_tiles: DEFAULT_MAP_TILES_P40, custodians_claimed: false },
+    activation = { id: 'act-1' },
+    tile = { planets: [{ name: 'Wellon' }] },
+    existingOwner = null,
+    existingUnit = null,
+  } = {}) {
+    db.from.mockImplementation((table) => {
+      if (table === 'game_players') {
+        return {
+          select: vi.fn().mockImplementation((fields) => {
+            if (fields === 'id') {
+              return {
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }),
+                  }),
+                }),
+              }
+            }
+            // vp query for custodians
+            return {
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: { vp: 3 }, error: null }),
+              }),
+            }
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        }
+      }
+      if (table === 'games') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: game, error: null }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        }
+      }
+      if (table === 'game_system_activations') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({ data: activation, error: null }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'tiles') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: tile, error: null }),
+            }),
+          }),
+        }
+      }
+      if (table === 'game_player_planets') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: existingOwner, error: null }),
+              }),
+            }),
+          }),
+          upsert: vi.fn().mockResolvedValue({ error: null }),
+        }
+      }
+      if (table === 'game_player_units') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockReturnValue({
+                      maybeSingle: vi.fn().mockResolvedValue({ data: existingUnit, error: null }),
+                    }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+          insert: vi.fn().mockResolvedValue({ error: null }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        }
+      }
+    })
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    checkAndEliminate.mockResolvedValue([])
+    requireAuth.mockResolvedValue(USER_ID)
+    assertMovementAllowed.mockResolvedValue(undefined)
+    checkVpMaintenanceLaws.mockResolvedValue(undefined)
+    mockDbP40()
+  })
+
+  describe('assertMovementAllowed enforcement', () => {
+    it('returns 409 when Demilitarized Zone is active and landing on the elected planet', async () => {
+      const lawError = new LawError('Demilitarized Zone: units cannot enter this planet', 409)
+      assertMovementAllowed.mockRejectedValue(lawError)
+
+      mockDbP40()
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        system_key: '1,-1',
+        planet_name: 'Wellon',
+        troop_count: 1,
+      }))
+
+      expect(res.status).toBe(409)
+      const body = await res.json()
+      expect(body.error).toContain('Demilitarized Zone')
+    })
+
+    it('calls assertMovementAllowed with correct args before any DB write', async () => {
+      mockDbP40()
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        system_key: '1,-1',
+        planet_name: 'Wellon',
+        troop_count: 1,
+      }))
+
+      expect(res.status).toBe(200)
+      expect(assertMovementAllowed).toHaveBeenCalledWith(
+        expect.anything(),
+        GAME_ID,
+        'Wellon'
+      )
+    })
+  })
+
+  describe('checkVpMaintenanceLaws enforcement', () => {
+    it('calls checkVpMaintenanceLaws with correct args when a different player previously owned the planet', async () => {
+      mockDbP40({ existingOwner: { player_id: PREV_OWNER_ID } })
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        system_key: '1,-1',
+        planet_name: 'Wellon',
+        troop_count: 1,
+      }))
+
+      expect(res.status).toBe(200)
+      expect(checkVpMaintenanceLaws).toHaveBeenCalledWith(
+        expect.anything(),
+        GAME_ID,
+        PREV_OWNER_ID,
+        'Wellon'
+      )
+    })
+
+    it('does not call checkVpMaintenanceLaws when the planet had no previous owner', async () => {
+      mockDbP40({ existingOwner: null })
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        system_key: '1,-1',
+        planet_name: 'Wellon',
+        troop_count: 1,
+      }))
+
+      expect(res.status).toBe(200)
+      expect(checkVpMaintenanceLaws).not.toHaveBeenCalled()
+    })
+
+    it('does not call checkVpMaintenanceLaws when the current player already owned the planet', async () => {
+      mockDbP40({ existingOwner: { player_id: PLAYER_ID } })
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        system_key: '1,-1',
+        planet_name: 'Wellon',
+        troop_count: 1,
+      }))
+
+      expect(res.status).toBe(200)
+      expect(checkVpMaintenanceLaws).not.toHaveBeenCalled()
+    })
+
+    it('checkVpMaintenanceLaws throws a DB error → returns 500', async () => {
+      mockDbP40({ existingOwner: { player_id: PREV_OWNER_ID } })
+      checkVpMaintenanceLaws.mockRejectedValue(new Error('DB failure'))
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        system_key: '1,-1',
+        planet_name: 'Wellon',
+        troop_count: 1,
+      }))
+
+      expect(res.status).toBe(500)
+    })
+  })
+
+  describe('no laws active — unchanged behavior', () => {
+    it('returns 200 with normal flow when no laws are active', async () => {
+      assertMovementAllowed.mockResolvedValue(undefined)
+      checkVpMaintenanceLaws.mockResolvedValue(undefined)
+      mockDbP40()
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        system_key: '1,-1',
+        planet_name: 'Wellon',
+        troop_count: 2,
+      }))
+
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.claimed).toBe(true)
+    })
   })
 })
