@@ -26,6 +26,8 @@ vi.mock('../../../supabase/functions/_shared/promissoryHandlers.ts', () => ({
 
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
+import { interpretEffects } from '../../../supabase/functions/_shared/abilityDsl.ts'
+import { resolvePromissoryHandler } from '../../../supabase/functions/_shared/promissoryHandlers.ts'
 import { handler } from '../../../supabase/functions/game-play-promissory-note/index.ts'
 
 const USER_ID = 'user-uuid'
@@ -155,6 +157,8 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockDb()
   requireAuth.mockResolvedValue(USER_ID)
+  interpretEffects.mockResolvedValue(undefined)
+  resolvePromissoryHandler.mockResolvedValue(undefined)
 })
 
 describe('game-play-promissory-note', () => {
@@ -605,6 +609,121 @@ describe('game-play-promissory-note', () => {
       expect(res.status).toBe(200)
       const body = await res.json()
       expect(body.played).toBe(true)
+    })
+  })
+})
+
+const ABILITY_DEF_ID_39A = 'ability-def-uuid'
+
+function makeAbilitySource({ effects = [], handler_key = null } = {}) {
+  return {
+    ability_definition_id: ABILITY_DEF_ID_39A,
+    ability_definitions: { id: ABILITY_DEF_ID_39A, handler_key, effects },
+  }
+}
+
+describe('game-play-promissory-note Phase 39a — DSL resolution', () => {
+  describe('T501: handler_key not yet implemented → 501', () => {
+    it('returns 501 when resolvePromissoryHandler throws a 501 dslError', async () => {
+      mockDb({ abilitySource: makeAbilitySource({ handler_key: 'ceasefire', effects: [] }) })
+      const err = new Error('Promissory handler ceasefire not yet implemented')
+      err.status = 501
+      resolvePromissoryHandler.mockRejectedValue(err)
+
+      const res = await handler(makeRequest({ game_id: GAME_ID, note_instance_id: NOTE_INSTANCE_ID }))
+      expect(res.status).toBe(501)
+    })
+  })
+
+  describe('T200 effects path', () => {
+    it('calls interpretEffects and returns 200 when effects array is non-empty', async () => {
+      const effects = [{ op: 'gain_trade_goods', amount: 1 }]
+      mockDb({ abilitySource: makeAbilitySource({ effects, handler_key: null }) })
+
+      const res = await handler(makeRequest({ game_id: GAME_ID, note_instance_id: NOTE_INSTANCE_ID }))
+      expect(res.status).toBe(200)
+      expect(interpretEffects).toHaveBeenCalledOnce()
+      expect(resolvePromissoryHandler).not.toHaveBeenCalled()
+
+      const [calledEffects, calledCtx] = interpretEffects.mock.calls[0]
+      expect(calledEffects).toEqual(effects)
+      expect(calledCtx.gameId).toBe(GAME_ID)
+      expect(calledCtx.activatingPlayerId).toBe(PLAYER_ID)
+      expect(calledCtx.noteInstanceId).toBe(NOTE_INSTANCE_ID)
+      expect(calledCtx.noteOriginPlayerId).toBe(ORIGIN_PLAYER_ID)
+    })
+  })
+
+  describe('T200 handler path', () => {
+    it('calls resolvePromissoryHandler and returns 200 when handler_key is set and effects is empty', async () => {
+      mockDb({ abilitySource: makeAbilitySource({ handler_key: 'bloodPact', effects: [] }) })
+
+      const res = await handler(makeRequest({ game_id: GAME_ID, note_instance_id: NOTE_INSTANCE_ID }))
+      expect(res.status).toBe(200)
+      expect(resolvePromissoryHandler).toHaveBeenCalledOnce()
+      expect(interpretEffects).not.toHaveBeenCalled()
+
+      const [calledKey, calledCtx] = resolvePromissoryHandler.mock.calls[0]
+      expect(calledKey).toBe('bloodPact')
+      expect(calledCtx.gameId).toBe(GAME_ID)
+      expect(calledCtx.activatingPlayerId).toBe(PLAYER_ID)
+      expect(calledCtx.noteInstanceId).toBe(NOTE_INSTANCE_ID)
+      expect(calledCtx.noteOriginPlayerId).toBe(ORIGIN_PLAYER_ID)
+    })
+  })
+
+  describe('T409 from handler', () => {
+    it('returns 409 when resolvePromissoryHandler throws a dslError with status 409', async () => {
+      mockDb({ abilitySource: makeAbilitySource({ handler_key: 'politicalFavor', effects: [] }) })
+      const err = new Error('Cannot play this note now')
+      err.status = 409
+      resolvePromissoryHandler.mockRejectedValue(err)
+
+      const res = await handler(makeRequest({ game_id: GAME_ID, note_instance_id: NOTE_INSTANCE_ID }))
+      expect(res.status).toBe(409)
+      const body = await res.json()
+      expect(body.error).toBe('Cannot play this note now')
+    })
+  })
+
+  describe('T500 from handler', () => {
+    it('returns 500 when resolvePromissoryHandler throws a generic Error', async () => {
+      mockDb({ abilitySource: makeAbilitySource({ handler_key: 'darkPact', effects: [] }) })
+      resolvePromissoryHandler.mockRejectedValue(new Error('Unexpected failure'))
+
+      const res = await handler(makeRequest({ game_id: GAME_ID, note_instance_id: NOTE_INSTANCE_ID }))
+      expect(res.status).toBe(500)
+    })
+  })
+
+  describe('context fields passed correctly', () => {
+    it('passes noteInstanceId and noteOriginPlayerId in ctx to effects', async () => {
+      const effects = [{ op: 'gain_trade_goods', amount: 2 }]
+      mockDb({ abilitySource: makeAbilitySource({ effects }) })
+
+      await handler(makeRequest({ game_id: GAME_ID, note_instance_id: NOTE_INSTANCE_ID }))
+
+      const [, calledCtx] = interpretEffects.mock.calls[0]
+      expect(calledCtx.noteInstanceId).toBe(NOTE_INSTANCE_ID)
+      expect(calledCtx.noteOriginPlayerId).toBe(ORIGIN_PLAYER_ID)
+    })
+
+    it('passes noteInstanceId and noteOriginPlayerId in ctx to handler', async () => {
+      mockDb({ abilitySource: makeAbilitySource({ handler_key: 'warFunding', effects: [] }) })
+
+      await handler(makeRequest({ game_id: GAME_ID, note_instance_id: NOTE_INSTANCE_ID }))
+
+      const [, calledCtx] = resolvePromissoryHandler.mock.calls[0]
+      expect(calledCtx.noteInstanceId).toBe(NOTE_INSTANCE_ID)
+      expect(calledCtx.noteOriginPlayerId).toBe(ORIGIN_PLAYER_ID)
+    })
+  })
+
+  describe('abilitySource DB error', () => {
+    it('returns 500 when ability_sources query fails', async () => {
+      mockDb({ abilitySourceError: new Error('DB error') })
+      const res = await handler(makeRequest({ game_id: GAME_ID, note_instance_id: NOTE_INSTANCE_ID }))
+      expect(res.status).toBe(500)
     })
   })
 })
