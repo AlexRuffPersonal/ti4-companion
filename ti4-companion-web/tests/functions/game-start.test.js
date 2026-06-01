@@ -14,17 +14,14 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 
+import { GAME_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { nullSafeChain } from '../helpers/mockDb.js'
+
 const HOST_ID = 'host-uuid'
-const GAME_ID = 'game-uuid'
 const SPEAKER_ID = 'speaker-uuid'
 
-function makeRequest(body) {
-  return new Request('http://localhost/game-start', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
+const makeRequest = (body) => _makeRequest('game-start', body)
 
 const READY_PLAYERS = [
   { id: 'p1', faction: 'Arborec', colour: 'green', display_name: 'Alice' },
@@ -173,6 +170,7 @@ function mockDb({
     if (table === 'game_player_promissory_notes') {
       return { insert: promissoryNoteInsertMock }
     }
+    return nullSafeChain()
   })
   return { actionCardInsertMock, agendaInsertMock }
 }

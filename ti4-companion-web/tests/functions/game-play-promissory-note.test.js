@@ -30,9 +30,10 @@ import { interpretEffects } from '../../../supabase/functions/_shared/abilityDsl
 import { resolvePromissoryHandler } from '../../../supabase/functions/_shared/promissoryHandlers.ts'
 import { handler } from '../../../supabase/functions/game-play-promissory-note/index.ts'
 
-const USER_ID = 'user-uuid'
-const GAME_ID = 'game-uuid'
-const PLAYER_ID = 'player-uuid'
+import { USER_ID, GAME_ID, PLAYER_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { nullSafeChain } from '../helpers/mockDb.js'
+
 const ORIGIN_PLAYER_ID = 'origin-player-uuid'
 const NOTE_INSTANCE_ID = 'note-instance-uuid'
 const NOTE_ID = 'note-uuid'
@@ -40,13 +41,7 @@ const ABILITY_DEF_ID = 'ability-def-uuid'
 const ATTACHMENT_ID = 'attachment-uuid'
 const PLANET_ROW_ID = 'planet-row-uuid'
 
-function makeRequest(body) {
-  return new Request('http://localhost/game-play-promissory-note', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
+const makeRequest = (body) => _makeRequest('game-play-promissory-note', body)
 
 function mockDb({
   player = { id: PLAYER_ID },
@@ -150,6 +145,7 @@ function mockDb({
         }),
       }
     }
+    return nullSafeChain()
   })
 }
 
