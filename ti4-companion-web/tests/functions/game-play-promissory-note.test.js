@@ -105,6 +105,15 @@ function mockDb({
         }),
       }
     }
+    if (table === 'games') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: { round: 1 }, error: null }),
+          }),
+        }),
+      }
+    }
     if (table === 'promissory_notes') {
       return {
         select: vi.fn().mockReturnValue({
@@ -271,6 +280,9 @@ describe('game-play-promissory-note', () => {
   it('GIVEN into_play_area=true → state="in_play"', async () => {
     let capturedUpdate
     db.from.mockImplementation((table) => {
+      if (table === 'games') {
+        return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: { round: 1 }, error: null }) }) }) }
+      }
       if (table === 'game_players') {
         return {
           select: vi.fn().mockReturnValue({
@@ -331,6 +343,9 @@ describe('game-play-promissory-note', () => {
   it('GIVEN purge_on_use=true → state="discarded"', async () => {
     let capturedUpdate
     db.from.mockImplementation((table) => {
+      if (table === 'games') {
+        return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: { round: 1 }, error: null }) }) }) }
+      }
       if (table === 'game_players') {
         return {
           select: vi.fn().mockReturnValue({
@@ -391,6 +406,9 @@ describe('game-play-promissory-note', () => {
   it('GIVEN into_play_area=false, purge_on_use=false → state="held", held_by=origin_player_id', async () => {
     let capturedUpdate
     db.from.mockImplementation((table) => {
+      if (table === 'games') {
+        return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: { round: 1 }, error: null }) }) }) }
+      }
       if (table === 'game_players') {
         return {
           select: vi.fn().mockReturnValue({
