@@ -4,6 +4,7 @@ import { okResponse, errorResponse, corsPreflightResponse } from '../_shared/err
 import { applyCommanderPassives, AGENT_REACTIVE_TRIGGERS } from '../_shared/leaderEffects.ts'
 import { getHandler } from '../_shared/abilityHandlers.ts'
 import { assertProductionAllowed, LawError } from '../_shared/lawEffects.ts'
+import { getActiveNotes } from '../_shared/promissoryEnforcement.ts'
 
 type UnitOrder = { unit_type: string; count: number; on_planet?: string | null }
 type UnitDef = { name: string; cost: number; production: string | null; unit_type: string | null }
@@ -12,6 +13,15 @@ type PlanetInfo = { name: string; resources: number }
 function parseStat(text: string): number {
   const match = text.match(/^(\d+)/)
   return match ? parseInt(match[1]) : 0
+}
+
+function axialNeighbors(systemKey: string): string[] {
+  const [q, r] = systemKey.split(',').map(Number)
+  return [
+    [q + 1, r], [q - 1, r],
+    [q, r + 1], [q, r - 1],
+    [q + 1, r - 1], [q - 1, r + 1],
+  ].map(([nq, nr]) => `${nq},${nr}`)
 }
 
 export async function handler(req: Request): Promise<Response> {
@@ -127,6 +137,27 @@ export async function handler(req: Request): Promise<Response> {
     } catch (err) {
       if (err instanceof LawError) return errorResponse(err.message, 409)
       throw err
+    }
+  }
+
+  // Phase 39b: Stymie enforcement — block Arborec (note owner) from producing
+  // in or adjacent to system containing the note holder's units
+  const activeNotes = await getActiveNotes(body.game_id as string, db)
+  for (const note of activeNotes.stymie) {
+    if (note.ownerPlayerId === (player as Record<string, unknown>).id) {
+      // This is an Arborec player producing — check if holder has units in or adjacent to system
+      const neighbors = axialNeighbors(body.system_key as string)
+      const systemsToCheck = [body.system_key as string, ...neighbors]
+      const { data: holderUnits, error: holderUnitsError } = await db
+        .from('game_player_units')
+        .select('system_key')
+        .eq('game_id', body.game_id)
+        .eq('player_id', note.holderPlayerId)
+        .in('system_key', systemsToCheck)
+      if (holderUnitsError) return errorResponse('Database error', 500)
+      if ((holderUnits ?? []).length > 0) {
+        return errorResponse('Stymie prevents Arborec production in this system', 409)
+      }
     }
   }
 
