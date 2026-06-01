@@ -13,17 +13,10 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
 
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
-
-const GAME_ID = 'game-uuid'
-const USER_ID = 'user-uuid'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-join', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
+import { USER_ID, GAME_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { nullSafeChain } from '../helpers/mockDb.js'
+const makeRequest = (body) => _makeRequest('game-join', body)
 
 function mockDb({
   gameData = { id: GAME_ID, status: 'lobby' },
@@ -74,6 +67,7 @@ function mockDb({
         }),
       }
     }
+    return nullSafeChain()
   })
 }
 
