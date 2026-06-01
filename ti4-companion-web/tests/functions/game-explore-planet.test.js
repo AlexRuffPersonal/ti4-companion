@@ -20,6 +20,7 @@ const GAME_ID = 'game-1'
 const PLAYER_ID = 'player-1'
 const PLANET_NAME = 'Mecatol Rex'
 const TILE_ID = 'tile-1'
+const CARD_ID = 'card-1'
 
 const BASE_GAME = { phase: 2, active_player_id: PLAYER_ID, map_tiles: {} }
 const BASE_PLAYER = { id: PLAYER_ID, technologies: [] }
@@ -42,13 +43,8 @@ const BASE_DECK_CARDS = [
   { id: 'card-3', name: 'Paradise World', text: 'Attach to planet.', has_attachment: true, relic_fragment_type: null, state: 'deck', deck_position: 3 },
 ]
 
-function makeRequest(body) {
-  return new Request('http://localhost/game-explore-planet', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+const makeRequest = (body) => _makeRequest('game-explore-planet', body)
 
 function baseBody(overrides = {}) {
   return {
@@ -81,16 +77,22 @@ function mockDb({
   updateError = null,
   exploreUpdateError = null,
   arcologiesReadyError = null,
+  // For phase 39 system_key storage
+  mapTiles = null,
 } = {}) {
   let explorationSelectCallCount = 0
   let planetPlanetsCallCount = 0
+  const deckUpdateArgs = []
+
+  // If mapTiles override provided, override the game
+  const effectiveGame = mapTiles !== null ? { ...BASE_GAME, map_tiles: mapTiles } : game
 
   db.from.mockImplementation((table) => {
     if (table === 'games') {
       return {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: game, error: gameError }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: effectiveGame, error: gameError }),
           }),
         }),
       }
@@ -110,7 +112,6 @@ function mockDb({
 
     if (table === 'game_player_planets') {
       planetPlanetsCallCount++
-      const callIndex = planetPlanetsCallCount
       const updateMock = vi.fn().mockImplementation((payload) => {
         if (payload && payload.exhausted === false) {
           const eqThird = vi.fn().mockResolvedValue({ error: arcologiesReadyError })
@@ -153,7 +154,6 @@ function mockDb({
           // First call: drawTopCard attempt
           if (explorationSelectCallCount === 1) {
             if (deckEmpty) {
-              // Return empty (no deck cards)
               return {
                 eq: vi.fn().mockReturnValue({
                   eq: vi.fn().mockReturnValue({
@@ -207,14 +207,17 @@ function mockDb({
             }),
           }
         }),
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: updateError }),
+        update: vi.fn().mockImplementation((args) => {
+          deckUpdateArgs.push(args)
+          return { eq: vi.fn().mockResolvedValue({ error: updateError }) }
         }),
       }
     }
 
     return { select: vi.fn(), update: vi.fn() }
   })
+
+  return { deckUpdateArgs }
 }
 
 describe('game-explore-planet', () => {
@@ -403,5 +406,37 @@ describe('game-explore-planet', () => {
       }
     }
     expect(allUpdates).not.toContainEqual({ exhausted: false })
+  })
+})
+
+describe('phase 39 — system_key storage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    requireAuth.mockResolvedValue(USER_ID)
+  })
+
+  it('stores system_key on the drawn card row when planet tile found in map', async () => {
+    const { deckUpdateArgs } = mockDb({
+      mapTiles: { '2,1': { tile_id: TILE_ID } },
+    })
+
+    const res = await handler(makeRequest(baseBody()))
+    expect(res.status).toBe(200)
+
+    const drawnUpdate = deckUpdateArgs.find(a => a.state === 'drawn')
+    expect(drawnUpdate).toBeDefined()
+    expect(drawnUpdate.system_key).toBe('2,1')
+    expect(drawnUpdate.planet_name).toBe(PLANET_NAME)
+  })
+
+  it('stores null system_key when planet tile not found in map', async () => {
+    const { deckUpdateArgs } = mockDb({ mapTiles: {} })
+
+    const res = await handler(makeRequest(baseBody()))
+    expect(res.status).toBe(200)
+
+    const drawnUpdate = deckUpdateArgs.find(a => a.state === 'drawn')
+    expect(drawnUpdate).toBeDefined()
+    expect(drawnUpdate.system_key).toBeNull()
   })
 })
