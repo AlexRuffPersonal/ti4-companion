@@ -36,16 +36,13 @@ import { applyStatusPhaseLaws } from '../../../supabase/functions/_shared/lawEff
 import { getHeldNotes, getActiveNotes, returnNote } from '../../../supabase/functions/_shared/promissoryEnforcement.ts'
 import { handler } from '../../../supabase/functions/game-advance-phase/index.ts'
 
-const HOST_ID = 'host-uuid'
-const GAME_ID = 'game-uuid'
+import { GAME_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { nullSafeChain } from '../helpers/mockDb.js'
 
-function makeRequest(body) {
-  return new Request('http://localhost/game-advance-phase', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
+const makeRequest = (body) => _makeRequest('game-advance-phase', body)
+
+const HOST_ID = 'host-uuid'
 
 function mockDb({ game = { id: GAME_ID, host_user_id: HOST_ID, phase: 'status', round: 2, agenda_unlocked: false }, updateError = null } = {}) {
   const updateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: updateError }) })
@@ -87,6 +84,7 @@ function mockDb({ game = { id: GAME_ID, host_user_id: HOST_ID, phase: 'status', 
         update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
       }
     }
+    return nullSafeChain()
   })
   return { updateMock, playersUpdateMock, legendaryUpdateMock }
 }
@@ -227,9 +225,7 @@ describe('game-advance-phase — Phase 30 status→strategy tech effects', () =>
           update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
         }
       }
-      return {
-        update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
-      }
+      return nullSafeChain()
     })
 
     return { gamesUpdateCalls, gamePlayersUpdateCalls }
@@ -376,9 +372,7 @@ describe('game-advance-phase — Phase 30 action→status tech effects', () => {
           update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
         }
       }
-      return {
-        update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
-      }
+      return nullSafeChain()
     })
 
     return { gamesUpdateCalls }
@@ -466,9 +460,7 @@ describe('game-advance-phase — Phase 30 strategy→action tech effects', () =>
           update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
         }
       }
-      return {
-        update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
-      }
+      return nullSafeChain()
     })
 
     return { gamesUpdateCalls }
