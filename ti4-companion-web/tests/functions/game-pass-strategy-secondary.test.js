@@ -14,20 +14,13 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-pass-strategy-secondary/index.ts'
+import { USER_ID, GAME_ID, PLAYER_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { nullSafeChain } from '../helpers/mockDb.js'
+const makeRequest = (body) => _makeRequest('game-pass-strategy-secondary', body)
 
-const USER_ID = 'user-uuid'
-const GAME_ID = 'game-uuid'
-const PLAYER_ID = 'player-uuid'
 const PLAY_ID = 'play-uuid'
 const RESPONSE_ID = 'response-uuid'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-pass-strategy-secondary', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 function mockDb({
   player = { id: PLAYER_ID },
@@ -90,7 +83,7 @@ function mockDb({
         }),
       }
     }
-    return {}
+    return nullSafeChain()
   })
 }
 

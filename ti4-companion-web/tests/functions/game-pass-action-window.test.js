@@ -13,22 +13,15 @@ vi.mock('../../../supabase/functions/_shared/db.ts', () => ({
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-pass-action-window/index.ts'
+import { USER_ID, GAME_ID, COMBAT_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { nullSafeChain } from '../helpers/mockDb.js'
+const makeRequest = (body) => _makeRequest('game-pass-action-window', body)
 
-const USER_ID = 'user-uuid'
 const GAME_CODE = 'TEST01'
-const GAME_ID = 'game-uuid'
 const PLAYER_ID = 'attacker-uuid'
 const DEFENDER_ID = 'defender-uuid'
-const COMBAT_ID = 'combat-uuid'
 const PLAYER2_ID = 'player2-uuid'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-pass-action-window', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 function makeCombat(overrides = {}) {
   return {
@@ -103,7 +96,7 @@ function mockDb({
         update: updateCombatMock,
       }
     }
-    return {}
+    return nullSafeChain()
   })
 }
 

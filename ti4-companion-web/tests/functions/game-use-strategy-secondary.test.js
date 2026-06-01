@@ -19,21 +19,14 @@ import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { interpretEffects } from '../../../supabase/functions/_shared/abilityDsl.ts'
 import { handler } from '../../../supabase/functions/game-use-strategy-secondary/index.ts'
+import { USER_ID, GAME_ID, PLAYER_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { nullSafeChain } from '../helpers/mockDb.js'
+const makeRequest = (body) => _makeRequest('game-use-strategy-secondary', body)
 
-const USER_ID = 'user-uuid'
-const GAME_ID = 'game-uuid'
-const PLAYER_ID = 'player-uuid'
 const PLAY_ID = 'play-uuid'
 const ABILITY_ID = 'ability-uuid'
 const RESPONSE_ID = 'response-uuid'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-use-strategy-secondary', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 const DEFAULT_PLAY = { id: PLAY_ID, played_by_player_id: 'other-player', card_number: 8, free_secondary_player_ids: [] }
 const DEFAULT_GAME = { id: GAME_ID, round: 1 }
@@ -161,7 +154,7 @@ function mockDb({
         }),
       }
     }
-    return {}
+    return nullSafeChain()
   })
 }
 
