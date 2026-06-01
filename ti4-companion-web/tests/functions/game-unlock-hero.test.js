@@ -15,18 +15,13 @@ import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-unlock-hero/index.ts'
 
-const USER_ID = 'user-1'
-const GAME_ID = 'game-1'
-const PLAYER_ID = 'player-1'
-const LEADER_ID = 'leader-1'
+import { USER_ID, GAME_ID, PLAYER_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { buildDbMock, nullSafeChain } from '../helpers/mockDb.js'
 
-function makeRequest(body) {
-  return new Request('http://localhost/game-unlock-hero', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
+const makeRequest = (body) => _makeRequest('game-unlock-hero', body)
+
+const LEADER_ID = 'leader-1'
 
 const BASE_PLAYER = {
   id: PLAYER_ID,
@@ -42,51 +37,42 @@ function mockDb({
   secObjectives = [],
   updateError = null,
 } = {}) {
-  db.from.mockImplementation((table) => {
-    if (table === 'game_players') {
-      return {
-        select: vi.fn().mockReturnValue({
+  buildDbMock(db, {
+    game_players: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: player }),
-            }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: player }),
           }),
         }),
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: updateError }),
+      }),
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: updateError }),
+      }),
+    }),
+    leaders: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: leader }),
         }),
-      }
-    }
-    if (table === 'leaders') {
-      return {
-        select: vi.fn().mockReturnValue({
+      }),
+    }),
+    game_public_objectives: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          contains: vi.fn().mockResolvedValue({ data: pubObjectives }),
+        }),
+      }),
+    }),
+    game_player_secret_objectives: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: leader }),
+            eq: vi.fn().mockResolvedValue({ data: secObjectives }),
           }),
         }),
-      }
-    }
-    if (table === 'game_public_objectives') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            contains: vi.fn().mockResolvedValue({ data: pubObjectives }),
-          }),
-        }),
-      }
-    }
-    if (table === 'game_player_secret_objectives') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ data: secObjectives }),
-            }),
-          }),
-        }),
-      }
-    }
-    return { select: vi.fn(), update: vi.fn() }
+      }),
+    }),
   })
 }
 

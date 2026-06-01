@@ -15,40 +15,32 @@ import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-exhaust-technology/index.ts'
 
-const USER_ID = 'user-uuid'
-const GAME_ID = 'game-uuid'
-const PLAYER_ID = 'player-uuid'
+import { USER_ID, GAME_ID, PLAYER_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { buildDbMock, nullSafeChain } from '../helpers/mockDb.js'
+
+const makeRequest = (body) => _makeRequest('game-exhaust-technology', body)
+
 const EXHAUSTABLE_TECH = 'Graviton Laser System'
 const NON_EXHAUSTABLE_TECH = 'Neural Motivator'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-exhaust-technology', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 function mockDb({
   player = { id: PLAYER_ID, technologies: [EXHAUSTABLE_TECH], exhausted_technologies: [] },
   updateError = null,
 } = {}) {
-  db.from.mockImplementation((table) => {
-    if (table === 'game_players') {
-      return {
-        select: vi.fn().mockReturnValue({
+  buildDbMock(db, {
+    game_players: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }),
-            }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }),
           }),
         }),
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: updateError }),
-        }),
-      }
-    }
-    return {}
+      }),
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: updateError }),
+      }),
+    }),
   })
 }
 
@@ -113,26 +105,23 @@ describe('game-exhaust-technology', () => {
 
   it('appends technology to exhausted_technologies on success', async () => {
     let capturedUpdate = null
-    db.from.mockImplementation((table) => {
-      if (table === 'game_players') {
-        return {
-          select: vi.fn().mockReturnValue({
+    buildDbMock(db, {
+      game_players: () => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: vi.fn().mockResolvedValue({
-                  data: { id: PLAYER_ID, technologies: [EXHAUSTABLE_TECH, 'Bio-Stims'], exhausted_technologies: ['Bio-Stims'] },
-                  error: null,
-                }),
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: PLAYER_ID, technologies: [EXHAUSTABLE_TECH, 'Bio-Stims'], exhausted_technologies: ['Bio-Stims'] },
+                error: null,
               }),
             }),
           }),
-          update: vi.fn().mockImplementation((args) => {
-            capturedUpdate = args
-            return { eq: vi.fn().mockResolvedValue({ error: null }) }
-          }),
-        }
-      }
-      return {}
+        }),
+        update: vi.fn().mockImplementation((args) => {
+          capturedUpdate = args
+          return { eq: vi.fn().mockResolvedValue({ error: null }) }
+        }),
+      }),
     })
     await handler(makeRequest({ game_id: GAME_ID, technology_name: EXHAUSTABLE_TECH }))
     expect(capturedUpdate).toEqual({ exhausted_technologies: ['Bio-Stims', EXHAUSTABLE_TECH] })

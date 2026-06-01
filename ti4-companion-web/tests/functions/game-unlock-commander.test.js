@@ -20,18 +20,13 @@ import { db } from '../../../supabase/functions/_shared/db.ts'
 import { checkCommanderUnlock } from '../../../supabase/functions/_shared/commanderUnlock.ts'
 import { handler } from '../../../supabase/functions/game-unlock-commander/index.ts'
 
-const USER_ID = 'user-uuid'
-const GAME_ID = 'game-uuid'
-const PLAYER_ID = 'player-uuid'
-const LEADER_ID = 'leader-uuid'
+import { USER_ID, GAME_ID, PLAYER_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { buildDbMock, nullSafeChain } from '../helpers/mockDb.js'
 
-function makeRequest(body) {
-  return new Request('http://localhost/game-unlock-commander', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
+const makeRequest = (body) => _makeRequest('game-unlock-commander', body)
+
+const LEADER_ID = 'leader-uuid'
 
 function mockDb({
   player = {
@@ -46,31 +41,26 @@ function mockDb({
   leader = { id: LEADER_ID, faction: 'The Nekro Virus', leader_type: 'commander' },
   updateError = null,
 } = {}) {
-  db.from.mockImplementation((table) => {
-    if (table === 'game_players') {
-      return {
-        select: vi.fn().mockReturnValue({
+  buildDbMock(db, {
+    game_players: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }),
-            }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }),
           }),
         }),
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: updateError }),
+      }),
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: updateError }),
+      }),
+    }),
+    leaders: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: leader, error: null }),
         }),
-      }
-    }
-    if (table === 'leaders') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: leader, error: null }),
-          }),
-        }),
-      }
-    }
-    return {}
+      }),
+    }),
   })
 }
 
@@ -140,43 +130,38 @@ describe('game-unlock-commander', () => {
 
   it('returns 200 and unlocks commander when condition is met', async () => {
     const updateMock = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
-    db.from.mockImplementation((table) => {
-      if (table === 'game_players') {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: vi.fn().mockResolvedValue({
-                  data: {
-                    id: PLAYER_ID,
-                    leaders: { agent: 'unlocked', commander: 'locked', hero: 'locked' },
-                    technologies: ['t1', 't2', 't3'],
-                    trade_goods: 0,
-                    action_card_count: 0,
-                    commander_flags: {},
-                    faction: 'The Nekro Virus',
-                  },
-                  error: null,
-                }),
-              }),
-            }),
-          }),
-          update: updateMock,
-        }
-      }
-      if (table === 'leaders') {
-        return {
-          select: vi.fn().mockReturnValue({
+    buildDbMock(db, {
+      game_players: () => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
               maybeSingle: vi.fn().mockResolvedValue({
-                data: { id: LEADER_ID, faction: 'The Nekro Virus', leader_type: 'commander' },
+                data: {
+                  id: PLAYER_ID,
+                  leaders: { agent: 'unlocked', commander: 'locked', hero: 'locked' },
+                  technologies: ['t1', 't2', 't3'],
+                  trade_goods: 0,
+                  action_card_count: 0,
+                  commander_flags: {},
+                  faction: 'The Nekro Virus',
+                },
                 error: null,
               }),
             }),
           }),
-        }
-      }
-      return {}
+        }),
+        update: updateMock,
+      }),
+      leaders: () => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: { id: LEADER_ID, faction: 'The Nekro Virus', leader_type: 'commander' },
+              error: null,
+            }),
+          }),
+        }),
+      }),
     })
     checkCommanderUnlock.mockResolvedValue(true)
 
