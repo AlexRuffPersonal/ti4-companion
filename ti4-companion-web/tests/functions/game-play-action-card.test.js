@@ -23,19 +23,14 @@ import { db } from '../../../supabase/functions/_shared/db.ts'
 import { interpretEffects } from '../../../supabase/functions/_shared/abilityDsl.ts'
 import { handler } from '../../../supabase/functions/game-play-action-card/index.ts'
 
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+const makeRequest = (body) => _makeRequest('game-play-action-card', body)
+
 const USER_ID = 'user-uuid'
 const GAME_ID = 'game-uuid'
 const PLAYER_ID = 'player-uuid'
 const CARD_ID = 'card-uuid'
 const OTHER_PLAYER_ID = 'other-player-uuid'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-play-action-card', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 function mockDbDefaults() {
   return {
@@ -514,5 +509,312 @@ describe('Action: card resolveAbility and turn advancement', () => {
     const res = await handler(makeRequest({ game_id: GAME_ID, card_id: CARD_ID }))
     expect(res.status).toBe(200)
     expect(gamesUpdateMock).toHaveBeenCalledWith({ active_player_id: null })
+  })
+})
+
+describe('phase 30 — tech effects', () => {
+  const GAME_ID_P30 = 'game-1'
+  const CARD_ID_P30 = 'card-1'
+  const CALLER_PLAYER_ID = 'player-caller'
+  const YSSARIL_PLAYER_ID = 'player-yssaril'
+  const XXCHA_PLAYER_ID = 'player-xxcha'
+
+  // Base game: action phase, Yssaril is active
+  const baseGame = {
+    id: GAME_ID_P30,
+    phase: 'action',
+    active_player_id: YSSARIL_PLAYER_ID,
+    pending_action_window: null,
+  }
+
+  // Action card with Action: timing
+  const actionCard = {
+    id: CARD_ID_P30,
+    state: 'held',
+    held_by_player_id: CALLER_PLAYER_ID,
+    timing: 'Action:',
+    ability: [{ op: 'gain_trade_goods', amount: 1 }],
+  }
+
+  function setupMocks({ callerPlayer, allPlayers, card = actionCard, game = baseGame }) {
+    const gamesUpdateCalls = []
+    const gamePlayersUpdateCalls = []
+    const cardUpdateCalls = []
+
+    requireAuth.mockResolvedValue('user-caller')
+
+    db.from.mockImplementation((table) => {
+      if (table === 'game_players') {
+        return {
+          select: vi.fn().mockImplementation((fields) => {
+            if (fields.includes('exhausted_technologies')) {
+              // allPlayers query
+              return {
+                eq: vi.fn().mockResolvedValue({ data: allPlayers, error: null }),
+              }
+            }
+            if (fields === 'id') {
+              // nextPlayer initiative_order query
+              return {
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    order: vi.fn().mockReturnValue({
+                      limit: vi.fn().mockReturnValue({
+                        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+                      }),
+                    }),
+                  }),
+                }),
+              }
+            }
+            // caller query
+            return {
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({ data: callerPlayer, error: null }),
+                }),
+              }),
+            }
+          }),
+          update: vi.fn().mockImplementation((vals) => {
+            gamePlayersUpdateCalls.push(vals)
+            return { eq: vi.fn().mockResolvedValue({ data: null, error: null }) }
+          }),
+        }
+      }
+      if (table === 'game_action_card_deck') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: card, error: null }),
+            }),
+          }),
+          update: vi.fn().mockImplementation((vals) => {
+            cardUpdateCalls.push(vals)
+            return { eq: vi.fn().mockResolvedValue({ data: null, error: null }) }
+          }),
+        }
+      }
+      if (table === 'games') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: game, error: null }),
+            }),
+          }),
+          update: vi.fn().mockImplementation((vals) => {
+            gamesUpdateCalls.push(vals)
+            return { eq: vi.fn().mockResolvedValue({ data: null, error: null }) }
+          }),
+        }
+      }
+      return {}
+    })
+
+    return { gamesUpdateCalls, gamePlayersUpdateCalls, cardUpdateCalls }
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  describe('Transparasteel Plating (Yssaril technology)', () => {
+    it('blocks a passed player from playing action cards during Yssaril turn', async () => {
+      const callerPlayer = {
+        id: CALLER_PLAYER_ID,
+        action_card_count: 3,
+        passed: true,
+        technologies: [],
+      }
+      const allPlayers = [
+        callerPlayer,
+        {
+          id: YSSARIL_PLAYER_ID,
+          technologies: ['Transparasteel Plating'],
+          exhausted_technologies: [],
+          command_tokens: { strategy: 1 },
+        },
+      ]
+
+      setupMocks({ callerPlayer, allPlayers, game: { ...baseGame, active_player_id: YSSARIL_PLAYER_ID } })
+
+      const res = await handler(makeRequest({ game_id: GAME_ID_P30, card_id: CARD_ID_P30 }))
+      const json = await res.json()
+
+      expect(res.status).toBe(409)
+      expect(json.error).toMatch(/cannot play action cards during yssaril turn after passing/i)
+    })
+
+    it('allows a non-passed player to play action cards during Yssaril turn', async () => {
+      const callerPlayer = {
+        id: CALLER_PLAYER_ID,
+        action_card_count: 3,
+        passed: false,
+        technologies: [],
+      }
+      const allPlayers = [
+        callerPlayer,
+        {
+          id: YSSARIL_PLAYER_ID,
+          technologies: ['Transparasteel Plating'],
+          exhausted_technologies: [],
+          command_tokens: { strategy: 0 },
+        },
+      ]
+
+      // Caller IS the active player for this test, not Yssaril
+      const game = { ...baseGame, active_player_id: CALLER_PLAYER_ID }
+      setupMocks({ callerPlayer, allPlayers, game })
+
+      const res = await handler(makeRequest({ game_id: GAME_ID_P30, card_id: CARD_ID_P30 }))
+
+      expect(res.status).toBe(200)
+    })
+
+    it('does not block when Yssaril player is not the active player', async () => {
+      const callerPlayer = {
+        id: CALLER_PLAYER_ID,
+        action_card_count: 3,
+        passed: true,
+        technologies: [],
+      }
+      const allPlayers = [
+        callerPlayer,
+        {
+          id: YSSARIL_PLAYER_ID,
+          technologies: ['Transparasteel Plating'],
+          exhausted_technologies: [],
+          command_tokens: { strategy: 0 },
+        },
+      ]
+
+      // Caller is the active player, not Yssaril
+      const game = { ...baseGame, active_player_id: CALLER_PLAYER_ID }
+      setupMocks({ callerPlayer, allPlayers, game })
+
+      const res = await handler(makeRequest({ game_id: GAME_ID_P30, card_id: CARD_ID_P30 }))
+
+      expect(res.status).toBe(200)
+    })
+  })
+
+  describe('Instinct Training (Xxcha technology)', () => {
+    it('opens a when_action_card_played window after Action: card is played when Xxcha has unexhausted Instinct Training and a strategy token', async () => {
+      const callerPlayer = {
+        id: CALLER_PLAYER_ID,
+        action_card_count: 3,
+        passed: false,
+        technologies: [],
+      }
+      const xxchaPlayer = {
+        id: XXCHA_PLAYER_ID,
+        technologies: ['Instinct Training'],
+        exhausted_technologies: [],
+        command_tokens: { strategy: 1 },
+      }
+      const allPlayers = [callerPlayer, xxchaPlayer]
+      const game = { ...baseGame, active_player_id: CALLER_PLAYER_ID }
+
+      const { gamesUpdateCalls } = setupMocks({ callerPlayer, allPlayers, game })
+
+      const res = await handler(makeRequest({ game_id: GAME_ID_P30, card_id: CARD_ID_P30 }))
+      const json = await res.json()
+
+      expect(res.status).toBe(200)
+      expect(json.instinct_training_window).toBe(true)
+      expect(json.discarded).toBe(CARD_ID_P30)
+
+      const windowUpdate = gamesUpdateCalls.find(c => c.pending_action_window)
+      expect(windowUpdate).toBeTruthy()
+      expect(windowUpdate.pending_action_window.type).toBe('when_action_card_played')
+      expect(windowUpdate.pending_action_window.eligible_player_ids).toContain(XXCHA_PLAYER_ID)
+      expect(windowUpdate.pending_action_window.passed_player_ids).toEqual([])
+      expect(windowUpdate.pending_action_window.context.card_id).toBe(CARD_ID_P30)
+      expect(windowUpdate.pending_action_window.context.playing_player_id).toBe(CALLER_PLAYER_ID)
+    })
+
+    it('does not open a window when no player has Instinct Training', async () => {
+      const callerPlayer = {
+        id: CALLER_PLAYER_ID,
+        action_card_count: 3,
+        passed: false,
+        technologies: [],
+      }
+      const allPlayers = [
+        callerPlayer,
+        {
+          id: XXCHA_PLAYER_ID,
+          technologies: ['Neural Motivator'],
+          exhausted_technologies: [],
+          command_tokens: { strategy: 1 },
+        },
+      ]
+      const game = { ...baseGame, active_player_id: CALLER_PLAYER_ID }
+
+      const { gamesUpdateCalls } = setupMocks({ callerPlayer, allPlayers, game })
+
+      const res = await handler(makeRequest({ game_id: GAME_ID_P30, card_id: CARD_ID_P30 }))
+      const json = await res.json()
+
+      expect(res.status).toBe(200)
+      expect(json.instinct_training_window).toBeUndefined()
+      // No games update for pending_action_window
+      const windowUpdate = gamesUpdateCalls.find(c => c.pending_action_window)
+      expect(windowUpdate).toBeUndefined()
+    })
+
+    it('does not open a window when Instinct Training is exhausted', async () => {
+      const callerPlayer = {
+        id: CALLER_PLAYER_ID,
+        action_card_count: 3,
+        passed: false,
+        technologies: [],
+      }
+      const allPlayers = [
+        callerPlayer,
+        {
+          id: XXCHA_PLAYER_ID,
+          technologies: ['Instinct Training'],
+          exhausted_technologies: ['Instinct Training'],
+          command_tokens: { strategy: 1 },
+        },
+      ]
+      const game = { ...baseGame, active_player_id: CALLER_PLAYER_ID }
+
+      const { gamesUpdateCalls } = setupMocks({ callerPlayer, allPlayers, game })
+
+      const res = await handler(makeRequest({ game_id: GAME_ID_P30, card_id: CARD_ID_P30 }))
+
+      expect(res.status).toBe(200)
+      const windowUpdate = gamesUpdateCalls.find(c => c.pending_action_window)
+      expect(windowUpdate).toBeUndefined()
+    })
+
+    it('does not open a window when Xxcha has no strategy tokens', async () => {
+      const callerPlayer = {
+        id: CALLER_PLAYER_ID,
+        action_card_count: 3,
+        passed: false,
+        technologies: [],
+      }
+      const allPlayers = [
+        callerPlayer,
+        {
+          id: XXCHA_PLAYER_ID,
+          technologies: ['Instinct Training'],
+          exhausted_technologies: [],
+          command_tokens: { strategy: 0 },
+        },
+      ]
+      const game = { ...baseGame, active_player_id: CALLER_PLAYER_ID }
+
+      const { gamesUpdateCalls } = setupMocks({ callerPlayer, allPlayers, game })
+
+      const res = await handler(makeRequest({ game_id: GAME_ID_P30, card_id: CARD_ID_P30 }))
+
+      expect(res.status).toBe(200)
+      const windowUpdate = gamesUpdateCalls.find(c => c.pending_action_window)
+      expect(windowUpdate).toBeUndefined()
+    })
   })
 })
