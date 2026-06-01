@@ -43,9 +43,9 @@ import { getHandler } from '../../../supabase/functions/_shared/abilityHandlers.
 import { getHeldNotes, getActiveNotes, returnNote } from '../../../supabase/functions/_shared/promissoryEnforcement.ts'
 import { handler } from '../../../supabase/functions/game-activate-system/index.ts'
 
-import { USER_ID, GAME_ID, PLAYER_ID, TILE_ID, SYSTEM_KEY } from '../helpers/constants.js'
+import { USER_ID, GAME_ID, PLAYER_ID } from '../helpers/constants.js'
 import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
-import { buildDbMock, eqEqSingle, eqSingle, eqEqEqMany, inMany, eqIs } from '../helpers/mockDb.js'
+import { buildDbMock, eqEqSingle, eqSingle, inMany, eqIs, nullSafeChain } from '../helpers/mockDb.js'
 
 const makeRequest = (body) => _makeRequest('game-activate-system', body)
 
@@ -462,10 +462,6 @@ describe('game-activate-system — combat creation (Phase 10)', () => {
     return { activationInsertMock, combatInsertMock }
   }
 
-  beforeEach(() => {
-    requireAuth.mockResolvedValue(USER_ID)
-  })
-
   it('returns combat_id when enemy ships are present in activated system', async () => {
     mockDbPhase10()
     const res = await handler(makeRequest({ game_id: GAME_ID, system_key: '1,-1' }))
@@ -686,7 +682,7 @@ describe('game-activate-system Phase 30', () => {
           }),
         }
       }
-      return {}
+      return nullSafeChain()
     })
   }
 
@@ -960,7 +956,7 @@ describe('game-activate-system Phase 39b', () => {
           }),
         }
       }
-      return {}
+      return nullSafeChain()
     })
   }
 
@@ -1285,6 +1281,7 @@ describe('reactive agent window on activation (Phase 43a)', () => {
           }),
         }
       }
+      return nullSafeChain()
     })
   }
 
@@ -1361,7 +1358,7 @@ describe('reactive agent window on activation (Phase 43a)', () => {
 
     // Hoist the leaders maybeSingle mock outside db.from so it sequences correctly
     // across multiple db.from('leaders') calls (one per reactive faction)
-    const leadersMaybySingleMock = vi.fn()
+    const leadersMaybeSingleMock = vi.fn()
       .mockResolvedValueOnce({ data: { id: AGENT_ID }, error: null })
       .mockResolvedValueOnce({ data: { id: ARBOREC_AGENT_ID }, error: null })
 
@@ -1442,7 +1439,7 @@ describe('reactive agent window on activation (Phase 43a)', () => {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                maybeSingle: leadersMaybySingleMock,
+                maybeSingle: leadersMaybeSingleMock,
               }),
             }),
           }),
@@ -1547,7 +1544,7 @@ describe('game-activate-system Phase 43c — Mahact commander bypass', () => {
           }),
         }
       }
-      return {}
+      return nullSafeChain()
     })
 
     return { mahactHandlerMock }
@@ -1694,7 +1691,7 @@ describe('game-activate-system Phase 43c — commander passives applied', () => 
           }),
         }
       }
-      return {}
+      return nullSafeChain()
     })
   }
 

@@ -82,7 +82,7 @@ export function eqIs(data = [], error = null) {
 
 // Fallback for any table not explicitly registered.
 // Uses mockImplementation so each level is created on demand, avoiding infinite recursion.
-function nullSafeChain() {
+export function nullSafeChain() {
   return {
     select: vi.fn().mockImplementation(() => nullSafeChain()),
     eq: vi.fn().mockImplementation(() => nullSafeChain()),
