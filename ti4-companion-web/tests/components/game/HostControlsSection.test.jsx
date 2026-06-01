@@ -13,19 +13,27 @@ const OBJECTIVES = [
   },
 ]
 
+const defaultProps = {
+  isHost: true,
+  game: { phase: 'action', round: 2 },
+  players: PLAYERS,
+  objectives: OBJECTIVES,
+  onScoreObjective: vi.fn(),
+  onRevealObjective: vi.fn(),
+  onShuffleDeck: vi.fn(),
+  onAdvancePhase: vi.fn(),
+}
+
+const defaultStatusProps = {
+  ...defaultProps,
+  game: { phase: 'status', round: 2 },
+  onEndStatusPhase: vi.fn(),
+  pendingSecretPlayers: [],
+  pendingTokenPlayers: [],
+}
+
 function renderControls(isHost = true) {
-  return render(
-    <HostControlsSection
-      isHost={isHost}
-      game={{ phase: 'action', round: 2 }}
-      players={PLAYERS}
-      objectives={OBJECTIVES}
-      onScoreObjective={vi.fn()}
-      onRevealObjective={vi.fn()}
-      onShuffleDeck={vi.fn()}
-      onAdvancePhase={vi.fn()}
-    />
-  )
+  return render(<HostControlsSection {...defaultProps} isHost={isHost} />)
 }
 
 describe('HostControlsSection', () => {
@@ -50,76 +58,28 @@ describe('HostControlsSection', () => {
   })
 
   it('shows End Status Phase button during status phase', () => {
-    render(
-      <HostControlsSection
-        isHost={true}
-        game={{ phase: 'status', round: 2 }}
-        players={PLAYERS}
-        objectives={OBJECTIVES}
-        onScoreObjective={vi.fn()}
-        onRevealObjective={vi.fn()}
-        onShuffleDeck={vi.fn()}
-        onAdvancePhase={vi.fn()}
-        onEndStatusPhase={vi.fn()}
-        pendingSecretPlayers={[]}
-        pendingTokenPlayers={[]}
-      />
-    )
+    render(<HostControlsSection {...defaultStatusProps} />)
     expect(screen.getByRole('button', { name: /end status phase/i })).toBeInTheDocument()
   })
 
   it('shows pending secret selection banner', () => {
-    render(
-      <HostControlsSection
-        isHost={true}
-        game={{ phase: 'status', round: 2 }}
-        players={PLAYERS}
-        objectives={OBJECTIVES}
-        onScoreObjective={vi.fn()}
-        onRevealObjective={vi.fn()}
-        onShuffleDeck={vi.fn()}
-        onAdvancePhase={vi.fn()}
-        onEndStatusPhase={vi.fn()}
-        pendingSecretPlayers={[{ id: 'p2', display_name: 'Bob' }]}
-        pendingTokenPlayers={[]}
-      />
-    )
+    render(<HostControlsSection {...defaultStatusProps} pendingSecretPlayers={[{ id: 'p2', display_name: 'Bob' }]} />)
     expect(screen.getAllByText(/bob/i).length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText(/secret/i)).toBeInTheDocument()
   })
 
   it('calls onEndStatusPhase when End Status Phase is clicked', () => {
     const onEndStatusPhase = vi.fn()
-    render(
-      <HostControlsSection
-        isHost={true}
-        game={{ phase: 'status', round: 2 }}
-        players={PLAYERS}
-        objectives={OBJECTIVES}
-        onScoreObjective={vi.fn()}
-        onRevealObjective={vi.fn()}
-        onShuffleDeck={vi.fn()}
-        onAdvancePhase={vi.fn()}
-        onEndStatusPhase={onEndStatusPhase}
-        pendingSecretPlayers={[]}
-        pendingTokenPlayers={[]}
-      />
-    )
+    render(<HostControlsSection {...defaultStatusProps} onEndStatusPhase={onEndStatusPhase} />)
     fireEvent.click(screen.getByRole('button', { name: /end status phase/i }))
     expect(onEndStatusPhase).toHaveBeenCalledOnce()
   })
-  
+
   it('does NOT render BEGIN AGENDA PHASE button', () => {
     render(
       <HostControlsSection
-        isHost={true}
+        {...defaultProps}
         game={{ phase: 'action', round: 2, agenda_phase_step: 'inactive' }}
-        players={PLAYERS}
-        objectives={OBJECTIVES}
-        onScoreObjective={vi.fn()}
-        onRevealObjective={vi.fn()}
-        onShuffleDeck={vi.fn()}
-        onAdvancePhase={vi.fn()}
         onEndStatusPhase={vi.fn()}
         onBeginAgendaPhase={vi.fn()}
         onEndAgendaPhase={vi.fn()}

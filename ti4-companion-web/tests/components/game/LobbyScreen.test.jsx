@@ -12,11 +12,9 @@ vi.mock('../../../src/lib/supabase.js', () => ({
   },
 }))
 
-vi.mock('../../../src/lib/edgeFunctions.js', () => ({
-  updateGameSettings: vi.fn().mockResolvedValue({}),
-  addBot: vi.fn().mockResolvedValue({}),
-  removeBot: vi.fn().mockResolvedValue({}),
-}))
+import { edgeFunctionStubs } from '../../helpers/edgeFunctionMocks.js'
+
+vi.mock('../../../src/lib/edgeFunctions.js', () => ({ ...edgeFunctionStubs }))
 
 // Mock MapPreviewSection so it doesn't depend on SVG/canvas
 vi.mock('../../../src/components/game/MapPreviewSection.jsx', () => ({
