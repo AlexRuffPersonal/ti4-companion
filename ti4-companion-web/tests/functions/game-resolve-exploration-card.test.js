@@ -25,9 +25,12 @@ import { db } from '../../../supabase/functions/_shared/db.ts'
 import { applyAbility } from '../../../supabase/functions/_shared/abilityDsl.ts'
 import { handler } from '../../../supabase/functions/game-resolve-exploration-card/index.ts'
 
-const USER_ID = 'user-1'
-const GAME_ID = 'game-1'
-const PLAYER_ID = 'player-1'
+import { USER_ID, GAME_ID, PLAYER_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { buildDbMock, nullSafeChain } from '../helpers/mockDb.js'
+
+const makeRequest = (body) => _makeRequest('game-resolve-exploration-card', body)
+
 const CARD_ID = 'card-1'
 
 const BASE_PLAYER = { id: PLAYER_ID }
@@ -49,14 +52,6 @@ function makeCard(overrides = {}) {
   }
 }
 
-function makeRequest(body) {
-  return new Request('http://localhost/game-resolve-exploration-card', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
-
 function baseBody(overrides = {}) {
   return {
     game_id: GAME_ID,
@@ -66,14 +61,6 @@ function baseBody(overrides = {}) {
   }
 }
 
-/**
- * Build a mock db that handles:
- * - game_players (player lookup)
- * - games (game fetch)
- * - game_exploration_decks (card fetch + update)
- * - game_player_planets (explored update)
- * - game_player_units (conditional_mech_or_infantry)
- */
 function mockDb({
   player = BASE_PLAYER,
   playerError = null,
@@ -87,75 +74,59 @@ function mockDb({
   unitsError = null,
   unitUpdateError = null,
 } = {}) {
-  db.from.mockImplementation((table) => {
-    if (table === 'game_players') {
-      return {
-        select: vi.fn().mockReturnValue({
+  buildDbMock(db, {
+    game_players: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: player, error: playerError }),
-            }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: player, error: playerError }),
           }),
         }),
-      }
-    }
-
-    if (table === 'games') {
-      return {
-        select: vi.fn().mockReturnValue({
+      }),
+    }),
+    games: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: game, error: gameError }),
+        }),
+      }),
+    }),
+    game_exploration_decks: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: game, error: gameError }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: card, error: cardError }),
           }),
         }),
-      }
-    }
-
-    if (table === 'game_exploration_decks') {
-      return {
-        select: vi.fn().mockReturnValue({
+      }),
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: cardUpdateError }),
+      }),
+    }),
+    game_player_planets: () => ({
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: card, error: cardError }),
-            }),
+            eq: vi.fn().mockResolvedValue({ error: planetUpdateError }),
           }),
         }),
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: cardUpdateError }),
-        }),
-      }
-    }
-
-    if (table === 'game_player_planets') {
-      return {
-        update: vi.fn().mockReturnValue({
+      }),
+    }),
+    game_player_units: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ error: planetUpdateError }),
-            }),
+            eq: vi.fn().mockResolvedValue({ data: units, error: unitsError }),
           }),
         }),
-      }
-    }
-
-    if (table === 'game_player_units') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ data: units, error: unitsError }),
-            }),
-          }),
-        }),
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: unitUpdateError }),
-        }),
-        delete: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null }),
-        }),
-      }
-    }
-
-    return { select: vi.fn(), update: vi.fn(), delete: vi.fn() }
+      }),
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: unitUpdateError }),
+      }),
+      delete: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: null }),
+      }),
+    }),
   })
 }
 

@@ -20,9 +20,12 @@ import { db } from '../../../supabase/functions/_shared/db.ts'
 import { applyAbility } from '../../../supabase/functions/_shared/abilityDsl.ts'
 import { handler } from '../../../supabase/functions/game-use-enigmatic-device/index.ts'
 
-const USER_ID = 'user-1'
-const GAME_ID = 'game-1'
-const PLAYER_ID = 'player-1'
+import { USER_ID, GAME_ID, PLAYER_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { buildDbMock, nullSafeChain } from '../helpers/mockDb.js'
+
+const makeRequest = (body) => _makeRequest('game-use-enigmatic-device', body)
+
 const CARD_ID = 'card-1'
 const TECH_NAME = 'Neural Motivator'
 const PLANET_1 = 'mecatol rex'
@@ -61,14 +64,6 @@ const BASE_BODY = {
   technology_name: TECH_NAME,
 }
 
-function makeRequest(body) {
-  return new Request('http://localhost/game-use-enigmatic-device', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
-
 function mockDb({
   player = BASE_PLAYER,
   playerError = null,
@@ -81,75 +76,65 @@ function mockDb({
   exhaustError = null,
   purgeError = null,
 } = {}) {
-  db.from.mockImplementation((table) => {
-    if (table === 'game_players') {
-      return {
-        select: vi.fn().mockReturnValue({
+  buildDbMock(db, {
+    game_players: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: player, error: playerError }),
-            }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: player, error: playerError }),
           }),
         }),
-        update: vi.fn().mockReturnValue({
+      }),
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              in: vi.fn().mockResolvedValue({ error: null }),
-            }),
+            in: vi.fn().mockResolvedValue({ error: null }),
           }),
         }),
-      }
-    }
-    if (table === 'game_exploration_decks') {
-      return {
-        select: vi.fn().mockReturnValue({
+      }),
+    }),
+    game_exploration_decks: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: card, error: cardError }),
-            }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: card, error: cardError }),
           }),
         }),
-        update: vi.fn().mockImplementation((vals) => {
-          // Card purge or planet exhaust?
-          if (vals.state === 'purged') {
-            return { eq: vi.fn().mockResolvedValue({ error: purgeError }) }
-          }
-          return {
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                in: vi.fn().mockResolvedValue({ error: exhaustError }),
-              }),
-            }),
-          }
-        }),
-      }
-    }
-    if (table === 'game_player_planets') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              in: vi.fn().mockResolvedValue({ data: planets, error: planetsError }),
-            }),
-          }),
-        }),
-        update: vi.fn().mockReturnValue({
+      }),
+      update: vi.fn().mockImplementation((vals) => {
+        if (vals.state === 'purged') {
+          return { eq: vi.fn().mockResolvedValue({ error: purgeError }) }
+        }
+        return {
           eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
               in: vi.fn().mockResolvedValue({ error: exhaustError }),
             }),
           }),
+        }
+      }),
+    }),
+    game_player_planets: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: planets, error: planetsError }),
+          }),
         }),
-      }
-    }
-    if (table === 'tiles') {
-      return {
-        select: vi.fn().mockReturnValue({
-          in: vi.fn().mockResolvedValue({ data: tiles, error: tilesError }),
+      }),
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ error: exhaustError }),
+          }),
         }),
-      }
-    }
-    return { select: vi.fn(), update: vi.fn() }
+      }),
+    }),
+    tiles: () => ({
+      select: vi.fn().mockReturnValue({
+        in: vi.fn().mockResolvedValue({ data: tiles, error: tilesError }),
+      }),
+    }),
   })
 }
 

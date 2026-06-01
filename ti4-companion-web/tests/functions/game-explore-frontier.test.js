@@ -25,9 +25,12 @@ import { db } from '../../../supabase/functions/_shared/db.ts'
 import { applyAbility } from '../../../supabase/functions/_shared/abilityDsl.ts'
 import { handler } from '../../../supabase/functions/game-explore-frontier/index.ts'
 
-const USER_ID = 'user-1'
-const GAME_ID = 'game-1'
-const PLAYER_ID = 'player-1'
+import { USER_ID, GAME_ID, PLAYER_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { buildDbMock, nullSafeChain } from '../helpers/mockDb.js'
+
+const makeRequest = (body) => _makeRequest('game-explore-frontier', body)
+
 const SYSTEM_KEY = '0,0'
 
 const BASE_GAME = { phase: 2, map_tiles: {} }
@@ -43,14 +46,6 @@ function makeCard(overrides = {}) {
     deck_position: 1,
     ...overrides,
   }
-}
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-explore-frontier', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
 }
 
 function baseBody(overrides = {}) {
@@ -82,18 +77,15 @@ function mockDb({
   let explorationSelectCallCount = 0
   let gamePlayersCallCount = 0
 
-  db.from.mockImplementation((table) => {
-    if (table === 'games') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: game, error: gameError }),
-          }),
+  buildDbMock(db, {
+    games: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: game, error: gameError }),
         }),
-      }
-    }
-
-    if (table === 'game_players') {
+      }),
+    }),
+    game_players: () => {
       gamePlayersCallCount++
       const callNum = gamePlayersCallCount
       return {
@@ -114,66 +106,38 @@ function mockDb({
           }),
         }),
       }
-    }
-
-    if (table === 'game_system_state') {
-      return {
-        select: vi.fn().mockReturnValue({
+    },
+    game_system_state: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: systemState, error: systemError }),
-            }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: systemState, error: systemError }),
           }),
         }),
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: frontierUpdateError }),
-          }),
+      }),
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: frontierUpdateError }),
         }),
-        upsert: vi.fn().mockResolvedValue({ error: frontierUpdateError }),
-        insert: vi.fn().mockResolvedValue({ error: null }),
-      }
-    }
-
-    if (table === 'game_exploration_decks') {
-      return {
-        select: vi.fn().mockImplementation(() => {
-          explorationSelectCallCount++
-          if (explorationSelectCallCount === 1) {
-            if (deckEmpty) {
-              return {
-                eq: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockReturnValue({
-                    eq: vi.fn().mockReturnValue({
-                      order: vi.fn().mockReturnValue({
-                        limit: vi.fn().mockReturnValue({
-                          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-                        }),
-                      }),
-                    }),
-                  }),
-                }),
-              }
-            }
+      }),
+      upsert: vi.fn().mockResolvedValue({ error: frontierUpdateError }),
+      insert: vi.fn().mockResolvedValue({ error: null }),
+    }),
+    game_exploration_decks: () => ({
+      select: vi.fn().mockImplementation(() => {
+        explorationSelectCallCount++
+        if (explorationSelectCallCount === 1) {
+          if (deckEmpty) {
             return {
               eq: vi.fn().mockReturnValue({
                 eq: vi.fn().mockReturnValue({
                   eq: vi.fn().mockReturnValue({
                     order: vi.fn().mockReturnValue({
                       limit: vi.fn().mockReturnValue({
-                        maybeSingle: vi.fn().mockResolvedValue({ data: card, error: null }),
+                        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
                       }),
                     }),
                   }),
-                }),
-              }),
-            }
-          }
-          if (explorationSelectCallCount === 2) {
-            return {
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockResolvedValue({ data: discards, error: discardFetchError }),
                 }),
               }),
             }
@@ -191,20 +155,37 @@ function mockDb({
               }),
             }),
           }
-        }),
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: discardUpdateError }),
-        }),
-      }
-    }
-
-    if (table === 'game_player_planets') {
-      return {
-        upsert: vi.fn().mockResolvedValue({ error: planetUpsertError }),
-      }
-    }
-
-    return { select: vi.fn(), update: vi.fn(), upsert: vi.fn(), insert: vi.fn() }
+        }
+        if (explorationSelectCallCount === 2) {
+          return {
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockResolvedValue({ data: discards, error: discardFetchError }),
+              }),
+            }),
+          }
+        }
+        return {
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({ data: card, error: null }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }
+      }),
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: discardUpdateError }),
+      }),
+    }),
+    game_player_planets: () => ({
+      upsert: vi.fn().mockResolvedValue({ error: planetUpsertError }),
+    }),
   })
 }
 
