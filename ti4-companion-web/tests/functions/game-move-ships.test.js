@@ -27,21 +27,17 @@ vi.mock('../../../supabase/functions/_shared/lawEffects.ts', () => ({
 import { requireAuth } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { applyCommanderPassives } from '../../../supabase/functions/_shared/leaderEffects.ts'
+import { assertMovementAllowed, assertFleetCapacity, LawError } from '../../../supabase/functions/_shared/lawEffects.ts'
 import { handler } from '../../../supabase/functions/game-move-ships/index.ts'
+
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+const makeRequest = (body) => _makeRequest('game-move-ships', body)
 
 const USER_ID = 'user-uuid'
 const GAME_ID = 'game-uuid'
 const PLAYER_ID = 'player-uuid'
 const ORIGIN_KEY = '2,0'
 const DEST_KEY = '1,0'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-move-ships', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 const DEFAULT_GAME = {
   active_player_id: PLAYER_ID,
@@ -127,7 +123,158 @@ function mockDb({
   })
 }
 
-describe('game-move-ships Phase 43c — commander passives', () => {
+describe('game-move-ships Phase 40 — Persistent Agenda Law Enforcement', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    requireAuth.mockResolvedValue(USER_ID)
+    assertMovementAllowed.mockResolvedValue(undefined)
+    assertFleetCapacity.mockResolvedValue(undefined)
+    mockDb()
+  })
+
+  describe('assertFleetCapacity enforcement', () => {
+    it('returns 409 when Fleet Regulations active and fleet size exceeds max-2', async () => {
+      const lawError = new LawError('Fleet Regulations: fleet size exceeds reduced maximum', 409)
+      assertFleetCapacity.mockRejectedValue(lawError)
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        active_system_key: DEST_KEY,
+        ships: [{ unit_type: 'carrier', origin_system_key: ORIGIN_KEY, path: [ORIGIN_KEY, DEST_KEY], cargo: [] }],
+      }))
+
+      expect(res.status).toBe(409)
+      const body = await res.json()
+      expect(body.error).toContain('Fleet Regulations')
+    })
+
+    it('calls assertFleetCapacity with post-move fleet size at destination', async () => {
+      // 1 existing carrier at destination + 2 carriers moving in from origin = post-move fleet size 3
+      mockDb({
+        spaceUnits: [
+          { id: 'unit-1', player_id: PLAYER_ID, unit_type: 'carrier', count: 1, system_key: ORIGIN_KEY },
+          { id: 'unit-2', player_id: PLAYER_ID, unit_type: 'carrier', count: 1, system_key: ORIGIN_KEY },
+          { id: 'unit-3', player_id: PLAYER_ID, unit_type: 'carrier', count: 1, system_key: DEST_KEY },
+        ],
+        unitDefs: [CARRIER_DEF],
+      })
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        active_system_key: DEST_KEY,
+        ships: [
+          { unit_type: 'carrier', origin_system_key: ORIGIN_KEY, path: [ORIGIN_KEY, DEST_KEY], cargo: [] },
+          { unit_type: 'carrier', origin_system_key: ORIGIN_KEY, path: [ORIGIN_KEY, DEST_KEY], cargo: [] },
+        ],
+      }))
+
+      expect(res.status).toBe(200)
+      // existingFleetAtDest=1 (carrier at DEST_KEY) + ships.length=2 - leavingFromDest=0 = 3
+      expect(assertFleetCapacity).toHaveBeenCalledWith(
+        expect.anything(),
+        GAME_ID,
+        PLAYER_ID,
+        3,
+      )
+    })
+
+    it('counts existing fleet at destination correctly (existing + incoming)', async () => {
+      // 2 existing ships at dest (1 carrier + 1 dreadnought), 1 ship moving in from elsewhere
+      // fighters/infantry at dest should NOT count toward fleet capacity
+      mockDb({
+        spaceUnits: [
+          { id: 'unit-1', player_id: PLAYER_ID, unit_type: 'carrier', count: 1, system_key: ORIGIN_KEY },
+          { id: 'unit-2', player_id: PLAYER_ID, unit_type: 'carrier', count: 1, system_key: DEST_KEY },
+          { id: 'unit-3', player_id: PLAYER_ID, unit_type: 'dreadnought', count: 1, system_key: DEST_KEY },
+          { id: 'unit-4', player_id: PLAYER_ID, unit_type: 'fighter', count: 3, system_key: DEST_KEY },
+        ],
+        unitDefs: [CARRIER_DEF, { name: 'dreadnought', move: 1, capacity: 0 }],
+      })
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        active_system_key: DEST_KEY,
+        ships: [
+          { unit_type: 'carrier', origin_system_key: ORIGIN_KEY, path: [ORIGIN_KEY, DEST_KEY], cargo: [] },
+        ],
+      }))
+
+      expect(res.status).toBe(200)
+      // existingFleetAtDest: carrier(1) + dreadnought(1) = 2 (fighter excluded)
+      // leavingFromDest: 0
+      // ships.length: 1
+      // postMoveFleetSize = 2 + 1 = 3
+      expect(assertFleetCapacity).toHaveBeenCalledWith(
+        expect.anything(),
+        GAME_ID,
+        PLAYER_ID,
+        3,
+      )
+    })
+  })
+
+  describe('assertMovementAllowed enforcement', () => {
+    it('Demilitarized Zone active + ship moving to elected planet → 409', async () => {
+      const lawError = new LawError('Demilitarized Zone: cannot move ships to Mecatol Rex', 409)
+      assertMovementAllowed.mockRejectedValue(lawError)
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        active_system_key: DEST_KEY,
+        ships: [{ unit_type: 'carrier', origin_system_key: ORIGIN_KEY, path: [ORIGIN_KEY, DEST_KEY], cargo: [] }],
+        destination_planets: ['Mecatol Rex'],
+      }))
+
+      expect(res.status).toBe(409)
+      const body = await res.json()
+      expect(body.error).toContain('Demilitarized Zone')
+    })
+
+    it('calls assertMovementAllowed for each destination planet', async () => {
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        active_system_key: DEST_KEY,
+        ships: [{ unit_type: 'carrier', origin_system_key: ORIGIN_KEY, path: [ORIGIN_KEY, DEST_KEY], cargo: [] }],
+        destination_planets: ['Mecatol Rex', 'Jord'],
+      }))
+
+      expect(res.status).toBe(200)
+      expect(assertMovementAllowed).toHaveBeenCalledTimes(2)
+      expect(assertMovementAllowed).toHaveBeenCalledWith(expect.anything(), GAME_ID, 'Mecatol Rex')
+      expect(assertMovementAllowed).toHaveBeenCalledWith(expect.anything(), GAME_ID, 'Jord')
+    })
+
+    it('omitting destination_planets skips assertMovementAllowed', async () => {
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        active_system_key: DEST_KEY,
+        ships: [{ unit_type: 'carrier', origin_system_key: ORIGIN_KEY, path: [ORIGIN_KEY, DEST_KEY], cargo: [] }],
+      }))
+
+      expect(res.status).toBe(200)
+      expect(assertMovementAllowed).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('no laws active — unchanged behavior', () => {
+    it('returns 200 with normal move when no laws are active', async () => {
+      assertMovementAllowed.mockResolvedValue(undefined)
+      assertFleetCapacity.mockResolvedValue(undefined)
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        active_system_key: DEST_KEY,
+        ships: [{ unit_type: 'carrier', origin_system_key: ORIGIN_KEY, path: [ORIGIN_KEY, DEST_KEY], cargo: [] }],
+      }))
+
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.moved).toBe(true)
+    })
+  })
+})
+
+describe('phase 43c — commander passives', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     requireAuth.mockResolvedValue(USER_ID)
