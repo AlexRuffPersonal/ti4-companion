@@ -3,41 +3,46 @@ import SystemInfoModal from '../../../src/components/game/SystemInfoModal'
 
 const planet = { name: 'Welfor', resources: 2, influence: 0, tech_specialty: 'blue', type: ['cultural'] }
 
+function renderModal(tileInfoOverrides = {}, onClose = vi.fn()) {
+  const tileInfo = { planets: [planet], wormholes: [], anomalies: [], ...tileInfoOverrides }
+  return render(<SystemInfoModal tileInfo={tileInfo} systemKey="3,1" onClose={onClose} />)
+}
+
 describe('SystemInfoModal', () => {
   it('renders planet name', () => {
-    render(<SystemInfoModal tileInfo={{ planets: [planet], wormholes: [], anomalies: [] }} systemKey="3,1" onClose={vi.fn()} />)
+    renderModal()
     expect(screen.getByText('Welfor')).toBeInTheDocument()
   })
 
   it('renders resources/influence', () => {
-    render(<SystemInfoModal tileInfo={{ planets: [planet], wormholes: [], anomalies: [] }} systemKey="3,1" onClose={vi.fn()} />)
+    renderModal()
     expect(screen.getByText('2/0')).toBeInTheDocument()
   })
 
   it('renders tech chip letter for tech_specialty', () => {
-    render(<SystemInfoModal tileInfo={{ planets: [planet], wormholes: [], anomalies: [] }} systemKey="3,1" onClose={vi.fn()} />)
+    renderModal()
     expect(screen.getByText('B')).toBeInTheDocument()
   })
 
   it('renders trait label in uppercase', () => {
-    render(<SystemInfoModal tileInfo={{ planets: [planet], wormholes: [], anomalies: [] }} systemKey="3,1" onClose={vi.fn()} />)
+    renderModal()
     expect(screen.getByText('cultural')).toBeInTheDocument()
   })
 
   it('renders WORMHOLES label and value', () => {
-    render(<SystemInfoModal tileInfo={{ planets: [], wormholes: ['alpha'], anomalies: [] }} systemKey="3,1" onClose={vi.fn()} />)
+    renderModal({ planets: [], wormholes: ['alpha'] })
     expect(screen.getByText('WORMHOLES')).toBeInTheDocument()
     expect(screen.getByText('alpha')).toBeInTheDocument()
   })
 
   it('renders ANOMALIES label and value', () => {
-    render(<SystemInfoModal tileInfo={{ planets: [], wormholes: [], anomalies: ['gravity_rift'] }} systemKey="3,1" onClose={vi.fn()} />)
+    renderModal({ planets: [], anomalies: ['gravity_rift'] })
     expect(screen.getByText('ANOMALIES')).toBeInTheDocument()
     expect(screen.getByText('gravity_rift')).toBeInTheDocument()
   })
 
   it('does not render WORMHOLES or ANOMALIES sections when empty', () => {
-    render(<SystemInfoModal tileInfo={{ planets: [], wormholes: [], anomalies: [] }} systemKey="3,1" onClose={vi.fn()} />)
+    renderModal({ planets: [] })
     expect(screen.queryByText('WORMHOLES')).toBeNull()
     expect(screen.queryByText('ANOMALIES')).toBeNull()
   })
@@ -59,7 +64,7 @@ describe('SystemInfoModal', () => {
 
   it('clicking CLOSE calls onClose', () => {
     const onClose = vi.fn()
-    render(<SystemInfoModal tileInfo={{ planets: [], wormholes: [], anomalies: [] }} systemKey="3,1" onClose={onClose} />)
+    renderModal({}, onClose)
     fireEvent.click(screen.getByText('CLOSE'))
     expect(onClose).toHaveBeenCalledOnce()
   })

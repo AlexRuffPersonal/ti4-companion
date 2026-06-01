@@ -9,6 +9,10 @@ vi.mock('../../../src/data/lrr-sections.json', () => ({
   ]
 }))
 
+function renderOpen(onClose = vi.fn()) {
+  return render(<RulesModal isOpen={true} onClose={onClose} />)
+}
+
 describe('RulesModal', () => {
   it('does not render when isOpen=false', () => {
     const { container } = render(<RulesModal isOpen={false} onClose={vi.fn()} />)
@@ -16,44 +20,44 @@ describe('RulesModal', () => {
   })
 
   it('renders search input when isOpen=true', () => {
-    render(<RulesModal isOpen={true} onClose={vi.fn()} />)
+    renderOpen()
     expect(screen.getByTestId('rules-search')).toBeInTheDocument()
   })
 
   it('shows all sections with empty query', () => {
-    render(<RulesModal isOpen={true} onClose={vi.fn()} />)
+    renderOpen()
     expect(screen.getByTestId('section-1')).toBeInTheDocument()
     expect(screen.getByTestId('section-2')).toBeInTheDocument()
   })
 
   it('filters sections by query (case-insensitive)', () => {
-    render(<RulesModal isOpen={true} onClose={vi.fn()} />)
+    renderOpen()
     fireEvent.change(screen.getByTestId('rules-search'), { target: { value: 'action' } })
     expect(screen.queryByTestId('section-1')).toBeNull()
     expect(screen.getByTestId('section-2')).toBeInTheDocument()
   })
 
   it('shows no-results message when query matches nothing', () => {
-    render(<RulesModal isOpen={true} onClose={vi.fn()} />)
+    renderOpen()
     fireEvent.change(screen.getByTestId('rules-search'), { target: { value: 'xyznotfound' } })
     expect(screen.getByText(/No results for/)).toBeInTheDocument()
   })
 
   it('clicking a section expands its body', () => {
-    render(<RulesModal isOpen={true} onClose={vi.fn()} />)
+    renderOpen()
     fireEvent.click(screen.getByTestId('section-1'))
     expect(screen.getByTestId('body-1')).toBeInTheDocument()
   })
 
   it('clicking same section again collapses it', () => {
-    render(<RulesModal isOpen={true} onClose={vi.fn()} />)
+    renderOpen()
     fireEvent.click(screen.getByTestId('section-1'))
     fireEvent.click(screen.getByTestId('section-1'))
     expect(screen.queryByTestId('body-1')).toBeNull()
   })
 
   it('only one section expanded at a time', () => {
-    render(<RulesModal isOpen={true} onClose={vi.fn()} />)
+    renderOpen()
     fireEvent.click(screen.getByTestId('section-1'))
     fireEvent.click(screen.getByTestId('section-2'))
     expect(screen.queryByTestId('body-1')).toBeNull()
