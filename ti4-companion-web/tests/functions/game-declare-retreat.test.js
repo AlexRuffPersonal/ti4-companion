@@ -20,10 +20,12 @@ import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-declare-retreat/index.ts'
 
-const USER_ID = 'user-uuid'
-const GAME_ID = 'game-uuid'
-const PLAYER_ID = 'player-uuid'
-const COMBAT_ID = 'combat-uuid'
+import { USER_ID, GAME_ID, PLAYER_ID, COMBAT_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { buildDbMock, nullSafeChain } from '../helpers/mockDb.js'
+
+const makeRequest = (body) => _makeRequest('game-declare-retreat', body)
+
 const DEFENDER_ID = 'defender-uuid'
 
 // System layout for BFS tests:
@@ -41,14 +43,6 @@ const MAP_TILES = {
   [ONE_HOP_DEST]: { tile_id: 'tile-b' },
   [TWO_HOP_DEST]: { tile_id: 'tile-c' },
   [THREE_HOP_DEST]: { tile_id: 'tile-d' },
-}
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-declare-retreat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
 }
 
 function makeCombat(overrides = {}) {
@@ -75,55 +69,49 @@ function mockDb({
   planetsInDest = [],
   updateError = null,
 } = {}) {
-  db.from.mockImplementation((table) => {
-    if (table === 'game_players') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn((field, value) => {
-            if (field === 'game_id') {
-              return {
-                eq: vi.fn().mockReturnValue({
-                  maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }),
-                }),
-              }
+  buildDbMock(db, {
+    game_players: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn((field, value) => {
+          if (field === 'game_id') {
+            return {
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }),
+              }),
             }
-            if (field === 'id') {
-              return {
-                maybeSingle: vi.fn().mockResolvedValue({
-                  data: { technologies: retreatingPlayerTechs },
-                  error: null,
-                }),
-              }
+          }
+          if (field === 'id') {
+            return {
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { technologies: retreatingPlayerTechs },
+                error: null,
+              }),
             }
-            return { maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }) }
-          }),
+          }
+          return { maybeSingle: vi.fn().mockResolvedValue({ data: player, error: null }) }
         }),
-      }
-    }
-    if (table === 'game_combats') {
-      return {
-        select: vi.fn().mockReturnValue({
+      }),
+    }),
+    game_combats: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: combat, error: null }),
-            }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: combat, error: null }),
           }),
         }),
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: updateError }),
+      }),
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: updateError }),
+      }),
+    }),
+    games: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: game, error: null }),
         }),
-      }
-    }
-    if (table === 'games') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: game, error: null }),
-          }),
-        }),
-      }
-    }
-    if (table === 'game_player_units') {
+      }),
+    }),
+    game_player_units: () => {
       // Build a chainable mock that tracks whether player_id eq was called
       // DET path: eq(game_id).eq(system_key).is(on_planet, null) → resolves allShipsInDest
       // Non-DET path: eq(game_id).eq(system_key).eq(player_id).is(on_planet, null).limit(1) → resolves unitsInDest
@@ -153,25 +141,18 @@ function mockDb({
           }),
         }),
       }
-    }
-    if (table === 'game_player_planets') {
-      return {
-        select: vi.fn().mockReturnValue({
+    },
+    game_player_planets: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({ data: planetsInDest, error: null }),
-              }),
+              limit: vi.fn().mockResolvedValue({ data: planetsInDest, error: null }),
             }),
           }),
         }),
-      }
-    }
-    return {
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ data: null, error: null }),
       }),
-    }
+    }),
   })
 }
 
