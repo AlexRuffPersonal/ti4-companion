@@ -38,21 +38,18 @@ import { db } from '../../../supabase/functions/_shared/db.ts'
 import { logEvent } from '../../../supabase/functions/_shared/gameEvents.ts'
 import { applyCommanderPassives } from '../../../supabase/functions/_shared/leaderEffects.ts'
 import { getHandler } from '../../../supabase/functions/_shared/abilityHandlers.ts'
+import { getActiveNotes } from '../../../supabase/functions/_shared/promissoryEnforcement.ts'
 import { handler } from '../../../supabase/functions/game-cast-votes/index.ts'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+import { nullSafeChain } from '../helpers/mockDb.js'
+
+const makeRequest = (body) => _makeRequest('game-cast-votes', body)
 
 const GAME_ID = 'game-uuid'
 const VOTER_USER_ID = 'voter-user-uuid'
 const VOTER_PLAYER_ID = 'p2'
 const AGENDA_ID = 'agenda-uuid'
 const SPEAKER_PLAYER_ID = 'p1'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-cast-votes', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 let upsertVotesMock, updateGameMock
 
@@ -85,13 +82,6 @@ function mockDb({
     }),
   })
 
-  // For the Genetic Recombination window update path we need a separate update mock
-  // that returns { error } directly (no chained .eq needed beyond the id).
-  // We reuse updateGameMock but route by what arg is passed — the same mock works
-  // because the window update is: .update({pending_action_window:...}).eq('id', ...) → awaited
-  // while the voter advance is: .update({agenda_vote_current_player_id:...}).eq(...).eq(...) → awaited
-  // Both are handled by the same updateGameMock chain structure.
-
   db.from.mockImplementation((table) => {
     if (table === 'games') return {
       select: vi.fn().mockReturnValue({
@@ -101,11 +91,9 @@ function mockDb({
       }),
       update: (payload) => {
         updateGameMock(payload)
-        // Window update: pending_action_window — only one .eq() then awaited
         if (payload && payload.pending_action_window !== undefined) {
           return { eq: vi.fn().mockResolvedValue({ error: updateWindowError ?? null }) }
         }
-        // Voter advance: two .eq() then awaited
         return {
           eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockResolvedValue({ error: updateGameError }),
@@ -114,14 +102,9 @@ function mockDb({
       },
     }
     if (table === 'game_players') {
-      // The select string determines which query path we're in:
-      // 1. 'id, technologies, ...trade_goods, vote_prevented, faction, leaders' → caller lookup
-      // 2. 'id, technologies, exhausted_technologies' → opponents lookup (.eq game_id, awaitable)
-      // 3. 'id' → all-players count (.eq game_id, awaitable)
       return {
         select: vi.fn().mockImplementation((selectStr) => {
           if (selectStr === 'id, technologies, exhausted_technologies, trade_goods, vote_prevented, faction, leaders') {
-            // Caller lookup: chainable with .eq('user_id') then .maybeSingle()
             return {
               eq: vi.fn().mockReturnValue({
                 eq: vi.fn().mockReturnValue({
@@ -131,12 +114,10 @@ function mockDb({
             }
           }
           if (selectStr === 'id, technologies, exhausted_technologies') {
-            // Opponents lookup: awaitable directly after .eq('game_id')
             return {
               eq: vi.fn().mockResolvedValue({ data: allPlayers, error: null }),
             }
           }
-          // 'id' — all-players-voted count: awaitable directly after .eq('game_id')
           return {
             eq: vi.fn().mockResolvedValue({ data: allPlayers, error: null }),
           }
@@ -153,7 +134,6 @@ function mockDb({
     if (table === 'game_agenda_votes') return {
       upsert: upsertVotesMock,
       select: vi.fn().mockImplementation((_, opts) => {
-        // count query (head: true) vs normal select
         if (opts && opts.head) {
           return {
             eq: vi.fn().mockReturnValue({
@@ -169,10 +149,6 @@ function mockDb({
       }),
     }
     if (table === 'game_action_card_deck') {
-      // Return different card sets depending on which timing filter is applied
-      // We simulate by tracking calls; simpler: use a single mock that returns
-      // combined cards and let callers filter — but since the real query filters
-      // server-side, we need to differentiate. We use a closure variable pattern:
       return {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
@@ -188,6 +164,7 @@ function mockDb({
         }),
       }
     }
+    return nullSafeChain()
   })
 }
 
@@ -542,5 +519,153 @@ describe('game-cast-votes Phase 43c — Hacan commander: trade goods to votes', 
       expect.objectContaining({ vote_count: 9 }),
       expect.anything(),
     )
+  })
+})
+
+describe('phase 39b — Blood Pact promissory note', () => {
+  const HOLDER_ID = 'p2'
+  const OWNER_ID = 'p3'
+  const NOTE_INSTANCE_ID = 'note-uuid'
+
+  const EMPTY_NOTES = {
+    supportForThrone: [], alliance: [], tradeConvoys: [], promiseOfProtection: [],
+    bloodPact: [], darkPact: [], stymie: [], antivirus: [], giftOfPrescience: [],
+    tradeAgreement: [], crucible: [], strikeWingAmbuscade: [],
+  }
+
+  const BLOOD_PACT_NOTE = { instanceId: NOTE_INSTANCE_ID, holderPlayerId: HOLDER_ID, ownerPlayerId: OWNER_ID }
+
+  let updateVotesMock
+
+  function mockDb39b({ otherPlayerVote = null } = {}) {
+    updateVotesMock = vi.fn()
+
+    db.from.mockImplementation((table) => {
+      if (table === 'games') return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: {
+                id: GAME_ID,
+                speaker_player_id: SPEAKER_PLAYER_ID,
+                agenda_current_card_id: AGENDA_ID,
+                agenda_vote_current_player_id: HOLDER_ID,
+              },
+              error: null,
+            }),
+          }),
+        }),
+        update: (payload) => {
+          if (payload && payload.pending_action_window !== undefined) {
+            return { eq: vi.fn().mockResolvedValue({ error: null }) }
+          }
+          return { eq: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }) }
+        },
+      }
+      if (table === 'game_players') return {
+        select: vi.fn().mockImplementation((selectStr) => {
+          if (selectStr.includes('vote_prevented')) {
+            return {
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({
+                    data: { id: HOLDER_ID, technologies: [], exhausted_technologies: [], trade_goods: 0, vote_prevented: false, faction: 'The Barony of Letnev', leaders: null },
+                    error: null,
+                  }),
+                }),
+              }),
+            }
+          }
+          if (selectStr === 'id, technologies, exhausted_technologies') {
+            return { eq: vi.fn().mockResolvedValue({ data: [{ id: SPEAKER_PLAYER_ID, technologies: [], exhausted_technologies: [] }, { id: HOLDER_ID, technologies: [], exhausted_technologies: [] }, { id: OWNER_ID, technologies: [], exhausted_technologies: [] }], error: null }) }
+          }
+          return { eq: vi.fn().mockResolvedValue({ data: [{ id: SPEAKER_PLAYER_ID }, { id: HOLDER_ID }, { id: OWNER_ID }], error: null }) }
+        }),
+      }
+      if (table === 'game_player_planets') return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: [{ exhausted: false, influence: 5 }], error: null }),
+          }),
+        }),
+      }
+      if (table === 'game_agenda_votes') return {
+        upsert: vi.fn().mockResolvedValue({ error: null }),
+        update: (payload) => {
+          updateVotesMock(payload)
+          return {
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockResolvedValue({ error: null }),
+              }),
+            }),
+          }
+        },
+        select: vi.fn().mockImplementation((selectStr, opts) => {
+          if (opts && opts.head) {
+            return { eq: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ count: 1, error: null }) }) }
+          }
+          if (selectStr === 'choice') {
+            return {
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({ data: otherPlayerVote, error: null }),
+                  }),
+                }),
+              }),
+            }
+          }
+          return {
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ data: [{ game_player_id: HOLDER_ID }], error: null }),
+            }),
+          }
+        }),
+      }
+      if (table === 'game_action_card_deck') return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                not: vi.fn().mockResolvedValue({ data: [], error: null }),
+              }),
+            }),
+          }),
+        }),
+      }
+      return nullSafeChain()
+    })
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    applyCommanderPassives.mockResolvedValue({ inlineEffects: [], pendingWindows: [] })
+    getHandler.mockReturnValue(vi.fn().mockResolvedValue(undefined))
+    requireAuth.mockResolvedValue(VOTER_USER_ID)
+  })
+
+  it('Blood Pact in_play, holder and owner vote same outcome → +4 votes for holder', async () => {
+    getActiveNotes.mockResolvedValue({ ...EMPTY_NOTES, bloodPact: [BLOOD_PACT_NOTE] })
+    mockDb39b({ otherPlayerVote: { choice: 'For' } })
+    const res = await handler(makeRequest({ game_id: GAME_ID, choice: 'For', vote_count: 2 }))
+    expect(res.status).toBe(200)
+    expect(updateVotesMock).toHaveBeenCalledWith({ vote_count: 6 })
+  })
+
+  it('Blood Pact in_play, holder and owner vote different outcomes → no bonus', async () => {
+    getActiveNotes.mockResolvedValue({ ...EMPTY_NOTES, bloodPact: [BLOOD_PACT_NOTE] })
+    mockDb39b({ otherPlayerVote: { choice: 'Against' } })
+    const res = await handler(makeRequest({ game_id: GAME_ID, choice: 'For', vote_count: 2 }))
+    expect(res.status).toBe(200)
+    expect(updateVotesMock).not.toHaveBeenCalled()
+  })
+
+  it('Blood Pact not in_play → no bonus', async () => {
+    getActiveNotes.mockResolvedValue({ ...EMPTY_NOTES, bloodPact: [] })
+    mockDb39b({ otherPlayerVote: { choice: 'For' } })
+    const res = await handler(makeRequest({ game_id: GAME_ID, choice: 'For', vote_count: 2 }))
+    expect(res.status).toBe(200)
+    expect(updateVotesMock).not.toHaveBeenCalled()
   })
 })
