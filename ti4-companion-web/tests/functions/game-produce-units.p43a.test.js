@@ -26,6 +26,12 @@ vi.mock('../../../supabase/functions/_shared/lawEffects.ts', () => ({
   },
 }))
 
+vi.mock('../../../supabase/functions/_shared/promissoryEnforcement.ts', () => ({
+  getActiveNotes: vi.fn().mockResolvedValue({ supportForThrone: [], alliance: [], tradeConvoys: [], promiseOfProtection: [], bloodPact: [], darkPact: [], stymie: [], antivirus: [], giftOfPrescience: [], tradeAgreement: [], crucible: [], strikeWingAmbuscade: [] }),
+  getHeldNotes: vi.fn().mockResolvedValue([]),
+  returnNote: vi.fn().mockResolvedValue(undefined),
+}))
+
 import { requireAuth } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { applyCommanderPassives } from '../../../supabase/functions/_shared/leaderEffects.ts'

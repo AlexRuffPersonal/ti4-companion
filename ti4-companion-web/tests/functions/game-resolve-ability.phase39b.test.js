@@ -25,7 +25,7 @@ vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
 }))
 
 vi.mock('../../../supabase/functions/_shared/promissoryEnforcement.ts', () => ({
-  getActiveNotes: vi.fn().mockResolvedValue({ alliance: [], ceasefire: [], greyfire: [], crucible: [], promiseOfProtection: [], antivirus: [], darkPact: [], tradeConvoys: [] }),
+  getActiveNotes: vi.fn().mockResolvedValue({ supportForThrone: [], alliance: [], tradeConvoys: [], promiseOfProtection: [], bloodPact: [], darkPact: [], stymie: [], antivirus: [], giftOfPrescience: [], tradeAgreement: [], crucible: [], strikeWingAmbuscade: [] }),
 }))
 
 vi.mock('../../../supabase/functions/_shared/leaderEffects.ts', () => ({
@@ -104,8 +104,9 @@ describe('game-resolve-ability Phase 39b — promissory note enforcement', () =>
     vi.clearAllMocks()
     requireAuth.mockResolvedValue(USER_ID)
     vi.mocked(getActiveNotes).mockResolvedValue({
-      alliance: [], ceasefire: [], greyfire: [], crucible: [],
-      promiseOfProtection: [], antivirus: [], darkPact: [], tradeConvoys: [],
+      supportForThrone: [], alliance: [], tradeConvoys: [], promiseOfProtection: [],
+      bloodPact: [], darkPact: [], stymie: [], antivirus: [], giftOfPrescience: [],
+      tradeAgreement: [], crucible: [], strikeWingAmbuscade: [],
     })
   })
 
@@ -120,7 +121,7 @@ describe('game-resolve-ability Phase 39b — promissory note enforcement', () =>
     vi.mocked(getActiveNotes).mockResolvedValue({
       alliance: [], ceasefire: [], greyfire: [], crucible: [],
       promiseOfProtection: [{ ownerPlayerId: PLAYER_ID, holderPlayerId: TARGET_ID }],
-      antivirus: [], darkPact: [], tradeConvoys: [],
+      antivirus: [], bloodPact: [], darkPact: [], stymie: [], giftOfPrescience: [], tradeAgreement: [], strikeWingAmbuscade: [],
     })
 
     const res = await handler(makeRequest({ selections: { chosen_player: TARGET_ID } }))
@@ -134,7 +135,7 @@ describe('game-resolve-ability Phase 39b — promissory note enforcement', () =>
     vi.mocked(getActiveNotes).mockResolvedValue({
       alliance: [], ceasefire: [], greyfire: [], crucible: [],
       promiseOfProtection: [{ ownerPlayerId: PLAYER_ID, holderPlayerId: 'some-other-player' }],
-      antivirus: [], darkPact: [], tradeConvoys: [],
+      antivirus: [], bloodPact: [], darkPact: [], stymie: [], giftOfPrescience: [], tradeAgreement: [], strikeWingAmbuscade: [],
     })
 
     const res = await handler(makeRequest({ selections: { chosen_player: TARGET_ID } }))
@@ -147,7 +148,7 @@ describe('game-resolve-ability Phase 39b — promissory note enforcement', () =>
       alliance: [], ceasefire: [], greyfire: [], crucible: [],
       promiseOfProtection: [],
       antivirus: [{ ownerPlayerId: PLAYER_ID, holderPlayerId: TARGET_ID }],
-      darkPact: [], tradeConvoys: [],
+      bloodPact: [], darkPact: [], stymie: [], giftOfPrescience: [], tradeAgreement: [], strikeWingAmbuscade: [],
     })
 
     const res = await handler(makeRequest({ selections: { chosen_player: TARGET_ID } }))
@@ -162,7 +163,7 @@ describe('game-resolve-ability Phase 39b — promissory note enforcement', () =>
       alliance: [], ceasefire: [], greyfire: [], crucible: [],
       promiseOfProtection: [],
       antivirus: [{ ownerPlayerId: PLAYER_ID, holderPlayerId: 'some-other-player' }],
-      darkPact: [], tradeConvoys: [],
+      bloodPact: [], darkPact: [], stymie: [], giftOfPrescience: [], tradeAgreement: [], strikeWingAmbuscade: [],
     })
 
     const res = await handler(makeRequest({ selections: { chosen_player: TARGET_ID } }))
@@ -173,8 +174,9 @@ describe('game-resolve-ability Phase 39b — promissory note enforcement', () =>
     setupDefaultDb({ ability_key: 'use_commander' })
     vi.mocked(getActiveNotes).mockResolvedValue({
       alliance: [{ ownerPlayerId: OWNER_ID, holderPlayerId: PLAYER_ID }],
-      ceasefire: [], greyfire: [], crucible: [],
-      promiseOfProtection: [], antivirus: [], darkPact: [], tradeConvoys: [],
+      supportForThrone: [], tradeConvoys: [], promiseOfProtection: [],
+      bloodPact: [], darkPact: [], stymie: [], antivirus: [], giftOfPrescience: [],
+      tradeAgreement: [], crucible: [], strikeWingAmbuscade: [],
     })
 
     db.from.mockImplementation((table) => {

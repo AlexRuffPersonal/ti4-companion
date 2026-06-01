@@ -25,7 +25,7 @@ vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
 }))
 
 vi.mock('../../../supabase/functions/_shared/promissoryEnforcement.ts', () => ({
-  getActiveNotes: vi.fn().mockResolvedValue({ alliance: [], ceasefire: [], greyfire: [], crucible: [], promiseOfProtection: [], antivirus: [], darkPact: [], tradeConvoys: [] }),
+  getActiveNotes: vi.fn().mockResolvedValue({ supportForThrone: [], alliance: [], tradeConvoys: [], promiseOfProtection: [], bloodPact: [], darkPact: [], stymie: [], antivirus: [], giftOfPrescience: [], tradeAgreement: [], crucible: [], strikeWingAmbuscade: [] }),
 }))
 
 vi.mock('../../../supabase/functions/_shared/leaderEffects.ts', () => ({
