@@ -65,56 +65,21 @@ function setupHappyPath({
   const insertMock = vi.fn().mockReturnValue({
     select: vi.fn().mockResolvedValue({ data: [{ id: 'activation-uuid' }], error: insertError }),
   })
-  db.from.mockImplementation((table) => {
-    if (table === 'game_players') {
-      return {
-        select: vi.fn().mockReturnValue({
+  buildDbMock(db, {
+    game_players: () => eqEqSingle(player, playerError),
+    games: () => eqSingle(game, gameError),
+    game_system_activations: () => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: player, error: playerError }),
-            }),
+            eq: vi.fn().mockResolvedValue({ data: activations, error: activationError }),
           }),
         }),
-      }
-    }
-    if (table === 'games') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: game, error: gameError }),
-          }),
-        }),
-      }
-    }
-    if (table === 'game_system_activations') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ data: activations, error: activationError }),
-            }),
-          }),
-        }),
-        insert: insertMock,
-      }
-    }
-    if (table === 'tiles') {
-      return {
-        select: vi.fn().mockReturnValue({
-          in: vi.fn().mockResolvedValue({ data: [], error: null }),
-        }),
-      }
-    }
-    if (table === 'game_player_units') {
-      // Single broad fetch: .eq('game_id').is('on_planet', null) — no enemy units in base tests
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            is: vi.fn().mockResolvedValue({ data: [], error: null }),
-          }),
-        }),
-      }
-    }
+      }),
+      insert: insertMock,
+    }),
+    tiles: () => inMany([]),
+    game_player_units: () => eqIs([]),
   })
   return { insertMock }
 }
