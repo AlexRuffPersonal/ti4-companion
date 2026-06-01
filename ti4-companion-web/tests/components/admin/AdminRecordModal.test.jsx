@@ -18,12 +18,11 @@ vi.mock('../../../src/lib/importSchemas.js', () => ({
   },
 }))
 
-// Mock updateRecord
-const mockUpdateRecord = vi.fn()
-vi.mock('../../../src/lib/edgeFunctions.js', () => ({
-  updateRecord: (...args) => mockUpdateRecord(...args),
-}))
+import { edgeFunctionStubs } from '../../helpers/edgeFunctionMocks.js'
 
+vi.mock('../../../src/lib/edgeFunctions.js', () => ({ ...edgeFunctionStubs }))
+
+import { updateRecord as mockUpdateRecord } from '../../../src/lib/edgeFunctions.js'
 import AdminRecordModal from '../../../src/components/admin/AdminRecordModal.jsx'
 
 const BASE_RECORD = {
