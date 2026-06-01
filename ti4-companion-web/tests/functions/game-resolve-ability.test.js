@@ -23,6 +23,10 @@ vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
   EVT_RESOLVE_ABILITY: 'resolve_ability',
 }))
 
+vi.mock('../../../supabase/functions/_shared/promissoryEnforcement.ts', () => ({
+  getActiveNotes: vi.fn().mockResolvedValue({ alliance: [], ceasefire: [], greyfire: [], crucible: [], promiseOfProtection: [], antivirus: [], darkPact: [], tradeConvoys: [] }),
+}))
+
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { interpretEffects } from '../../../supabase/functions/_shared/abilityDsl.ts'
@@ -245,12 +249,22 @@ describe('game-resolve-ability', () => {
             }),
           }
         }
+        if (table === 'leaders') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: { id: LEADER_SOURCE_ID, faction: 'Test Faction', leader_type: 'hero' }, error: null }),
+              }),
+            }),
+          }
+        }
         return {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+              maybeSingle: vi.fn().mockResolvedValue({ data: { leaders: { hero: 'unlocked' } }, error: null }),
             }),
           }),
+          update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
         }
       })
 

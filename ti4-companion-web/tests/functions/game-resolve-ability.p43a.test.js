@@ -24,6 +24,10 @@ vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
   EVT_RESOLVE_ABILITY: 'resolve_ability',
 }))
 
+vi.mock('../../../supabase/functions/_shared/promissoryEnforcement.ts', () => ({
+  getActiveNotes: vi.fn().mockResolvedValue({ alliance: [], ceasefire: [], greyfire: [], crucible: [], promiseOfProtection: [], antivirus: [], darkPact: [], tradeConvoys: [] }),
+}))
+
 vi.mock('../../../supabase/functions/_shared/leaderEffects.ts', () => ({
   AGENT_ABILITIES: {
     'The Titans Of Ul': [{ op: 'cancel_hit', target: 'either' }],

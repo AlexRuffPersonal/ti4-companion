@@ -21,6 +21,10 @@ vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
   EVT_RESOLVE_ABILITY: 'resolve_ability',
 }))
 
+vi.mock('../../../supabase/functions/_shared/promissoryEnforcement.ts', () => ({
+  getActiveNotes: vi.fn().mockResolvedValue({ alliance: [], ceasefire: [], greyfire: [], crucible: [], promiseOfProtection: [], antivirus: [], darkPact: [], tradeConvoys: [] }),
+}))
+
 import { requireAuth } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { handler } from '../../../supabase/functions/game-resolve-ability/index.ts'

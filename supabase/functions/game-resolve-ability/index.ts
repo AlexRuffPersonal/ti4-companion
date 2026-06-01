@@ -5,6 +5,7 @@ import { interpretEffects, ResolveContext } from '../_shared/abilityDsl.ts'
 import { getHandler } from '../_shared/abilityHandlers.ts'
 import { logEvent, EVT_RESOLVE_ABILITY } from '../_shared/gameEvents.ts'
 import { AGENT_ABILITIES, HERO_ABILITIES, AGENT_REACTIVE_TRIGGERS } from '../_shared/leaderEffects.ts'
+import { getActiveNotes } from '../_shared/promissoryEnforcement.ts'
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return corsPreflightResponse()
@@ -94,6 +95,50 @@ export async function handler(req: Request): Promise<Response> {
       .maybeSingle()
     if (sourceError) return errorResponse('Database error', 500)
     if (!source) return errorResponse('Ability source not found', 404)
+  }
+
+  // 3b. Phase 39b — Promissory Note enforcement
+  const activeNotes = await getActiveNotes(body.game_id, db)
+  const ab_key = (ability as Record<string, unknown>).ability_key as string | undefined
+  const activatingPlayerId = (player as Record<string, string>).id
+  const targetPlayerId = ((body.selections ?? {}) as Record<string, unknown>).chosen_player as string | undefined
+
+  // Alliance (Model B, in_play): if ability_key = 'use_commander' and activating player is the holder,
+  // allow them to use the owner's commander by substituting the owner's faction into the context.
+  let allianceOwnerFaction: string | undefined
+  if (ab_key === 'use_commander') {
+    for (const note of activeNotes.alliance) {
+      if (note.holderPlayerId === activatingPlayerId) {
+        // Fetch the owner's faction so the commander ability resolves for the owner's faction
+        const { data: ownerPlayer } = await db
+          .from('game_players')
+          .select('faction')
+          .eq('id', note.ownerPlayerId)
+          .maybeSingle()
+        if (ownerPlayer) {
+          allianceOwnerFaction = (ownerPlayer as Record<string, string>).faction
+        }
+        break
+      }
+    }
+  }
+
+  // Promise of Protection (Model B, in_play): block Mentak pillage on holder
+  if (ab_key === 'pillage' && targetPlayerId) {
+    for (const note of activeNotes.promiseOfProtection) {
+      if (note.ownerPlayerId === activatingPlayerId && note.holderPlayerId === targetPlayerId) {
+        return errorResponse('Promise of Protection blocks Pillage', 409)
+      }
+    }
+  }
+
+  // Antivirus (Model B, in_play): block Nekro Technological Singularity on holder
+  if (ab_key === 'technological_singularity' && targetPlayerId) {
+    for (const note of activeNotes.antivirus) {
+      if (note.ownerPlayerId === activatingPlayerId && note.holderPlayerId === targetPlayerId) {
+        return errorResponse('Antivirus blocks Technological Singularity', 409)
+      }
+    }
   }
 
   // 4. Build resolution context
