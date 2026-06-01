@@ -20,37 +20,41 @@ vi.mock('../../../supabase/functions/_shared/gameEvents.ts', () => ({
   EVT_ASSIGN_HITS: 'assign_hits',
 }))
 
-vi.mock('../../../supabase/functions/_shared/leaderEffects.ts', () => ({
-  applyCommanderPassives: vi.fn().mockResolvedValue({ inlineEffects: [], pendingWindows: [] }),
-  collectReactiveAgents: vi.fn().mockReturnValue([]),
-}))
+vi.mock('../../../supabase/functions/_shared/leaderEffects.ts', async (importActual) => {
+  const actual = await importActual()
+  return {
+    ...actual,
+    applyCommanderPassives: vi.fn().mockResolvedValue({ inlineEffects: [], pendingWindows: [] }),
+  }
+})
 
 vi.mock('../../../supabase/functions/_shared/lawEffects.ts', () => ({
   assertCombatHitAllowed: vi.fn().mockResolvedValue(undefined),
   checkVpMaintenanceLaws: vi.fn().mockResolvedValue(undefined),
-  LawError: class LawError extends Error { constructor(msg) { super(msg); this.name = 'LawError' } },
+  LawError: class LawError extends Error {
+    constructor(message, status = 409) {
+      super(message)
+      this.name = 'LawError'
+      this.status = status
+    }
+  },
 }))
 
 import { requireAuth, AuthError } from '../../../supabase/functions/_shared/auth.ts'
 import { db } from '../../../supabase/functions/_shared/db.ts'
 import { checkAndEliminate } from '../../../supabase/functions/_shared/eliminationHandler.ts'
 import { applyCommanderPassives } from '../../../supabase/functions/_shared/leaderEffects.ts'
+import { assertCombatHitAllowed, checkVpMaintenanceLaws, LawError } from '../../../supabase/functions/_shared/lawEffects.ts'
 import { handler } from '../../../supabase/functions/game-assign-hits/index.ts'
 
-const USER_ID = 'user-uuid'
-const GAME_ID = 'game-uuid'
+import { USER_ID, GAME_ID } from '../helpers/constants.js'
+import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
+const makeRequest = (body) => _makeRequest('game-assign-hits', body)
+
 const PLAYER_ID = 'player-uuid'
 const ATTACKER_ID = 'attacker-uuid'
 const DEFENDER_ID = 'defender-uuid'
 const COMBAT_ID = 'combat-uuid'
-
-function makeRequest(body) {
-  return new Request('http://localhost/game-assign-hits', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-    body: JSON.stringify(body),
-  })
-}
 
 const BASE_COMBAT = {
   id: COMBAT_ID,
@@ -78,7 +82,7 @@ function mockDb({
   atkUnitsLeft = [{ id: 'u2' }],
   defUnitsLeft = [{ id: 'u1' }],
   updateError = null,
-  onGameCombatsUpdate = null, // callback when game_combats.update is called
+  onGameCombatsUpdate = null,
   allPlayers = [],
 } = {}) {
   let queryCount = 0
@@ -87,12 +91,10 @@ function mockDb({
       return {
         select: vi.fn().mockImplementation((fields) => {
           if (fields === 'id, faction, leaders') {
-            // allPlayers query: .eq('game_id', ...) → resolves array
             return {
               eq: vi.fn().mockResolvedValue({ data: allPlayers }),
             }
           }
-          // Player lookup: .eq('game_id').eq('user_id').maybeSingle()
           return {
             eq: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
@@ -131,7 +133,6 @@ function mockDb({
       return {
         select: vi.fn().mockImplementation((fields) => {
           if (fields === 'id') {
-            // unit count queries for atkUnitsLeft / defUnitsLeft
             const isFirstQuery = queryCount === 0
             queryCount++
             const resultData = isFirstQuery ? atkUnitsLeft : defUnitsLeft
@@ -140,7 +141,6 @@ function mockDb({
             chainable.is = vi.fn().mockResolvedValue({ data: resultData })
             return chainable
           }
-          // assignee units query (fields includes more columns)
           const chainable = {}
           chainable.eq = vi.fn().mockReturnValue(chainable)
           chainable.is = vi.fn().mockResolvedValue({ data: assigneeUnits })
@@ -163,6 +163,15 @@ function mockDb({
         }),
       }
     }
+    if (table === 'game_laws') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        }),
+      }
+    }
     if (table === 'game_system_tokens') {
       return {
         insert: vi.fn().mockResolvedValue({ error: null }),
@@ -176,6 +185,8 @@ beforeEach(() => {
   checkAndEliminate.mockResolvedValue([])
   mockDb()
   requireAuth.mockResolvedValue(USER_ID)
+  assertCombatHitAllowed.mockResolvedValue(undefined)
+  checkVpMaintenanceLaws.mockResolvedValue(undefined)
 })
 
 describe('game-assign-hits', () => {
@@ -321,7 +332,6 @@ describe('game-assign-hits', () => {
       casualties: [{ unit_type: 'fighter', player_unit_id: 'u_atk', action: 'destroy' }, { unit_type: 'fighter', player_unit_id: 'u_atk', action: 'destroy' }],
     }))
     expect(res.status).toBe(200)
-    // Verify game_combats update was called with ships_destroyed
     expect(shipUpdateCalls.length).toBeGreaterThan(0)
     expect(shipUpdateCalls[0].ships_destroyed).toEqual({
       attacker: { fighter: 2 },
@@ -356,7 +366,6 @@ describe('game-assign-hits', () => {
       casualties: [{ unit_type: 'cruiser', player_unit_id: 'u1', action: 'destroy' }],
     }))
     expect(res.status).toBe(200)
-    // Verify game_combats update was called with ships_destroyed
     expect(shipUpdateCalls.length).toBeGreaterThan(0)
     expect(shipUpdateCalls[0].ships_destroyed).toEqual({
       attacker: {},
@@ -383,10 +392,141 @@ describe('game-assign-hits', () => {
       casualties: [{ unit_type: 'fighter', player_unit_id: 'u1', action: 'sustain' }],
     }))
     expect(res.status).toBe(200)
-    // Verify game_combats update was NOT called with ships_destroyed
     const updateCalls = db.from('game_combats').update.mock.calls
     const shipUpdateCall = updateCalls.find(call => call[0]?.ships_destroyed)
     expect(shipUpdateCall).toBeUndefined()
+  })
+})
+
+describe('game-assign-hits Phase 43a — Titans agent', () => {
+  const TITANS_PLAYER_ID = 'titans-player-uuid'
+
+  const ALL_PLAYERS_WITH_TITANS = [
+    { id: DEFENDER_ID, faction: 'The Barony Of Letnev', leaders: null },
+    { id: ATTACKER_ID, faction: 'The Federation Of Sol', leaders: null },
+    { id: TITANS_PLAYER_ID, faction: 'The Titans Of Ul', leaders: { agent: 'unlocked' } },
+  ]
+
+  const ALL_PLAYERS_NO_TITANS = [
+    { id: DEFENDER_ID, faction: 'The Barony Of Letnev', leaders: null },
+    { id: ATTACKER_ID, faction: 'The Federation Of Sol', leaders: null },
+  ]
+
+  describe('reactive agent on sustain damage', () => {
+    it('includes pending_windows with reactive_agent for Titans when sustain damage occurs (defender_assign)', async () => {
+      mockDb({
+        player: { id: DEFENDER_ID },
+        combat: { ...BASE_COMBAT, phase: 'defender_assign', attacker_hits: 1, defender_hits: 0 },
+        unitDefs: [{ name: 'fighter', sustain_damage: true }],
+        assigneeUnits: [{ id: 'u1', player_id: DEFENDER_ID, unit_type: 'fighter', count: 2, damaged: false, system_key: '1,-1' }],
+        allPlayers: ALL_PLAYERS_WITH_TITANS,
+      })
+      const res = await handler(makeRequest({
+        game_id: GAME_ID, combat_id: COMBAT_ID,
+        casualties: [{ unit_type: 'fighter', player_unit_id: 'u1', action: 'sustain' }],
+      }))
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.pending_windows).toBeDefined()
+      expect(body.pending_windows.length).toBeGreaterThan(0)
+      const titansWindow = body.pending_windows.find(w => w.faction === 'The Titans Of Ul')
+      expect(titansWindow).toBeDefined()
+      expect(titansWindow.type).toBe('reactive_agent')
+      expect(titansWindow.player_id).toBe(TITANS_PLAYER_ID)
+    })
+
+    it('does not include pending_windows when no sustain damage occurs', async () => {
+      mockDb({
+        player: { id: DEFENDER_ID },
+        combat: { ...BASE_COMBAT, phase: 'defender_assign', attacker_hits: 1, defender_hits: 0 },
+        unitDefs: [{ name: 'cruiser', sustain_damage: false }],
+        assigneeUnits: [{ id: 'u1', player_id: DEFENDER_ID, unit_type: 'cruiser', count: 2, damaged: false, system_key: '1,-1' }],
+        allPlayers: ALL_PLAYERS_WITH_TITANS,
+      })
+      const res = await handler(makeRequest({
+        game_id: GAME_ID, combat_id: COMBAT_ID,
+        casualties: [{ unit_type: 'cruiser', player_unit_id: 'u1', action: 'destroy' }],
+      }))
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.pending_windows).toBeUndefined()
+    })
+
+    it('does not include Titans in pending_windows when Titans agent is not unlocked', async () => {
+      mockDb({
+        player: { id: DEFENDER_ID },
+        combat: { ...BASE_COMBAT, phase: 'defender_assign', attacker_hits: 1, defender_hits: 0 },
+        unitDefs: [{ name: 'fighter', sustain_damage: true }],
+        assigneeUnits: [{ id: 'u1', player_id: DEFENDER_ID, unit_type: 'fighter', count: 2, damaged: false, system_key: '1,-1' }],
+        allPlayers: [
+          { id: DEFENDER_ID, faction: 'The Barony Of Letnev', leaders: null },
+          { id: TITANS_PLAYER_ID, faction: 'The Titans Of Ul', leaders: { agent: 'locked' } },
+        ],
+      })
+      const res = await handler(makeRequest({
+        game_id: GAME_ID, combat_id: COMBAT_ID,
+        casualties: [{ unit_type: 'fighter', player_unit_id: 'u1', action: 'sustain' }],
+      }))
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.pending_windows).toBeUndefined()
+    })
+
+    it('does not include the acting player in reactive agent windows even if eligible', async () => {
+      // DEFENDER_ID is acting, assign the Titans faction to them
+      mockDb({
+        player: { id: DEFENDER_ID },
+        combat: { ...BASE_COMBAT, phase: 'defender_assign', attacker_hits: 1, defender_hits: 0 },
+        unitDefs: [{ name: 'fighter', sustain_damage: true }],
+        assigneeUnits: [{ id: 'u1', player_id: DEFENDER_ID, unit_type: 'fighter', count: 2, damaged: false, system_key: '1,-1' }],
+        allPlayers: [
+          // DEFENDER_ID IS The Titans Of Ul with unlocked agent — should be excluded
+          { id: DEFENDER_ID, faction: 'The Titans Of Ul', leaders: { agent: 'unlocked' } },
+        ],
+      })
+      const res = await handler(makeRequest({
+        game_id: GAME_ID, combat_id: COMBAT_ID,
+        casualties: [{ unit_type: 'fighter', player_unit_id: 'u1', action: 'sustain' }],
+      }))
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.pending_windows).toBeUndefined()
+    })
+
+    it('includes GROUND_COMBAT_START reactive agents when body.phase is ground_combat_start', async () => {
+      const gcPlayers = [
+        { id: ATTACKER_ID, faction: 'The Titans Of Ul', leaders: null },
+        { id: DEFENDER_ID, faction: 'The Barony Of Letnev', leaders: { agent: 'unlocked' } },
+        { id: TITANS_PLAYER_ID, faction: 'The Federation Of Sol', leaders: { agent: 'unlocked' } },
+      ]
+      mockDb({
+        player: { id: ATTACKER_ID },
+        combat: {
+          ...BASE_COMBAT,
+          phase: 'attacker_assign',
+          attacker_hits: 0,
+          defender_hits: 0,
+          retreat_declared_by: null,
+        },
+        unitDefs: [{ name: 'cruiser', sustain_damage: false }],
+        assigneeUnits: [],
+        atkUnitsLeft: [{ id: 'u1' }],
+        defUnitsLeft: [{ id: 'u2' }],
+        allPlayers: gcPlayers,
+      })
+      const res = await handler(makeRequest({
+        game_id: GAME_ID, combat_id: COMBAT_ID,
+        casualties: [],
+        phase: 'ground_combat_start',
+      }))
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.pending_windows).toBeDefined()
+      expect(body.pending_windows.length).toBe(2)
+      const factions = body.pending_windows.map(w => w.faction)
+      expect(factions).toContain('The Barony Of Letnev')
+      expect(factions).toContain('The Federation Of Sol')
+    })
   })
 })
 
@@ -394,6 +534,8 @@ describe('game-assign-hits Phase 43c — Letnev commander: TG on sustain', () =>
   beforeEach(() => {
     vi.clearAllMocks()
     applyCommanderPassives.mockResolvedValue({ inlineEffects: [], pendingWindows: [] })
+    assertCombatHitAllowed.mockResolvedValue(undefined)
+    checkVpMaintenanceLaws.mockResolvedValue(undefined)
     requireAuth.mockResolvedValue(USER_ID)
   })
 
@@ -455,6 +597,8 @@ describe('game-assign-hits Phase 43c — Naaz-Rokha commander: explore on planet
   beforeEach(() => {
     vi.clearAllMocks()
     applyCommanderPassives.mockResolvedValue({ inlineEffects: [], pendingWindows: [] })
+    assertCombatHitAllowed.mockResolvedValue(undefined)
+    checkVpMaintenanceLaws.mockResolvedValue(undefined)
     requireAuth.mockResolvedValue(USER_ID)
   })
 
@@ -473,7 +617,6 @@ describe('game-assign-hits Phase 43c — Naaz-Rokha commander: explore on planet
       return { inlineEffects: [], pendingWindows: [] }
     })
 
-    // attacker_assign: hitsToAssign = combat.defender_hits = 0; send empty casualties
     mockDb({
       player: { id: ATTACKER_ID },
       combat: {
@@ -502,5 +645,197 @@ describe('game-assign-hits Phase 43c — Naaz-Rokha commander: explore on planet
     expect(body.pending_window.faction).toBe('The Naaz-Rokha Alliance')
     expect(body.pending_window.trigger).toBe('PLANET_CONTROL_GAINED')
     expect(applyCommanderPassives).toHaveBeenCalledWith('PLANET_CONTROL_GAINED', expect.objectContaining({ gameId: GAME_ID, planetName: 'mecatol_rex' }), expect.anything())
+  })
+})
+
+describe('game-assign-hits Phase 40 — Persistent Agenda Law Enforcement', () => {
+  const ALL_PLAYERS = [
+    { id: DEFENDER_ID, faction: 'The Barony Of Letnev', leaders: null },
+    { id: ATTACKER_ID, faction: 'The Federation Of Sol', leaders: null },
+  ]
+
+  describe('assertCombatHitAllowed enforcement', () => {
+    it('returns 409 when Conventions of War is active and a fighter is assigned as a casualty (destroy)', async () => {
+      const lawError = new LawError('Conventions of War: fighters cannot be destroyed', 409)
+      assertCombatHitAllowed.mockRejectedValue(lawError)
+
+      mockDb({
+        player: { id: DEFENDER_ID },
+        combat: { ...BASE_COMBAT, phase: 'defender_assign', attacker_hits: 1 },
+        unitDefs: [{ name: 'fighter', sustain_damage: false }],
+        assigneeUnits: [{ id: 'u1', player_id: DEFENDER_ID, unit_type: 'fighter', count: 2, damaged: false, system_key: '1,-1' }],
+        allPlayers: ALL_PLAYERS,
+      })
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        combat_id: COMBAT_ID,
+        casualties: [{ unit_type: 'fighter', player_unit_id: 'u1', action: 'destroy' }],
+      }))
+
+      expect(res.status).toBe(409)
+      const body = await res.json()
+      expect(body.error).toContain('Conventions of War')
+    })
+
+    it('succeeds when Conventions of War is active and a cruiser is assigned as a casualty', async () => {
+      assertCombatHitAllowed.mockResolvedValue(undefined)
+
+      mockDb({
+        player: { id: DEFENDER_ID },
+        combat: { ...BASE_COMBAT, phase: 'defender_assign', attacker_hits: 1 },
+        unitDefs: [{ name: 'cruiser', sustain_damage: false }],
+        assigneeUnits: [{ id: 'u1', player_id: DEFENDER_ID, unit_type: 'cruiser', count: 2, damaged: false, system_key: '1,-1' }],
+        allPlayers: ALL_PLAYERS,
+      })
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        combat_id: COMBAT_ID,
+        casualties: [{ unit_type: 'cruiser', player_unit_id: 'u1', action: 'destroy' }],
+      }))
+
+      expect(res.status).toBe(200)
+      expect(assertCombatHitAllowed).toHaveBeenCalledWith(
+        expect.anything(),
+        GAME_ID,
+        'cruiser'
+      )
+    })
+
+    it('calls assertCombatHitAllowed for each casualty in the list', async () => {
+      assertCombatHitAllowed.mockResolvedValue(undefined)
+
+      mockDb({
+        player: { id: DEFENDER_ID },
+        combat: { ...BASE_COMBAT, phase: 'defender_assign', attacker_hits: 2 },
+        unitDefs: [{ name: 'cruiser', sustain_damage: false }],
+        assigneeUnits: [
+          { id: 'u1', player_id: DEFENDER_ID, unit_type: 'cruiser', count: 3, damaged: false, system_key: '1,-1' },
+        ],
+        allPlayers: ALL_PLAYERS,
+      })
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        combat_id: COMBAT_ID,
+        casualties: [
+          { unit_type: 'cruiser', player_unit_id: 'u1', action: 'destroy' },
+          { unit_type: 'cruiser', player_unit_id: 'u1', action: 'destroy' },
+        ],
+      }))
+
+      expect(res.status).toBe(200)
+      expect(assertCombatHitAllowed).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not call assertCombatHitAllowed when there are no casualties', async () => {
+      mockDb({
+        player: { id: ATTACKER_ID },
+        combat: { ...BASE_COMBAT, phase: 'attacker_assign', attacker_hits: 0, defender_hits: 0, retreat_declared_by: null },
+        unitDefs: [],
+        assigneeUnits: [],
+        atkUnitsLeft: [{ id: 'u1' }],
+        defUnitsLeft: [{ id: 'u2' }],
+        allPlayers: ALL_PLAYERS,
+      })
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        combat_id: COMBAT_ID,
+        casualties: [],
+      }))
+
+      expect(res.status).toBe(200)
+      expect(assertCombatHitAllowed).not.toHaveBeenCalled()
+    })
+
+    it('Conventions of War active: sustain action on a fighter is NOT blocked (assertCombatHitAllowed not called for sustain)', async () => {
+      const lawError = new LawError('Conventions of War: fighters cannot be destroyed', 409)
+      assertCombatHitAllowed.mockRejectedValue(lawError)
+
+      mockDb({
+        player: { id: DEFENDER_ID },
+        combat: { ...BASE_COMBAT, phase: 'defender_assign', attacker_hits: 1 },
+        unitDefs: [{ name: 'fighter', sustain_damage: true }],
+        assigneeUnits: [{ id: 'u1', player_id: DEFENDER_ID, unit_type: 'fighter', count: 1, damaged: false, system_key: '1,-1' }],
+        allPlayers: ALL_PLAYERS,
+      })
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        combat_id: COMBAT_ID,
+        casualties: [{ unit_type: 'fighter', player_unit_id: 'u1', action: 'sustain' }],
+      }))
+
+      expect(res.status).toBe(200)
+      expect(assertCombatHitAllowed).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('no laws active — unchanged behavior', () => {
+    it('returns 200 for normal defender_assign with no active laws', async () => {
+      assertCombatHitAllowed.mockResolvedValue(undefined)
+
+      mockDb({
+        player: { id: DEFENDER_ID },
+        combat: { ...BASE_COMBAT, phase: 'defender_assign', attacker_hits: 1 },
+        unitDefs: [{ name: 'destroyer', sustain_damage: false }],
+        assigneeUnits: [{ id: 'u1', player_id: DEFENDER_ID, unit_type: 'destroyer', count: 2, damaged: false, system_key: '1,-1' }],
+        allPlayers: ALL_PLAYERS,
+      })
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        combat_id: COMBAT_ID,
+        casualties: [{ unit_type: 'destroyer', player_unit_id: 'u1', action: 'destroy' }],
+      }))
+
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.phase).toBe('defender_roll')
+    })
+  })
+
+  describe('checkVpMaintenanceLaws in ground combat victory', () => {
+    it('calls checkVpMaintenanceLaws with correct args when planet control flips in ground combat', async () => {
+      const GROUND_COMBAT = {
+        ...BASE_COMBAT,
+        combat_type: 'ground',
+        planet_name: 'Mecatol Rex',
+        phase: 'attacker_assign',
+        attacker_hits: 0,
+        defender_hits: 1,
+        retreat_declared_by: null,
+        retreat_destination: null,
+        ships_destroyed: null,
+      }
+
+      mockDb({
+        player: { id: ATTACKER_ID },
+        combat: GROUND_COMBAT,
+        unitDefs: [{ name: 'infantry', sustain_damage: false }],
+        assigneeUnits: [{ id: 'u1', player_id: ATTACKER_ID, unit_type: 'infantry', count: 1, damaged: false, system_key: '1,-1' }],
+        atkUnitsLeft: [{ id: 'u2' }],
+        defUnitsLeft: [],
+        allPlayers: ALL_PLAYERS,
+      })
+
+      const res = await handler(makeRequest({
+        game_id: GAME_ID,
+        combat_id: COMBAT_ID,
+        casualties: [{ unit_type: 'infantry', player_unit_id: 'u1', action: 'destroy' }],
+      }))
+
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.status).toBe('complete')
+      expect(checkVpMaintenanceLaws).toHaveBeenCalledWith(
+        expect.anything(),
+        GAME_ID,
+        DEFENDER_ID,
+        'Mecatol Rex',
+      )
+    })
   })
 })
