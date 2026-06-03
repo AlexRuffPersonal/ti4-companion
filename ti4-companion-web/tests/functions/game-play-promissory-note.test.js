@@ -54,7 +54,7 @@ function mockDb({
     origin_player_id: ORIGIN_PLAYER_ID,
   },
   noteRowError = null,
-  abilitySource = { ability_definition_id: ABILITY_DEF_ID, ability_definitions: { id: ABILITY_DEF_ID, handler_key: 'test_handler', effects: [] } },
+  abilitySource = { ability_id: ABILITY_DEF_ID, ability_definitions: { id: ABILITY_DEF_ID, handler: 'test_handler', effects: [] } },
   abilitySourceError = null,
   noteRef = { purge_on_use: false, into_play_area: false, name: 'Test Note' },
   noteRefError = null,
@@ -317,7 +317,7 @@ describe('game-play-promissory-note', () => {
             eq: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
                 maybeSingle: vi.fn().mockResolvedValue({
-                  data: { ability_definition_id: ABILITY_DEF_ID, ability_definitions: { id: ABILITY_DEF_ID, handler_key: 'test', effects: [] } },
+                  data: { ability_id: ABILITY_DEF_ID, ability_definitions: { id: ABILITY_DEF_ID, handler: 'test', effects: [] } },
                   error: null,
                 }),
               }),
@@ -380,7 +380,7 @@ describe('game-play-promissory-note', () => {
             eq: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
                 maybeSingle: vi.fn().mockResolvedValue({
-                  data: { ability_definition_id: ABILITY_DEF_ID, ability_definitions: { id: ABILITY_DEF_ID, handler_key: 'test', effects: [] } },
+                  data: { ability_id: ABILITY_DEF_ID, ability_definitions: { id: ABILITY_DEF_ID, handler: 'test', effects: [] } },
                   error: null,
                 }),
               }),
@@ -443,7 +443,7 @@ describe('game-play-promissory-note', () => {
             eq: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
                 maybeSingle: vi.fn().mockResolvedValue({
-                  data: { ability_definition_id: ABILITY_DEF_ID, ability_definitions: { id: ABILITY_DEF_ID, handler_key: 'test', effects: [] } },
+                  data: { ability_id: ABILITY_DEF_ID, ability_definitions: { id: ABILITY_DEF_ID, handler: 'test', effects: [] } },
                   error: null,
                 }),
               }),
@@ -611,17 +611,17 @@ describe('game-play-promissory-note', () => {
 
 const ABILITY_DEF_ID_39A = 'ability-def-uuid'
 
-function makeAbilitySource({ effects = [], handler_key = null } = {}) {
+function makeAbilitySource({ effects = [], handler = null } = {}) {
   return {
-    ability_definition_id: ABILITY_DEF_ID_39A,
-    ability_definitions: { id: ABILITY_DEF_ID_39A, handler_key, effects },
+    ability_id: ABILITY_DEF_ID_39A,
+    ability_definitions: { id: ABILITY_DEF_ID_39A, handler, effects },
   }
 }
 
 describe('game-play-promissory-note Phase 39a — DSL resolution', () => {
   describe('T501: handler_key not yet implemented → 501', () => {
     it('returns 501 when resolvePromissoryHandler throws a 501 dslError', async () => {
-      mockDb({ abilitySource: makeAbilitySource({ handler_key: 'ceasefire', effects: [] }) })
+      mockDb({ abilitySource: makeAbilitySource({ handler: 'ceasefire', effects: [] }) })
       const err = new Error('Promissory handler ceasefire not yet implemented')
       err.status = 501
       resolvePromissoryHandler.mockRejectedValue(err)
@@ -634,7 +634,7 @@ describe('game-play-promissory-note Phase 39a — DSL resolution', () => {
   describe('T200 effects path', () => {
     it('calls interpretEffects and returns 200 when effects array is non-empty', async () => {
       const effects = [{ op: 'gain_trade_goods', amount: 1 }]
-      mockDb({ abilitySource: makeAbilitySource({ effects, handler_key: null }) })
+      mockDb({ abilitySource: makeAbilitySource({ effects, handler: null }) })
 
       const res = await handler(makeRequest({ game_id: GAME_ID, note_instance_id: NOTE_INSTANCE_ID }))
       expect(res.status).toBe(200)
@@ -652,7 +652,7 @@ describe('game-play-promissory-note Phase 39a — DSL resolution', () => {
 
   describe('T200 handler path', () => {
     it('calls resolvePromissoryHandler and returns 200 when handler_key is set and effects is empty', async () => {
-      mockDb({ abilitySource: makeAbilitySource({ handler_key: 'bloodPact', effects: [] }) })
+      mockDb({ abilitySource: makeAbilitySource({ handler: 'bloodPact', effects: [] }) })
 
       const res = await handler(makeRequest({ game_id: GAME_ID, note_instance_id: NOTE_INSTANCE_ID }))
       expect(res.status).toBe(200)
@@ -670,7 +670,7 @@ describe('game-play-promissory-note Phase 39a — DSL resolution', () => {
 
   describe('T409 from handler', () => {
     it('returns 409 when resolvePromissoryHandler throws a dslError with status 409', async () => {
-      mockDb({ abilitySource: makeAbilitySource({ handler_key: 'politicalFavor', effects: [] }) })
+      mockDb({ abilitySource: makeAbilitySource({ handler: 'politicalFavor', effects: [] }) })
       const err = new Error('Cannot play this note now')
       err.status = 409
       resolvePromissoryHandler.mockRejectedValue(err)
@@ -684,7 +684,7 @@ describe('game-play-promissory-note Phase 39a — DSL resolution', () => {
 
   describe('T500 from handler', () => {
     it('returns 500 when resolvePromissoryHandler throws a generic Error', async () => {
-      mockDb({ abilitySource: makeAbilitySource({ handler_key: 'darkPact', effects: [] }) })
+      mockDb({ abilitySource: makeAbilitySource({ handler: 'darkPact', effects: [] }) })
       resolvePromissoryHandler.mockRejectedValue(new Error('Unexpected failure'))
 
       const res = await handler(makeRequest({ game_id: GAME_ID, note_instance_id: NOTE_INSTANCE_ID }))
@@ -705,7 +705,7 @@ describe('game-play-promissory-note Phase 39a — DSL resolution', () => {
     })
 
     it('passes noteInstanceId and noteOriginPlayerId in ctx to handler', async () => {
-      mockDb({ abilitySource: makeAbilitySource({ handler_key: 'warFunding', effects: [] }) })
+      mockDb({ abilitySource: makeAbilitySource({ handler: 'warFunding', effects: [] }) })
 
       await handler(makeRequest({ game_id: GAME_ID, note_instance_id: NOTE_INSTANCE_ID }))
 

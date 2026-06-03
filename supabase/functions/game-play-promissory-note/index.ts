@@ -47,7 +47,7 @@ export async function handler(req: Request): Promise<Response> {
 
   const { data: abilitySource, error: abilitySourceError } = await db
     .from('ability_sources')
-    .select('ability_definition_id, ability_definitions(id, handler_key, effects)')
+    .select('ability_id, ability_definitions(id, handler, effects)')
     .eq('source_type', 'promissory_note')
     .eq('source_id', noteRow.note_id)
     .maybeSingle()
@@ -55,9 +55,9 @@ export async function handler(req: Request): Promise<Response> {
   if (abilitySourceError) return errorResponse('Database error', 500)
   if (!abilitySource) return errorResponse('No ability definition for this note', 404)
 
-  const abilityDef = abilitySource.ability_definitions as { id: string; handler_key: string | null; effects: unknown[] } | null
+  const abilityDef = abilitySource.ability_definitions as { id: string; handler: string | null; effects: unknown[] } | null
   const effects = abilityDef?.effects ?? []
-  const handlerKey = abilityDef?.handler_key ?? null
+  const handlerKey = abilityDef?.handler ?? null
   const selections = (body.selections ?? {}) as Record<string, unknown>
 
   const ctx: ResolveContext = {
