@@ -324,6 +324,9 @@ export async function resolvePromissoryHandler(
       if (!fragmentIds || !Array.isArray(fragmentIds) || fragmentIds.length !== 2) {
         throw dslError('fragment_ids must be an array of exactly 2 IDs', 400)
       }
+      if (new Set(fragmentIds).size !== 2) {
+        throw dslError('fragment_ids must contain 2 distinct IDs', 400)
+      }
 
       const { data: fragments, error: fragError } = await db
         .from('game_exploration_decks')
