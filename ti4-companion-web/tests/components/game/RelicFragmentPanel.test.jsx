@@ -101,4 +101,13 @@ describe('RelicFragmentPanel', () => {
     expect(arg).toHaveLength(3)
     expect(arg).toEqual(expect.arrayContaining([1, 2, 3]))
   })
+
+  it('renders a fragment type icon for each group', () => {
+    const fragments = makeFragments(['cultural', 1], ['hazardous', 2])
+    render(
+      <RelicFragmentPanel relicFragments={fragments} isActivePlayer={true} onUseRelicFragment={vi.fn()} />
+    )
+    expect(screen.getByRole('img', { name: 'cultural' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'hazardous' })).toBeInTheDocument()
+  })
 })

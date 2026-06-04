@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import GameIcon from '../shared/GameIcon.jsx'
 
 const FRAGMENT_TYPES = ['cultural', 'hazardous', 'industrial', 'unknown']
 
@@ -53,7 +54,10 @@ export default function RelicFragmentPanel({ relicFragments, isActivePlayer, onU
           if (count === 0) return null
           return (
             <div key={type} className="flex items-center justify-between text-sm font-body">
-              <span className="capitalize text-text">{type}</span>
+              <span className="flex items-center gap-2 capitalize text-text">
+                <GameIcon category="fragments" name={type} size={16} alt={type} />
+                {type}
+              </span>
               <span className="text-xs px-2 py-0.5 rounded panel-inset text-bright">{count}</span>
             </div>
           )
