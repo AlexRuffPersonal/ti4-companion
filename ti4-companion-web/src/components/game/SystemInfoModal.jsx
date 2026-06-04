@@ -50,14 +50,28 @@ export default function SystemInfoModal({ tileInfo, systemKey, onClose, systemUn
         {wormholes.length > 0 && (
           <div>
             <p className="label">WORMHOLES</p>
-            <p className="text-muted text-xs">{wormholes.join(', ')}</p>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {wormholes.map(w => (
+                <span key={w} className="flex items-center gap-1 text-muted text-xs font-body capitalize">
+                  <GameIcon category="wormholes" name={w} size={14} alt={w} />
+                  {w}
+                </span>
+              ))}
+            </div>
           </div>
         )}
 
         {anomalies.length > 0 && (
           <div>
             <p className="label">ANOMALIES</p>
-            <p className="text-muted text-xs">{anomalies.join(', ')}</p>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {anomalies.map(a => (
+                <span key={a} className="flex items-center gap-1 text-muted text-xs font-body capitalize">
+                  <GameIcon category="anomalies" name={a} size={14} alt={a} />
+                  {a.replace(/_/g, ' ')}
+                </span>
+              ))}
+            </div>
           </div>
         )}
 

@@ -38,7 +38,7 @@ describe('SystemInfoModal', () => {
   it('renders ANOMALIES label and value', () => {
     renderModal({ planets: [], anomalies: ['gravity_rift'] })
     expect(screen.getByText('ANOMALIES')).toBeInTheDocument()
-    expect(screen.getByText('gravity_rift')).toBeInTheDocument()
+    expect(screen.getByText('gravity rift')).toBeInTheDocument()
   })
 
   it('does not render WORMHOLES or ANOMALIES sections when empty', () => {
@@ -66,6 +66,16 @@ describe('SystemInfoModal', () => {
     renderModal()
     // planet fixture has type: ['cultural']
     expect(screen.getByRole('img', { name: 'cultural' })).toBeInTheDocument()
+  })
+
+  it('renders wormhole icon for each wormhole', () => {
+    renderModal({ planets: [], wormholes: ['alpha'] })
+    expect(screen.getByRole('img', { name: 'alpha' })).toBeInTheDocument()
+  })
+
+  it('renders anomaly icon for each anomaly', () => {
+    renderModal({ planets: [], anomalies: ['gravity_rift'] })
+    expect(screen.getByRole('img', { name: 'gravity_rift' })).toBeInTheDocument()
   })
 
   it('clicking CLOSE calls onClose', () => {
