@@ -35,3 +35,35 @@ export function phaseLabel(phase) {
   }
   return labels[phase] ?? (phase?.toUpperCase() ?? 'UNKNOWN')
 }
+
+const FACTION_ICON_MAP = new Map([
+  ['the arborec', 'arborec'],
+  ['the barony of letnev', 'barony'],
+  ['the clan of saar', 'clan-saar'],
+  ['the embers of muaat', 'embers-muaat'],
+  ['the emirates of hacan', 'emirates-hacan'],
+  ['the federation of sol', 'federation-sol'],
+  ['the ghosts of creuss', 'ghosts-creuss'],
+  ['the l1z1x mindnet', 'l1z1x'],
+  ['the mentak coalition', 'mentak'],
+  ['the naalu collective', 'naalu'],
+  ['the nekro virus', 'nekro-virus'],
+  ["the sardakk n'orr", 'sardakk-norr'],
+  ['the universities of jol-nar', 'jol-nar'],
+  ['the winnu', 'winnu'],
+  ['the xxcha kingdom', 'xxcha'],
+  ['the yin brotherhood', 'yin'],
+  ['the yssaril tribes', 'yssaril'],
+  ['the argent flight', 'argent-flight'],
+  ['the empyrean', 'empyrean'],
+  ['the mahact gene-sorcerers', 'mahact'],
+  ['the naaz-rokha alliance', 'naaz-rokha'],
+  ['the nomad', 'nomad'],
+  ['the titans of ul', 'titans'],
+  ["the vuil'raith cabal", 'vuil-raith'],
+])
+
+export function factionIconSlug(factionName) {
+  if (!factionName) return null
+  return FACTION_ICON_MAP.get(factionName.toLowerCase()) ?? null
+}

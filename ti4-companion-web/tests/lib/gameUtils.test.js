@@ -66,3 +66,26 @@ describe('phaseLabel', () => {
     expect(phaseLabel(null)).toBe('UNKNOWN')
   })
 })
+
+import { factionIconSlug } from '../../src/lib/gameUtils.js'
+
+describe('factionIconSlug', () => {
+  it('maps canonical faction names to icon slugs', () => {
+    expect(factionIconSlug('The Arborec')).toBe('arborec')
+    expect(factionIconSlug('The Barony of Letnev')).toBe('barony')
+    expect(factionIconSlug('The Ghosts of Creuss')).toBe('ghosts-creuss')
+    expect(factionIconSlug('The Mahact Gene-Sorcerers')).toBe('mahact')
+    expect(factionIconSlug("The Vuil'raith Cabal")).toBe('vuil-raith')
+  })
+
+  it('is case-insensitive', () => {
+    expect(factionIconSlug('the arborec')).toBe('arborec')
+    expect(factionIconSlug('THE BARONY OF LETNEV')).toBe('barony')
+  })
+
+  it('returns null for unknown or missing values', () => {
+    expect(factionIconSlug('Unknown Faction')).toBeNull()
+    expect(factionIconSlug(null)).toBeNull()
+    expect(factionIconSlug(undefined)).toBeNull()
+  })
+})
