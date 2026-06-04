@@ -393,15 +393,15 @@ This keeps the index accurate across multi-session implementations so future age
 | [component-PromissoryNotesModal-p44](component-PromissoryNotesModal-p44.md) | `src/components/game/PromissoryNotesModal.jsx` | 44 | TE — Titans of Ul Attachments | done | client-edgeFunctions-p44 |
 | [component-LeaderCard-p44](component-LeaderCard-p44.md) | `src/components/game/LeaderCard.jsx` | 44 | TE — Titans of Ul Attachments | done | — |
 
-| [migration-054-promissory-state](migration-054-promissory-state.md) | `supabase/migrations/054_promissory_state.sql` | 45 | Promissory Note Completions | planned | — |
-| [fn-admin-import-promissory-notes-p45](fn-admin-import-promissory-notes-p45.md) | `supabase/functions/admin-import-promissory-notes/index.ts` | 45 | Promissory Note Completions | planned | migration-054-promissory-state |
-| [fn-game-play-promissory-note-p45](fn-game-play-promissory-note-p45.md) | `supabase/functions/game-play-promissory-note/index.ts` | 45 | Promissory Note Completions | planned | fn-game-play-promissory-note-p44, migration-054-promissory-state |
-| [shared-promissoryHandlers-p45](shared-promissoryHandlers-p45.md) | `supabase/functions/_shared/promissoryHandlers.ts` | 45 | Promissory Note Completions | planned | shared-promissoryHandlers-p39c, fn-game-play-promissory-note-p45 |
-| [client-edgeFunctions-p45](client-edgeFunctions-p45.md) | `src/lib/edgeFunctions.js` | 45 | Promissory Note Completions | planned | fn-game-play-promissory-note-p45 |
-| [hook-useGame-p45](hook-useGame-p45.md) | `src/hooks/useGame.js` | 45 | Promissory Note Completions | planned | client-edgeFunctions-p45 |
-| [component-GameScreen-p45](component-GameScreen-p45.md) | `src/components/game/GameScreen.jsx` | 45 | Promissory Note Completions | planned | hook-useGame-p45 |
-| [component-PromissoryNotesModal-p45](component-PromissoryNotesModal-p45.md) | `src/components/game/PromissoryNotesModal.jsx` | 45 | Promissory Note Completions | planned | component-GameScreen-p45 |
-| [component-PlayPromissoryNoteModal-p45](component-PlayPromissoryNoteModal-p45.md) | `src/components/game/PlayPromissoryNoteModal.jsx` | 45 | Promissory Note Completions | planned | component-PromissoryNotesModal-p45 |
+| [migration-054-promissory-state](migration-054-promissory-state.md) | `supabase/migrations/054_promissory_state.sql` | 45 | Promissory Note Completions | done | — |
+| [fn-admin-import-promissory-notes-p45](fn-admin-import-promissory-notes-p45.md) | `supabase/functions/admin-import-promissory-notes/index.ts` | 45 | Promissory Note Completions | done | migration-054-promissory-state |
+| [fn-game-play-promissory-note-p45](fn-game-play-promissory-note-p45.md) | `supabase/functions/game-play-promissory-note/index.ts` | 45 | Promissory Note Completions | done | fn-game-play-promissory-note-p44, migration-054-promissory-state |
+| [shared-promissoryHandlers-p45](shared-promissoryHandlers-p45.md) | `supabase/functions/_shared/promissoryHandlers.ts` | 45 | Promissory Note Completions | done | shared-promissoryHandlers-p39c, fn-game-play-promissory-note-p45 |
+| [client-edgeFunctions-p45](client-edgeFunctions-p45.md) | `src/lib/edgeFunctions.js` | 45 | Promissory Note Completions | done | fn-game-play-promissory-note-p45 |
+| [hook-useGame-p45](hook-useGame-p45.md) | `src/hooks/useGame.js` | 45 | Promissory Note Completions | done | client-edgeFunctions-p45 |
+| [component-GameScreen-p45](component-GameScreen-p45.md) | `src/components/game/GameScreen.jsx` | 45 | Promissory Note Completions | done | hook-useGame-p45 |
+| [component-PromissoryNotesModal-p45](component-PromissoryNotesModal-p45.md) | `src/components/game/PromissoryNotesModal.jsx` | 45 | Promissory Note Completions | done | component-GameScreen-p45 |
+| [component-PlayPromissoryNoteModal-p45](component-PlayPromissoryNoteModal-p45.md) | `src/components/game/PlayPromissoryNoteModal.jsx` | 45 | Promissory Note Completions | done | component-PromissoryNotesModal-p45 |
 
 | [component-GameIcon](component-GameIcon.md) | `src/components/shared/GameIcon.jsx` | UI | SVG Icon Integration | done | — |
 | [component-TechCard-icon-integration](component-TechCard-icon-integration.md) | `src/components/game/TechCard.jsx` | UI | SVG Icon Integration | done | component-GameIcon |

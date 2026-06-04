@@ -134,6 +134,19 @@ function mockSupabase({ myCards = MY_CARDS } = {}) {
         }),
       }
     }
+    if (table === 'game_exploration_decks') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                not: vi.fn().mockResolvedValue({ data: [], error: null }),
+              }),
+            }),
+          }),
+        }),
+      }
+    }
     if (table === 'game_combats') {
       return {
         select: vi.fn().mockReturnValue({
