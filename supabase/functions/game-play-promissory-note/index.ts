@@ -59,6 +59,9 @@ export async function handler(req: Request): Promise<Response> {
   const effects = abilityDef?.effects ?? []
   const handlerKey = abilityDef?.handler ?? null
   const selections = (body.selections ?? {}) as Record<string, unknown>
+  if (body.planet_name && typeof body.planet_name === 'string') {
+    selections.planet_name = body.planet_name
+  }
 
   const ctx: ResolveContext = {
     gameId: body.game_id,
@@ -86,40 +89,6 @@ export async function handler(req: Request): Promise<Response> {
     .eq('id', noteRow.note_id)
     .maybeSingle()
   if (noteRefError) return errorResponse('Database error', 500)
-
-  if (noteRefData?.name === 'Terraform') {
-    const planetName = body.planet_name
-    if (!planetName || typeof planetName !== 'string') return errorResponse("'planet_name' is required", 400)
-    if (planetName === 'Mecatol Rex') return errorResponse('Cannot attach Terraform to home planet or Mecatol Rex', 409)
-
-    const { data: planetRow } = await db
-      .from('game_player_planets')
-      .select('id, attachments, tiles(type)')
-      .eq('game_id', body.game_id)
-      .eq('player_id', player.id)
-      .eq('name', planetName)
-      .maybeSingle()
-
-    if (!planetRow) return errorResponse('Planet not controlled by player', 409)
-
-    if ((planetRow as Record<string, unknown> & { tiles?: { type?: string } }).tiles?.type === 'faction') {
-      return errorResponse('Cannot attach Terraform to home planet or Mecatol Rex', 409)
-    }
-
-    const { data: attachmentRow } = await db
-      .from('attachments')
-      .select('id')
-      .eq('name', 'Terraform')
-      .maybeSingle()
-
-    const existingAttachments = ((planetRow as Record<string, unknown>).attachments ?? []) as string[]
-    if (attachmentRow && existingAttachments.includes((attachmentRow as Record<string, string>).id)) {
-      return errorResponse('Already attached', 409)
-    }
-
-    const newAttachments = [...existingAttachments, ...((attachmentRow as Record<string, string> | null)?.id ? [(attachmentRow as Record<string, string>).id] : [])]
-    await db.from('game_player_planets').update({ attachments: newAttachments }).eq('id', (planetRow as Record<string, unknown>).id)
-  }
 
   let updateFields: Record<string, unknown>
   if (noteRefData?.into_play_area) {

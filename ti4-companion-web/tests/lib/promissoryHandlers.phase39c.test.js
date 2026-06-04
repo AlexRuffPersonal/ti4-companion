@@ -436,6 +436,9 @@ describe('creussIff', () => {
 // ---------------------------------------------------------------------------
 
 describe('terraform', () => {
+  const PLANET_ROW_ID = 'planet-row-uuid'
+  const ATTACHMENT_ID = 'terraform-attachment-uuid'
+
   it('sets terraform_attached on planet and stores planet_name in metadata', async () => {
     const PLANET = 'Elysium'
     const planetUpdates = []
@@ -444,10 +447,23 @@ describe('terraform', () => {
       from: vi.fn((table) => {
         if (table === 'game_player_planets') {
           return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: { id: PLANET_ROW_ID, attachments: [], tiles: { type: 'blue' } },
+              error: null,
+            }),
             update: vi.fn((data) => {
               planetUpdates.push(data)
               return { eq: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }) }) }
             }),
+          }
+        }
+        if (table === 'attachments') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({ data: { id: ATTACHMENT_ID }, error: null }),
           }
         }
         if (table === 'game_player_promissory_notes') {
@@ -464,7 +480,7 @@ describe('terraform', () => {
     const ctx = makeCtx({ selections: { planet_name: PLANET } })
     await resolvePromissoryHandler('terraform', ctx, db)
 
-    expect(planetUpdates[0]).toEqual({ terraform_attached: true })
+    expect(planetUpdates.some(u => u.terraform_attached === true)).toBe(true)
     expect(metaUpdates[0]).toEqual({ metadata: { planet_name: PLANET } })
   })
 

@@ -524,88 +524,25 @@ describe('game-play-promissory-note', () => {
     expect(res.status).toBe(200)
   })
 
-  describe('game-play-promissory-note — Terraform attachment', () => {
-    const TERRAFORM_NOTE_REF = { purge_on_use: false, into_play_area: true, name: 'Terraform' }
+  // Terraform attachment validation tests moved to tests/lib/promissoryHandlers.phase45.test.js
+  // The inline Terraform block was removed from index.ts; logic lives in resolvePromissoryHandler.
 
-    it('400 when planet_name missing for Terraform', async () => {
-      mockDb({ noteRef: TERRAFORM_NOTE_REF })
-      const res = await handler(makeRequest({
-        game_id: GAME_ID,
-        note_instance_id: NOTE_INSTANCE_ID,
-      }))
-      expect(res.status).toBe(400)
-      const body = await res.json()
-      expect(body.error).toMatch(/planet_name/)
+  it('merges body.planet_name into ctx.selections.planet_name before calling handler', async () => {
+    mockDb({
+      abilitySource: { ability_id: ABILITY_DEF_ID, ability_definitions: { id: ABILITY_DEF_ID, handler: 'terraform', effects: [] } },
+      noteRef: { purge_on_use: false, into_play_area: true },
     })
-
-    it('409 when planet not controlled', async () => {
-      mockDb({ noteRef: TERRAFORM_NOTE_REF, planetRow: null })
-      const res = await handler(makeRequest({
-        game_id: GAME_ID,
-        note_instance_id: NOTE_INSTANCE_ID,
-        planet_name: 'Ang',
-      }))
-      expect(res.status).toBe(409)
-      const body = await res.json()
-      expect(body.error).toMatch(/not controlled/)
-    })
-
-    it('409 when planet is on home system tile', async () => {
-      mockDb({
-        noteRef: TERRAFORM_NOTE_REF,
-        planetRow: { id: PLANET_ROW_ID, attachments: [], tiles: { type: 'faction' } },
-      })
-      const res = await handler(makeRequest({
-        game_id: GAME_ID,
-        note_instance_id: NOTE_INSTANCE_ID,
-        planet_name: 'Elysium',
-      }))
-      expect(res.status).toBe(409)
-      const body = await res.json()
-      expect(body.error).toMatch(/home planet or Mecatol Rex/)
-    })
-
-    it('409 when planet is Mecatol Rex', async () => {
-      mockDb({
-        noteRef: TERRAFORM_NOTE_REF,
-        planetRow: { id: PLANET_ROW_ID, attachments: [], tiles: { type: 'red' } },
-      })
-      const res = await handler(makeRequest({
-        game_id: GAME_ID,
-        note_instance_id: NOTE_INSTANCE_ID,
-        planet_name: 'Mecatol Rex',
-      }))
-      expect(res.status).toBe(409)
-      const body = await res.json()
-      expect(body.error).toMatch(/home planet or Mecatol Rex/)
-    })
-
-    it('409 when Terraform already attached', async () => {
-      mockDb({
-        noteRef: TERRAFORM_NOTE_REF,
-        planetRow: { id: PLANET_ROW_ID, attachments: [ATTACHMENT_ID], tiles: { type: 'blue' } },
-      })
-      const res = await handler(makeRequest({
-        game_id: GAME_ID,
-        note_instance_id: NOTE_INSTANCE_ID,
-        planet_name: 'Ang',
-      }))
-      expect(res.status).toBe(409)
-      const body = await res.json()
-      expect(body.error).toMatch(/Already attached/)
-    })
-
-    it('200 happy path: attaches and sets state to in_play', async () => {
-      mockDb({ noteRef: TERRAFORM_NOTE_REF })
-      const res = await handler(makeRequest({
-        game_id: GAME_ID,
-        note_instance_id: NOTE_INSTANCE_ID,
-        planet_name: 'Ang',
-      }))
-      expect(res.status).toBe(200)
-      const body = await res.json()
-      expect(body.played).toBe(true)
-    })
+    const res = await handler(makeRequest({
+      game_id: GAME_ID,
+      note_instance_id: NOTE_INSTANCE_ID,
+      planet_name: 'Hopestone',
+    }))
+    expect(res.status).toBe(200)
+    expect(resolvePromissoryHandler).toHaveBeenCalledWith(
+      'terraform',
+      expect.objectContaining({ selections: expect.objectContaining({ planet_name: 'Hopestone' }) }),
+      expect.anything()
+    )
   })
 })
 

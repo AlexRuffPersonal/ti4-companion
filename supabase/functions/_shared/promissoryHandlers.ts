@@ -19,6 +19,11 @@ export async function resolvePromissoryHandler(
     case 'antivirus':
       return  // no-op: passive effect enforced elsewhere
 
+    case 'supportForThrone':
+    case 'alliance':
+    case 'tradeAgreement':
+      return  // no-op: state/transfer handled by game-confirm-transaction or into_play_area
+
     case 'giftOfPrescience': {
       // Set naalu_zero metadata flag on the note instance so initiative-order logic
       // can give the holder the 0 initiative token.
@@ -187,26 +192,59 @@ export async function resolvePromissoryHandler(
     }
 
     case 'terraform': {
-      // Titans of Ul: attach terraform to origin player's chosen planet.
-      if (!ctx.noteOriginPlayerId) throw dslError('noteOriginPlayerId is required for terraform')
+      // Titans of Ul: holder plays card on their own planet (activating player, not origin player).
       const planetName = (ctx.selections as Record<string, unknown>)?.planet_name as string
       if (!planetName) throw dslError('planet_name is required for terraform')
+      if (planetName === 'Mecatol Rex') throw dslError('Cannot attach Terraform to home planet or Mecatol Rex', 409)
 
+      // Planet belongs to the ACTIVATING player (holder plays card on their own planet)
+      const { data: planetRow } = await db
+        .from('game_player_planets')
+        .select('id, attachments, tiles(type)')
+        .eq('game_id', ctx.gameId)
+        .eq('player_id', ctx.activatingPlayerId)
+        .eq('planet_name', planetName)
+        .maybeSingle()
+      if (!planetRow) throw dslError('Planet not controlled by player', 409)
+
+      const pr = planetRow as { id: string; attachments: string[]; tiles?: { type?: string } | null }
+      if (pr.tiles?.type === 'faction') throw dslError('Cannot attach Terraform to home planet or Mecatol Rex', 409)
+
+      // Look up the Terraform attachment row
+      const { data: attachmentRow } = await db
+        .from('attachments')
+        .select('id')
+        .eq('name', 'Terraform')
+        .maybeSingle()
+      const attachmentId = (attachmentRow as { id: string } | null)?.id
+      if (attachmentId && (pr.attachments ?? []).includes(attachmentId)) {
+        throw dslError('Already attached', 409)
+      }
+
+      // Append attachment to planet
+      if (attachmentId) {
+        const { error: attachErr } = await db
+          .from('game_player_planets')
+          .update({ attachments: [...(pr.attachments ?? []), attachmentId] })
+          .eq('id', pr.id)
+        if (attachErr) throw new Error(`terraform: attachment update failed: ${attachErr.message}`)
+      }
+
+      // Set terraform_attached flag
       const { error: planetError } = await db
         .from('game_player_planets')
         .update({ terraform_attached: true })
         .eq('game_id', ctx.gameId)
-        .eq('player_id', ctx.noteOriginPlayerId)
+        .eq('player_id', ctx.activatingPlayerId)
         .eq('planet_name', planetName)
       if (planetError) throw new Error(`terraform: planet update failed: ${planetError.message}`)
 
-      // Store planet_name in note metadata so the effect can be tracked/removed later
+      // Store planet_name in note metadata
       if (ctx.noteInstanceId) {
-        const { error: metaError } = await db
+        await db
           .from('game_player_promissory_notes')
           .update({ metadata: { planet_name: planetName } })
           .eq('id', ctx.noteInstanceId)
-        if (metaError) throw new Error(`terraform: metadata update failed: ${metaError.message}`)
       }
       return
     }
