@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { deriveActivePlayer, deriveSpeaker, phaseLabel } from '../../src/lib/gameUtils.js'
+import { deriveActivePlayer, deriveSpeaker, phaseLabel, factionIconSlug } from '../../src/lib/gameUtils.js'
 
 const PLAYERS = [
   { id: 'p1', display_name: 'Alice', strategy_card: 1, passed: false },
@@ -67,8 +67,6 @@ describe('phaseLabel', () => {
   })
 })
 
-import { factionIconSlug } from '../../src/lib/gameUtils.js'
-
 describe('factionIconSlug', () => {
   it('maps canonical faction names to icon slugs', () => {
     expect(factionIconSlug('The Arborec')).toBe('arborec')
@@ -87,5 +85,6 @@ describe('factionIconSlug', () => {
     expect(factionIconSlug('Unknown Faction')).toBeNull()
     expect(factionIconSlug(null)).toBeNull()
     expect(factionIconSlug(undefined)).toBeNull()
+    expect(factionIconSlug('')).toBeNull()
   })
 })

@@ -63,6 +63,9 @@ const FACTION_ICON_MAP = new Map([
   ["the vuil'raith cabal", 'vuil-raith'],
 ])
 
+/**
+ * Returns the icon file slug for a canonical TI4 faction name, or null if unknown.
+ */
 export function factionIconSlug(factionName) {
   if (!factionName) return null
   return FACTION_ICON_MAP.get(factionName.toLowerCase()) ?? null
