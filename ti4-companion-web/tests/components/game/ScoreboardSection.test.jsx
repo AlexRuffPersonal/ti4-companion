@@ -73,4 +73,23 @@ describe('ScoreboardSection', () => {
     expect(screen.getByLabelText(/alice secret objectives: 1/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/bob secret objectives: 0/i)).toBeInTheDocument()
   })
+
+  it('renders faction emblem icon when faction maps to a known slug', () => {
+    const players = [
+      { ...PLAYERS[0], faction: 'The Arborec' },
+      { ...PLAYERS[1], faction: 'The Barony of Letnev' },
+      { ...PLAYERS[2], faction: 'The Clan of Saar' },
+    ]
+    render(
+      <ScoreboardSection players={players} game={ACTION_GAME} currentPlayerId="p1" />
+    )
+    expect(screen.getByRole('img', { name: 'arborec' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'barony' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'clan-saar' })).toBeInTheDocument()
+  })
+
+  it('renders no faction icon when faction name is unknown', () => {
+    renderScoreboard()
+    expect(screen.queryByRole('img', { name: /arborec/i })).toBeNull()
+  })
 })

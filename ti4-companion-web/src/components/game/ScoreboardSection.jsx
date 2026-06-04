@@ -1,4 +1,5 @@
-import { deriveActivePlayer } from '../../lib/gameUtils.js'
+import GameIcon from '../shared/GameIcon.jsx'
+import { deriveActivePlayer, factionIconSlug } from '../../lib/gameUtils.js'
 
 const COLOUR_HEX = {
   blue: '#58a6ff', red: '#f85149', green: '#3fb950', yellow: '#e3b341',
@@ -17,6 +18,7 @@ export default function ScoreboardSection({ players, game, currentPlayerId, onVi
           const isActive = activePlayer?.id === player.id
           const isPassed = player.passed
           const isMe = player.id === currentPlayerId
+          const slug = factionIconSlug(player.faction)
 
           return (
             <div
@@ -34,7 +36,10 @@ export default function ScoreboardSection({ players, game, currentPlayerId, onVi
                   {player.display_name}
                 </span>
                 {player.faction && (
-                  <span className="text-dim text-xs ml-2">({player.faction})</span>
+                  <span className="flex items-center gap-1 text-dim text-xs ml-2">
+                    {slug && <GameIcon category="factions" name={slug} size={14} alt={slug} />}
+                    ({player.faction})
+                  </span>
                 )}
               </span>
               {player.strategy_card != null && (
