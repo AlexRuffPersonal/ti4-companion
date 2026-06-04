@@ -27,6 +27,7 @@ export function useGame(code, userId) {
   const [enactedLaws, setEnactedLaws] = useState([])
   const [currentAgenda, setCurrentAgenda] = useState(null)
   const [combats, setCombats] = useState([])
+  const [myRelicFragments, setMyRelicFragments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -80,6 +81,7 @@ export function useGame(code, userId) {
       let enactedLawsData = []
       let currentAgendaData = null
       let combatsData = []
+      let myRelicFragmentsData = []
       let myPlayer = null
 
       if (isGameScreen) {
@@ -132,6 +134,16 @@ export function useGame(code, userId) {
             .eq('status', 'pending')
           if (!mounted) return
           pendingIncomingTradesData = trades ?? []
+
+          const { data: relicFrags } = await supabase
+            .from('game_exploration_decks')
+            .select('id, relic_fragment_type')
+            .eq('game_id', gameData.id)
+            .eq('resolved_by_player_id', myPlayer.id)
+            .eq('state', 'held')
+            .not('relic_fragment_type', 'is', null)
+          if (!mounted) return
+          myRelicFragmentsData = relicFrags ?? []
         }
 
         const { data } = await supabase
@@ -172,6 +184,7 @@ export function useGame(code, userId) {
       setEnactedLaws(enactedLawsData)
       setCurrentAgenda(currentAgendaData)
       setCombats(combatsData ?? [])
+      setMyRelicFragments(myRelicFragmentsData)
       setLoading(false)
 
       channel = supabase
@@ -406,8 +419,8 @@ export function useGame(code, userId) {
     return game ? rescindTransaction(game.id, transactionId) : Promise.reject(new Error('Game not loaded'))
   }
 
-  function playTheNote(noteInstanceId, planetName) {
-    return game ? playPromissoryNote(game.id, noteInstanceId, planetName) : Promise.reject(new Error('Game not loaded'))
+  function playTheNote(noteInstanceId, options = {}) {
+    return game ? playPromissoryNote(game.id, noteInstanceId, options) : Promise.reject(new Error('Game not loaded'))
   }
 
   return {
@@ -467,5 +480,7 @@ export function useGame(code, userId) {
     rejectTheTransaction,
     rescindTheTransaction,
     playTheNote,
+    // Phase 45 additions
+    myRelicFragments,
   }
 }
