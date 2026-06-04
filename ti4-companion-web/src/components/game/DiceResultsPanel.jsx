@@ -1,3 +1,5 @@
+import GameIcon from '../shared/GameIcon.jsx'
+
 export default function DiceResultsPanel({ dice, label }) {
   if (!dice || dice.length === 0) return null
 
@@ -25,8 +27,9 @@ export default function DiceResultsPanel({ dice, label }) {
                 className={`w-7 h-7 flex items-center justify-center rounded font-mono text-xs font-bold border ${
                   d.hit ? 'border-success text-success bg-success/10' : 'border-border text-dim bg-void'
                 }`}
+                title={d.roll}
               >
-                {d.roll}
+                <GameIcon category="dice" name={d.hit ? 'hit' : 'miss'} size={14} alt={d.hit ? 'hit' : 'miss'} />
               </span>
             ))}
           </div>

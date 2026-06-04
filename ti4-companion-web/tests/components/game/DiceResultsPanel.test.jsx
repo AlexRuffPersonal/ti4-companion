@@ -14,11 +14,25 @@ describe('DiceResultsPanel', () => {
     expect(screen.getByText(/attacker/i)).toBeInTheDocument()
   })
 
-  it('renders each die roll value', () => {
+  it('renders hit icon for each hit die', () => {
     render(<DiceResultsPanel dice={DICE} label="Attacker" />)
-    expect(screen.getByText('8')).toBeInTheDocument()
-    expect(screen.getByText('3')).toBeInTheDocument()
-    expect(screen.getByText('9')).toBeInTheDocument()
+    const hitIcons = screen.getAllByRole('img', { name: 'hit' })
+    expect(hitIcons).toHaveLength(2) // DICE has 2 hits
+  })
+
+  it('renders miss icon for each miss die', () => {
+    render(<DiceResultsPanel dice={DICE} label="Attacker" />)
+    const missIcons = screen.getAllByRole('img', { name: 'miss' })
+    expect(missIcons).toHaveLength(1) // DICE has 1 miss
+  })
+
+  it('renders each die roll value as title attribute', () => {
+    render(<DiceResultsPanel dice={DICE} label="Attacker" />)
+    const spans = document.querySelectorAll('[title]')
+    const titles = Array.from(spans).map(s => s.getAttribute('title'))
+    expect(titles).toContain('8')
+    expect(titles).toContain('3')
+    expect(titles).toContain('9')
   })
 
   it('shows hit count', () => {
