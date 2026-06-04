@@ -1,4 +1,5 @@
 import { phaseLabel } from '../../lib/gameUtils.js'
+import GameIcon from '../shared/GameIcon.jsx'
 
 export default function GameHeader({ game, speaker, onOpenTradeLog, onOpenRules, isHost = false, onUndo = () => {}, canUndo = false }) {
   return (
@@ -12,7 +13,7 @@ export default function GameHeader({ game, speaker, onOpenTradeLog, onOpenRules,
       <div className="flex items-center gap-4">
         <span className="text-dim text-xs">
           GOAL: {game?.vp_goal ?? '?'} VP
-          {speaker && <> · 🎙 {speaker.display_name}</>}
+          {speaker && <> · <GameIcon category="economy" name="speaker" size={14} alt="speaker" className="inline" /> {speaker.display_name}</>}
         </span>
         {isHost && (
           <button
