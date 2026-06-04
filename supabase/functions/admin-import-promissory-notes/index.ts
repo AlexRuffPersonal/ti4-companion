@@ -26,6 +26,7 @@ const NOTE_HANDLER_MAP: Record<string, string> = {
   'Greyfire Mutagen': 'greyfireMutagen',
   'The Cavalry': 'theCavalry',
   'Tekklar Legion': 'tekklarLegion',
+  'Terraform': 'terraform',
   'Creuss Iff': 'creussIff',
   'Spy Net': 'spyNet',
   'Strike Wing Ambuscade': 'strikeWingAmbuscade',
@@ -102,14 +103,17 @@ Deno.serve(async (req: Request) => {
 
   // 3. Re-fetch just-inserted notes and ability_definitions, then re-insert ability_sources
   const noteNames = Object.keys(NOTE_HANDLER_MAP)
-  const { data: insertedNotes } = await db
+  const { data: insertedNotes, error: notesRefetchError } = await db
     .from('promissory_notes')
     .select('id, name')
     .in('name', noteNames)
-  const { data: insertedDefs } = await db
+  if (notesRefetchError) return errorResponse(`Notes re-fetch failed: ${notesRefetchError.message}`, 500)
+
+  const { data: insertedDefs, error: defsRefetchError } = await db
     .from('ability_definitions')
     .select('id, ability_key')
     .in('ability_key', Object.values(NOTE_HANDLER_MAP))
+  if (defsRefetchError) return errorResponse(`Ability definitions re-fetch failed: ${defsRefetchError.message}`, 500)
 
   const noteMap = Object.fromEntries(
     ((insertedNotes ?? []) as Array<{ id: string; name: string }>).map(n => [n.name, n.id])
