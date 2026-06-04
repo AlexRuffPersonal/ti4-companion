@@ -17,9 +17,36 @@ import { makeRequest as _makeRequest } from '../helpers/makeRequest.js'
 const makeRequest = (body) => _makeRequest('admin-import-promissory-notes', body)
 
 function mockDb({ deleteError = null, insertError = null } = {}) {
-  db.from.mockReturnValue({
-    delete: vi.fn().mockReturnValue({ neq: vi.fn().mockResolvedValue({ error: deleteError }) }),
-    insert: vi.fn().mockResolvedValue({ error: insertError }),
+  db.from.mockImplementation((table) => {
+    if (table === 'promissory_notes') {
+      return {
+        delete: vi.fn().mockReturnValue({ neq: vi.fn().mockResolvedValue({ error: deleteError }) }),
+        insert: vi.fn().mockResolvedValue({ error: insertError }),
+        select: vi.fn().mockReturnValue({
+          in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        }),
+      }
+    }
+    if (table === 'ability_definitions') {
+      return {
+        upsert: vi.fn().mockResolvedValue({ error: null }),
+        select: vi.fn().mockReturnValue({
+          in: vi.fn().mockResolvedValue({ data: [], error: null }),
+        }),
+      }
+    }
+    if (table === 'ability_sources') {
+      return {
+        delete: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }),
+        insert: vi.fn().mockResolvedValue({ error: null }),
+      }
+    }
+    return {
+      delete: vi.fn().mockReturnValue({ neq: vi.fn().mockResolvedValue({ error: null }) }),
+      insert: vi.fn().mockResolvedValue({ error: null }),
+    }
   })
 }
 
@@ -85,5 +112,29 @@ describe('admin-import-promissory-notes', () => {
     expect(res.status).toBe(500)
     const body = await res.json()
     expect(body.error).toMatch(/insert failed/i)
+  })
+
+  it('upserts ability_definitions after import', async () => {
+    requireServiceRole.mockResolvedValue('user-id')
+    const records = [{ name: 'Political Favor' }]
+    await handler(makeRequest({ records }))
+    const calledTables = db.from.mock.calls.map(([t]) => t)
+    expect(calledTables).toContain('ability_definitions')
+  })
+
+  it('deletes and re-inserts ability_sources after import', async () => {
+    requireServiceRole.mockResolvedValue('user-id')
+    const records = [{ name: 'Political Favor' }]
+    await handler(makeRequest({ records }))
+    const calledTables = db.from.mock.calls.map(([t]) => t)
+    expect(calledTables).toContain('ability_sources')
+  })
+
+  it('returns abilitiesLinked in the response', async () => {
+    requireServiceRole.mockResolvedValue('user-id')
+    const records = [{ name: 'Political Favor' }]
+    const res = await handler(makeRequest({ records }))
+    const body = await res.json()
+    expect(body).toHaveProperty('abilitiesLinked')
   })
 })
