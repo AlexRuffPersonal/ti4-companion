@@ -199,4 +199,13 @@ describe('StrategyCardPanel', () => {
     })
     expect(screen.getByText(/8\. imperial selected/i)).toBeInTheDocument()
   })
+
+  it('renders strategy card icon in picker button', () => {
+    renderPanel({
+      game: { phase: 'strategy' },
+      player: { ...PLAYER, strategy_card: null },
+    })
+    // Card 1 = Leadership — icon alt should be "leadership"
+    expect(screen.getByRole('img', { name: 'leadership' })).toBeInTheDocument()
+  })
 })

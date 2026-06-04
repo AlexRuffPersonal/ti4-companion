@@ -1,4 +1,5 @@
 import { getCard } from '../../lib/strategyCardConstants.js'
+import GameIcon from '../shared/GameIcon.jsx'
 
 export default function StrategyCardPanel({
   player,
@@ -32,8 +33,9 @@ export default function StrategyCardPanel({
                 <button
                   key={cardNum}
                   onClick={() => onPickStrategyCard(cardNum)}
-                  className="btn-primary text-xs py-2"
+                  className="btn-primary text-xs py-2 flex flex-col items-center gap-1"
                 >
+                  <GameIcon category="strategy" name={card?.name?.toLowerCase() ?? String(cardNum)} size={20} alt={card?.name?.toLowerCase() ?? String(cardNum)} />
                   <div className="font-display">{cardNum}</div>
                   <div className="text-xs text-muted">{card?.name}</div>
                 </button>
