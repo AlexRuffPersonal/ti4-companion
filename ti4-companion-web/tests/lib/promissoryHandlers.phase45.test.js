@@ -134,3 +134,103 @@ describe('terraform', () => {
     expect(planetCalls.length).toBeGreaterThan(0)
   })
 })
+
+// ── blackMarketForgery ───────────────────────────────────────────────────────
+
+describe('blackMarketForgery', () => {
+  const FRAG_1 = 'frag-1-uuid'
+  const FRAG_2 = 'frag-2-uuid'
+
+  function makeBMFDb({ fragments = [
+    { id: FRAG_1, state: 'held', resolved_by_player_id: HOLDER_ID, relic_fragment_type: 'cultural' },
+    { id: FRAG_2, state: 'held', resolved_by_player_id: HOLDER_ID, relic_fragment_type: 'cultural' },
+  ] } = {}) {
+    return {
+      from: vi.fn((table) => {
+        if (table === 'game_exploration_decks') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            in: vi.fn().mockResolvedValue({ data: fragments, error: null }),
+            update: vi.fn().mockReturnValue({
+              in: vi.fn().mockResolvedValue({ error: null }),
+            }),
+          }
+        }
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }
+      }),
+    }
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    applyAbility.mockResolvedValue({ gainedRelicName: 'Shard of the Throne' })
+    applyOnGainRelicEffect.mockResolvedValue(undefined)
+  })
+
+  it('400 when fragment_ids missing from selections', async () => {
+    const db = makeBMFDb()
+    const err = await resolvePromissoryHandler('blackMarketForgery', makeCtx({ selections: {} }), db).catch(e => e)
+    expect(err.status).toBe(400)
+  })
+
+  it('400 when fragment_ids length is not 2', async () => {
+    const db = makeBMFDb()
+    const err = await resolvePromissoryHandler('blackMarketForgery', makeCtx({ selections: { fragment_ids: [FRAG_1] } }), db).catch(e => e)
+    expect(err.status).toBe(400)
+  })
+
+  it('409 when fragment not found (DB returns fewer than 2 rows)', async () => {
+    const db = makeBMFDb({ fragments: [
+      { id: FRAG_1, state: 'held', resolved_by_player_id: HOLDER_ID, relic_fragment_type: 'cultural' },
+    ]})
+    const err = await resolvePromissoryHandler('blackMarketForgery', makeCtx({ selections: { fragment_ids: [FRAG_1, FRAG_2] } }), db).catch(e => e)
+    expect(err.message).toMatch(/not found/i)
+    expect(err.status).toBe(409)
+  })
+
+  it('409 when fragment not owned by activating player', async () => {
+    const db = makeBMFDb({ fragments: [
+      { id: FRAG_1, state: 'held', resolved_by_player_id: 'someone-else', relic_fragment_type: 'cultural' },
+      { id: FRAG_2, state: 'held', resolved_by_player_id: HOLDER_ID, relic_fragment_type: 'cultural' },
+    ]})
+    const err = await resolvePromissoryHandler('blackMarketForgery', makeCtx({ selections: { fragment_ids: [FRAG_1, FRAG_2] } }), db).catch(e => e)
+    expect(err.message).toMatch(/not owned/i)
+  })
+
+  it('409 when fragment state is not held', async () => {
+    const db = makeBMFDb({ fragments: [
+      { id: FRAG_1, state: 'discarded', resolved_by_player_id: HOLDER_ID, relic_fragment_type: 'cultural' },
+      { id: FRAG_2, state: 'held', resolved_by_player_id: HOLDER_ID, relic_fragment_type: 'cultural' },
+    ]})
+    const err = await resolvePromissoryHandler('blackMarketForgery', makeCtx({ selections: { fragment_ids: [FRAG_1, FRAG_2] } }), db).catch(e => e)
+    expect(err.message).toMatch(/not in hand/i)
+  })
+
+  it('409 when fragments are different types', async () => {
+    const db = makeBMFDb({ fragments: [
+      { id: FRAG_1, state: 'held', resolved_by_player_id: HOLDER_ID, relic_fragment_type: 'cultural' },
+      { id: FRAG_2, state: 'held', resolved_by_player_id: HOLDER_ID, relic_fragment_type: 'hazardous' },
+    ]})
+    const err = await resolvePromissoryHandler('blackMarketForgery', makeCtx({ selections: { fragment_ids: [FRAG_1, FRAG_2] } }), db).catch(e => e)
+    expect(err.message).toMatch(/same type/i)
+  })
+
+  it('happy path: discards both fragments and calls applyAbility gain_relic', async () => {
+    const db = makeBMFDb()
+    await resolvePromissoryHandler('blackMarketForgery', makeCtx({ selections: { fragment_ids: [FRAG_1, FRAG_2] } }), db)
+    expect(applyAbility).toHaveBeenCalledWith([{ op: 'gain_relic' }], expect.anything(), db)
+    expect(applyOnGainRelicEffect).toHaveBeenCalledWith('Shard of the Throne', expect.anything(), db)
+  })
+
+  it('happy path: does not call applyOnGainRelicEffect when no relic gained', async () => {
+    applyAbility.mockResolvedValue({ gainedRelicName: null })
+    const db = makeBMFDb()
+    await resolvePromissoryHandler('blackMarketForgery', makeCtx({ selections: { fragment_ids: [FRAG_1, FRAG_2] } }), db)
+    expect(applyOnGainRelicEffect).not.toHaveBeenCalled()
+  })
+})

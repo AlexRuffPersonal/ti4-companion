@@ -1,6 +1,7 @@
-import { dslError } from './abilityDsl.ts'
+import { dslError, applyAbility } from './abilityDsl.ts'
 import type { ResolveContext } from './abilityDsl.ts'
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { applyOnGainRelicEffect } from './relicEffects.ts'
 
 export async function resolvePromissoryHandler(
   key: string,
@@ -316,6 +317,51 @@ export async function resolvePromissoryHandler(
     case 'strikeWingAmbuscade':
     case 'crucible':
       return  // handled by trigger-point functions; no-op here
+
+    case 'blackMarketForgery': {
+      // Naaz-Rokha: purge 2 relic fragments of the same type to gain 1 relic.
+      const fragmentIds = (ctx.selections as Record<string, unknown>)?.fragment_ids as string[] | undefined
+      if (!fragmentIds || !Array.isArray(fragmentIds) || fragmentIds.length !== 2) {
+        throw dslError('fragment_ids must be an array of exactly 2 IDs', 400)
+      }
+
+      const { data: fragments, error: fragError } = await db
+        .from('game_exploration_decks')
+        .select('id, state, resolved_by_player_id, relic_fragment_type')
+        .eq('game_id', ctx.gameId)
+        .in('id', fragmentIds)
+      if (fragError) throw new Error(`blackMarketForgery: fragment query failed: ${fragError.message}`)
+
+      const fragList = (fragments ?? []) as Array<{
+        id: string
+        state: string
+        resolved_by_player_id: string | null
+        relic_fragment_type: string | null
+      }>
+      if (fragList.length !== 2) throw dslError('Fragment not found', 409)
+
+      for (const frag of fragList) {
+        if (frag.resolved_by_player_id !== ctx.activatingPlayerId) throw dslError('Fragment not owned by player', 409)
+        if (frag.state !== 'held') throw dslError('Fragment not in hand', 409)
+        if (!frag.relic_fragment_type) throw dslError('Fragment has no type', 409)
+      }
+
+      if (fragList[0].relic_fragment_type !== fragList[1].relic_fragment_type) {
+        throw dslError('Fragments must be the same type', 409)
+      }
+
+      const { error: discardError } = await db
+        .from('game_exploration_decks')
+        .update({ state: 'discarded', resolved_by_player_id: null })
+        .in('id', fragmentIds)
+      if (discardError) throw new Error(`blackMarketForgery: discard failed: ${discardError.message}`)
+
+      const result = await applyAbility([{ op: 'gain_relic' }], ctx, db) as { gainedRelicName?: string }
+      if (result?.gainedRelicName) {
+        await applyOnGainRelicEffect(result.gainedRelicName, ctx, db)
+      }
+      return
+    }
 
     default:
       throw dslError(`Unknown promissory handler: ${key}`, 400)
