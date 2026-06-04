@@ -12,6 +12,12 @@ const MY_PLANETS = [
   { planet_name: 'Nestphar' },
 ]
 
+const MY_RELIC_FRAGMENTS = [
+  { id: 'frag-1', relic_fragment_type: 'cultural' },
+  { id: 'frag-2', relic_fragment_type: 'cultural' },
+  { id: 'frag-3', relic_fragment_type: 'hazardous' },
+]
+
 function makeNote(name, flavor_text = 'Some flavor text') {
   return { id: 'note-1', name, flavor_text }
 }
@@ -22,6 +28,7 @@ function renderModal(note, overrides = {}) {
       note={note}
       players={PLAYERS}
       myPlanets={MY_PLANETS}
+      myRelicFragments={MY_RELIC_FRAGMENTS}
       onPlay={vi.fn()}
       onClose={vi.fn()}
       {...overrides}
@@ -97,5 +104,55 @@ describe('PlayPromissoryNoteModal', () => {
     await waitFor(() => {
       expect(screen.getByText('Server error')).toBeInTheDocument()
     })
+  })
+
+  it('Black Market Forgery renders fragment picker; not player picker or planet picker', () => {
+    renderModal(makeNote('Black Market Forgery'))
+    expect(screen.getByText(/choose 2 relic fragments/i)).toBeInTheDocument()
+    expect(screen.getAllByText('cultural')).toHaveLength(2)
+    expect(screen.getByText('hazardous')).toBeInTheDocument()
+    expect(screen.queryByText('Alice')).not.toBeInTheDocument()
+    expect(screen.queryByText('Jord')).not.toBeInTheDocument()
+  })
+
+  it('clicking PLAY with 0 fragments selected shows error and does not call onPlay', async () => {
+    const onPlay = vi.fn()
+    renderModal(makeNote('Black Market Forgery'), { onPlay })
+    fireEvent.click(screen.getByRole('button', { name: /play/i }))
+    expect(screen.getByText('Select exactly 2 fragments')).toBeInTheDocument()
+    expect(onPlay).not.toHaveBeenCalled()
+  })
+
+  it('clicking PLAY with 2 different-type fragments shows type mismatch error', async () => {
+    const onPlay = vi.fn()
+    renderModal(makeNote('Black Market Forgery'), { onPlay })
+    fireEvent.click(screen.getAllByText('cultural')[0])
+    fireEvent.click(screen.getByText('hazardous'))
+    fireEvent.click(screen.getByRole('button', { name: /play/i }))
+    expect(screen.getByText('Both fragments must be the same type')).toBeInTheDocument()
+    expect(onPlay).not.toHaveBeenCalled()
+  })
+
+  it('clicking PLAY with 2 same-type fragments calls onPlay with fragment_ids', async () => {
+    const onPlay = vi.fn().mockResolvedValue(undefined)
+    renderModal(makeNote('Black Market Forgery'), { onPlay })
+    const culturalButtons = screen.getAllByText('cultural')
+    fireEvent.click(culturalButtons[0])
+    fireEvent.click(culturalButtons[1])
+    fireEvent.click(screen.getByRole('button', { name: /play/i }))
+    await waitFor(() => {
+      expect(onPlay).toHaveBeenCalledWith('note-1', { fragment_ids: ['frag-1', 'frag-2'] })
+    })
+  })
+
+  it('selecting a 3rd fragment beyond 2 is a no-op', () => {
+    renderModal(makeNote('Black Market Forgery'))
+    const culturalButtons = screen.getAllByText('cultural')
+    fireEvent.click(culturalButtons[0])
+    fireEvent.click(culturalButtons[1])
+    // Try to add hazardous (3rd) — should not affect the selection
+    fireEvent.click(screen.getByText('hazardous'))
+    // hazardous button should still appear as unselected (btn-ghost)
+    expect(screen.getByText('hazardous').className).toContain('btn-ghost')
   })
 })

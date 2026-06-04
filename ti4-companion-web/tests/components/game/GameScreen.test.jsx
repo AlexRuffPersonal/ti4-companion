@@ -110,6 +110,7 @@ const BASE_USE_GAME = {
   rejectTheTransaction: vi.fn(),
   rescindTheTransaction: vi.fn(),
   playTheNote: vi.fn(),
+  myRelicFragments: [],
 }
 
 vi.mock('../../../src/hooks/useGame.js', () => ({

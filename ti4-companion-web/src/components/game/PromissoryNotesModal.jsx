@@ -6,7 +6,7 @@ function resolveText(text, originPlayerId, players) {
   return text?.replace('{{owner}}', originPlayer?.display_name || 'Unknown') || ''
 }
 
-export default function PromissoryNotesModal({ notes, players, myPlanets, currentPlayerId, onGive, onPlay, onClose }) {
+export default function PromissoryNotesModal({ notes, players, myPlanets, myRelicFragments, currentPlayerId, onGive, onPlay, onClose }) {
   const [pendingNote, setPendingNote] = useState(null)
 
   return (
@@ -27,7 +27,7 @@ export default function PromissoryNotesModal({ notes, players, myPlanets, curren
               // Only Terraform is gated behind the planet-picker sub-modal.
               // Other planet-picker notes (Military Support, Creuss IFF) are not yet
               // wired to the attachment system, so they call onPlay directly for now.
-              const needsSubModal = ref?.name === 'Terraform'
+              const needsSubModal = ref?.name === 'Terraform' || ref?.name === 'Black Market Forgery'
               return (
                 <div key={n.id} className="panel-inset flex items-start justify-between gap-3">
                   <div className="flex flex-col gap-1 flex-1">
@@ -57,8 +57,12 @@ export default function PromissoryNotesModal({ notes, players, myPlanets, curren
           note={pendingNote.promissory_notes}
           players={players}
           myPlanets={myPlanets}
+          myRelicFragments={myRelicFragments}
           onPlay={(_noteId, selections) => {
-            onPlay(pendingNote.id, selections?.chosenDestinationPlanet)
+            const options = {}
+            if (selections?.chosenDestinationPlanet) options.planet_name = selections.chosenDestinationPlanet
+            if (selections?.fragment_ids) options.fragment_ids = selections.fragment_ids
+            onPlay(pendingNote.id, options)
             setPendingNote(null)
           }}
           onClose={() => setPendingNote(null)}

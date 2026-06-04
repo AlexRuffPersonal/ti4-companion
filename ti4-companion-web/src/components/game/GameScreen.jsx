@@ -56,7 +56,7 @@ export default function GameScreen({ userId }) {
     drawTheAgenda, castTheVotes, resolveTheAgenda,
     myNotes, pendingIncomingTrades, createTheTransaction, confirmTheTransaction,
     rejectTheTransaction, rescindTheTransaction, playTheNote,
-    isEliminated,
+    isEliminated, myRelicFragments,
   } = useGame(code, userId)
 
   const galaxyState = useGalaxy(code, userId)
@@ -315,9 +315,9 @@ export default function GameScreen({ userId }) {
     setNotesModalOpen(false)
     setTradeModalOpen(true)
   }
-  const handlePlayNote = async (noteId, planetName) => {
+  const handlePlayNote = async (noteId, options = {}) => {
     try {
-      await playTheNote(noteId, planetName)
+      await playTheNote(noteId, options)
     } catch (e) {
       console.error('Play note error:', e)
     }
@@ -522,6 +522,7 @@ export default function GameScreen({ userId }) {
           notes={myNotes?.filter(n => n.state === 'held') ?? []}
           players={players}
           myPlanets={myPlanets}
+          myRelicFragments={myRelicFragments}
           currentPlayerId={currentPlayer?.id}
           onGive={handleGiveNote}
           onPlay={handlePlayNote}
