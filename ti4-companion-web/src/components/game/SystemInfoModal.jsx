@@ -1,3 +1,5 @@
+import GameIcon from '../shared/GameIcon.jsx'
+
 const UNIT_ABBREV = {
   carrier: 'C', cruiser: 'Cr', destroyer: 'D', dreadnought: 'Dr',
   fighter: 'F', flagship: 'Fl', war_sun: 'W', space_dock: 'SD',
@@ -33,9 +35,12 @@ export default function SystemInfoModal({ tileInfo, systemKey, onClose, systemUn
               }
             </div>
             {(p.type ?? []).length > 0 &&
-              <div className="flex gap-1">
+              <div className="flex gap-1 items-center">
                 {p.type.map(t => (
-                  <span key={t} className="text-dim text-xs font-body uppercase">{t}</span>
+                  <span key={t} className="flex items-center gap-1 text-dim text-xs font-body uppercase">
+                    <GameIcon category="planet" name={t} size={12} alt={t} />
+                    {t}
+                  </span>
                 ))}
               </div>
             }

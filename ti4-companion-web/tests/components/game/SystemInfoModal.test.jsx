@@ -62,6 +62,12 @@ describe('SystemInfoModal', () => {
     expect(container.querySelectorAll('.text-dim.text-xs').length).toBe(0)
   })
 
+  it('renders planet trait icon for each trait', () => {
+    renderModal()
+    // planet fixture has type: ['cultural']
+    expect(screen.getByRole('img', { name: 'cultural' })).toBeInTheDocument()
+  })
+
   it('clicking CLOSE calls onClose', () => {
     const onClose = vi.fn()
     renderModal({}, onClose)
