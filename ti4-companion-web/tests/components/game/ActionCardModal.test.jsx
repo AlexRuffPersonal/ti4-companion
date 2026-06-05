@@ -134,4 +134,9 @@ describe('ActionCardModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
     expect(screen.queryByTestId('confirm-play')).not.toBeInTheDocument()
   })
+
+  it('renders action card icon in panel header', () => {
+    renderModal()
+    expect(screen.getByRole('img', { name: 'action' })).toBeInTheDocument()
+  })
 })

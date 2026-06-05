@@ -167,4 +167,20 @@ describe('PromissoryNotesModal', () => {
       expect(onPlay).toHaveBeenCalledWith('note-bmf', { fragment_ids: ['frag-1', 'frag-2'] })
     })
   })
+
+  it('renders promissory note icon in panel header', () => {
+    render(
+      <PromissoryNotesModal
+        notes={[]}
+        players={[]}
+        myPlanets={[]}
+        myRelicFragments={[]}
+        currentPlayerId="p1"
+        onGive={vi.fn()}
+        onPlay={vi.fn()}
+        onClose={vi.fn()}
+      />
+    )
+    expect(screen.getByRole('img', { name: 'promissory' })).toBeInTheDocument()
+  })
 })

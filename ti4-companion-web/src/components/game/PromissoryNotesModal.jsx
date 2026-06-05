@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import PlayPromissoryNoteModal from './PlayPromissoryNoteModal.jsx'
+import GameIcon from '../shared/GameIcon.jsx'
 
 function resolveText(text, originPlayerId, players) {
   const originPlayer = players?.find(p => p.id === originPlayerId)
@@ -13,7 +14,10 @@ export default function PromissoryNotesModal({ notes, players, myPlanets, myReli
     <div className="fixed inset-0 bg-void/90 flex items-center justify-center z-50 p-4">
       <div className="panel w-full max-w-md flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <p className="label">MY PROMISSORY NOTES</p>
+          <p className="label flex items-center gap-2">
+            <GameIcon category="cards" name="promissory" size={14} alt="promissory" />
+            MY PROMISSORY NOTES
+          </p>
           <button className="btn-ghost text-xs" onClick={onClose}>CLOSE</button>
         </div>
 

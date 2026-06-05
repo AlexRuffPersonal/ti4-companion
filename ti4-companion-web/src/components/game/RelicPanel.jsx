@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import DiscardBrowserModal from './DiscardBrowserModal.jsx'
+import GameIcon from '../shared/GameIcon.jsx'
 
 const ACTION_RELICS = new Set([
   'Dominus Orb',
@@ -85,7 +86,10 @@ export default function RelicPanel({
 
   return (
     <div className="panel w-full max-w-sm flex flex-col gap-4">
-      <p className="label">RELICS</p>
+      <p className="label flex items-center gap-2">
+        <GameIcon category="cards" name="relic" size={14} alt="relic" />
+        RELICS
+      </p>
       <div className="flex flex-col gap-3">
         {relics.map(relic => {
           const name = relic.name ?? relic.relics?.name

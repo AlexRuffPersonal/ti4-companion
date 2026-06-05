@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { deriveHandState } from '../../lib/handState.js'
+import GameIcon from '../shared/GameIcon.jsx'
 
 const TIMING_COLOURS = {
   Action: 'text-plasma',
@@ -16,7 +17,10 @@ export default function ActionCardModal({ cards, onDraw, onDiscard, onClose, tri
     <div className="fixed inset-0 bg-void/80 flex items-center justify-center z-50 p-4">
       <div className="panel w-full max-w-lg flex flex-col gap-4 max-h-[80vh] overflow-y-auto">
         <div className="flex items-center justify-between">
-          <p className="label">ACTION CARDS ({cards.length}/7)</p>
+          <p className="label flex items-center gap-2">
+            <GameIcon category="cards" name="action" size={14} alt="action" />
+            ACTION CARDS ({cards.length}/7)
+          </p>
           <button className="btn-ghost text-xs" onClick={onClose}>CLOSE</button>
         </div>
 
