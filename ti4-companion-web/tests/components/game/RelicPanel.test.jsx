@@ -43,6 +43,12 @@ describe('RelicPanel', () => {
     expect(screen.getByText('Hold the Crown')).toBeInTheDocument()
   })
 
+  it('renders relic icon in panel header', () => {
+    const relics = [makeRelic({ id: 1, name: 'Shard of the Throne', text: 'Gain 1 VP' })]
+    render(<RelicPanel {...DEFAULT_PROPS} relics={relics} />)
+    expect(screen.getByRole('img', { name: 'relic' })).toBeInTheDocument()
+  })
+
   it('shows exhausted badge for exhaustable relics', () => {
     const relics = [makeRelic({ name: 'Scepter Of Emelpar', text: 'desc', exhaustable: true, exhausted: true })]
     render(<RelicPanel {...DEFAULT_PROPS} relics={relics} />)
