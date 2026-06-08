@@ -249,8 +249,9 @@ describe('LobbyScreen — map builder (host only)', () => {
     expect(screen.getByRole('button', { name: /save map/i })).toBeDisabled()
   })
 
-  it('Save Map button enabled with valid map string', () => {
+  it('Save Map button enabled with valid map string', async () => {
     renderLobby()
+    await act(async () => {}) // flush tile-loading useEffect
     const textarea = screen.getByPlaceholderText(/milty string/i)
     fireEvent.change(textarea, { target: { value: '18 36 30' } })
     expect(screen.getByRole('button', { name: /save map/i })).not.toBeDisabled()
@@ -258,6 +259,7 @@ describe('LobbyScreen — map builder (host only)', () => {
 
   it('clicking Save Map calls updateGameSettings', async () => {
     renderLobby()
+    await act(async () => {}) // flush tile-loading useEffect
     const textarea = screen.getByPlaceholderText(/milty string/i)
     fireEvent.change(textarea, { target: { value: '18 36 30' } })
     fireEvent.click(screen.getByRole('button', { name: /save map/i }))

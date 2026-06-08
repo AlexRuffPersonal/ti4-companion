@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { useGame } from '../../hooks/useGame.js'
 import { supabase } from '../../lib/supabase.js'
@@ -28,6 +28,9 @@ export default function LobbyScreen({ userId }) {
   const [startError, setStartError] = useState(null)
   const [starting, setStarting] = useState(false)
 
+  // Local faction/colour — held separately so each field is visible before both are chosen
+  const [localFaction, setLocalFaction] = useState(null)
+  const [localColour, setLocalColour] = useState(null)
   // Optimistic faction/color selection
   const [pendingFaction, setPendingFaction] = useState(null)
   const [pendingColour, setPendingColour] = useState(null)
@@ -45,6 +48,13 @@ export default function LobbyScreen({ userId }) {
   const [pendingSpeaker, setPendingSpeaker] = useState(null)
   const [speakerError, setSpeakerError] = useState(null)
 
+  // VP goal — local state so Realtime ticks don't reset mid-edit
+  const [vpGoal, setVpGoal] = useState(10)
+  const vpGoalDirty = useRef(false)
+  useEffect(() => {
+    if (game?.vp_goal != null && !vpGoalDirty.current) setVpGoal(game.vp_goal)
+  }, [game?.vp_goal])
+
   // Map builder state (host only)
   const [tileByNumber, setTileByNumber] = useState({})
   const [tileDataById, setTileDataById] = useState({})
@@ -54,6 +64,8 @@ export default function LobbyScreen({ userId }) {
   const [selectedPreset, setSelectedPreset] = useState(null)
   const [mapString, setMapString] = useState('')
   const [parseError, setParseError] = useState(null)
+  const [mapSaving, setMapSaving] = useState(false)
+  const [mapSaveSuccess, setMapSaveSuccess] = useState(false)
 
   // Draft setup state (host only)
   const [mapSetupMethod, setMapSetupMethod] = useState('string') // 'string' | 'draft'
@@ -112,12 +124,13 @@ export default function LobbyScreen({ userId }) {
 
   async function handlePick(faction, colour) {
     if (!faction || !colour) return
+    setLocalFaction(null)
+    setLocalColour(null)
     setPendingFaction(faction)
     setPendingColour(colour)
     setPickError(null)
     try {
       await pickFaction(faction, colour)
-      // Clear optimistic state so Realtime-pushed updates from currentPlayer are visible
       setPendingFaction(null)
       setPendingColour(null)
     } catch (e) {
@@ -125,6 +138,18 @@ export default function LobbyScreen({ userId }) {
       setPendingFaction(null)
       setPendingColour(null)
     }
+  }
+
+  function handleFactionChange(faction) {
+    setLocalFaction(faction || null)
+    const colour = localColour ?? pendingColour ?? currentPlayer?.colour ?? ''
+    if (faction && colour) handlePick(faction, colour)
+  }
+
+  function handleColourChange(colour) {
+    setLocalColour(colour || null)
+    const faction = localFaction ?? pendingFaction ?? currentPlayer?.faction ?? ''
+    if (faction && colour) handlePick(faction, colour)
   }
 
   async function handleSetSpeaker(playerId) {
@@ -177,8 +202,8 @@ export default function LobbyScreen({ userId }) {
     )
   }
 
-  const displayFaction = pendingFaction ?? currentPlayer?.faction ?? ''
-  const displayColour = pendingColour ?? currentPlayer?.colour ?? ''
+  const displayFaction = localFaction ?? pendingFaction ?? currentPlayer?.faction ?? ''
+  const displayColour = localColour ?? pendingColour ?? currentPlayer?.colour ?? ''
 
   return (
     <div className="min-h-screen bg-void p-6 flex flex-col gap-6 max-w-2xl mx-auto">
@@ -246,7 +271,7 @@ export default function LobbyScreen({ userId }) {
             id="faction-select"
             className="input"
             value={displayFaction}
-            onChange={(e) => handlePick(e.target.value, displayColour)}
+            onChange={(e) => handleFactionChange(e.target.value)}
             aria-label="Faction"
           >
             <option value="">— pick a faction —</option>
@@ -270,7 +295,7 @@ export default function LobbyScreen({ userId }) {
                 } ${takenColours.has(c) ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}
                 style={{ backgroundColor: c === 'black' ? '#222' : c }}
                 disabled={takenColours.has(c)}
-                onClick={() => handlePick(displayFaction, c)}
+                onClick={() => handleColourChange(c)}
                 aria-label={c}
               />
             ))}
@@ -292,8 +317,17 @@ export default function LobbyScreen({ userId }) {
               type="number"
               className="input w-24"
               min={1}
-              value={game?.vp_goal ?? 10}
-              onChange={(e) => updateSettings({ vp_goal: Number(e.target.value) })}
+              value={vpGoal}
+              onChange={(e) => {
+                vpGoalDirty.current = true
+                setVpGoal(Number(e.target.value))
+              }}
+              onBlur={() => {
+                if (vpGoalDirty.current && vpGoal >= 1) {
+                  vpGoalDirty.current = false
+                  updateSettings({ vp_goal: vpGoal })
+                }
+              }}
             />
           </div>
 
@@ -564,8 +598,11 @@ export default function LobbyScreen({ userId }) {
 
             <button
               className="btn-primary"
-              disabled={!!parseError || !mapString.trim()}
+              disabled={!!parseError || !mapString.trim() || mapSaving || Object.keys(tileByNumber).length === 0}
               onClick={async () => {
+                setMapSaving(true)
+                setMapSaveSuccess(false)
+                setParseError(null)
                 const tokens = mapString.trim().split(/\s+/).filter(Boolean).map(Number)
                 const mecatolEntry = { '0,0': { tile_id: tileByNumber[18]?.id ?? null, tile_number: 18 } }
                 const resolvedTiles = {}
@@ -579,13 +616,17 @@ export default function LobbyScreen({ userId }) {
                     map_tiles,
                     map_layout: selectedPreset ?? `custom-${mapPlayerCount}`,
                   })
+                  setMapSaveSuccess(true)
                 } catch (e) {
                   setParseError(e.message)
+                } finally {
+                  setMapSaving(false)
                 }
               }}
             >
-              Save Map
+              {mapSaving ? 'Saving…' : 'Save Map'}
             </button>
+            {mapSaveSuccess && <p className="text-success text-xs">Map saved.</p>}
                   </>
                 )}
               </>
