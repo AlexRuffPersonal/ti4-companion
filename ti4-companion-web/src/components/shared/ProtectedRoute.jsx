@@ -10,6 +10,6 @@ export default function ProtectedRoute({ user, loading, children }) {
       </div>
     )
   }
-  if (!user) return <Navigate to="/login" replace />
+  if (!user) return <Navigate to="/login" replace state={{ expired: true }} />
   return children
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth.js'
 import LoginScreen from './components/auth/LoginScreen.jsx'
 import VerifyScreen from './components/auth/VerifyScreen.jsx'
@@ -35,6 +35,7 @@ function JoinRedirect({ user }) {
 
 export default function App() {
   const { user, loading, sendMagicLink, signOut } = useAuth()
+  const location = useLocation()
   const [linkSentTo, setLinkSentTo] = useState(null)
   const [authError, setAuthError] = useState(null)
   const [authLoading, setAuthLoading] = useState(false)
@@ -57,11 +58,16 @@ export default function App() {
       <Route
         path="/login"
         element={
-          user
-            ? <Navigate to="/setup" replace />
-            : linkSentTo
-              ? <VerifyScreen email={linkSentTo} />
-              : <LoginScreen onSendLink={handleSendLink} loading={authLoading} error={authError} />
+          linkSentTo
+            ? <VerifyScreen email={linkSentTo} />
+            : user
+              ? <Navigate to="/setup" replace />
+              : <LoginScreen
+                  onSendLink={handleSendLink}
+                  loading={authLoading}
+                  error={authError}
+                  expiredSession={location.state?.expired ?? false}
+                />
         }
       />
 

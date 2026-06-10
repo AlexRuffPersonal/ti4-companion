@@ -48,6 +48,9 @@ export default function LobbyScreen({ userId }) {
   const [pendingSpeaker, setPendingSpeaker] = useState(null)
   const [speakerError, setSpeakerError] = useState(null)
 
+  // Optimistic expansions — held locally so Realtime ticks don't revert mid-click
+  const [pendingExpansions, setPendingExpansions] = useState(null)
+
   // VP goal — local state so Realtime ticks don't reset mid-edit
   const [vpGoal, setVpGoal] = useState(10)
   const vpGoalDirty = useRef(false)
@@ -58,6 +61,8 @@ export default function LobbyScreen({ userId }) {
   // Map builder state (host only)
   const [tileByNumber, setTileByNumber] = useState({})
   const [tileDataById, setTileDataById] = useState({})
+  const [tilesLoading, setTilesLoading] = useState(true)
+  const [tilesError, setTilesError] = useState(null)
   const [mapPlayerCount, setMapPlayerCount] = useState(
     players.length > 0 ? Math.max(3, Math.min(8, players.length)) : 6
   )
@@ -79,7 +84,8 @@ export default function LobbyScreen({ userId }) {
 
   useEffect(() => {
     supabase.from('tiles').select('id, tile_number, wormhole, planets, anomaly, type, name')
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) { setTilesError('Failed to load tile data'); return }
         const map = {}
         const byId = {}
         for (const t of data ?? []) {
@@ -89,6 +95,8 @@ export default function LobbyScreen({ userId }) {
         setTileByNumber(map)
         setTileDataById(byId)
       })
+      .catch(() => setTilesError('Failed to load tile data'))
+      .finally(() => setTilesLoading(false))
   }, [])
 
   const takenFactions = new Set(players.filter(p => p.user_id !== userId).map(p => p.faction).filter(Boolean))
@@ -131,8 +139,8 @@ export default function LobbyScreen({ userId }) {
     setPickError(null)
     try {
       await pickFaction(faction, colour)
-      setPendingFaction(null)
-      setPendingColour(null)
+      // Don't clear pending here — let the Realtime update replace it.
+      // Clearing immediately creates a visible gap before the server state arrives.
     } catch (e) {
       setPickError(e.message)
       setPendingFaction(null)
@@ -158,10 +166,22 @@ export default function LobbyScreen({ userId }) {
     setSpeakerError(null)
     try {
       await setGameSpeaker(playerId)
-      setPendingSpeaker(null)
+      // Don't clear pending here — let the Realtime update replace it.
     } catch (e) {
       setSpeakerError(e.message)
       setPendingSpeaker(null)
+    }
+  }
+
+  async function handleExpansionChange(exp, checked) {
+    const base = pendingExpansions ?? game?.expansions ?? {}
+    const updated = { ...base, [exp]: checked }
+    setPendingExpansions(updated)
+    try {
+      await updateSettings({ expansions: updated })
+      // Don't clear — let Realtime confirm and replace
+    } catch (_e) {
+      setPendingExpansions(null)
     }
   }
 
@@ -204,6 +224,7 @@ export default function LobbyScreen({ userId }) {
 
   const displayFaction = localFaction ?? pendingFaction ?? currentPlayer?.faction ?? ''
   const displayColour = localColour ?? pendingColour ?? currentPlayer?.colour ?? ''
+  const displayExpansions = pendingExpansions ?? game?.expansions ?? {}
 
   return (
     <div className="min-h-screen bg-void p-6 flex flex-col gap-6 max-w-2xl mx-auto">
@@ -323,10 +344,11 @@ export default function LobbyScreen({ userId }) {
                 setVpGoal(Number(e.target.value))
               }}
               onBlur={() => {
-                if (vpGoalDirty.current && vpGoal >= 1) {
-                  vpGoalDirty.current = false
-                  updateSettings({ vp_goal: vpGoal })
-                }
+                if (!vpGoalDirty.current) return
+                vpGoalDirty.current = false
+                const clamped = Math.max(1, vpGoal || 1)
+                if (clamped !== vpGoal) setVpGoal(clamped)
+                updateSettings({ vp_goal: clamped })
               }}
             />
           </div>
@@ -337,8 +359,8 @@ export default function LobbyScreen({ userId }) {
               <label key={exp} className="flex items-center gap-2 font-body text-text text-sm cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={game?.expansions?.[exp] ?? false}
-                  onChange={(e) => updateSettings({ expansions: { ...(game?.expansions ?? {}), [exp]: e.target.checked } })}
+                  checked={displayExpansions[exp] ?? false}
+                  onChange={(e) => handleExpansionChange(exp, e.target.checked)}
                 />
                 {exp === 'pok' ? 'Prophecy of Kings' : 'Codex: Vigil & Thunder\'s Edge'}
               </label>
@@ -584,8 +606,16 @@ export default function LobbyScreen({ userId }) {
                   setMapString(e.target.value)
                   setSelectedPreset(null)
                   const tokens = e.target.value.trim().split(/\s+/).filter(Boolean)
-                  const invalid = tokens.filter(t => isNaN(Number(t)))
-                  setParseError(invalid.length > 0 ? `Invalid tile numbers: ${invalid.join(', ')}` : null)
+                  const nonNumeric = tokens.filter(t => isNaN(Number(t)))
+                  const tilesKnown = Object.keys(tileByNumber).length > 0
+                  const unknownNumbers = tilesKnown
+                    ? tokens.filter(t => {
+                        const n = Number(t)
+                        return !isNaN(n) && n !== 0 && !tileByNumber[n] && !tileByNumber[String(n)]
+                      })
+                    : []
+                  const allInvalid = [...new Set([...nonNumeric, ...unknownNumbers])]
+                  setParseError(allInvalid.length > 0 ? `Invalid tile numbers: ${allInvalid.join(', ')}` : null)
                 }}
                 placeholder="Paste Milty string..."
               />
@@ -596,9 +626,10 @@ export default function LobbyScreen({ userId }) {
               <p className="text-warning text-xs">Saved map contains PoK tiles — enable PoK or re-save</p>
             )}
 
+            {tilesError && <p className="text-danger text-xs">{tilesError} — map saving unavailable</p>}
             <button
               className="btn-primary"
-              disabled={!!parseError || !mapString.trim() || mapSaving || Object.keys(tileByNumber).length === 0}
+              disabled={!!parseError || !mapString.trim() || mapSaving || tilesLoading || !!tilesError}
               onClick={async () => {
                 setMapSaving(true)
                 setMapSaveSuccess(false)

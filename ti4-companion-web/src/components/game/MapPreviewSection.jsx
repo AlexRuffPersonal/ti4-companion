@@ -48,7 +48,9 @@ function HexTilePreview({ systemKey, tileNumber, rotation = 0 }) {
   )
 }
 
-export default function MapPreviewSection({ mapTiles, tileByNumber = {} }) {
+import { memo } from 'react'
+
+function MapPreviewSection({ mapTiles, tileByNumber = {} }) {
   if (!mapTiles || Object.keys(mapTiles).length === 0) {
     return <p className="text-muted text-xs">No map configured</p>
   }
@@ -72,3 +74,5 @@ export default function MapPreviewSection({ mapTiles, tileByNumber = {} }) {
     </svg>
   )
 }
+
+export default memo(MapPreviewSection)

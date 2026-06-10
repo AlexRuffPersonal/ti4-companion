@@ -1,12 +1,24 @@
 import { useState } from 'react'
 
-export default function LoginScreen({ onSendLink, loading, error }) {
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+export default function LoginScreen({ onSendLink, loading, error, expiredSession }) {
   const [email, setEmail] = useState('')
+  const [localError, setLocalError] = useState(null)
 
   function handleSubmit(e) {
     e.preventDefault()
-    if (email.trim()) onSendLink(email.trim())
+    const trimmed = email.trim()
+    if (!trimmed) return
+    if (!EMAIL_RE.test(trimmed)) {
+      setLocalError('Please enter a valid email address')
+      return
+    }
+    setLocalError(null)
+    onSendLink(trimmed)
   }
+
+  const displayError = localError || error
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 gap-8 bg-void">
@@ -20,6 +32,12 @@ export default function LoginScreen({ onSendLink, loading, error }) {
         <div className="font-display text-xs text-gold tracking-[0.3em] mt-2">4TH EDITION</div>
       </div>
 
+      {expiredSession && (
+        <p className="text-warning text-sm font-body text-center max-w-xs">
+          Your session has expired. Please sign in again.
+        </p>
+      )}
+
       <form onSubmit={handleSubmit} className="w-full max-w-xs flex flex-col gap-3">
         <label htmlFor="email" className="sr-only">Email address</label>
         <input
@@ -28,10 +46,10 @@ export default function LoginScreen({ onSendLink, loading, error }) {
           type="email"
           placeholder="Enter your email"
           value={email}
-          onChange={e => setEmail(e.target.value)}
+          onChange={e => { setEmail(e.target.value); setLocalError(null) }}
           disabled={loading}
         />
-        {error && <p className="text-danger text-sm font-body text-center">{error}</p>}
+        {displayError && <p className="text-danger text-sm font-body text-center">{displayError}</p>}
         <button
           className="btn-primary py-3"
           type="submit"
