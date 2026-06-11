@@ -32,9 +32,9 @@ const FACTIONS = [
 ]
 
 const TILES = [
-  { id: 'tile-18', tile_number: '18', wormhole: null },
-  { id: 'tile-30', tile_number: '30', wormhole: null },
-  { id: 'tile-36', tile_number: '36', wormhole: null },
+  { id: 'tile-18', tile_number: '18', wormholes: [], anomalies: [] },
+  { id: 'tile-30', tile_number: '30', wormholes: [], anomalies: [] },
+  { id: 'tile-36', tile_number: '36', wormholes: [], anomalies: [] },
 ]
 
 function makeSelectResult(data) {

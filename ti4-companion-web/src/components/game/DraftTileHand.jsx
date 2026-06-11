@@ -24,8 +24,8 @@ export default function DraftTileHand({ tiles = [], tileByNumber = {}, isMyTurn 
         // Compute display info
         let resourceTotal = 0
         let influenceTotal = 0
-        const hasAnomalyPlanets = tile?.anomaly
-        const wormhole = tile?.wormhole
+        const hasAnomalyPlanets = (tile?.anomalies?.length ?? 0) > 0
+        const wormhole = tile?.wormholes?.[0] ?? null
 
         if (tile?.planets && Array.isArray(tile.planets)) {
           for (const planet of tile.planets) {

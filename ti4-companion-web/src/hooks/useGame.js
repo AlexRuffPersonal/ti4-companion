@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, startTransition } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import {
@@ -194,7 +194,7 @@ export function useGame(code, userId) {
           { event: '*', schema: 'public', table: 'games', filter: `id=eq.${gameData.id}` },
           async (payload) => {
             if (!mounted) return
-            setGame(prev => ({ ...prev, ...payload.new }))
+            startTransition(() => { setGame(prev => ({ ...prev, ...payload.new })) })
             // Re-fetch current agenda when card changes
             if (payload.new.agenda_current_card_id !== payload.old?.agenda_current_card_id) {
               if (payload.new.agenda_current_card_id) {
@@ -224,10 +224,12 @@ export function useGame(code, userId) {
           { event: '*', schema: 'public', table: 'game_players', filter: `game_id=eq.${gameData.id}` },
           (payload) => {
             if (!mounted) return
-            setPlayers(prev => {
-              if (payload.eventType === 'INSERT') return [...prev, payload.new]
-              if (payload.eventType === 'UPDATE') return prev.map(p => p.id === payload.new.id ? payload.new : p)
-              return prev
+            startTransition(() => {
+              setPlayers(prev => {
+                if (payload.eventType === 'INSERT') return [...prev, payload.new]
+                if (payload.eventType === 'UPDATE') return prev.map(p => p.id === payload.new.id ? payload.new : p)
+                return prev
+              })
             })
           }
         )

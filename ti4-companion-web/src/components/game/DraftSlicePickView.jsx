@@ -60,8 +60,8 @@ export default function DraftSlicePickView({ draftState, tileByNumber = {}, curr
                       influenceTotal += planet.influence ?? 0
                     }
                   }
-                  const isAnomaly = tile?.anomaly || tile?.type === 'anomaly'
-                  const wormhole = tile?.wormhole
+                  const isAnomaly = (tile?.anomalies?.length ?? 0) > 0 || tile?.type === 'anomaly'
+                  const wormhole = tile?.wormholes?.[0] ?? null
 
                   return (
                     <div key={tileNumber} className="flex items-center gap-2 text-xs font-body">

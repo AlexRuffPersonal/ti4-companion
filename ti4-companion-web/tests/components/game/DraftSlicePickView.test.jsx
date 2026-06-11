@@ -3,10 +3,10 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import DraftSlicePickView from '../../../src/components/game/DraftSlicePickView.jsx'
 
 const TILE_BY_NUMBER = {
-  '32': { tile_number: '32', planets: [{ resources: 2, influence: 1 }], wormhole: null, anomaly: false, type: 'blue' },
-  '41': { tile_number: '41', planets: [], wormhole: 'alpha', anomaly: false, type: 'blue' },
-  '45': { tile_number: '45', planets: [], wormhole: null, anomaly: true, type: 'anomaly' },
-  '19': { tile_number: '19', planets: [{ resources: 1, influence: 2 }], wormhole: null, anomaly: false, type: 'red' },
+  '32': { tile_number: '32', planets: [{ resources: 2, influence: 1 }], wormholes: [], anomalies: [], type: 'blue' },
+  '41': { tile_number: '41', planets: [], wormholes: ['alpha'], anomalies: [], type: 'blue' },
+  '45': { tile_number: '45', planets: [], wormholes: [], anomalies: ['asteroid_field'], type: 'anomaly' },
+  '19': { tile_number: '19', planets: [{ resources: 1, influence: 2 }], wormholes: [], anomalies: [], type: 'red' },
 }
 
 const DRAFT_STATE = {

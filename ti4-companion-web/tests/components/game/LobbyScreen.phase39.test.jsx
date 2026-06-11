@@ -41,8 +41,8 @@ import LobbyScreen from '../../../src/components/game/LobbyScreen.jsx'
 
 const FACTIONS = [{ name: 'Arborec', expansion: 'base' }]
 const TILES = [
-  { id: 'tile-18', tile_number: '18', wormhole: null, planets: [], anomaly: null, type: 'home', name: 'Mecatol Rex' },
-  { id: 'tile-36', tile_number: '36', wormhole: null, planets: [{ resources: 2, influence: 1 }], anomaly: null, type: 'blue', name: 'Some System' },
+  { id: 'tile-18', tile_number: '18', wormholes: [], planets: [], anomalies: [], type: 'home' },
+  { id: 'tile-36', tile_number: '36', wormholes: [], planets: [{ resources: 2, influence: 1 }], anomalies: [], type: 'blue' },
 ]
 
 function makeSelectResult(data) {

@@ -83,7 +83,7 @@ export default function LobbyScreen({ userId }) {
   }, [])
 
   useEffect(() => {
-    supabase.from('tiles').select('id, tile_number, wormhole, planets, anomaly, type, name')
+    supabase.from('tiles').select('id, tile_number, type, expansion, planets, wormholes, anomalies, starts_off_board')
       .then(({ data, error }) => {
         if (error) { setTilesError('Failed to load tile data'); return }
         const map = {}

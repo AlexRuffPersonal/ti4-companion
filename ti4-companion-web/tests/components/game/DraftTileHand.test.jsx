@@ -3,9 +3,9 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import DraftTileHand from '../../../src/components/game/DraftTileHand.jsx'
 
 const TILE_BY_NUMBER = {
-  '32': { tile_number: '32', planets: [{ resources: 2, influence: 1 }, { resources: 0, influence: 2 }], wormhole: null, anomaly: false, type: 'blue' },
-  '41': { tile_number: '41', planets: [], wormhole: 'alpha', anomaly: false, type: 'blue' },
-  '45': { tile_number: '45', planets: [], wormhole: null, anomaly: true, type: 'anomaly' },
+  '32': { tile_number: '32', planets: [{ resources: 2, influence: 1 }, { resources: 0, influence: 2 }], wormholes: [], anomalies: [], type: 'blue' },
+  '41': { tile_number: '41', planets: [], wormholes: ['alpha'], anomalies: [], type: 'blue' },
+  '45': { tile_number: '45', planets: [], wormholes: [], anomalies: ['asteroid_field'], type: 'anomaly' },
 }
 
 describe('DraftTileHand', () => {
@@ -26,7 +26,7 @@ describe('DraftTileHand', () => {
     expect(screen.getByText('anomaly')).toBeInTheDocument()
   })
 
-  it('shows wormhole indicator when tile.wormhole set', () => {
+  it('shows wormhole indicator when tile.wormholes is non-empty', () => {
     render(<DraftTileHand tiles={['41']} tileByNumber={TILE_BY_NUMBER} isMyTurn={true} selectedTile={null} onSelect={vi.fn()} />)
     expect(screen.getByText('alpha')).toBeInTheDocument()
   })
