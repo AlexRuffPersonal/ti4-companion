@@ -67,6 +67,7 @@ export default function App() {
                   loading={authLoading}
                   error={authError}
                   expiredSession={location.state?.expired ?? false}
+                  onClearError={() => setAuthError(null)}
                 />
         }
       />

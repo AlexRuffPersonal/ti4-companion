@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-export default function LoginScreen({ onSendLink, loading, error, expiredSession }) {
+export default function LoginScreen({ onSendLink, loading, error, expiredSession, onClearError }) {
   const [email, setEmail] = useState('')
   const [localError, setLocalError] = useState(null)
 
@@ -38,7 +38,7 @@ export default function LoginScreen({ onSendLink, loading, error, expiredSession
         </p>
       )}
 
-      <form onSubmit={handleSubmit} className="w-full max-w-xs flex flex-col gap-3">
+      <form onSubmit={handleSubmit} noValidate className="w-full max-w-xs flex flex-col gap-3">
         <label htmlFor="email" className="sr-only">Email address</label>
         <input
           id="email"
@@ -46,7 +46,7 @@ export default function LoginScreen({ onSendLink, loading, error, expiredSession
           type="email"
           placeholder="Enter your email"
           value={email}
-          onChange={e => { setEmail(e.target.value); setLocalError(null) }}
+          onChange={e => { setEmail(e.target.value); setLocalError(null); onClearError?.() }}
           disabled={loading}
         />
         {displayError && <p className="text-danger text-sm font-body text-center">{displayError}</p>}
