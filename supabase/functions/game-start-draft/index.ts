@@ -132,7 +132,7 @@ export async function handler(req: Request): Promise<Response> {
   // Fetch game
   const { data: game, error: gameError } = await db
     .from('games')
-    .select('id, status, host_user_id, expansions, speaker, draft_state')
+    .select('id, status, host_user_id, expansions, speaker_player_id, draft_state')
     .eq('id', gameId)
     .maybeSingle()
   if (gameError) return errorResponse('Database error', 500)
@@ -175,7 +175,7 @@ export async function handler(req: Request): Promise<Response> {
   const counts = DEALT[N] ?? DEALT[6]
 
   // Rotate players so speaker is first
-  const speakerId = g.speaker as string
+  const speakerId = g.speaker_player_id as string
   const speakerIndex = playerList.findIndex((p) => p.id === speakerId)
   const rotated = speakerIndex >= 0
     ? [...playerList.slice(speakerIndex), ...playerList.slice(0, speakerIndex)]

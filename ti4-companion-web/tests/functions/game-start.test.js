@@ -355,7 +355,7 @@ describe('game-start', () => {
     const inserted = secretInsertMock.mock.calls[0][0]
     // only base objectives dealt; pok filtered out
     inserted.forEach(r => {
-      expect(['so-1', 'so-2', 'so-3', 'so-4']).toContain(r.secret_objective_id)
+      expect(['so-1', 'so-2', 'so-3', 'so-4']).toContain(r.objective_id)
     })
   })
   

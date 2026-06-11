@@ -8,6 +8,14 @@ import DraftPanel from '../game/DraftPanel.jsx'
 
 const COLOURS = ['red', 'blue', 'yellow', 'green', 'purple', 'black', 'orange', 'pink']
 
+// Axial coordinates for Milty-string positions (index matches token order: 0=Mecatol, 1-6=ring1, 7-18=ring2, 19-30=ring3)
+const MILTY_POSITIONS = [
+  '0,0',
+  '1,-1','1,0','0,1','-1,1','-1,0','0,-1',
+  '2,-2','2,-1','2,0','1,1','0,2','-1,2','-2,2','-2,1','-2,0','-1,-1','0,-2','1,-2',
+  '3,-2','3,-1','2,1','1,2','-1,3','-2,3','-3,2','-3,1','-2,-1','-1,-2','1,-3','2,-3',
+]
+
 export const PRESET_MAPS = [
   { label: 'Balanced 6P', playerCount: 6, mapString: '18 36 30 34 35 33 17 21 28 29 26 40 39 24 22 38 25 23 27 32 37 20 19 31 41', pok: false },
   { label: 'PoK 6P Ring', playerCount: 6, mapString: '18 76 75 71 73 72 74 36 30 34 35 33 17 21 28 29 26 40 39 24 22 38 25 23 27 32 37 20 19 31 41', pok: true },
@@ -587,8 +595,8 @@ export default function LobbyScreen({ userId }) {
                   <option
                     key={p.label}
                     value={p.label}
-                    disabled={p.pok && !game?.expansions?.pok}
-                    title={p.pok && !game?.expansions?.pok ? 'Enable PoK expansion first' : undefined}
+                    disabled={p.pok && !displayExpansions?.pok}
+                    title={p.pok && !displayExpansions?.pok ? 'Enable PoK expansion first' : undefined}
                   >
                     {p.label}
                   </option>
@@ -622,7 +630,9 @@ export default function LobbyScreen({ userId }) {
               {parseError && <p className="text-danger text-xs mt-1">{parseError}</p>}
             </div>
 
-            {game?.map_layout?.includes('pok') && !game?.expansions?.pok && (
+            {!tilesLoading && Object.values(game?.map_tiles ?? {}).some(
+              entry => tileByNumber[entry?.tile_number]?.expansion === 'pok'
+            ) && !displayExpansions?.pok && (
               <p className="text-warning text-xs">Saved map contains PoK tiles — enable PoK or re-save</p>
             )}
 
@@ -635,13 +645,13 @@ export default function LobbyScreen({ userId }) {
                 setMapSaveSuccess(false)
                 setParseError(null)
                 const tokens = mapString.trim().split(/\s+/).filter(Boolean).map(Number)
-                const mecatolEntry = { '0,0': { tile_id: tileByNumber[18]?.id ?? null, tile_number: 18 } }
                 const resolvedTiles = {}
                 tokens.forEach((num, idx) => {
+                  if (idx >= MILTY_POSITIONS.length) return
                   const tile = tileByNumber[num]
-                  if (tile) resolvedTiles[`tile_${idx}`] = { tile_id: tile.id, tile_number: num }
+                  resolvedTiles[MILTY_POSITIONS[idx]] = { tile_id: tile?.id ?? null, tile_number: num }
                 })
-                const map_tiles = { ...mecatolEntry, ...resolvedTiles }
+                const map_tiles = { ...resolvedTiles }
                 try {
                   await updateGameSettings(game.id, {
                     map_tiles,

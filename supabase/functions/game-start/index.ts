@@ -168,11 +168,11 @@ Deno.serve(async (req: Request) => {
   }
 
   // Deal 2 to each player
-  const secretRows: Array<{ game_id: string; player_id: string; secret_objective_id: string; state: string }> = []
+  const secretRows: Array<{ game_id: string; player_id: string; objective_id: string; state: string }> = []
   let secretIdx = 0
   for (const player of players) {
-    secretRows.push({ game_id: body.game_id, player_id: player.id, secret_objective_id: shuffledSecrets[secretIdx++].id, state: 'held' })
-    secretRows.push({ game_id: body.game_id, player_id: player.id, secret_objective_id: shuffledSecrets[secretIdx++].id, state: 'held' })
+    secretRows.push({ game_id: body.game_id, player_id: player.id, objective_id: shuffledSecrets[secretIdx++].id, state: 'held' })
+    secretRows.push({ game_id: body.game_id, player_id: player.id, objective_id: shuffledSecrets[secretIdx++].id, state: 'held' })
   }
 
   const { error: insertSecretsError } = await db

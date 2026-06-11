@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import importSchemas from '../../lib/importSchemas.js'
 import { updateRecord } from '../../lib/edgeFunctions.js'
 
@@ -23,6 +23,12 @@ export default function AdminRecordModal({ table, record, onClose, onSaved }) {
   const [fields, setFields] = useState(() => initFields(schema, record))
   const [submitting, setSubmitting] = useState(false)
   const [status, setStatus] = useState(null)
+
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [onClose])
 
   function renderControl(f) {
     const val = fields[f.name] ?? ''

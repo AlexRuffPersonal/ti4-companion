@@ -293,8 +293,8 @@ export default function GameScreen({ userId }) {
     ? planets.filter(p => p.player_id === viewingTechPlayerId)
     : []
 
-  // Blocking gate: secret objective selection
-  if (currentPlayer && !currentPlayer.secrets_selected) {
+  // Blocking gate: secret objective selection (only block if there are cards to select from)
+  if (currentPlayer && !currentPlayer.secrets_selected && mySecrets.length > 0) {
     const pendingPlayers = players.filter(p => !p.secrets_selected && p.id !== currentPlayer.id)
     return (
       <SecretObjectiveSelectionScreen

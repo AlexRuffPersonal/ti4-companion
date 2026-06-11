@@ -407,38 +407,51 @@ describe('LobbyScreen — bot add/remove', () => {
 })
 
 describe('LobbyScreen — PoK warning banner', () => {
+  const POK_TILES = [
+    ...TILES,
+    { id: 'tile-71', tile_number: '71', expansion: 'pok', wormholes: [], anomalies: [] },
+  ]
+  const POK_MAP_TILES = { '1,-1': { tile_id: 'tile-71', tile_number: 71 } }
+
   beforeEach(() => {
     vi.clearAllMocks()
-    mockSupabase()
+    supabase.from.mockImplementation((table) => ({
+      select: vi.fn().mockReturnValue(
+        makeSelectResult(table === 'factions' ? FACTIONS : POK_TILES)
+      ),
+    }))
   })
 
-  it('shows warning when map_layout includes pok and pok expansion is off', () => {
+  it('shows warning when saved map contains PoK tiles and pok expansion is off', async () => {
     mockGame({
       isHost: true,
       game: {
         id: 'game-uuid', code: 'ABC123', host_user_id: 'host-uuid',
         status: 'lobby', vp_goal: 10, permissions_mode: 'host',
-        speaker_player_id: 'p1', map_tiles: null,
-        map_layout: 'pok-6p',
+        speaker_player_id: 'p1', map_tiles: POK_MAP_TILES,
+        map_layout: 'PoK 6P Ring',
         expansions: { base: true, pok: false, te: false },
       },
     })
     renderLobby()
-    expect(screen.getByText(/saved map contains pok tiles/i)).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByText(/saved map contains pok tiles/i)).toBeInTheDocument()
+    })
   })
 
-  it('does not show warning when pok expansion is enabled', () => {
+  it('does not show warning when pok expansion is enabled', async () => {
     mockGame({
       isHost: true,
       game: {
         id: 'game-uuid', code: 'ABC123', host_user_id: 'host-uuid',
         status: 'lobby', vp_goal: 10, permissions_mode: 'host',
-        speaker_player_id: 'p1', map_tiles: null,
-        map_layout: 'pok-6p',
+        speaker_player_id: 'p1', map_tiles: POK_MAP_TILES,
+        map_layout: 'PoK 6P Ring',
         expansions: { base: true, pok: true, te: false },
       },
     })
     renderLobby()
+    await act(async () => {})
     expect(screen.queryByText(/saved map contains pok tiles/i)).not.toBeInTheDocument()
   })
 })

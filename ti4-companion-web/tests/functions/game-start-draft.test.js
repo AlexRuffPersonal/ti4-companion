@@ -24,7 +24,7 @@ function makeGame(overrides = {}) {
     status: 'lobby',
     host_user_id: USER_ID,
     expansions: { base: true, pok: false },
-    speaker: 'player-1',
+    speaker_player_id: 'player-1',
     draft_state: null,
     ...overrides,
   }
@@ -168,7 +168,7 @@ describe('game-start-draft', () => {
 
   it('official 6P: 6 hands of 5 tiles each (3B+2R); placement_order length=30; phase=placement', async () => {
     const players = makePlayers(6)
-    mockDb({ game: makeGame({ speaker: players[0].id }), players })
+    mockDb({ game: makeGame({ speaker_player_id: players[0].id }), players })
     const res = await handler(makeRequest({ game_id: GAME_ID, mode: 'official' }))
     expect(res.status).toBe(200)
     const data = await res.json()
@@ -185,7 +185,7 @@ describe('game-start-draft', () => {
 
   it('official 3P: 3 hands of 8 tiles each (6B+2R); placement_order length=24', async () => {
     const players = makePlayers(3)
-    mockDb({ game: makeGame({ speaker: players[0].id }), players })
+    mockDb({ game: makeGame({ speaker_player_id: players[0].id }), players })
     const res = await handler(makeRequest({ game_id: GAME_ID, mode: 'official' }))
     expect(res.status).toBe(200)
     const data = await res.json()
@@ -195,7 +195,7 @@ describe('game-start-draft', () => {
 
   it('official 5P: speaker hand length=7 (4B+3R), others length=6 (4B+2R)', async () => {
     const players = makePlayers(5)
-    mockDb({ game: makeGame({ speaker: players[0].id }), players })
+    mockDb({ game: makeGame({ speaker_player_id: players[0].id }), players })
 
     // Capture the draft_state update
     let capturedState = null
@@ -204,7 +204,7 @@ describe('game-start-draft', () => {
         return {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: makeGame({ speaker: players[0].id }) }),
+              maybeSingle: vi.fn().mockResolvedValue({ data: makeGame({ speaker_player_id: players[0].id }) }),
             }),
           }),
           update: vi.fn().mockImplementation((state) => {
@@ -245,7 +245,7 @@ describe('game-start-draft', () => {
 
   it('milty 6P: 6 slices; each slice has 5 tiles (3B+2R); max_score-min_score <= 2; phase=slice-pick', async () => {
     const players = makePlayers(6)
-    mockDb({ game: makeGame({ speaker: players[0].id }), players })
+    mockDb({ game: makeGame({ speaker_player_id: players[0].id }), players })
 
     let capturedState = null
     db.from.mockImplementation((table) => {
@@ -253,7 +253,7 @@ describe('game-start-draft', () => {
         return {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: makeGame({ speaker: players[0].id }) }),
+              maybeSingle: vi.fn().mockResolvedValue({ data: makeGame({ speaker_player_id: players[0].id }) }),
             }),
           }),
           update: vi.fn().mockImplementation((state) => {
