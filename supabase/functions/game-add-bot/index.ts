@@ -72,7 +72,7 @@ export async function handler(req: Request): Promise<Response> {
     .eq('game_id', gameId)
   const seatIndex = (count ?? 0) + 1
 
-  const { data: newRow } = await db
+  const { data: newRow, error: insertError } = await db
     .from('game_players')
     .insert({
       game_id: gameId,
@@ -86,6 +86,7 @@ export async function handler(req: Request): Promise<Response> {
     })
     .select('id')
     .single()
+  if (insertError || !newRow) return errorResponse(insertError?.message ?? 'Failed to create bot player', 500)
 
   await logEvent(db, {
     game_id: gameId,
