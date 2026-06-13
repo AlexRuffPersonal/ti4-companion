@@ -228,6 +228,7 @@ export function useGame(code, userId) {
               setPlayers(prev => {
                 if (payload.eventType === 'INSERT') return [...prev, payload.new]
                 if (payload.eventType === 'UPDATE') return prev.map(p => p.id === payload.new.id ? payload.new : p)
+                if (payload.eventType === 'DELETE') return prev.filter(p => p.id !== payload.old.id)
                 return prev
               })
             })
@@ -353,6 +354,12 @@ export function useGame(code, userId) {
   const currentPlayer = players.find(p => p.user_id === userId) ?? null
   const isHost = game?.host_user_id === userId
 
+  async function refetchPlayers() {
+    if (!game?.id) return
+    const { data } = await supabase.from('game_players').select('*').eq('game_id', game.id)
+    if (data) setPlayers(data)
+  }
+
   async function exhaustPlanet(planetName) {
     if (!currentPlayer) return
     await supabase
@@ -440,6 +447,7 @@ export function useGame(code, userId) {
     isHost,
     loading,
     error,
+    refetchPlayers,
     // Phase 2 wrappers (lobby)
     updateSettings: (settings) => game ? updateGameSettings(game.id, settings) : Promise.reject(new Error('Game not loaded')),
     pickFaction: (faction, colour) => game ? pickFactionColor(game.id, faction, colour) : Promise.reject(new Error('Game not loaded')),

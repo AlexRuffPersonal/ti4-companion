@@ -29,7 +29,7 @@ export const PRESET_MAPS = [
 export default function LobbyScreen({ userId }) {
   const { code } = useParams()
   const { game, players, currentPlayer, isHost, loading, error,
-          updateSettings, pickFaction, setGameSpeaker, startTheGame } = useGame(code, userId)
+          updateSettings, pickFaction, setGameSpeaker, startTheGame, refetchPlayers } = useGame(code, userId)
 
   const [factions, setFactions] = useState([])
   const [pickError, setPickError] = useState(null)
@@ -119,6 +119,7 @@ export default function LobbyScreen({ userId }) {
     setAddingBot(true)
     try {
       await addBot(game.id, botName, botFaction, botColour, botStrategy)
+      await refetchPlayers()
       setShowAddBot(false)
       setBotName('')
       setBotFaction('')
@@ -132,7 +133,12 @@ export default function LobbyScreen({ userId }) {
   }
 
   async function handleRemoveBot(botPlayerId) {
-    await removeBot(game.id, botPlayerId)
+    try {
+      await removeBot(game.id, botPlayerId)
+      await refetchPlayers()
+    } catch (e) {
+      setBotError(e.message)
+    }
   }
 
   const allReady = players.length > 0 && players.every(p => p.faction && p.colour)

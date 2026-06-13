@@ -34,13 +34,13 @@ export async function handler(req: Request): Promise<Response> {
 
   const { data: game } = await db
     .from('games')
-    .select('status, host_player_id')
+    .select('status, host_user_id')
     .eq('id', gameId)
     .maybeSingle()
   if (!game) return errorResponse('Game not found', 404)
 
   if (game.status !== 'lobby') return errorResponse('Game already started', 409)
-  if (player.id !== game.host_player_id) return errorResponse('Not host', 403)
+  if (userId !== game.host_user_id) return errorResponse('Not host', 403)
 
   const { data: botRow } = await db
     .from('game_players')
