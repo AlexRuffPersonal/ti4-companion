@@ -47,7 +47,7 @@ Deno.serve(async (req: Request) => {
     .select('host_user_id, status, speaker_player_id, expansions, map_layout, map_tiles')
     .eq('id', body.game_id)
     .maybeSingle()
-  if (gameError) return errorResponse('Database error', 500)
+  if (gameError) return errorResponse(`Database error (games): ${gameError.message}`, 500)
   if (!game) return errorResponse('Game not found', 404)
   if (game.host_user_id !== userId) return errorResponse('Only the host can start the game', 403)
   if (game.status !== 'lobby') return errorResponse('Game is not in lobby state', 409)
@@ -57,7 +57,7 @@ Deno.serve(async (req: Request) => {
     .from('game_players')
     .select('id, faction, colour, display_name')
     .eq('game_id', body.game_id)
-  if (playersError) return errorResponse('Database error', 500)
+  if (playersError) return errorResponse(`Database error (game_players): ${playersError.message}`, 500)
   if (!players || players.length === 0) return errorResponse('No players in game', 409)
 
   for (const player of players) {
@@ -69,6 +69,20 @@ Deno.serve(async (req: Request) => {
   const playerCount = players.length
   if (!HOME_POSITIONS_BY_COUNT[playerCount]) return errorResponse(`Unsupported player count: ${playerCount}`, 409)
 
+  // Wipe any partial init data from a previous failed Start Game attempt so this is idempotent.
+  const initTables = [
+    'game_public_objectives',
+    'game_action_card_deck',
+    'game_player_secret_objectives',
+    'game_player_promissory_notes',
+    'game_agenda_deck',
+    'game_player_planets',
+  ] as const
+  for (const table of initTables) {
+    const { error: cleanupError } = await db.from(table).delete().eq('game_id', body.game_id)
+    if (cleanupError) return errorResponse(`Cleanup failed on ${table}: ${cleanupError.message}`, 500)
+  }
+
   // Initialise public objective decks (filtered by active expansions)
   const activeExpansions = Object.entries(game.expansions ?? {})
     .filter(([, active]) => active)
@@ -77,7 +91,7 @@ Deno.serve(async (req: Request) => {
   const { data: allObjs, error: objsError } = await db
     .from('public_objectives')
     .select('id, expansion')
-  if (objsError) return errorResponse('Database error', 500)
+  if (objsError) return errorResponse(`Database error (public_objectives): ${objsError.message}`, 500)
 
   const eligibleObjs = (allObjs ?? []).filter(
     (o: { id: string; expansion: string | null }) =>
@@ -107,7 +121,7 @@ Deno.serve(async (req: Request) => {
   const { data: allActionCards, error: actionCardsError } = await db
     .from('action_cards')
     .select('id, quantity, expansion')
-  if (actionCardsError) return errorResponse('Database error', 500)
+  if (actionCardsError) return errorResponse(`Database error (action_cards): ${actionCardsError.message}`, 500)
 
   const eligibleActionCards = (allActionCards ?? []).filter(
     (c: { id: string; quantity: number; expansion: string | null }) =>
@@ -145,7 +159,7 @@ Deno.serve(async (req: Request) => {
   const { data: allSecrets, error: secretsError } = await db
     .from('secret_objectives')
     .select('id, expansion')
-  if (secretsError) return errorResponse('Database error', 500)
+  if (secretsError) return errorResponse(`Database error (secret_objectives): ${secretsError.message}`, 500)
 
   const eligibleSecrets = (allSecrets ?? []).filter(
     (s: { id: string; expansion: string }) =>
@@ -184,7 +198,7 @@ Deno.serve(async (req: Request) => {
   const { data: allNotes, error: notesError } = await db
     .from('promissory_notes')
     .select('id, faction, expansion')
-  if (notesError) return errorResponse('Database error', 500)
+  if (notesError) return errorResponse(`Database error (promissory_notes): ${notesError.message}`, 500)
 
   const eligibleNotes = (allNotes ?? []).filter(
     (n: { id: string; faction: string | null; expansion: string | null }) =>
@@ -192,7 +206,7 @@ Deno.serve(async (req: Request) => {
   )
 
   // Collect notes to deal: faction notes + generic notes
-  const notesToDeal: Array<{ game_id: string; player_id: string; note_id: string; state: string; origin_player_id: string }> = []
+  const notesToDeal: Array<{ game_id: string; held_by_player_id: string; note_id: string; state: string; origin_player_id: string }> = []
 
   for (const player of players) {
     // Faction notes: match player's faction
@@ -200,7 +214,7 @@ Deno.serve(async (req: Request) => {
     for (const note of factionNotes) {
       notesToDeal.push({
         game_id: body.game_id,
-        player_id: player.id,
+        held_by_player_id: player.id,
         note_id: note.id,
         state: 'held',
         origin_player_id: player.id,
@@ -212,7 +226,7 @@ Deno.serve(async (req: Request) => {
     for (const note of genericNotes) {
       notesToDeal.push({
         game_id: body.game_id,
-        player_id: player.id,
+        held_by_player_id: player.id,
         note_id: note.id,
         state: 'held',
         origin_player_id: player.id,
@@ -231,7 +245,7 @@ Deno.serve(async (req: Request) => {
   const { data: allAgendas, error: agendasError } = await db
     .from('agendas')
     .select('id, expansion')
-  if (agendasError) return errorResponse('Database error', 500)
+  if (agendasError) return errorResponse(`Database error (agendas): ${agendasError.message}`, 500)
 
   const eligibleAgendas = (allAgendas ?? []).filter(
     (a: { id: string; expansion: string }) =>
@@ -262,7 +276,7 @@ Deno.serve(async (req: Request) => {
     .from('factions')
     .select('name, home_tile_number, starting_techs')
     .in('name', players.map((p: { faction: string }) => p.faction))
-  if (factionBatchError) return errorResponse('Database error', 500)
+  if (factionBatchError) return errorResponse(`Database error (factions): ${factionBatchError.message}`, 500)
 
   const factionMap = new Map<string, { home_tile_number: string | null; starting_techs: string[] }>(
     (factionRows ?? []).map((f: { name: string; home_tile_number: string | null; starting_techs: string[] }) => [f.name, f])
@@ -284,7 +298,7 @@ Deno.serve(async (req: Request) => {
     .from('tiles')
     .select('tile_number, planets')
     .in('tile_number', homeTileNumbers.length > 0 ? homeTileNumbers : ['__none__'])
-  if (homeTileError) return errorResponse('Database error', 500)
+  if (homeTileError) return errorResponse(`Database error (tiles/home): ${homeTileError.message}`, 500)
 
   type PlanetDef = { name: string; tech_specialty?: string; influence?: number; resources?: number }
   const homeTileMap = new Map<string, { planets: PlanetDef[] }>(
@@ -332,7 +346,7 @@ Deno.serve(async (req: Request) => {
   const { data: allTiles, error: tilesError } = await db
     .from('tiles')
     .select('id, tile_number')
-  if (tilesError) return errorResponse('Database error', 500)
+  if (tilesError) return errorResponse(`Database error (tiles): ${tilesError.message}`, 500)
 
   const tileByNumber = new Map<string, string>()
   for (const t of (allTiles ?? []) as Array<{ id: string; tile_number: string }>) {

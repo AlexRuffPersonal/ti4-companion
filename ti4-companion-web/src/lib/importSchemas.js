@@ -107,6 +107,12 @@ const importSchemas = {
         description: 'Array of technology name strings the faction starts with.',
       },
       {
+        name: 'home_tile_number',
+        required: false,
+        type: 'text',
+        description: 'tile_number of this faction\'s home system tile (e.g. "05" for The Arborec). Must match a tile_number value in the tiles table.',
+      },
+      {
         name: 'num_of_starting_techs',
         required: false,
         type: 'integer',

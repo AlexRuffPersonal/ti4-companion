@@ -3,6 +3,7 @@ CREATE TABLE public.factions (
   name                  TEXT    NOT NULL UNIQUE,
   expansion             TEXT    NOT NULL DEFAULT 'base',
   starting_techs        TEXT[]  NOT NULL DEFAULT '{}',
+  home_tile_number      TEXT,
   commodities           INTEGER NOT NULL DEFAULT 3,
   abilities             JSONB   NOT NULL DEFAULT '[]',
   num_of_starting_techs INTEGER,
