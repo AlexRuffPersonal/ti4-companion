@@ -355,6 +355,7 @@ export default function GameScreen({ userId }) {
       <GameHeader
         game={game}
         speaker={deriveSpeaker(players, game)}
+        activePlayer={activePlayer}
         onOpenTradeLog={() => setTradeLogModalOpen(true)}
         onOpenRules={() => setRulesModalOpen(true)}
         isHost={isHost}

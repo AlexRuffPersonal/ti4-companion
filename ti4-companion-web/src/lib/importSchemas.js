@@ -353,6 +353,49 @@ const importSchemas = {
         values: ['ground_combat_start', 'after_tech_research', 'after_retreat', 'after_produce', 'after_exploration'],
         description: 'When this mech may be deployed. null for mechs that cannot be deployed via ability.',
       },
+      {
+        name: 'faction',
+        required: false,
+        type: 'text',
+        description: 'Faction name if this is a faction-specific unit (mech, flagship); omit for generic units.',
+      },
+    ],
+  },
+
+  leaders: {
+    pgTable: 'leaders',
+    fields: [
+      {
+        name: 'name',
+        required: true,
+        type: 'text',
+        description: 'Leader name as printed on the card (e.g. "Ssruu", "Kyver, Blade and Key").',
+      },
+      {
+        name: 'leader_type',
+        required: true,
+        type: 'text',
+        values: ['agent', 'commander', 'hero'],
+        description: 'Leader type.',
+      },
+      {
+        name: 'faction',
+        required: true,
+        type: 'text',
+        description: 'Canonical faction name this leader belongs to (e.g. "The Yssaril Tribes").',
+      },
+      {
+        name: 'text',
+        required: false,
+        type: 'text',
+        description: 'Ability rules text as printed on the card.',
+      },
+      {
+        name: 'unlock_criteria',
+        required: false,
+        type: 'text',
+        description: 'Commander/hero unlock condition text (e.g. "Have 5 technologies"). Omit for agents.',
+      },
     ],
   },
 

@@ -14,6 +14,7 @@ const GROUPS = [
     tables: [
       { name: 'Factions', key: 'factions' },
       { name: 'Technologies', key: 'technologies' },
+      { name: 'Leaders', key: 'leaders' },
       { name: 'Promissory Notes', key: 'promissory-notes' },
     ],
   },
