@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useGame } from '../../hooks/useGame.js'
 import { supabase } from '../../lib/supabase.js'
 import { updateGameSettings, addBot, removeBot, startDraft, draftPickSlice, draftPlaceTile } from '../../lib/edgeFunctions.js'
@@ -28,6 +28,7 @@ export const PRESET_MAPS = [
 
 export default function LobbyScreen({ userId }) {
   const { code } = useParams()
+  const navigate = useNavigate()
   const { game, players, currentPlayer, isHost, loading, error,
           updateSettings, pickFaction, setGameSpeaker, startTheGame, refetchPlayers } = useGame(code, userId)
 
@@ -205,6 +206,17 @@ export default function LobbyScreen({ userId }) {
     try {
       await startTheGame()
     } catch (e) {
+      // A previous attempt may have already started the game server-side.
+      // Re-check status before surfacing the error — if active, just navigate.
+      const { data: freshGame } = await supabase
+        .from('games')
+        .select('status')
+        .eq('code', code.toUpperCase())
+        .maybeSingle()
+      if (freshGame?.status === 'active') {
+        navigate(`/game/${code}`, { replace: true })
+        return
+      }
       setStartError(e.message)
     } finally {
       setStarting(false)
@@ -511,6 +523,9 @@ export default function LobbyScreen({ userId }) {
                   </button>
                 </div>
               </div>
+            )}
+            {!showAddBot && botError && (
+              <p className="text-danger text-sm font-body">{botError}</p>
             )}
           </div>
 

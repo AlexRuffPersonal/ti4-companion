@@ -1,8 +1,35 @@
+import { useState } from 'react'
+
 export default function SecretObjectiveSelectionScreen({ secrets, pendingPlayers = [], onDiscard }) {
+  const [discarding, setDiscarding] = useState(null)
+  const [error, setError] = useState(null)
+
+  async function handleDiscard(id) {
+    setDiscarding(id)
+    setError(null)
+    try {
+      await onDiscard(id)
+    } catch (e) {
+      if (e?.message === 'Objective is not held') {
+        setError('Your selection was already saved. Please refresh the page to continue.')
+      } else {
+        setError(e?.message ?? 'Failed to discard. Please try again.')
+      }
+    } finally {
+      setDiscarding(null)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-void flex flex-col items-center justify-center px-4 py-8 gap-6">
       <h2 className="font-display text-bright text-lg tracking-widest">SELECT YOUR SECRET OBJECTIVE</h2>
       <p className="text-dim text-sm font-body">Discard one card. The other is yours to score.</p>
+
+      {error && (
+        <div className="panel-inset w-full max-w-md border border-warning">
+          <p className="text-warning text-sm font-body">{error}</p>
+        </div>
+      )}
 
       <div className="flex flex-col gap-4 w-full max-w-md">
         {secrets.map(s => {
@@ -17,9 +44,10 @@ export default function SecretObjectiveSelectionScreen({ secrets, pendingPlayers
                 </div>
                 <button
                   className="btn-ghost text-xs flex-shrink-0"
-                  onClick={() => onDiscard(s.id)}
+                  onClick={() => handleDiscard(s.id)}
+                  disabled={discarding !== null}
                 >
-                  DISCARD
+                  {discarding === s.id ? '...' : 'DISCARD'}
                 </button>
               </div>
             </div>

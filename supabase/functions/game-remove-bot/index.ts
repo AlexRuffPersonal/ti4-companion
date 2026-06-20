@@ -51,10 +51,20 @@ export async function handler(req: Request): Promise<Response> {
   if (!botRow) return errorResponse('Bot not found', 404)
   if (!botRow.is_bot) return errorResponse('Not a bot', 409)
 
-  await db
+  // Clear speaker assignment if it points at this bot, otherwise the DELETE will
+  // fail with a FK constraint violation (games.speaker_player_id → game_players.id).
+  const { error: speakerClearError } = await db
+    .from('games')
+    .update({ speaker_player_id: null })
+    .eq('id', gameId)
+    .eq('speaker_player_id', botPlayerId)
+  if (speakerClearError) return errorResponse(`Failed to clear speaker: ${speakerClearError.message}`, 500)
+
+  const { error: deleteError } = await db
     .from('game_players')
     .delete()
     .eq('id', botPlayerId)
+  if (deleteError) return errorResponse(`Failed to remove bot: ${deleteError.message}`, 500)
 
   await logEvent(db, {
     game_id: gameId,

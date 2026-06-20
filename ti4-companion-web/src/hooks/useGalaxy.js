@@ -184,7 +184,7 @@ export function useGalaxy(gameCode, userId) {
         resources:      p.resources,
         influence:      p.influence,
         tech_specialty: p.tech_specialty ?? null,
-        traits:         p.type ?? [],
+        traits:         Array.isArray(p.type) ? p.type : [],
       }
     }
   }

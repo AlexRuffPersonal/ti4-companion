@@ -31,7 +31,7 @@ export default function ObjectivesSection({ objectives, players, game, currentPl
                 <div>
                   <span className="text-text text-sm">{ref?.name}</span>
                   <span className="text-dim text-xs ml-2">
-                    Stage {ref?.stage} · {ref?.points ?? 1} VP
+                    Stage {ref?.stage} · {ref?.stage === 2 ? 2 : 1} VP
                   </span>
                   {ref?.condition && (
                     <p data-testid="objective-condition" className="text-dim text-xs mt-0.5">

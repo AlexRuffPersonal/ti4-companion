@@ -50,12 +50,14 @@ Deno.serve(async (req: Request) => {
   if (gameError) return errorResponse(`Database error (games): ${gameError.message}`, 500)
   if (!game) return errorResponse('Game not found', 404)
   if (game.host_user_id !== userId) return errorResponse('Only the host can start the game', 403)
+  // Idempotent: if a previous attempt already flipped status to active, just return success.
+  if (game.status === 'active') return okResponse({ started: true })
   if (game.status !== 'lobby') return errorResponse('Game is not in lobby state', 409)
   if (!game.speaker_player_id) return errorResponse('Speaker must be set before starting', 409)
 
   const { data: players, error: playersError } = await db
     .from('game_players')
-    .select('id, faction, colour, display_name')
+    .select('id, faction, colour, display_name, is_bot')
     .eq('game_id', body.game_id)
   if (playersError) return errorResponse(`Database error (game_players): ${playersError.message}`, 500)
   if (!players || players.length === 0) return errorResponse('No players in game', 409)
@@ -181,18 +183,37 @@ Deno.serve(async (req: Request) => {
     ;[shuffledSecrets[i], shuffledSecrets[j]] = [shuffledSecrets[j], shuffledSecrets[i]]
   }
 
-  // Deal 2 to each player
-  const secretRows: Array<{ game_id: string; player_id: string; objective_id: string; state: string }> = []
+  // Deal 2 to each player; bots auto-discard the second card immediately
+  const secretRows: Array<{ game_id: string; player_id: string | null; objective_id: string; state: string; deck_position?: number }> = []
   let secretIdx = 0
+  let botDeckPos = 0
+  const botPlayerIds: string[] = []
   for (const player of players) {
-    secretRows.push({ game_id: body.game_id, player_id: player.id, objective_id: shuffledSecrets[secretIdx++].id, state: 'held' })
-    secretRows.push({ game_id: body.game_id, player_id: player.id, objective_id: shuffledSecrets[secretIdx++].id, state: 'held' })
+    const obj1 = shuffledSecrets[secretIdx++]
+    const obj2 = shuffledSecrets[secretIdx++]
+    secretRows.push({ game_id: body.game_id, player_id: player.id, objective_id: obj1.id, state: 'held' })
+    if (player.is_bot) {
+      // Auto-select: keep first card, discard second back to deck
+      secretRows.push({ game_id: body.game_id, player_id: null, objective_id: obj2.id, state: 'deck', deck_position: botDeckPos++ })
+      botPlayerIds.push(player.id)
+    } else {
+      secretRows.push({ game_id: body.game_id, player_id: player.id, objective_id: obj2.id, state: 'held' })
+    }
   }
 
   const { error: insertSecretsError } = await db
     .from('game_player_secret_objectives')
     .insert(secretRows)
   if (insertSecretsError) return errorResponse(`Failed to deal secret objectives: ${insertSecretsError.message}`, 500)
+
+  // Mark bots as having selected their secret objective
+  if (botPlayerIds.length > 0) {
+    const { error: botSecretsError } = await db
+      .from('game_players')
+      .update({ secrets_selected: true })
+      .in('id', botPlayerIds)
+    if (botSecretsError) return errorResponse(`Failed to auto-select bot secrets: ${botSecretsError.message}`, 500)
+  }
 
   // Deal promissory notes (faction + generic)
   const { data: allNotes, error: notesError } = await db

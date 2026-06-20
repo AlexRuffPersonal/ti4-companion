@@ -87,7 +87,7 @@ export function useGame(code, userId) {
       if (isGameScreen) {
         const { data: objs } = await supabase
           .from('game_public_objectives')
-          .select('*, public_objectives(name, stage, points, condition)')
+          .select('*, public_objectives(name, stage, condition)')
           .eq('game_id', gameData.id)
         if (!mounted) return
         objectivesData = objs ?? []
@@ -137,13 +137,14 @@ export function useGame(code, userId) {
 
           const { data: relicFrags } = await supabase
             .from('game_exploration_decks')
-            .select('id, relic_fragment_type')
+            .select('id, exploration_cards(relic_fragment_type)')
             .eq('game_id', gameData.id)
             .eq('resolved_by_player_id', myPlayer.id)
             .eq('state', 'held')
-            .not('relic_fragment_type', 'is', null)
           if (!mounted) return
-          myRelicFragmentsData = relicFrags ?? []
+          myRelicFragmentsData = (relicFrags ?? [])
+            .filter(r => r.exploration_cards?.relic_fragment_type != null)
+            .map(r => ({ id: r.id, relic_fragment_type: r.exploration_cards.relic_fragment_type }))
         }
 
         const { data } = await supabase
@@ -155,7 +156,7 @@ export function useGame(code, userId) {
         // fetch enacted laws
         const { data: laws } = await supabase
           .from('game_laws')
-          .select('*, agendas(name, note)')
+          .select('*, agendas(name)')
           .eq('game_id', gameData.id)
         if (!mounted) return
         enactedLawsData = laws ?? []
@@ -209,7 +210,7 @@ export function useGame(code, userId) {
                 // Re-fetch laws after resolution
                 const { data: updatedLaws } = await supabase
                   .from('game_laws')
-                  .select('*, agendas(name, note)')
+                  .select('*, agendas(name)')
                   .eq('game_id', gameData.id)
                 if (mounted && updatedLaws) setEnactedLaws(updatedLaws)
               }
@@ -244,7 +245,7 @@ export function useGame(code, userId) {
               if (!mounted) return
               const { data } = await supabase
                 .from('game_public_objectives')
-                .select('*, public_objectives(name, stage, points, condition)')
+                .select('*, public_objectives(name, stage, condition)')
                 .eq('game_id', gameData.id)
               if (mounted && data) setObjectives(data)
             }
