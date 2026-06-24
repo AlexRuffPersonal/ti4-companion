@@ -23,29 +23,32 @@ export default function SystemInfoModal({ tileInfo, systemKey, onClose, systemUn
       <div className="panel w-full max-w-sm flex flex-col gap-4">
         <p className="label">{'SYSTEM ' + systemKey}</p>
 
-        {planets.map(p => (
-          <div key={p.name} className="flex flex-col gap-0.5 py-1 border-b border-border last:border-0">
-            <div className="flex items-center gap-2">
-              <span className="text-text font-body">{p.name}</span>
-              <span className="text-muted text-xs">{p.resources}/{p.influence}</span>
-              {p.tech_specialty &&
-                <span className={`text-xs px-1 rounded font-mono tech-chip-${p.tech_specialty}`}>
-                  {p.tech_specialty[0].toUpperCase()}
-                </span>
+        {planets.map(p => {
+          const types = Array.isArray(p.type) ? p.type : (p.type ? [p.type] : [])
+          return (
+            <div key={p.name} className="flex flex-col gap-0.5 py-1 border-b border-border last:border-0">
+              <div className="flex items-center gap-2">
+                <span className="text-text font-body">{p.name}</span>
+                <span className="text-muted text-xs">{p.resources}/{p.influence}</span>
+                {p.tech_specialty &&
+                  <span className={`text-xs px-1 rounded font-mono tech-chip-${p.tech_specialty}`}>
+                    {p.tech_specialty[0].toUpperCase()}
+                  </span>
+                }
+              </div>
+              {types.length > 0 &&
+                <div className="flex gap-1 items-center">
+                  {types.map(t => (
+                    <span key={t} className="flex items-center gap-1 text-dim text-xs font-body uppercase">
+                      <GameIcon category="planet" name={t} size={12} alt={t} />
+                      {t}
+                    </span>
+                  ))}
+                </div>
               }
             </div>
-            {(p.type ?? []).length > 0 &&
-              <div className="flex gap-1 items-center">
-                {p.type.map(t => (
-                  <span key={t} className="flex items-center gap-1 text-dim text-xs font-body uppercase">
-                    <GameIcon category="planet" name={t} size={12} alt={t} />
-                    {t}
-                  </span>
-                ))}
-              </div>
-            }
-          </div>
-        ))}
+          )
+        })}
 
         {wormholes.length > 0 && (
           <div>

@@ -31,12 +31,12 @@ export async function handler(req: Request): Promise<Response> {
 
   const { data: game } = await db
     .from('games')
-    .select('host_player_id, round, phase')
+    .select('host_user_id, round, phase')
     .eq('id', gameId)
     .maybeSingle()
   if (!game) return errorResponse('Game not found', 404)
 
-  if (player.id !== game.host_player_id) return errorResponse('Not host', 403)
+  if (userId !== game.host_user_id) return errorResponse('Not host', 403)
 
   const events = await getUndoableEvents(db, gameId, 1)
   if (events.length === 0) return errorResponse('Nothing to undo', 409)

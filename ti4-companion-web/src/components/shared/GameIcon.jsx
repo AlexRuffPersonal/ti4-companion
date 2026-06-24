@@ -6,6 +6,7 @@ export default function GameIcon({ category, name, size = 16, className, alt }) 
       height={size}
       alt={alt ?? name}
       className={className}
+      onError={e => { e.currentTarget.style.display = 'none' }}
     />
   )
 }

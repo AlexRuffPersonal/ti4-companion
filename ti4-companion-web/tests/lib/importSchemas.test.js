@@ -4,14 +4,14 @@ import importSchemas from '../../src/lib/importSchemas.js'
 // ── Structural integrity ─────────────────────────────────────────────────────
 
 const EXPECTED_TABLES = [
-  'tiles', 'factions', 'agendas', 'technologies', 'units',
+  'tiles', 'factions', 'agendas', 'technologies', 'units', 'leaders',
   'public-objectives', 'secret-objectives', 'action-cards',
   'relics', 'exploration-cards', 'attachments', 'promissory-notes',
   'ability-definitions', 'ability-sources',
 ]
 
 describe('importSchemas structure', () => {
-  it('exports all 14 table slugs', () => {
+  it('exports all 15 table slugs', () => {
     expect(Object.keys(importSchemas)).toEqual(EXPECTED_TABLES)
   })
 

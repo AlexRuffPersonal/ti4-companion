@@ -38,7 +38,7 @@ const SAMPLE_EVENT = { id: EVENT_ID, event_type: 'research_technology', payload:
 
 function mockDb({
   player = { id: PLAYER_ID },
-  game = { host_player_id: PLAYER_ID, round: 1, phase: 'action' },
+  game = { host_user_id: USER_ID, round: 1, phase: 'action' },
   updatedGame = SAMPLE_GAME,
   updatedPlayers = SAMPLE_PLAYERS,
 } = {}) {
@@ -72,7 +72,7 @@ function mockDb({
 
 function mockDbFull({
   player = { id: PLAYER_ID },
-  game = { host_player_id: PLAYER_ID, round: 1, phase: 'action' },
+  game = { host_user_id: USER_ID, round: 1, phase: 'action' },
   updatedGame = SAMPLE_GAME,
   updatedPlayers = SAMPLE_PLAYERS,
 } = {}) {
@@ -154,7 +154,7 @@ describe('game-undo', () => {
   })
 
   it('returns 403 when caller is not host', async () => {
-    mockDbFull({ game: { host_player_id: 'other-player-id', round: 1, phase: 'action' } })
+    mockDbFull({ game: { host_user_id: 'other-user-id', round: 1, phase: 'action' } })
     const res = await handler(makeRequest({ game_id: GAME_ID }))
     expect(res.status).toBe(403)
   })

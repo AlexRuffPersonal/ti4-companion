@@ -161,9 +161,7 @@ function mockSupabase({ relicFragments = [] } = {}) {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                not: vi.fn().mockResolvedValue({ data: relicFragments, error: null }),
-              }),
+              eq: vi.fn().mockResolvedValue({ data: relicFragments, error: null }),
             }),
           }),
         }),
@@ -198,8 +196,8 @@ describe('useGame Phase 45 — playTheNote options + myRelicFragments', () => {
   it('myRelicFragments is populated on load when player has held fragments', async () => {
     mockSupabase({
       relicFragments: [
-        { id: 'frag-1', relic_fragment_type: 'cultural' },
-        { id: 'frag-2', relic_fragment_type: 'cultural' },
+        { id: 'frag-1', exploration_cards: { relic_fragment_type: 'cultural' } },
+        { id: 'frag-2', exploration_cards: { relic_fragment_type: 'cultural' } },
       ],
     })
     const { result } = renderHook(() => useGame('ABC123', 'host-uuid'))

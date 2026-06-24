@@ -32,7 +32,7 @@ const VALID_BODY = { game_id: GAME_ID, bot_player_id: BOT_PLAYER_ID }
 
 function mockDbDetailed({
   player = { id: PLAYER_ID },
-  game = { status: 'lobby', host_player_id: PLAYER_ID },
+  game = { status: 'lobby', host_user_id: USER_ID },
   botRow = { id: BOT_PLAYER_ID, is_bot: true, faction: 'Arborec' },
 } = {}) {
   let gamePlayersCallCount = 0
@@ -125,7 +125,7 @@ describe('game-remove-bot', () => {
   })
 
   it('returns 409 when game is already started', async () => {
-    mockDbDetailed({ game: { status: 'in_progress', host_player_id: PLAYER_ID } })
+    mockDbDetailed({ game: { status: 'in_progress', host_user_id: USER_ID } })
     const res = await handler(makeRequest(VALID_BODY))
     expect(res.status).toBe(409)
     const body = await res.json()
@@ -133,7 +133,7 @@ describe('game-remove-bot', () => {
   })
 
   it('returns 403 when caller is not host', async () => {
-    mockDbDetailed({ game: { status: 'lobby', host_player_id: 'other-player-id' } })
+    mockDbDetailed({ game: { status: 'lobby', host_user_id: 'other-user-id' } })
     const res = await handler(makeRequest(VALID_BODY))
     expect(res.status).toBe(403)
   })
@@ -203,9 +203,14 @@ describe('game-remove-bot', () => {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
               maybeSingle: vi.fn().mockResolvedValue({
-                data: { status: 'lobby', host_player_id: PLAYER_ID },
+                data: { status: 'lobby', host_user_id: USER_ID },
                 error: null,
               }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ error: null }),
             }),
           }),
         }

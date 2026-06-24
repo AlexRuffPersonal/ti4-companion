@@ -78,6 +78,12 @@ describe('SystemInfoModal', () => {
     expect(screen.getByRole('img', { name: 'gravity_rift' })).toBeInTheDocument()
   })
 
+  it('renders trait label when type is a string (not array)', () => {
+    const p = { name: 'Jord', resources: 4, influence: 2, type: 'home' }
+    render(<SystemInfoModal tileInfo={{ planets: [p], wormholes: [], anomalies: [] }} systemKey="0,0" onClose={vi.fn()} />)
+    expect(screen.getByText('home')).toBeInTheDocument()
+  })
+
   it('clicking CLOSE calls onClose', () => {
     const onClose = vi.fn()
     renderModal({}, onClose)

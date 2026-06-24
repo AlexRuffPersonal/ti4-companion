@@ -62,7 +62,11 @@ function mockDb({
     { id: 'generic-2', faction: null, expansion: 'base' },
   ],
   insertPromissoryNotesError = null,
+  cleanupError = null,
 } = {}) {
+  const cleanupDeleteMock = () => vi.fn().mockReturnValue({
+    eq: vi.fn().mockResolvedValue({ error: cleanupError }),
+  })
   const actionCardInsertMock = vi.fn().mockResolvedValue({ error: insertActionError })
   const agendaInsertMock = vi.fn().mockResolvedValue({ error: insertAgendasError })
   const promissoryNoteInsertMock = vi.fn().mockResolvedValue({ error: insertPromissoryNotesError })
@@ -96,6 +100,7 @@ function mockDb({
     }
     if (table === 'game_public_objectives') {
       return {
+        delete: cleanupDeleteMock(),
         insert: vi.fn().mockResolvedValue({ error: insertObjError }),
       }
     }
@@ -105,7 +110,7 @@ function mockDb({
       }
     }
     if (table === 'game_action_card_deck') {
-      return { insert: actionCardInsertMock }
+      return { delete: cleanupDeleteMock(), insert: actionCardInsertMock }
     }
     if (table === 'factions') {
       return {
@@ -141,6 +146,7 @@ function mockDb({
     }
     if (table === 'game_player_planets') {
       return {
+        delete: cleanupDeleteMock(),
         insert: vi.fn().mockResolvedValue({ error: planetInsertError }),
       }
     }
@@ -151,6 +157,7 @@ function mockDb({
     }
     if (table === 'game_player_secret_objectives') {
       return {
+        delete: cleanupDeleteMock(),
         insert: vi.fn().mockResolvedValue({ error: insertSecretsError }),
       }
     }
@@ -160,7 +167,7 @@ function mockDb({
       }
     }
     if (table === 'game_agenda_deck') {
-      return { insert: agendaInsertMock }
+      return { delete: cleanupDeleteMock(), insert: agendaInsertMock }
     }
     if (table === 'promissory_notes') {
       return {
@@ -168,7 +175,7 @@ function mockDb({
       }
     }
     if (table === 'game_player_promissory_notes') {
-      return { insert: promissoryNoteInsertMock }
+      return { delete: cleanupDeleteMock(), insert: promissoryNoteInsertMock }
     }
     return nullSafeChain()
   })
@@ -306,7 +313,10 @@ describe('game-start', () => {
     // Override just the secret objectives insert
     const originalImpl = db.from.getMockImplementation()
     db.from.mockImplementation((table) => {
-      if (table === 'game_player_secret_objectives') return { insert: secretInsertMock }
+      if (table === 'game_player_secret_objectives') return {
+        delete: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        insert: secretInsertMock,
+      }
       return originalImpl(table)
     })
     const res = await handler(makeRequest({ game_id: GAME_ID }))
@@ -347,7 +357,10 @@ describe('game-start', () => {
     })
     const originalImpl = db.from.getMockImplementation()
     db.from.mockImplementation((table) => {
-      if (table === 'game_player_secret_objectives') return { insert: secretInsertMock }
+      if (table === 'game_player_secret_objectives') return {
+        delete: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        insert: secretInsertMock,
+      }
       return originalImpl(table)
     })
     const res = await handler(makeRequest({ game_id: GAME_ID }))
@@ -368,7 +381,10 @@ describe('game-start', () => {
     mockDb({ promissoryNotes: notes })
     const originalImpl = db.from.getMockImplementation()
     db.from.mockImplementation((table) => {
-      if (table === 'game_player_promissory_notes') return { insert: promissoryNoteInsertMock }
+      if (table === 'game_player_promissory_notes') return {
+        delete: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        insert: promissoryNoteInsertMock,
+      }
       return originalImpl(table)
     })
     const res = await handler(makeRequest({ game_id: GAME_ID }))
@@ -376,8 +392,8 @@ describe('game-start', () => {
     expect(promissoryNoteInsertMock).toHaveBeenCalledOnce()
     const inserted = promissoryNoteInsertMock.mock.calls[0][0]
     // p1 gets Arborec note, p2 gets Letnev note
-    expect(inserted.filter(r => r.player_id === 'p1' && r.note_id === 'note-1')).toHaveLength(1)
-    expect(inserted.filter(r => r.player_id === 'p2' && r.note_id === 'note-2')).toHaveLength(1)
+    expect(inserted.filter(r => r.held_by_player_id === 'p1' && r.note_id === 'note-1')).toHaveLength(1)
+    expect(inserted.filter(r => r.held_by_player_id === 'p2' && r.note_id === 'note-2')).toHaveLength(1)
   })
 
   it('deals generic notes (faction = null) to all players', async () => {
@@ -389,7 +405,10 @@ describe('game-start', () => {
     mockDb({ promissoryNotes: notes, players: READY_PLAYERS })
     const originalImpl = db.from.getMockImplementation()
     db.from.mockImplementation((table) => {
-      if (table === 'game_player_promissory_notes') return { insert: promissoryNoteInsertMock }
+      if (table === 'game_player_promissory_notes') return {
+        delete: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        insert: promissoryNoteInsertMock,
+      }
       return originalImpl(table)
     })
     const res = await handler(makeRequest({ game_id: GAME_ID }))
@@ -398,8 +417,8 @@ describe('game-start', () => {
     const inserted = promissoryNoteInsertMock.mock.calls[0][0]
     // 2 players × 2 generic notes = 4 rows
     expect(inserted).toHaveLength(4)
-    expect(inserted.filter(r => r.player_id === 'p1')).toHaveLength(2)
-    expect(inserted.filter(r => r.player_id === 'p2')).toHaveLength(2)
+    expect(inserted.filter(r => r.held_by_player_id === 'p1')).toHaveLength(2)
+    expect(inserted.filter(r => r.held_by_player_id === 'p2')).toHaveLength(2)
   })
 
   it('skips notes outside active expansions', async () => {
@@ -414,7 +433,10 @@ describe('game-start', () => {
     })
     const originalImpl = db.from.getMockImplementation()
     db.from.mockImplementation((table) => {
-      if (table === 'game_player_promissory_notes') return { insert: promissoryNoteInsertMock }
+      if (table === 'game_player_promissory_notes') return {
+        delete: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        insert: promissoryNoteInsertMock,
+      }
       return originalImpl(table)
     })
     const res = await handler(makeRequest({ game_id: GAME_ID }))
@@ -432,16 +454,19 @@ describe('game-start', () => {
     mockDb()
     const originalImpl = db.from.getMockImplementation()
     db.from.mockImplementation((table) => {
-      if (table === 'game_player_promissory_notes') return { insert: promissoryNoteInsertMock }
+      if (table === 'game_player_promissory_notes') return {
+        delete: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        insert: promissoryNoteInsertMock,
+      }
       return originalImpl(table)
     })
     const res = await handler(makeRequest({ game_id: GAME_ID }))
     expect(res.status).toBe(200)
     expect(promissoryNoteInsertMock).toHaveBeenCalledOnce()
     const inserted = promissoryNoteInsertMock.mock.calls[0][0]
-    // each dealt note has origin_player_id matching recipient player_id
+    // each dealt note has origin_player_id matching recipient held_by_player_id
     inserted.forEach(r => {
-      expect(r.origin_player_id).toBe(r.player_id)
+      expect(r.origin_player_id).toBe(r.held_by_player_id)
     })
   })
 })
@@ -661,12 +686,14 @@ describe('game-start — phase 7 — agenda deck', () => {
         ], error: null }),
       }
       if (table === 'game_player_secret_objectives') return {
+        delete: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
         insert: vi.fn().mockResolvedValue({ error: null }),
       }
       if (table === 'agendas') return {
         select: vi.fn().mockReturnValue({ data: agendas, error: null }),
       }
       if (table === 'game_agenda_deck') return {
+        delete: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
         insert: agendaInsertMock,
       }
       if (table === 'factions') return {
@@ -683,7 +710,7 @@ describe('game-start — phase 7 — agenda deck', () => {
           return { in: vi.fn().mockResolvedValue({ data: [], error: null }) }
         }),
       }
-      return { select: vi.fn().mockReturnValue({ data: [], error: null }) }
+      return nullSafeChain()
     })
   }
 
