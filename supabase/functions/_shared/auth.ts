@@ -64,14 +64,14 @@ export async function requireServiceRole(req: Request): Promise<void> {
  * Throws AuthError(403) otherwise.
  */
 export function requireTurnAuth(
-  game: { active_player_id: string; host_player_id: string },
-  callerPlayer: { id: string },
+  game: { active_player_id: string; host_user_id: string },
+  callerPlayer: { id: string; user_id: string },
   activePlayer: { id: string; is_bot: boolean }
 ): void {
   // Normal human turn: caller is the active player
   if (callerPlayer.id === game.active_player_id) return
   // Host acting for a bot player
-  if (activePlayer.is_bot && callerPlayer.id === game.host_player_id) return
+  if (activePlayer.is_bot && callerPlayer.user_id === game.host_user_id) return
   throw new AuthError('Not your turn', 403)
 }
 

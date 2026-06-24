@@ -46,6 +46,7 @@ function mockDb({
   tileError = null,
   planetInsertError = null,
   techUpdateError = null,
+  hostPermError = null,
   secretObjectives = [
     { id: 'so-1', expansion: 'base' },
     { id: 'so-2', expansion: 'base' },
@@ -84,12 +85,20 @@ function mockDb({
       }
     }
     if (table === 'game_players') {
+      // eq() must both resolve (for single-eq tech updates) and support a second .eq()
+      // (for the double-eq host permission update). Attach .eq to a resolved Promise so
+      // both `await .eq()` and `await .eq().eq()` work.
+      const eqWithChain = Object.assign(
+        Promise.resolve({ error: techUpdateError }),
+        { eq: vi.fn().mockResolvedValue({ error: hostPermError }) }
+      )
       return {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockResolvedValue({ data: players, error: playersError }),
         }),
         update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: techUpdateError }),
+          eq: vi.fn().mockReturnValue(eqWithChain),
+          in: vi.fn().mockResolvedValue({ error: null }),
         }),
       }
     }
@@ -597,7 +606,10 @@ describe('game-start — Phase 22 custom map support', () => {
       if (table === 'game_players') {
         return {
           select: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: players4, error: null }) }),
-          update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue(Object.assign(Promise.resolve({ error: null }), { eq: vi.fn().mockResolvedValue({ error: null }) })),
+            in: vi.fn().mockResolvedValue({ error: null }),
+          }),
         }
       }
       if (table === 'factions') {
@@ -672,7 +684,10 @@ describe('game-start — phase 7 — agenda deck', () => {
       }
       if (table === 'game_players') return {
         select: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: PHASE7_PLAYERS, error: null }) }),
-        update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue(Object.assign(Promise.resolve({ error: null }), { eq: vi.fn().mockResolvedValue({ error: null }) })),
+          in: vi.fn().mockResolvedValue({ error: null }),
+        }),
       }
       if (table === 'public_objectives') return {
         select: vi.fn().mockReturnValue({ data: [], error: null }),

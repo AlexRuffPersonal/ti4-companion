@@ -406,6 +406,13 @@ Deno.serve(async (req: Request) => {
     .eq('id', body.game_id)
   if (mapError) return errorResponse(`Failed to seed map tiles: ${mapError.message}`, 500)
 
+  const { error: hostPermError } = await db
+    .from('game_players')
+    .update({ can_edit_all: true })
+    .eq('game_id', body.game_id)
+    .eq('user_id', game.host_user_id)
+  if (hostPermError) return errorResponse(`Failed to set host permissions: ${hostPermError.message}`, 500)
+
   const { error: updateError } = await db
     .from('games')
     .update({ status: 'active' })

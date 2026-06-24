@@ -68,5 +68,6 @@ const FACTION_ICON_MAP = new Map([
  */
 export function factionIconSlug(factionName) {
   if (!factionName) return null
-  return FACTION_ICON_MAP.get(factionName.toLowerCase()) ?? null
+  const normalized = factionName.toLowerCase().replace(/[‘’‚‛]/g, "'")
+  return FACTION_ICON_MAP.get(normalized) ?? null
 }

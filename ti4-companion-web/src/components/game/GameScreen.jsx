@@ -85,7 +85,14 @@ export default function GameScreen({ userId }) {
 
   const canUndo = isHost && game?.phase !== 'lobby'
 
-  const handleUndo = async () => { await undoLastAction(game?.id) }
+  const handleUndo = async () => {
+    try {
+      await undoLastAction(game?.id)
+    } catch (err) {
+      console.error('Undo failed:', err?.message ?? err)
+      alert(`Undo failed: ${err?.message ?? 'Unknown error'}`)
+    }
+  }
 
   // Handle pending_window dispatching for leader windows
   useEffect(() => {
